@@ -1,0 +1,132 @@
+genesis input file:               simple_deformation_modes.g
+exodus output file:               simple_deformation_modes.e
+output fields:                    reference_coordinate displacement velocity acceleration internal_force external_force ipt01_deformation_gradient ipt02_deformation_gradient ipt03_deformation_gradient ipt04_deformation_gradient ipt05_deformation_gradient ipt06_deformation_gradient ipt07_deformation_gradient ipt08_deformation_gradient ipt01_stress ipt02_stress ipt03_stress ipt04_stress ipt05_stress ipt06_stress ipt07_stress ipt08_stress
+final time:                       1.0e-8
+number of load steps:             10000
+output frequency:                 1000
+material parameters:              material_1 neohookean density 7800.0 shear_modulus 80.0e9 bulk_modulus 160.0e9
+macroscale block:                 block_1 material_1
+boundary condition:    prescribed_velocity nodelist_1 x  25.0
+boundary condition:    prescribed_velocity nodelist_1 y -25.0
+boundary condition:    prescribed_velocity nodelist_1 z  25.0
+boundary condition:    prescribed_velocity nodelist_2 x  25.0
+boundary condition:    prescribed_velocity nodelist_2 y  25.0
+boundary condition:    prescribed_velocity nodelist_2 z  25.0
+boundary condition:    prescribed_velocity nodelist_3 x -25.0
+boundary condition:    prescribed_velocity nodelist_3 y  25.0
+boundary condition:    prescribed_velocity nodelist_3 z  25.0
+boundary condition:    prescribed_velocity nodelist_4 x -25.0
+boundary condition:    prescribed_velocity nodelist_4 y -25.0
+boundary condition:    prescribed_velocity nodelist_4 z  25.0
+boundary condition:    prescribed_velocity nodelist_5 x  25.0
+boundary condition:    prescribed_velocity nodelist_5 y  25.0
+boundary condition:    prescribed_velocity nodelist_5 z -25.0
+boundary condition:    prescribed_velocity nodelist_6 x  25.0
+boundary condition:    prescribed_velocity nodelist_6 y -25.0
+boundary condition:    prescribed_velocity nodelist_6 z -25.0
+boundary condition:    prescribed_velocity nodelist_7 x -25.0
+boundary condition:    prescribed_velocity nodelist_7 y -25.0
+boundary condition:    prescribed_velocity nodelist_7 z -25.0
+boundary condition:    prescribed_velocity nodelist_8 x -25.0
+boundary condition:    prescribed_velocity nodelist_8 y  25.0
+boundary condition:    prescribed_velocity nodelist_8 z -25.0
+
+boundary condition:    prescribed_velocity nodelist_9 x  0.0
+boundary condition:    prescribed_velocity nodelist_9 y  0.0
+boundary condition:    prescribed_velocity nodelist_9 z  0.0
+boundary condition:    prescribed_velocity nodelist_10 x  50.0
+boundary condition:    prescribed_velocity nodelist_10 y  0.0
+boundary condition:    prescribed_velocity nodelist_10 z  0.0
+boundary condition:    prescribed_velocity nodelist_11 x  50.0
+boundary condition:    prescribed_velocity nodelist_11 y  0.0
+boundary condition:    prescribed_velocity nodelist_11 z  0.0
+boundary condition:    prescribed_velocity nodelist_12 x  0.0
+boundary condition:    prescribed_velocity nodelist_12 y  0.0
+boundary condition:    prescribed_velocity nodelist_12 z  0.0
+boundary condition:    prescribed_velocity nodelist_13 x  50.0
+boundary condition:    prescribed_velocity nodelist_13 y  0.0
+boundary condition:    prescribed_velocity nodelist_13 z  0.0
+boundary condition:    prescribed_velocity nodelist_14 x  0.0
+boundary condition:    prescribed_velocity nodelist_14 y  0.0
+boundary condition:    prescribed_velocity nodelist_14 z  0.0
+boundary condition:    prescribed_velocity nodelist_15 x  0.0
+boundary condition:    prescribed_velocity nodelist_15 y  0.0
+boundary condition:    prescribed_velocity nodelist_15 z  0.0
+boundary condition:    prescribed_velocity nodelist_16 x  50.0
+boundary condition:    prescribed_velocity nodelist_16 y  0.0
+boundary condition:    prescribed_velocity nodelist_16 z  0.0
+
+boundary condition:    prescribed_velocity nodelist_17 x  0.0
+boundary condition:    prescribed_velocity nodelist_17 y  25.0
+boundary condition:    prescribed_velocity nodelist_17 z  0.0
+boundary condition:    prescribed_velocity nodelist_18 x  25.0
+boundary condition:    prescribed_velocity nodelist_18 y  25.0
+boundary condition:    prescribed_velocity nodelist_18 z  0.0
+boundary condition:    prescribed_velocity nodelist_19 x  25.0
+boundary condition:    prescribed_velocity nodelist_19 y  0.0
+boundary condition:    prescribed_velocity nodelist_19 z  0.0
+boundary condition:    prescribed_velocity nodelist_20 x  0.0
+boundary condition:    prescribed_velocity nodelist_20 y  0.0
+boundary condition:    prescribed_velocity nodelist_20 z  0.0
+boundary condition:    prescribed_velocity nodelist_21 x  25.0
+boundary condition:    prescribed_velocity nodelist_21 y  25.0
+boundary condition:    prescribed_velocity nodelist_21 z  0.0
+boundary condition:    prescribed_velocity nodelist_22 x  0.0
+boundary condition:    prescribed_velocity nodelist_22 y  25.0
+boundary condition:    prescribed_velocity nodelist_22 z  0.0
+boundary condition:    prescribed_velocity nodelist_23 x  0.0
+boundary condition:    prescribed_velocity nodelist_23 y  0.0
+boundary condition:    prescribed_velocity nodelist_23 z  0.0
+boundary condition:    prescribed_velocity nodelist_24 x  25.0
+boundary condition:    prescribed_velocity nodelist_24 y  0.0
+boundary condition:    prescribed_velocity nodelist_24 z  0.0
+
+boundary condition:    initial_velocity nodelist_25 x -75.0
+boundary condition:    initial_velocity nodelist_25 y -75.0
+boundary condition:    initial_velocity nodelist_25 z  0.0
+boundary condition:    initial_velocity nodelist_26 x  75.0
+boundary condition:    initial_velocity nodelist_26 y -75.0
+boundary condition:    initial_velocity nodelist_26 z  0.0
+boundary condition:    initial_velocity nodelist_27 x  75.0
+boundary condition:    initial_velocity nodelist_27 y  75.0
+boundary condition:    initial_velocity nodelist_27 z  0.0
+boundary condition:    initial_velocity nodelist_28 x -75.0
+boundary condition:    initial_velocity nodelist_28 y  75.0
+boundary condition:    initial_velocity nodelist_28 z  0.0
+boundary condition:    initial_velocity nodelist_29 x  75.0
+boundary condition:    initial_velocity nodelist_29 y -75.0
+boundary condition:    initial_velocity nodelist_29 z  0.0
+boundary condition:    initial_velocity nodelist_30 x -75.0
+boundary condition:    initial_velocity nodelist_30 y -75.0
+boundary condition:    initial_velocity nodelist_30 z  0.0
+boundary condition:    initial_velocity nodelist_31 x -75.0
+boundary condition:    initial_velocity nodelist_31 y  75.0
+boundary condition:    initial_velocity nodelist_31 z  0.0
+boundary condition:    initial_velocity nodelist_32 x  75.0
+boundary condition:    initial_velocity nodelist_32 y  75.0
+boundary condition:    initial_velocity nodelist_32 z  0.0
+
+boundary condition:    prescribed_velocity nodelist_33 x 25.0
+boundary condition:    prescribed_velocity nodelist_33 y  0.0
+boundary condition:    prescribed_velocity nodelist_33 z  0.0
+boundary condition:    prescribed_velocity nodelist_34 x 25.0
+boundary condition:    prescribed_velocity nodelist_34 y  0.0
+boundary condition:    prescribed_velocity nodelist_34 z  0.0
+boundary condition:    prescribed_velocity nodelist_35 x  0.0
+boundary condition:    prescribed_velocity nodelist_35 y  0.0
+boundary condition:    prescribed_velocity nodelist_35 z  0.0
+boundary condition:    prescribed_velocity nodelist_36 x  0.0
+boundary condition:    prescribed_velocity nodelist_36 y  0.0
+boundary condition:    prescribed_velocity nodelist_36 z  0.0
+boundary condition:    prescribed_velocity nodelist_37 x 25.0
+boundary condition:    prescribed_velocity nodelist_37 y  0.0
+boundary condition:    prescribed_velocity nodelist_37 z  0.0
+boundary condition:    prescribed_velocity nodelist_38 x 25.0
+boundary condition:    prescribed_velocity nodelist_38 y  0.0
+boundary condition:    prescribed_velocity nodelist_38 z  0.0
+boundary condition:    prescribed_velocity nodelist_39 x  0.0
+boundary condition:    prescribed_velocity nodelist_39 y  0.0
+boundary condition:    prescribed_velocity nodelist_39 z  0.0
+boundary condition:    prescribed_velocity nodelist_40 x  0.0
+boundary condition:    prescribed_velocity nodelist_40 y  0.0
+boundary condition:    prescribed_velocity nodelist_40 z  0.0

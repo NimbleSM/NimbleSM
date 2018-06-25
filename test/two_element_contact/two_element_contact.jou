@@ -1,0 +1,14 @@
+
+reset
+create brick x 0.5 y 1.0 z 1.0
+create brick x 0.6 y 0.6 z 0.6
+volume 2 move x -0.75 y 0.0 z 0.0
+rotate volume 2 angle 10 about x include_merged
+block 1 volume 1
+block 2 volume 2
+nodeset 1 volume 1
+nodeset 2 volume 2
+volume 1 size 1.0
+volume 2 size 0.9
+mesh volume all
+export genesis 'two_element_contact.g' overwrite

@@ -1,0 +1,11 @@
+genesis input file:               two_element_contact.g
+exodus output file:               two_element_contact.e
+final time:                       30.0e-3
+number of load steps:             3000
+output frequency:                 60
+output fields:                    displacement velocity internal_force contact_force
+material parameters:              material_1 lame_neohookean density 7.8e3 bulk_modulus 1.6e11 shear_modulus 0.8e11
+macroscale block:                 block_1 material_1
+macroscale block:                 block_2 material_1
+boundary condition:               initial_velocity nodelist_2 x 20.0
+contact:                          master_blocks block_1 slave_blocks block_2 penalty_parameter 1.0e12

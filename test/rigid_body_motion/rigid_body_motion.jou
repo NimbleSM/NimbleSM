@@ -1,0 +1,15 @@
+reset
+create brick x 0.03 y 0.02 z 0.02
+# min x node set
+nodeset 1 surface 4
+# max x node set
+nodeset 2 surface 6
+# y-axis node set
+nodeset 3 curve 7
+# z-axis node set
+nodeset 4 curve 9
+# entire body node set
+nodeset 5 volume 1
+volume 1 size 0.01
+mesh volume 1
+export genesis 'rigid_body_motion.g' overwrite

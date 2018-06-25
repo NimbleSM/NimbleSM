@@ -1,0 +1,45 @@
+
+# Simulation of a fiber-reinforced composite material under tension
+# Results show directional dependence at the macroscale
+
+# MMTS units
+#   length mm
+#   density tonne/mm^3
+#   force N
+#   pressure MPa
+#   velocity mm/s
+
+# matrix material (approximates crosslinked polyurethane)
+#   density          1.03e-9 tonne/mm^3
+#   Young's modulus  2.640e3 MPa
+#   Poisson's ratio  0.45
+#   bulk modulus     8.800e3 MPa
+#   shear modulus    9.103e2 MPa
+
+# carbon fiber
+#   density          1.76e-9 tonne/mm^3
+#   Young's modulus  2.250e5 MPa
+#   Poisson's ratio  0.26
+#   bulk modulus     1.563e5 MPa
+#   shear modulus    8.929e4 MPa
+
+genesis input file:               multiscale_anisotropic_brick.g
+rve genesis input file:           microstructure_with_fibers_rve.g
+exodus output file:               multiscale_anisotropic_brick.e
+microscale output element ids:    1 9
+final time:                       2.0e-4
+number of load steps:             200
+output frequency:                 10
+output fields:                    volume internal_force displacement velocity stress
+material parameters:              material_1 neohookean density 1.03e-9 bulk_modulus 8.800e3 shear_modulus 9.103e2
+material parameters:              material_2 neohookean density 1.76e-9 bulk_modulus 1.563e5 shear_modulus 8.929e4
+microscale block:                 block_1 material_1
+microscale block:                 block_2 material_2
+boundary condition:               prescribed_displacement nodelist_1  x  "-0.0635 * (-0.5*cos(t*3.141592653589793/2.0e-4) + 0.5)"
+boundary condition:               prescribed_displacement nodelist_2  x  " 0.0635 * (-0.5*cos(t*3.141592653589793/2.0e-4) + 0.5)"
+boundary condition:               prescribed_displacement nodelist_3  y  0.0
+boundary condition:               prescribed_displacement nodelist_4  z  0.0
+boundary condition:               prescribed_displacement nodelist_11 z  "-0.0635 * (-0.5*cos(t*3.141592653589793/2.0e-4) + 0.5)"
+boundary condition:               prescribed_displacement nodelist_12 z  " 0.0635 * (-0.5*cos(t*3.141592653589793/2.0e-4) + 0.5)"
+boundary condition:               prescribed_displacement nodelist_13 x  0.0
+boundary condition:               prescribed_displacement nodelist_14 y  0.0

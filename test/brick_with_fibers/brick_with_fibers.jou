@@ -1,0 +1,34 @@
+
+# Mesh with two cylinders
+reset
+create brick x 0.01 y 0.01 z 0.01
+create cylinder height 0.01 radius 0.0018
+volume 2 move x 0.002 y 0.002 z 0.0
+volume 2 copy move x -0.002 y -0.0043 z 0.0
+subtract volume 2 3 from volume 1 keep
+delete volume 1
+merge surface all
+volume all size 0.0012
+mesh volume all
+block 1 volume 4
+block 2 volume 2 3
+nodeset 1 volume 2 3 4
+nodeset 2 surface 20
+export genesis 'brick_with_fibers.g' overwrite
+
+# Very simple, small, uniform mesh
+reset
+create brick x 0.01 y 0.01 z 0.01
+create brick x 0.002 y 0.002 z 0.01
+volume 2 move x 0.002 y 0.002 z 0.0
+volume 2 copy move x -0.002 y -0.004 z 0.0
+subtract volume 2 3 from volume 1 keep
+delete volume 1
+merge surface all
+volume all size 0.002
+mesh volume all
+block 1 volume 4
+block 2 volume 2 3
+nodeset 1 volume 2 3 4
+nodeset 2 surface 32
+export genesis 'brick_with_fibers.g' overwrite

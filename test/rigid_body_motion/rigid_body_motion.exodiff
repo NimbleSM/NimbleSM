@@ -1,0 +1,120 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.83) Modified: 2015-08-20
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2016/11/02   14:27:02 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NGPMultiScale/test/rigid_body_motion/rigid_body_motion.gold.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 1, Nodes = 36, Elements = 12, Nodesets = 5, Sidesets = 0
+#          Vars: Global = 1, Nodal = 10, Element = 73, Nodeset = 0, Sideset = 0, Times = 12
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           1e-08 @ t12
+
+GLOBAL VARIABLES relative 1.e-6 floor 0.0
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	lumped_mass       absolute 7.800000000000e-09    # min:        0.000975 @ t1,n16	max:          0.0078 @ t1,n35
+	displacement_x    absolute 5.000000000000e-13    # min:               0 @ t1,n7	max:           5e-07 @ t12,n7
+	displacement_y    absolute 1.000000000000e-14    # min:               0 @ t1,n7	max:   1.0747194e-22 @ t12,n14
+	displacement_z    absolute 1.000000000000e-14    # min:               0 @ t1,n7	max:   1.0527419e-22 @ t12,n1
+	velocity_x        absolute 5.000000000000e-05    # min:              50 @ t1,n7	max:              50 @ t1,n7
+	velocity_y        absolute 1.000000000000e-14    # min:               0 @ t1,n7	max:   2.1497505e-14 @ t12,n14
+	velocity_z        absolute 1.000000000000e-14    # min:               0 @ t1,n7	max:   2.1065174e-14 @ t12,n1
+	internal_force_x  absolute 1.000000000000e-09    # min:               0 @ t1,n7	max:   1.1427326e-08 @ t6,n30
+	internal_force_y  absolute 1.000000000000e-09    # min:               0 @ t1,n7	max:   7.9341091e-09 @ t8,n28
+	internal_force_z  absolute 1.000000000000e-09    # min:               0 @ t1,n7	max:   6.7208348e-09 @ t10,n23
+
+ELEMENT VARIABLES relative 1.e-6 floor 0.0
+	ipt01_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e5	max:               1 @ t11,b1,e1
+	ipt01_deformation_gradient_xy  absolute 1.0e-14
+	ipt01_deformation_gradient_xz  absolute 1.0e-14
+	ipt01_deformation_gradient_yx  absolute 1.0e-14
+	ipt01_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e1	max:               1 @ t1,b1,e1
+	ipt01_deformation_gradient_yz  absolute 1.0e-14
+	ipt01_deformation_gradient_zx  absolute 1.0e-14
+	ipt01_deformation_gradient_zy  absolute 1.0e-14
+	ipt01_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e1	max:               1 @ t1,b1,e1
+	ipt02_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t4,b1,e2
+	ipt02_deformation_gradient_xy  absolute 1.0e-14
+	ipt02_deformation_gradient_xz  absolute 1.0e-14
+	ipt02_deformation_gradient_yx  absolute 1.0e-14
+	ipt02_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e4	max:               1 @ t2,b1,e7
+	ipt02_deformation_gradient_yz  absolute 1.0e-14
+	ipt02_deformation_gradient_zx  absolute 1.0e-14
+	ipt02_deformation_gradient_zy  absolute 1.0e-14
+	ipt02_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e4	max:               1 @ t2,b1,e7
+	ipt03_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t7,b1,e4
+	ipt03_deformation_gradient_xy  absolute 1.0e-14
+	ipt03_deformation_gradient_xz  absolute 1.0e-14
+	ipt03_deformation_gradient_yx  absolute 1.0e-14
+	ipt03_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t2,b1,e1
+	ipt03_deformation_gradient_yz  absolute 1.0e-14
+	ipt03_deformation_gradient_zx  absolute 1.0e-14
+	ipt03_deformation_gradient_zy  absolute 1.0e-14
+	ipt03_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t2,b1,e1
+	ipt04_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t6,b1,e7	max:               1 @ t4,b1,e2
+	ipt04_deformation_gradient_xy  absolute 1.0e-14
+	ipt04_deformation_gradient_xz  absolute 1.0e-14
+	ipt04_deformation_gradient_yx  absolute 1.0e-14
+	ipt04_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e1	max:               1 @ t2,b1,e5
+	ipt04_deformation_gradient_yz  absolute 1.0e-14
+	ipt04_deformation_gradient_zx  absolute 1.0e-14
+	ipt04_deformation_gradient_zy  absolute 1.0e-14
+	ipt04_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t1,b1,e1	max:               1 @ t2,b1,e7
+	ipt05_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e5	max:               1 @ t11,b1,e1
+	ipt05_deformation_gradient_xy  absolute 1.0e-14
+	ipt05_deformation_gradient_xz  absolute 1.0e-14
+	ipt05_deformation_gradient_yx  absolute 1.0e-14
+	ipt05_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e3	max:               1 @ t2,b1,e6
+	ipt05_deformation_gradient_yz  absolute 1.0e-14
+	ipt05_deformation_gradient_zx  absolute 1.0e-14
+	ipt05_deformation_gradient_zy  absolute 1.0e-14
+	ipt05_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t2,b1,e6
+	ipt06_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t4,b1,e2
+	ipt06_deformation_gradient_xy  absolute 1.0e-14
+	ipt06_deformation_gradient_xz  absolute 1.0e-14
+	ipt06_deformation_gradient_yx  absolute 1.0e-14
+	ipt06_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e6	max:               1 @ t2,b1,e3
+	ipt06_deformation_gradient_yz  absolute 1.0e-14
+	ipt06_deformation_gradient_zx  absolute 1.0e-14
+	ipt06_deformation_gradient_zy  absolute 1.0e-14
+	ipt06_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t1,b1,e1	max:               1 @ t2,b1,e3
+	ipt07_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e7	max:               1 @ t7,b1,e4
+	ipt07_deformation_gradient_xy  absolute 1.0e-14
+	ipt07_deformation_gradient_xz  absolute 1.0e-14
+	ipt07_deformation_gradient_yx  absolute 1.0e-14
+	ipt07_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e2	max:               1 @ t2,b1,e5
+	ipt07_deformation_gradient_yz  absolute 1.0e-14
+	ipt07_deformation_gradient_zx  absolute 1.0e-14
+	ipt07_deformation_gradient_zy  absolute 1.0e-14
+	ipt07_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e2	max:               1 @ t2,b1,e5
+	ipt08_deformation_gradient_xx  absolute 1.000000000000e-06    # min:               1 @ t6,b1,e7	max:               1 @ t4,b1,e2
+	ipt08_deformation_gradient_xy  absolute 1.0e-14
+	ipt08_deformation_gradient_xz  absolute 1.0e-14
+	ipt08_deformation_gradient_yx  absolute 1.0e-14
+	ipt08_deformation_gradient_yy  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e3	max:               1 @ t1,b1,e1
+	ipt08_deformation_gradient_yz  absolute 1.0e-14
+	ipt08_deformation_gradient_zx  absolute 1.0e-14
+	ipt08_deformation_gradient_zy  absolute 1.0e-14
+	ipt08_deformation_gradient_zz  absolute 1.000000000000e-06    # min:               1 @ t2,b1,e1	max:               1 @ t1,b1,e1
+	volume                         absolute 1.0e-12
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+

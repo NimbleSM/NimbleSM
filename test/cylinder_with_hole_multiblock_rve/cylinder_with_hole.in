@@ -1,0 +1,18 @@
+genesis input file:                      cylinder_with_hole.g
+rve genesis input file:                  rve.g
+microscale boundary condition strategy:  impose deformation gradient
+exodus output file:                      cylinder_with_hole.e
+final time:                              2.0e-6
+number of load steps:                    200
+output frequency:                        20
+output fields:                           displacement velocity stress
+material parameters:                     material_1 neohookean density 7.8 bulk_modulus 1.6e12 shear_modulus 0.8e12
+macroscale block:                        block_1 material_1
+macroscale block:                        block_2 rve
+microscale block:                        block_1 material_1
+boundary condition:                      prescribed_displacement nodelist_1 x 0.0
+boundary condition:                      prescribed_displacement nodelist_1 y 0.0
+boundary condition:                      prescribed_displacement nodelist_1 z "-0.0005 * (-0.5*cos(t*3.141592653589793/2.0e-6) + 0.5)"
+boundary condition:                      prescribed_displacement nodelist_2 x 0.0
+boundary condition:                      prescribed_displacement nodelist_2 y 0.0
+boundary condition:                      prescribed_displacement nodelist_2 z "0.0005 * (-0.5*cos(t*3.141592653589793/2.0e-6) + 0.5)"

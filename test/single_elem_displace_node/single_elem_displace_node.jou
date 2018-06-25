@@ -1,0 +1,13 @@
+reset
+create brick x 1.0 y 1.0 z 1.0
+nodeset 1 vertex 1
+nodeset 2 vertex 2
+nodeset 3 vertex 3
+nodeset 4 vertex 4
+nodeset 5 vertex 5
+nodeset 6 vertex 6
+nodeset 7 vertex 7
+nodeset 8 vertex 8
+volume all size 1.0
+mesh volume all
+export genesis 'single_elem_displace_node.g' overwrite

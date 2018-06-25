@@ -1,0 +1,50 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.83) Modified: 2015-08-20
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2017/07/27   10:53:16 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NGPMultiScale/test/cylinder_with_hole_multiblock_rve/cylinder_with_hole.serial.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 2, Nodes = 2104, Elements = 1260, Nodesets = 2, Sidesets = 0
+#          Vars: Global = 0, Nodal = 6, Element = 6, Nodeset = 0, Sideset = 0, Times = 12
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           2e-06 @ t12
+
+
+# No GLOBAL VARIABLES
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x  absolute 4.153310600000e-10    # min:               0 @ t1,n1177	max:   0.00041533106 @ t12,n974
+	displacement_y  absolute 2.333644300000e-10    # min:               0 @ t1,n1177	max:   0.00023336443 @ t12,n974
+	displacement_z  absolute 5.222471300000e-10    # min:               0 @ t1,n1177	max:   0.00052224713 @ t12,n64
+	velocity_x      absolute 5.508007500000e-04    # min:               0 @ t1,n1177	max:       550.80075 @ t12,n974
+	velocity_y      absolute 2.672136900000e-04    # min:               0 @ t1,n1177	max:       267.21369 @ t11,n137
+	velocity_z      absolute 4.918010800000e-04    # min:               0 @ t1,n1177	max:       491.80108 @ t6,n2
+
+ELEMENT VARIABLES relative 1.e-6 floor 0.0
+	stress_xx  absolute 2.053669700000e+03    # min:               0 @ t1,b1,e1	max:   2.0536697e+09 @ t12,b1,e1017
+	stress_xy  absolute 4.489307300000e+02    # min:               0 @ t1,b1,e1	max:   4.4893073e+08 @ t12,b2,e1243
+	stress_yy  absolute 1.201685200000e+03    # min:               0 @ t1,b1,e1	max:   1.2016852e+09 @ t12,b1,e666
+	stress_yz  absolute 9.432852800000e+02    # min:               0 @ t1,b1,e1	max:   9.4328528e+08 @ t12,b2,e1195
+	stress_zx  absolute 1.163250600000e+03    # min:               0 @ t1,b1,e1	max:   1.1632506e+09 @ t10,b2,e1177
+	stress_zz  absolute 9.297581600000e+03    # min:               0 @ t1,b1,e1	max:   9.2975816e+09 @ t12,b2,e1131
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+

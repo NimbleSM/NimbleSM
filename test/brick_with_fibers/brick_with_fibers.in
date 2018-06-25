@@ -1,0 +1,14 @@
+genesis input file:               brick_with_fibers.g
+exodus output file:               brick_with_fibers.e
+final time:                       1.5e-8
+number of load steps:             23
+output frequency:                 2
+output fields:                    volume displacement velocity stress
+material parameters:              material_1 neohookean density 7.8 bulk_modulus 1.6e12 shear_modulus 0.8e12
+material parameters:              material_2 neohookean density 5.0 bulk_modulus 1.333e12 shear_modulus 0.1379e12
+macroscale block:                 block_1 material_1
+macroscale block:                 block_2 material_2
+boundary condition:               initial_velocity nodelist_1 x 1000.0
+boundary condition:               prescribed_velocity nodelist_2 x 0.0
+boundary condition:               prescribed_velocity nodelist_2 y 0.0
+boundary condition:               prescribed_velocity nodelist_2 z 0.0

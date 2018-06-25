@@ -1,0 +1,14 @@
+
+# Mesh with one cylinders
+reset
+create brick x 0.01 y 0.01 z 0.01
+create cylinder height 0.01 radius 0.0025
+volume 2 move x 0.001 y 0.001 z 0.0
+subtract volume 2 from volume 1 keep
+delete volume 1
+merge surface all
+volume all size 0.0018
+mesh volume all
+block 1 volume 3
+block 2 volume 2
+export genesis 'brick_with_fiber_periodic.g' overwrite

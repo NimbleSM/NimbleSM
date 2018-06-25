@@ -1,0 +1,11 @@
+
+reset
+create brick x 1.5 y 1.0 z 1.0
+volume all size 0.5
+mesh volume all
+block 1 volume 1
+nodeset 1 surface 4
+nodeset 2 surface 6
+nodeset 3 curve 9 10
+nodeset 4 curve 7 5
+export genesis 'quasistatic_tension.g' overwrite
