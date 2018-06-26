@@ -260,6 +260,40 @@ namespace nimble_kokkos {
     return field_id;
   }
 
+  std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
+    std::vector<std::string> node_data_labels;
+    for (auto const & entry : field_label_to_field_id_map_) {
+      std::string const & field_label = entry.first;
+      int field_id = entry.second;
+      for (auto const & node_entry : field_id_to_host_node_data_index_) {
+        int node_data_field_id = node_entry.first;
+        if (field_id == node_data_field_id) {
+          int node_data_index = node_entry.second;
+          if (host_node_data_.at(node_data_index)->type() == FieldType::HostScalar)
+            node_data_labels.push_back(field_label);
+        }
+      }
+    }
+    return node_data_labels;
+  }
+
+  std::vector<std::string> ModelData::GetVectorNodeDataLabels() const {
+    std::vector<std::string> node_data_labels;
+    for (auto const & entry : field_label_to_field_id_map_) {
+      std::string const & field_label = entry.first;
+      int field_id = entry.second;
+      for (auto const & node_entry : field_id_to_host_node_data_index_) {
+        int node_data_field_id = node_entry.first;
+        if (field_id == node_data_field_id) {
+          int node_data_index = node_entry.second;
+          if (host_node_data_.at(node_data_index)->type() == FieldType::HostVector)
+            node_data_labels.push_back(field_label);
+        }
+      }
+    }
+    return node_data_labels;
+  }
+
   HostScalarView ModelData::GetHostScalarNodeData(int field_id) {
     int index = field_id_to_host_node_data_index_.at(field_id);
     FieldBase* base_field_ptr = host_node_data_.at(index).get();

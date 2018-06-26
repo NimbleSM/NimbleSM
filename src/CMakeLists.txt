@@ -25,6 +25,7 @@ ENDIF()
 set(NIMBLE_KOKKOS_SOURCES
   nimble_kokkos_data_manager.cc
   nimble_kokkos_block.cc
+  nimble_exodus_output_manager.cc
 )
 
 set(NIMBLE_DARMA_SOURCES

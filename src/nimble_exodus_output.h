@@ -41,8 +41,8 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_OUTPUT_EXODUS_H
-#define NIMBLE_OUTPUT_EXODUS_H
+#ifndef NIMBLE_EXODUS_OUTPUT_H
+#define NIMBLE_EXODUS_OUTPUT_H
 
 #include "nimble_genesis_mesh.h"
 

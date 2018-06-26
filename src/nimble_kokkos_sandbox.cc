@@ -45,6 +45,7 @@
 #include "nimble_parser.h"
 // #include "nimble_genesis_mesh.h"
 // #include "nimble_exodus_output.h"
+#include "nimble_exodus_output_manager.h"
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_data_manager.h"
@@ -224,21 +225,12 @@ void main_routine(int argc, char *argv[]) {
   boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
   // Initialize the output file
+  nimble_kokkos::ExodusOutputManager exodus_output_manager;
+  exodus_output_manager.SpecifyOutputFields(model_data, parser.GetOutputFieldString());
   std::vector<std::string> global_data_labels;
-  std::vector<std::string> node_data_labels_for_output;
+  std::vector<std::string> node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
   std::map<int, std::vector<std::string> > elem_data_labels_for_output;
   std::map<int, std::vector<std::string> > derived_elem_data_labels;
-  // **** TEMP JUNK UNTIL DATA MANAGER IS PROPERLY HOOKED UP
-  node_data_labels_for_output.push_back("lumped_mass");
-  node_data_labels_for_output.push_back("displacement_x");
-  node_data_labels_for_output.push_back("displacement_y");
-  node_data_labels_for_output.push_back("displacement_z");
-  node_data_labels_for_output.push_back("velocity_x");
-  node_data_labels_for_output.push_back("velocity_y");
-  node_data_labels_for_output.push_back("velocity_z");
-  node_data_labels_for_output.push_back("internal_force_x");
-  node_data_labels_for_output.push_back("internal_force_y");
-  node_data_labels_for_output.push_back("internal_force_z");
   for (int block_id : block_ids) {
     elem_data_labels_for_output[block_id] = std::vector<std::string>();
     derived_elem_data_labels[block_id] = std::vector<std::string>();
@@ -385,25 +377,9 @@ void main_routine(int argc, char *argv[]) {
   // Output to Exodus file
 
   std::vector<double> global_data;
-  std::vector< std::vector<double> > node_data_for_output;
+  std::vector< std::vector<double> > node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
   std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
   std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-
-  for (int i=0 ; i<10 ; i++) {
-    node_data_for_output.push_back(std::vector<double>(num_nodes));
-  }
-  for (int i_node=0 ; i_node<num_nodes ; i_node++){
-    node_data_for_output[0][i_node] = lumped_mass_h(i_node);
-    node_data_for_output[1][i_node] = displacement_h(i_node,0);
-    node_data_for_output[2][i_node] = displacement_h(i_node,1);
-    node_data_for_output[3][i_node] = displacement_h(i_node,2);
-    node_data_for_output[4][i_node] = velocity_h(i_node,0);
-    node_data_for_output[5][i_node] = velocity_h(i_node,1);
-    node_data_for_output[6][i_node] = velocity_h(i_node,2);
-    node_data_for_output[7][i_node] = internal_force_h(i_node,0);
-    node_data_for_output[8][i_node] = internal_force_h(i_node,1);
-    node_data_for_output[9][i_node] = internal_force_h(i_node,2);
-  }
 
   exodus_output.WriteStep(time_current,
                           global_data,
@@ -585,18 +561,7 @@ void main_routine(int argc, char *argv[]) {
 
       boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
 
-      for (int i_node=0 ; i_node<num_nodes ; i_node++){
-        node_data_for_output[0][i_node] = lumped_mass_h(i_node);
-        node_data_for_output[1][i_node] = displacement_h(i_node,0);
-        node_data_for_output[2][i_node] = displacement_h(i_node,1);
-        node_data_for_output[3][i_node] = displacement_h(i_node,2);
-        node_data_for_output[4][i_node] = velocity_h(i_node,0);
-        node_data_for_output[5][i_node] = velocity_h(i_node,1);
-        node_data_for_output[6][i_node] = velocity_h(i_node,2);
-        node_data_for_output[7][i_node] = internal_force_h(i_node,0);
-        node_data_for_output[8][i_node] = internal_force_h(i_node,1);
-        node_data_for_output[9][i_node] = internal_force_h(i_node,2);
-      }
+      node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
 
       exodus_output.WriteStep(time_current,
                               global_data,

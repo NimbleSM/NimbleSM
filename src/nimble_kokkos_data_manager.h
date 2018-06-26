@@ -74,6 +74,12 @@ class ModelData
                                    std::string label,
                                    int num_objects);
 
+  int FieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
+
+  std::vector<std::string> GetScalarNodeDataLabels() const ;
+
+  std::vector<std::string> GetVectorNodeDataLabels() const ;
+
   HostScalarView GetHostScalarNodeData(int field_id);
 
   HostVectorView GetHostVectorNodeData(int field_id);
