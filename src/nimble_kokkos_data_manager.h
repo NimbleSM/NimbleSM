@@ -74,11 +74,17 @@ class ModelData
                                    std::string label,
                                    int num_objects);
 
-  int FieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
+  int GetFieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
+
+  std::vector<int> GetBlockIds() const ;
 
   std::vector<std::string> GetScalarNodeDataLabels() const ;
 
   std::vector<std::string> GetVectorNodeDataLabels() const ;
+
+  std::vector<std::string> GetFullTensorIntegrationPointDataLabels(int block_id) const ;
+
+  std::vector<std::string> GetSymmetricTensorIntegrationPointDataLabels(int block_id) const ;
 
   HostScalarView GetHostScalarNodeData(int field_id);
 

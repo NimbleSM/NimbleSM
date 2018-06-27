@@ -159,19 +159,18 @@ void main_routine(int argc, char *argv[]) {
     blocks[block_id] = nimble_kokkos::Block();
     //blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy);
     blocks.at(block_id).Initialize(macro_material_parameters);
-    int num_integration_points_per_element = blocks.at(block_id).GetHostElement()->NumIntegrationPointsPerElement();
+    //int num_integration_points_per_element = blocks.at(block_id).GetHostElement()->NumIntegrationPointsPerElement();
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
-    int num_integration_points = num_integration_points_per_element * num_elements_in_block;
 
     deformation_gradient_field_id =  model_data.AllocateIntegrationPointData(block_id,
                                                                              nimble::FULL_TENSOR,
                                                                              "deformation_gradient",
-                                                                             num_integration_points);
+                                                                             num_elements_in_block);
 
     stress_field_id = model_data.AllocateIntegrationPointData(block_id,
                                                               nimble::SYMMETRIC_TENSOR,
                                                               "stress",
-                                                              num_integration_points);
+                                                              num_elements_in_block);
 
     // NEED TO MANAGE ALLOCATION OF DEFORMATION GRADIENT AND STRESS
     //   PROBABLY DON'T WANT THE MATERIALS TO DECLARE DEFORMATION GRADIENT AND STRESS AS STATE DATA, RATHER JUST SET THEM HERE
@@ -229,10 +228,9 @@ void main_routine(int argc, char *argv[]) {
   exodus_output_manager.SpecifyOutputFields(model_data, parser.GetOutputFieldString());
   std::vector<std::string> global_data_labels;
   std::vector<std::string> node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > elem_data_labels_for_output;
+  std::map<int, std::vector<std::string> > elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > derived_elem_data_labels;
   for (int block_id : block_ids) {
-    elem_data_labels_for_output[block_id] = std::vector<std::string>();
     derived_elem_data_labels[block_id] = std::vector<std::string>();
   }
   // ****
@@ -376,18 +374,20 @@ void main_routine(int argc, char *argv[]) {
 
   // Output to Exodus file
 
-  std::vector<double> global_data;
-  std::vector< std::vector<double> > node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
-  std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data;
+  {
+    std::vector<double> global_data;
+    std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+    std::map<int, std::vector< std::vector<double> > > const & elem_data_for_output = exodus_output_manager.GetElementDataForOutput(model_data);
+    std::map<int, std::vector< std::vector<double> > > derived_elem_data;
 
-  exodus_output.WriteStep(time_current,
-                          global_data,
-                          node_data_for_output,
-                          elem_data_labels_for_output,
-                          elem_data_for_output,
-                          derived_elem_data_labels,
-                          derived_elem_data);
+    exodus_output.WriteStep(time_current,
+                            global_data,
+                            node_data_for_output,
+                            elem_data_labels_for_output,
+                            elem_data_for_output,
+                            derived_elem_data_labels,
+                            derived_elem_data);
+  }
 
   for (int step=0 ; step<num_load_steps ; step++) {
 
@@ -561,7 +561,10 @@ void main_routine(int argc, char *argv[]) {
 
       boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
 
-      node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+      std::vector<double> global_data;
+      std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+      std::map<int, std::vector< std::vector<double> > > const & elem_data_for_output = exodus_output_manager.GetElementDataForOutput(model_data);
+      std::map<int, std::vector< std::vector<double> > > derived_elem_data;
 
       exodus_output.WriteStep(time_current,
                               global_data,

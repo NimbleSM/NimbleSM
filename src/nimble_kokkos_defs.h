@@ -146,6 +146,7 @@ class Field< FieldType::HostScalar >
 {
 public:
 
+  // (node)
   using View = Kokkos::View< double *, kokkos_host_memory_space::execution_space >;
 
   Field( const std::string & name, int num_entries )
@@ -171,6 +172,7 @@ class Field< FieldType::DeviceScalar >
 {
 public:
 
+  // (node)
   using View = Kokkos::View< double *, Layout, kokkos_device_memory_space::execution_space >;
   using AtomicView = Kokkos::View< double *, Layout, kokkos_device_memory_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
   using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX], Layout, kokkos_device_memory_space::execution_space >;
@@ -199,6 +201,7 @@ class Field< FieldType::HostVector >
 {
 public:
 
+  // (node, coordinate)
   using View = Kokkos::View< double *[3], Layout, kokkos_host_memory_space::execution_space >;
 
   Field( const std::string & name
@@ -225,6 +228,7 @@ class Field< FieldType::DeviceVector >
 {
 public:
 
+  // (node, coordinate)
   using View = Kokkos::View< double *[3], Layout, kokkos_device_memory_space::execution_space >;
   using AtomicView = Kokkos::View< double *[3], Layout, kokkos_device_memory_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
   using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX][3], Layout, kokkos_device_memory_space::execution_space >;
@@ -255,6 +259,7 @@ class Field< FieldType::HostSymTensor >
 {
 public:
 
+  // (elem, ipt, tensor_index)
   using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_host_memory_space::execution_space >;
 
   Field( const std::string & name
@@ -282,6 +287,7 @@ class Field< FieldType::DeviceSymTensor >
 {
 public:
 
+  // (elem, ipt, tensor_index)
   using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_device_memory_space::execution_space >;
   using SubView = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
   using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));
@@ -311,6 +317,7 @@ class Field< FieldType::HostFullTensor >
 {
 public:
 
+  // (elem, ipt, tensor_index)
   using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_host_memory_space::execution_space >;
 
   Field( const std::string & name
@@ -337,6 +344,7 @@ class Field< FieldType::DeviceFullTensor >
 {
 public:
 
+  // (elem, ipt, tensor_index)
   using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_device_memory_space::execution_space >;
   using SubView = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
   using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));

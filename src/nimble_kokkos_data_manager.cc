@@ -259,6 +259,13 @@ namespace nimble_kokkos {
 
     return field_id;
   }
+  std::vector<int> ModelData::GetBlockIds() const {
+    std::vector<int> block_ids;
+    for (auto const & entry : block_id_to_integration_point_data_index_) {
+      block_ids.push_back(entry.first);
+    }
+    return block_ids;
+  }
 
   std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
     std::vector<std::string> node_data_labels;
@@ -292,6 +299,49 @@ namespace nimble_kokkos {
       }
     }
     return node_data_labels;
+  }
+
+  std::vector<std::string> ModelData::GetFullTensorIntegrationPointDataLabels(int block_id) const {
+    int block_index = block_id_to_integration_point_data_index_.at(block_id);
+    std::vector<std::string> ipt_data_labels;
+    for (auto const & entry : field_label_to_field_id_map_) {
+      std::string const & field_label = entry.first;
+      int field_id = entry.second;
+      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_[block_index]) {
+        int ipt_data_field_id = ipt_entry.first;
+        if (field_id == ipt_data_field_id) {
+          int ipt_data_index = ipt_entry.second;
+          if (device_integration_point_data_step_np1_[block_index].at(ipt_data_index)->type() == FieldType::DeviceFullTensor) {
+            if (std::find(ipt_data_labels.begin(), ipt_data_labels.end(), field_label) == ipt_data_labels.end()) {
+              ipt_data_labels.push_back(field_label);
+            }
+          }
+        }
+      }
+    }
+    return ipt_data_labels;
+  }
+
+  std::vector<std::string> ModelData::GetSymmetricTensorIntegrationPointDataLabels(int block_id) const {
+    int block_index = block_id_to_integration_point_data_index_.at(block_id);
+    int num_blocks = static_cast<int>(block_id_to_integration_point_data_index_.size());
+    std::vector<std::string> ipt_data_labels;
+    for (auto const & entry : field_label_to_field_id_map_) {
+      std::string const & field_label = entry.first;
+      int field_id = entry.second;
+      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_[block_index]) {
+        int ipt_data_field_id = ipt_entry.first;
+        if (field_id == ipt_data_field_id) {
+          int ipt_data_index = ipt_entry.second;
+          if (device_integration_point_data_step_np1_[block_index].at(ipt_data_index)->type() == FieldType::DeviceSymTensor) {
+            if (std::find(ipt_data_labels.begin(), ipt_data_labels.end(), field_label) == ipt_data_labels.end()) {
+              ipt_data_labels.push_back(field_label);
+            }
+          }
+        }
+      }
+    }
+    return ipt_data_labels;
   }
 
   HostScalarView ModelData::GetHostScalarNodeData(int field_id) {

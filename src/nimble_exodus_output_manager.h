@@ -65,7 +65,11 @@ namespace nimble_kokkos {
 
     std::vector<std::string> GetNodeDataLabelsForOutput() { return node_data_labels_; }
 
-    std::vector< std::vector<double> >& GetNodeDataForOutput(nimble_kokkos::ModelData& model_data);
+    std::vector< std::vector<double> > GetNodeDataForOutput(nimble_kokkos::ModelData& model_data);
+
+    std::map<int, std::vector<std::string> > GetElementDataLabelsForOutput() { return elem_data_labels_; }
+
+    std::map<int, std::vector< std::vector<double> > > GetElementDataForOutput(nimble_kokkos::ModelData& model_data);
 
   private:
 
@@ -74,6 +78,12 @@ namespace nimble_kokkos {
     std::vector<FieldType> node_data_types_;
     std::vector<int> node_data_components_;
     std::vector< std::vector<double> > node_data_;
+
+    std::map<int, std::vector<std::string> > elem_data_labels_;
+    std::map<int, std::vector<int> > elem_data_field_ids_;
+    std::map<int, std::vector<FieldType> > elem_data_types_;
+    std::map<int, std::vector<int> > elem_data_components_;
+    std::map<int, std::vector< std::vector<double> > > elem_data_;
 
   };
 

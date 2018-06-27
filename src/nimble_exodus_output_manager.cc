@@ -67,13 +67,13 @@ namespace nimble_kokkos {
     for (auto const & requested_label : requested_labels) {
       for (auto& node_label : scalar_node_data_labels) {
         if (requested_label == node_label) {
-          int field_id = model_data.FieldId(node_label);
-          int dim = model_data.GetHostScalarNodeData(field_id).extent(0);
+          int field_id = model_data.GetFieldId(node_label);
+          int num_nodes = model_data.GetHostScalarNodeData(field_id).extent(0);
           node_data_labels_.push_back(node_label);
           node_data_field_ids_.push_back(field_id);
           node_data_types_.push_back(FieldType::HostScalar);
           node_data_components_.push_back(0);
-          node_data_.push_back(std::vector<double>(dim, 0.0));
+          node_data_.push_back(std::vector<double>(num_nodes, 0.0));
         }
       }
     }
@@ -82,33 +82,65 @@ namespace nimble_kokkos {
     for (auto const & requested_label : requested_labels) {
       for (auto& node_label : vector_node_data_labels) {
         if (requested_label == node_label) {
-          int field_id = model_data.FieldId(node_label);
-          int dim = model_data.GetHostVectorNodeData(field_id).extent(0);
+          int field_id = model_data.GetFieldId(node_label);
+          int num_nodes = model_data.GetHostVectorNodeData(field_id).extent(0);
           // x component
           node_data_labels_.push_back(node_label + "_x");
           node_data_field_ids_.push_back(field_id);
           node_data_types_.push_back(FieldType::HostVector);
           node_data_components_.push_back(0);
-          node_data_.push_back(std::vector<double>(dim, 0.0));
+          node_data_.push_back(std::vector<double>(num_nodes, 0.0));
           // y component
           node_data_labels_.push_back(node_label + "_y");
           node_data_field_ids_.push_back(field_id);
           node_data_types_.push_back(FieldType::HostVector);
           node_data_components_.push_back(1);
-          node_data_.push_back(std::vector<double>(dim, 0.0));
+          node_data_.push_back(std::vector<double>(num_nodes, 0.0));
           // z component
           node_data_labels_.push_back(node_label + "_z");
           node_data_field_ids_.push_back(field_id);
           node_data_types_.push_back(FieldType::HostVector);
           node_data_components_.push_back(2);
-          node_data_.push_back(std::vector<double>(dim, 0.0));
+          node_data_.push_back(std::vector<double>(num_nodes, 0.0));
         }
       }
     }
 
+    std::vector<int> block_ids = model_data.GetBlockIds();
+    for (auto const & block_id : block_ids) {
+      elem_data_labels_[block_id] = std::vector<std::string>();
+      elem_data_field_ids_[block_id] = std::vector<int>();
+      elem_data_types_[block_id] = std::vector<FieldType>();
+      elem_data_components_[block_id] = std::vector<int>();
+      elem_data_[block_id] = std::vector< std::vector<double> >();
+    }
+
+    for (unsigned int i_block=0 ; i_block<block_ids.size() ; ++i_block) {
+
+      int block_id = block_ids[i_block];
+
+      std::vector<std::string> full_tensor_integration_point_data_labels = model_data.GetFullTensorIntegrationPointDataLabels(block_id);
+      for (auto const & requested_label : requested_labels) {
+        for (auto& ipt_label : full_tensor_integration_point_data_labels) {
+          if (requested_label == ipt_label) {
+            int field_id = model_data.GetFieldId(ipt_label);
+            int num_elem = model_data.GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1).extent(0); // DJL WRONG VALUE, this is num int pt
+            // xx component
+            elem_data_labels_[block_id].push_back(ipt_label + "_xx");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
+            elem_data_components_[block_id].push_back(0);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            std::cout << "DEBUGGING NUM ELEM " << elem_data_[block_id][0].size() << std::endl;
+          }
+        }
+      }
+
+      std::vector<std::string> symmetric_tensor_integration_point_data_labels = model_data.GetSymmetricTensorIntegrationPointDataLabels(block_id);
+    }
   }
 
-  std::vector< std::vector<double> >& ExodusOutputManager::GetNodeDataForOutput(nimble_kokkos::ModelData& model_data) {
+  std::vector< std::vector<double> > ExodusOutputManager::GetNodeDataForOutput(nimble_kokkos::ModelData& model_data) {
     for (unsigned int i_data ; i_data < node_data_labels_.size() ; ++i_data) {
       int field_id = node_data_field_ids_.at(i_data);
       FieldType field_type = node_data_types_.at(i_data);
@@ -127,6 +159,12 @@ namespace nimble_kokkos {
       }
     }
     return node_data_;
+  }
+
+
+  std::map<int, std::vector< std::vector<double> > > ExodusOutputManager::GetElementDataForOutput(nimble_kokkos::ModelData& model_data) {
+
+    return elem_data_;
   }
 
 }
