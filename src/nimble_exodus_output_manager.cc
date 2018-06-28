@@ -131,7 +131,6 @@ namespace nimble_kokkos {
             elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
             elem_data_components_[block_id].push_back(0);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            std::cout << "DEBUGGING NUM ELEM " << elem_data_[block_id][0].size() << std::endl;
           }
         }
       }
