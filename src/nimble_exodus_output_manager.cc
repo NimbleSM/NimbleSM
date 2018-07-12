@@ -231,7 +231,7 @@ namespace nimble_kokkos {
   }
 
   std::vector< std::vector<double> > ExodusOutputManager::GetNodeDataForOutput(nimble_kokkos::ModelData& model_data) {
-    for (unsigned int i_data ; i_data < node_data_labels_.size() ; ++i_data) {
+    for (unsigned int i_data=0 ; i_data < node_data_labels_.size() ; ++i_data) {
       int field_id = node_data_field_ids_.at(i_data);
       FieldType field_type = node_data_types_.at(i_data);
       if (field_type == FieldType::HostScalar) {
