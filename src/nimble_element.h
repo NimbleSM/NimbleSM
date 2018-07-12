@@ -111,7 +111,7 @@ namespace nimble {
                                     nimble_kokkos::DeviceVectorGatheredSubView element_internal_force_d) const = 0;
 #endif
 
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     double Invert3x3(double mat[][3],
                      double inv[][3]) const ;
 

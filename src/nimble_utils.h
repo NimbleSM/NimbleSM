@@ -85,14 +85,14 @@ void CheckVectorSanity(int vec_length,
                        ScalarT const * const vec,
                        const char* label) {
 
-#ifndef NDEBUG
+#ifdef NIMBLE_DEBUG
   for (int i=0 ; i<vec_length ; i++) {
 #ifndef NIMBLE_HAVE_KOKKOS
     if (!std::isfinite(vec[i])) {
       throw std::logic_error("\n**** Finite value check failed for " + std::string(label) + "!\n");
     }
 #else
-    if (vec[i] != vec[i] || vec[i] > DBL_MAX || vec[i] < DBL_MIN) {
+    if (vec[i] != vec[i] || vec[i] > DBL_MAX || vec[i] < -DBL_MAX) {
       printf("\n**** Error, finite value check failed for %s!\n", label);
     }
 #endif

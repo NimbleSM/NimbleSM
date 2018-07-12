@@ -321,15 +321,17 @@ void main_routine(int argc, char *argv[]) {
   nimble::MPIContainer mpi_container;
   mpi_container.Initialize(global_node_ids, parser.ReductionVersion());
 
+  int mpi_scalar_dimension = 1;
+  std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
+  int mpi_vector_dimension = 3;
+
   // MPI vector reduction on lumped mass
-  int data_dimension = 1;
-  std::vector<double> data(data_dimension * num_nodes);
-  for (unsigned int i=0 ; i<data.size() ; i++) {
-    data[i] = lumped_mass_h(i);
+  for (unsigned int i=0 ; i<num_nodes ; i++) {
+    mpi_scalar_buffer[i] = lumped_mass_h(i);
   }
-  mpi_container.VectorReduction(data_dimension, data.data());
+  mpi_container.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
   for (int i=0 ; i<num_nodes ; i++) {
-    lumped_mass_h(i) = data[i];
+    lumped_mass_h(i) = mpi_scalar_buffer[i];
   }
 
   double time_current(0.0), time_previous(0.0);
@@ -487,25 +489,20 @@ void main_routine(int argc, char *argv[]) {
                                                                                                                nimble::STEP_NP1);
 
       // COMPUTE STRESS
-      Kokkos::parallel_for("Stress", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+      typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
+      MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
+      Kokkos::parallel_for("Stress", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
+          nimble_kokkos::DeviceFullTensorSingleEntryView element_deformation_gradient_step_n_d = Kokkos::subview(deformation_gradient_step_n_d, i_elem, i_ipt, Kokkos::ALL);
+          nimble_kokkos::DeviceFullTensorSingleEntryView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
+          nimble_kokkos::DeviceSymTensorSingleEntryView element_stress_step_n_d = Kokkos::subview(stress_step_n_d, i_elem, i_ipt, Kokkos::ALL);
+          nimble_kokkos::DeviceSymTensorSingleEntryView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
+          material_d->GetStress(time_previous,
+                                time_current,
+                                element_deformation_gradient_step_n_d,
+                                element_deformation_gradient_step_np1_d,
+                                element_stress_step_n_d,
+                                element_stress_step_np1_d);
 
-          // TODO THIS LOOP SHOULD PROBABLY SOMEHOW BE PART OF THE PARALLEL_FOR
-          for (int i_int_pt=0 ; i_int_pt<num_integration_points_per_element; i_int_pt++) {
-            nimble_kokkos::DeviceFullTensorSingleEntryView element_deformation_gradient_step_n_d = Kokkos::subview(deformation_gradient_step_n_d, i_elem, i_int_pt, Kokkos::ALL);
-            nimble_kokkos::DeviceFullTensorSingleEntryView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, i_int_pt, Kokkos::ALL);
-            nimble_kokkos::DeviceSymTensorSingleEntryView element_stress_step_n_d = Kokkos::subview(stress_step_n_d, i_elem, i_int_pt, Kokkos::ALL);
-            nimble_kokkos::DeviceSymTensorSingleEntryView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_int_pt, Kokkos::ALL);
-
-            // TODO RE-ADD CONST FOR FUNCTION ARGS?
-
-            material_d->GetStress(time_previous,
-                                  time_current,
-                                  element_deformation_gradient_step_n_d,
-                                  element_deformation_gradient_step_np1_d,
-                                  element_stress_step_n_d,
-                                  element_stress_step_np1_d);
-
-          }
         });
 
       // COMPUTE NODAL FORCES
@@ -529,19 +526,7 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::deep_copy(internal_force_h, internal_force_d);
 
     // Perform a reduction to obtain correct values on MPI boundaries
-    int data_dimension = 3;
-    std::vector<double> data(data_dimension * num_nodes);
-    for (int i=0 ; i<num_nodes ; i++) {
-      data[3*i  ] = internal_force_h(i,0);
-      data[3*i+1] = internal_force_h(i,1);
-      data[3*i+2] = internal_force_h(i,2);
-    }
-    mpi_container.VectorReduction(data_dimension, data.data());
-    for (int i=0 ; i<num_nodes ; i++) {
-      internal_force_h(i,0) = data[3*i  ];
-      internal_force_h(i,1) = data[3*i+1];
-      internal_force_h(i,2) = data[3*i+2];
-    }
+    mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_nodes ; ++i) {

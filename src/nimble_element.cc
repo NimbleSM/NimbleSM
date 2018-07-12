@@ -764,12 +764,7 @@ namespace nimble {
     double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
     double jac_det;
     double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int node=0 ; node<num_nodes_ ; node++) {
-      node_forces(node, 0) = 0.0;
-      node_forces(node, 1) = 0.0;
-      node_forces(node, 2) = 0.0;
-    }
+    double force[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
     for (int int_pt=0 ; int_pt<num_int_pts_ ; int_pt++) {
 
@@ -832,15 +827,18 @@ namespace nimble {
         f2 *= jac_det * int_wts_[int_pt];
         f3 *= jac_det * int_wts_[int_pt];
 
-        node_forces(node, 0) -= f1;
-        node_forces(node, 1) -= f2;
-        node_forces(node, 2) -= f3;
+        // profiling showed that calling the -= operator directly on the kokkos view is expensive
+        force[node][0] -= f1;
+        force[node][1] -= f2;
+        force[node][2] -= f3;
       }
     }
 
-    //printf("\nDEBUGGING node displacements %e", node_displacements(0,0));
-    //printf("\nDEBUGGING node forces %e", node_forces(0,0));
-    //printf("\nDEBUGGING stresses %e", int_pt_stresses(0,0));
+    for (int node=0 ; node<num_nodes_ ; node++) {
+      node_forces(node, 0) = force[node][0];
+      node_forces(node, 1) = force[node][1];
+      node_forces(node, 2) = force[node][2];
+    }
   }
 #endif
 
