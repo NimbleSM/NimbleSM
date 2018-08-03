@@ -141,7 +141,7 @@ void Print_Full33(std::string label, const ScalarT* const mat, int precision = 2
 
 template <typename ScalarT>
 void Print_Sym33(std::string label, const ScalarT* const mat, int precision = 2) {
-  std::cout << "Full33 " << label << std::endl;
+  std::cout << "Sym33 " << label << std::endl;
   std::cout << std::setprecision(precision) << "  " << mat[K_S_XX] << ", " << mat[K_S_XY] << ", " << mat[K_S_XZ] << std::endl;
   std::cout << std::setprecision(precision) << "  " << mat[K_S_YX] << ", " << mat[K_S_YY] << ", " << mat[K_S_YZ] << std::endl;
   std::cout << std::setprecision(precision) << "  " << mat[K_S_ZX] << ", " << mat[K_S_ZY] << ", " << mat[K_S_ZZ] << std::endl;
@@ -150,14 +150,14 @@ void Print_Sym33(std::string label, const ScalarT* const mat, int precision = 2)
 //! Compute result = mat^T mat
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
-void RightTensorSquare(const ScalarT* const mat, ScalarT* const result) {
+void Square_Full33T_Full33(const ScalarT* const mat, ScalarT* const result) {
   assert(result != mat);
   result[K_S_XX] = mat[K_F_XX]*mat[K_F_XX] + mat[K_F_YX]*mat[K_F_YX] + mat[K_F_ZX]*mat[K_F_ZX];
-  result[K_S_XY] = mat[K_F_XX]*mat[K_F_XY] + mat[K_F_YX]*mat[K_F_YY] + mat[K_F_ZX]*mat[K_F_ZY];
-  result[K_S_ZX] = mat[K_F_XX]*mat[K_F_XZ] + mat[K_F_YX]*mat[K_F_YZ] + mat[K_F_ZX]*mat[K_F_ZZ];
   result[K_S_YY] = mat[K_F_XY]*mat[K_F_XY] + mat[K_F_YY]*mat[K_F_YY] + mat[K_F_ZY]*mat[K_F_ZY];
-  result[K_S_YZ] = mat[K_F_XY]*mat[K_F_XZ] + mat[K_F_YY]*mat[K_F_YZ] + mat[K_F_ZY]*mat[K_F_ZZ];
   result[K_S_ZZ] = mat[K_F_XZ]*mat[K_F_XZ] + mat[K_F_YZ]*mat[K_F_YZ] + mat[K_F_ZZ]*mat[K_F_ZZ];
+  result[K_S_XY] = mat[K_F_XX]*mat[K_F_XY] + mat[K_F_YX]*mat[K_F_YY] + mat[K_F_ZX]*mat[K_F_ZY];
+  result[K_S_YZ] = mat[K_F_XY]*mat[K_F_XZ] + mat[K_F_YY]*mat[K_F_YZ] + mat[K_F_ZY]*mat[K_F_ZZ];
+  result[K_S_ZX] = mat[K_F_XX]*mat[K_F_XZ] + mat[K_F_YX]*mat[K_F_YZ] + mat[K_F_ZX]*mat[K_F_ZZ];
 }
 
 //!  Multiply a full tensor by a scalar
@@ -190,6 +190,22 @@ void Sum_Full33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* 
   result[K_F_ZX] = A[K_F_ZX] + B[K_F_ZX];
   result[K_F_ZY] = A[K_F_ZY] + B[K_F_ZY];
   result[K_F_ZZ] = A[K_F_ZZ] + B[K_F_ZZ];
+}
+
+//!  Sum of a symmetric tensor and a full tensor
+template <typename ScalarT>
+NIMBLE_INLINE_FUNCTION
+void Sum_Sym33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
+{
+  result[K_F_XX] = A[K_S_XX] + B[K_F_XX];
+  result[K_F_XY] = A[K_S_XY] + B[K_F_XY];
+  result[K_F_XZ] = A[K_S_XZ] + B[K_F_XZ];
+  result[K_F_YX] = A[K_S_YX] + B[K_F_YX];
+  result[K_F_YY] = A[K_S_YY] + B[K_F_YY];
+  result[K_F_YZ] = A[K_S_YZ] + B[K_F_YZ];
+  result[K_F_ZX] = A[K_S_ZX] + B[K_F_ZX];
+  result[K_F_ZY] = A[K_S_ZY] + B[K_F_ZY];
+  result[K_F_ZZ] = A[K_S_ZZ] + B[K_F_ZZ];
 }
 
 //!  Multiply a full tensor by a full tensor
@@ -246,22 +262,17 @@ void Mult_Scalar_Full33_Full33(ScalarT alpha, const ScalarT* const A, const Scal
   result[K_F_ZZ] = alpha * (A[K_F_ZX] * B[K_F_XZ] + A[K_F_ZY] * B[K_F_YZ] + A[K_F_ZZ] * B[K_F_ZZ]);
 }
 
-//!  Multiply a full tensor by the transpose of a full tensor
+//! Compute result = mat mat^T
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
-void Mult_Full33_Full33T(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
-{
-  assert(A != result);
-  assert(B != result);
-  result[K_S_XX] = A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_XY] + A[K_F_XZ] * B[K_F_XZ];
-  result[K_S_XY] = A[K_F_XX] * B[K_F_YX] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_YZ];
-  result[K_S_XZ] = A[K_F_XX] * B[K_F_ZX] + A[K_F_XY] * B[K_F_ZY] + A[K_F_XZ] * B[K_F_ZZ];
-  result[K_S_YZ] = A[K_F_YX] * B[K_F_XX] + A[K_F_YY] * B[K_F_XY] + A[K_F_YZ] * B[K_F_XZ];
-  result[K_S_YY] = A[K_F_YX] * B[K_F_YX] + A[K_F_YY] * B[K_F_YY] + A[K_F_YZ] * B[K_F_YZ];
-  result[K_S_YZ] = A[K_F_YX] * B[K_F_ZX] + A[K_F_YY] * B[K_F_ZY] + A[K_F_YZ] * B[K_F_ZZ];
-  result[K_S_ZX] = A[K_F_ZX] * B[K_F_XX] + A[K_F_ZY] * B[K_F_XY] + A[K_F_ZZ] * B[K_F_XZ];
-  result[K_S_ZY] = A[K_F_ZX] * B[K_F_YX] + A[K_F_ZY] * B[K_F_YY] + A[K_F_ZZ] * B[K_F_YZ];
-  result[K_S_ZZ] = A[K_F_ZX] * B[K_F_ZX] + A[K_F_ZY] * B[K_F_ZY] + A[K_F_ZZ] * B[K_F_ZZ];
+void Square_Full33_Full33T(const ScalarT* const mat, ScalarT* const result) {
+  assert(result != mat);
+  result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] + mat[K_F_XZ] * mat[K_F_XZ];
+  result[K_S_YY] = mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_YZ] * mat[K_F_YZ];
+  result[K_S_ZZ] = mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] + mat[K_F_ZZ] * mat[K_F_ZZ];
+  result[K_S_XY] = mat[K_F_XX] * mat[K_F_YX] + mat[K_F_XY] * mat[K_F_YY] + mat[K_F_XZ] * mat[K_F_YZ];
+  result[K_S_YZ] = mat[K_F_YX] * mat[K_F_ZX] + mat[K_F_YY] * mat[K_F_ZY] + mat[K_F_YZ] * mat[K_F_ZZ];
+  result[K_S_ZX] = mat[K_F_ZX] * mat[K_F_XX] + mat[K_F_ZY] * mat[K_F_XY] + mat[K_F_ZZ] * mat[K_F_XZ];
 }
 
 //!  Multiply a full tensor by a symmetric tensor, return transpose of resultant
@@ -377,22 +388,17 @@ void SetEqual_Sym33(const ScalarT* const B, ScalarT* const A) {
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
 void SymPart_Full33(const ScalarT* const mat, ScalarT* const result) {
-
   result[K_S_XX] = mat[K_F_XX];
-  result[K_S_XY] = 0.5 * (mat[K_F_XY] + mat[K_F_YX]);
-  result[K_S_XZ] = 0.5 * (mat[K_F_XZ] + mat[K_F_ZX]);
-  result[K_S_YX] = 0.5 * (mat[K_F_YX] + mat[K_F_XY]);
   result[K_S_YY] = mat[K_F_YY];
+  result[K_S_ZZ] = mat[K_F_ZZ];
+  result[K_S_XY] = 0.5 * (mat[K_F_XY] + mat[K_F_YX]);
   result[K_S_YZ] = 0.5 * (mat[K_F_YZ] + mat[K_F_ZY]);
   result[K_S_ZX] = 0.5 * (mat[K_F_ZX] + mat[K_F_XZ]);
-  result[K_S_ZY] = 0.5 * (mat[K_F_ZY] + mat[K_F_YZ]);
-  result[K_S_ZZ] = mat[K_F_ZZ];
 }
 
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
 void SkewPart_Full33(const ScalarT* const mat, ScalarT* const result) {
-
   result[K_F_XX] = 0.0;
   result[K_F_XY] = 0.5 * (mat[K_F_XY] - mat[K_F_YX]);
   result[K_F_XZ] = 0.5 * (mat[K_F_XZ] - mat[K_F_ZX]);
@@ -437,6 +443,7 @@ ScalarT Invert_Full33(const ScalarT* mat, ScalarT* inv) {
 }
 
 //! R^N logarithmic map using Baker-Campbell-Hausdorff (BCH) expansion (4 terms)
+// All arguments are assumed to be full tensors (9 components)
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
 void BCH(const ScalarT* const x,
@@ -507,6 +514,26 @@ void BCH(const ScalarT* const x,
   Mult_Full33_Full33(y, temp1, temp2);
   Mult_Scalar_Full33_Full33(-1.0/24.0, y, temp2, temp3);
   Sum_Full33_Full33(result, temp3, result);
+}
+
+//! R^N logarithmic map using Baker-Campbell-Hausdorff (BCH) expansion (4 terms)
+// All arguments are assumed to be full tensors (9 components)
+template <typename ScalarT>
+NIMBLE_INLINE_FUNCTION
+void BCH_Sym33_Full33(const ScalarT* const sym,
+                      const ScalarT* const full,
+                      ScalarT* const result) {
+  ScalarT temp[9];
+  temp[K_F_XX] = sym[K_S_XX];
+  temp[K_F_XY] = sym[K_S_XY];
+  temp[K_F_XZ] = sym[K_S_XZ];
+  temp[K_F_YX] = sym[K_S_YX];
+  temp[K_F_YY] = sym[K_S_YY];
+  temp[K_F_YZ] = sym[K_S_YZ];
+  temp[K_F_ZX] = sym[K_S_ZX];
+  temp[K_F_ZY] = sym[K_S_ZY];
+  temp[K_F_ZZ] = sym[K_S_ZZ];
+  BCH(temp, full, result);
 }
 
 //! Pade approximation to cos( acos(x)/3 )
@@ -728,15 +755,15 @@ void Eigen_Sym33_NonUnit(const ScalarT* const tensor,
 
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
-void Polar_Decomp(const ScalarT* const mat,
-			 ScalarT* const left_stretch,
-			 ScalarT* const rotation) {
+void Polar_Decomp(const ScalarT* const mat,     /* full tensor */
+                  ScalarT* const left_stretch,  /* symmetric tensor */
+                  ScalarT* const rotation) {    /* full tensor */
 
   ScalarT mat_inv[9];
   Invert_Full33(mat, mat_inv);
 
   ScalarT mat_inv_squared[6];
-  RightTensorSquare(mat_inv, mat_inv_squared);
+  Square_Full33T_Full33(mat_inv, mat_inv_squared);
 
   ScalarT vec1[3] = {0.0, 0.0, 0.0};  // Eigen vectors of mat_inv_squared
   ScalarT vec2[3] = {0.0, 0.0, 0.0};
@@ -777,16 +804,16 @@ void Polar_Decomp(const ScalarT* const mat,
 
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
-void Polar_Left_LogV_Lame(const ScalarT* const def_grad_inc,
-                          ScalarT* const left_stretch_inc,
-                          ScalarT* const rotation_inc,
-                          ScalarT* const log_left_stretch_inc) {
+void Polar_Left_LogV_Lame(const ScalarT* const def_grad_inc,      /* full tensor */
+                          ScalarT* const left_stretch_inc,        /* symmetric tensor */
+                          ScalarT* const rotation_inc,            /* full tensor */
+                          ScalarT* const log_left_stretch_inc) {  /* symmetric tensor */
 
   // Adapted from MiniTensor_LinearAlgebra.t.h, polar_left_logV_lame()
 
   // compute spd tensor
   ScalarT b[6];
-  Mult_Full33_Full33T(def_grad_inc, def_grad_inc, b);
+  Square_Full33_Full33T(def_grad_inc, b);
 
   // get eigenvalues/eigenvectors
   ScalarT vec1[3] = {0.0, 0.0, 0.0};  // Eigen vectors of b
@@ -853,7 +880,12 @@ void Polar_Left_LogV_Lame(const ScalarT* const def_grad_inc,
   temp[K_F_ZX] = vec1[2] * x[0];
   temp[K_F_ZY] = vec2[2] * x[1];
   temp[K_F_ZZ] = vec3[2] * x[2];
-  Mult_Full33_Full33(temp, vec_transpose, left_stretch_inc);
+  left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] + temp[K_F_XY] * vec_transpose[K_F_YX] + temp[K_F_XZ] * vec_transpose[K_F_ZX];
+  left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] + temp[K_F_YY] * vec_transpose[K_F_YY] + temp[K_F_YZ] * vec_transpose[K_F_ZY];
+  left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] + temp[K_F_ZY] * vec_transpose[K_F_YZ] + temp[K_F_ZZ] * vec_transpose[K_F_ZZ];
+  left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] + temp[K_F_XY] * vec_transpose[K_F_YY] + temp[K_F_XZ] * vec_transpose[K_F_ZY];
+  left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] + temp[K_F_YY] * vec_transpose[K_F_YZ] + temp[K_F_YZ] * vec_transpose[K_F_ZZ];
+  left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] + temp[K_F_ZY] * vec_transpose[K_F_YX] + temp[K_F_ZZ] * vec_transpose[K_F_ZX];
 
   // Vinv = eVec*xi*transpose(eVec)
   temp[K_F_XX] = vec1[0] * xi[0];
@@ -878,7 +910,12 @@ void Polar_Left_LogV_Lame(const ScalarT* const def_grad_inc,
   temp[K_F_ZX] = vec1[2] * lnx[0];
   temp[K_F_ZY] = vec2[2] * lnx[1];
   temp[K_F_ZZ] = vec3[2] * lnx[2];
-  Mult_Full33_Full33(temp, vec_transpose, log_left_stretch_inc);
+  log_left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] + temp[K_F_XY] * vec_transpose[K_F_YX] + temp[K_F_XZ] * vec_transpose[K_F_ZX];
+  log_left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] + temp[K_F_YY] * vec_transpose[K_F_YY] + temp[K_F_YZ] * vec_transpose[K_F_ZY];
+  log_left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] + temp[K_F_ZY] * vec_transpose[K_F_YZ] + temp[K_F_ZZ] * vec_transpose[K_F_ZZ];
+  log_left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] + temp[K_F_XY] * vec_transpose[K_F_YY] + temp[K_F_XZ] * vec_transpose[K_F_ZY];
+  log_left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] + temp[K_F_YY] * vec_transpose[K_F_YZ] + temp[K_F_YZ] * vec_transpose[K_F_ZZ];
+  log_left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] + temp[K_F_ZY] * vec_transpose[K_F_YX] + temp[K_F_ZZ] * vec_transpose[K_F_ZX];
 
   // R = Vinv*F
   Mult_Full33_Full33(left_stretch_inc_inverse, def_grad_inc, rotation_inc);
@@ -1023,7 +1060,7 @@ void Log_Rotation(const ScalarT* const rotation,
   bool valid_input = true;
   ScalarT machine_epsilon = std::numeric_limits<ScalarT>::epsilon();
   ScalarT temp[6];
-  Mult_Full33_Full33T(rotation, rotation, temp);
+  Square_Full33_Full33T(rotation, temp);
   temp[K_S_XX] -= 1.0;
   temp[K_S_YY] -= 1.0;
   temp[K_S_ZZ] -= 1.0;

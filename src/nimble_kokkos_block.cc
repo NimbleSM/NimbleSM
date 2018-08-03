@@ -80,27 +80,28 @@ namespace nimble_kokkos {
 
       // the first entry in the material parameters string is the material model name
       size_t space_pos = macro_material_parameters_.find(" ");
-      std::string material_name = macro_material_parameters_.substr(0, space_pos);
+      std::string name = macro_material_parameters_.substr(0, space_pos);
 
       // LAME material models are designated with lame_
       //bool is_lame_model = false;
-      //if (material_name.size() > 5 && material_name.substr(0,5) == "lame_") {
+      //if (name.size() > 5 && name.substr(0,5) == "lame_") {
       //  is_lame_model = true;
       //}
 
       // NGP LAME material models are designated with ngp_lame_
       //bool is_ngp_lame_model = false;
-      //if (material_name.size() > 9 && material_name.substr(0,9) == "ngp_lame_") {
+      //if (name.size() > 9 && name.substr(0,9) == "ngp_lame_") {
       //  is_ngp_lame_model = true;
       //}
 
-      if (material_name == "neohookean") {
+      char material_name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+      int num_material_parameters;
+      char material_parameter_names[nimble::MaterialParameters::MAX_NUM_MAT_PARAM][nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+      double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
+      nimble::ParseMaterialParametersString(macro_material_parameters_.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
+      nimble::MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values);
 
-        int num_material_parameters;
-        char material_parameter_names[nimble::MaterialParameters::MAX_NUM_MAT_PARAM][nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-        double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
-        nimble::ParseMaterialParametersString(macro_material_parameters_.c_str(), num_material_parameters, material_parameter_names, material_parameter_values);
-        nimble::MaterialParameters material_parameters_struct(num_material_parameters, material_parameter_names, material_parameter_values);
+      if (material_name == "neohookean") {
 
         material_host_ = std::make_shared<nimble::NeohookeanMaterial>(material_parameters_struct);
 

@@ -663,18 +663,18 @@ namespace nimble {
 #endif
 
 #ifdef NIMBLE_HAVE_EXTRAS
-    stk::search::CollisionList<kokkos_device_type::execution_space> collision_list("contact_proximity_search");
+    stk::search::CollisionList<kokkos_device_space::execution_space> collision_list("contact_proximity_search");
     stk::search::MortonLBVHSearch_Timers timers;
 
-    stk::search::TimedMortonLBVHSearch<double, kokkos_device_type::execution_space>(contact_nodes_,
-                                                                                    contact_faces_,
-                                                                                    collision_list,
-                                                                                    timers);
+    stk::search::TimedMortonLBVHSearch<double, kokkos_device_space::execution_space>(contact_nodes_,
+                                                                                     contact_faces_,
+                                                                                     collision_list,
+                                                                                     timers);
 
     auto num_collisions = collision_list.get_num_collisions();
-    gtk::PointsView<kokkos_device_type::execution_space> points(num_collisions);
-    gtk::TrianglesView<kokkos_device_type::execution_space> triangles(num_collisions);
-    gtk::PointsView<kokkos_device_type::execution_space> closest_points(num_collisions);
+    gtk::PointsView<kokkos_device_space::execution_space> points(num_collisions);
+    gtk::TrianglesView<kokkos_device_space::execution_space> triangles(num_collisions);
+    gtk::PointsView<kokkos_device_space::execution_space> closest_points(num_collisions);
 
     std::map<int, std::vector<int> > collision_indices_for_each_contact_node;
     for (int i=0 ; i<num_collisions ; i++) {
@@ -696,16 +696,16 @@ namespace nimble {
     }
 
     constexpr bool save_projection_types_computed = true;
-    Kokkos::View<short *, kokkos_device_type::execution_space> proj_types_returned;
+    Kokkos::View<short *, kokkos_device_space::execution_space> proj_types_returned;
     if (save_projection_types_computed) {
       Kokkos::resize(proj_types_returned, num_collisions);
     }
 
     Kokkos::Impl::Timer timer;
-    gtk::ComputeProjections<kokkos_device_type::execution_space, save_projection_types_computed> projection(points,
-                                                                                                            triangles,
-                                                                                                            closest_points,
-                                                                                                            proj_types_returned);
+    gtk::ComputeProjections<kokkos_device_space::execution_space, save_projection_types_computed> projection(points,
+                                                                                                             triangles,
+                                                                                                             closest_points,
+                                                                                                             proj_types_returned);
 
     std::vector<int> contact_collisions;
 

@@ -84,7 +84,7 @@ namespace nimble {
     int NumStateVariables() const { return 0; }
 
     NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char* label) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
       printf("\n**** Error, bad index in RVE::GetStateVariableLabel().\n");
     }
 

@@ -53,16 +53,16 @@
 
 // Define Memory Space
 #ifdef KOKKOS_ENABLE_CUDA
-  using kokkos_device_memory_space = Kokkos::CudaSpace; // Kokkos::HostSpace, Kokkos::CudaSpace, Kokkos::CudaUVMSpace, Kokkos::CudaHostPinnedSpace, etc.
+  using kokkos_device_space = Kokkos::CudaSpace; // Kokkos::HostSpace, Kokkos::CudaSpace, Kokkos::CudaUVMSpace, Kokkos::CudaHostPinnedSpace, etc.
 #else
-  using kokkos_device_memory_space = Kokkos::HostSpace;
+  using kokkos_device_space = Kokkos::HostSpace;
 #endif
-using kokkos_host_memory_space = Kokkos::HostSpace;
+using kokkos_host_space = Kokkos::HostSpace;
 
 namespace nimble_kokkos {
 
 // Layout should not be specified unless you're using teams (and maybe not even if you are)
-using Layout = kokkos_device_memory_space::execution_space::array_layout;
+using Layout = kokkos_device_space::execution_space::array_layout;
 
 enum class FieldType : int
 {
@@ -147,7 +147,7 @@ class Field< FieldType::HostScalar >
 public:
 
   // (node)
-  using View = Kokkos::View< double *, kokkos_host_memory_space::execution_space >;
+  using View = Kokkos::View< double *, kokkos_host_space::execution_space >;
 
   Field( const std::string & name, int num_entries )
     : FieldBase( name, FieldType::HostScalar )
@@ -173,9 +173,9 @@ class Field< FieldType::DeviceScalar >
 public:
 
   // (node)
-  using View = Kokkos::View< double *, Layout, kokkos_device_memory_space::execution_space >;
-  using AtomicView = Kokkos::View< double *, Layout, kokkos_device_memory_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
-  using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX], Layout, kokkos_device_memory_space::execution_space >;
+  using View = Kokkos::View< double *, Layout, kokkos_device_space::execution_space >;
+  using AtomicView = Kokkos::View< double *, Layout, kokkos_device_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
+  using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX], Layout, kokkos_device_space::execution_space >;
   using GatheredSubView = decltype(Kokkos::subview(*(GatheredView*)(0), (int)(0), Kokkos::ALL));
 
  Field( const std::string & name, int num_entries )
@@ -202,7 +202,7 @@ class Field< FieldType::HostVector >
 public:
 
   // (node, coordinate)
-  using View = Kokkos::View< double *[3], Layout, kokkos_host_memory_space::execution_space >;
+  using View = Kokkos::View< double *[3], Layout, kokkos_host_space::execution_space >;
 
   Field( const std::string & name
        , int num_entries
@@ -229,9 +229,9 @@ class Field< FieldType::DeviceVector >
 public:
 
   // (node, coordinate)
-  using View = Kokkos::View< double *[3], Layout, kokkos_device_memory_space::execution_space >;
-  using AtomicView = Kokkos::View< double *[3], Layout, kokkos_device_memory_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
-  using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX][3], Layout, kokkos_device_memory_space::execution_space >;
+  using View = Kokkos::View< double *[3], Layout, kokkos_device_space::execution_space >;
+  using AtomicView = Kokkos::View< double *[3], Layout, kokkos_device_space::execution_space, Kokkos::MemoryTraits<Kokkos::Atomic> >;
+  using GatheredView = Kokkos::View< double *[NUM_NODES_IN_HEX][3], Layout, kokkos_device_space::execution_space >;
   using GatheredSubView = decltype(Kokkos::subview(*(GatheredView*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
 
   Field( const std::string & name
@@ -260,7 +260,7 @@ class Field< FieldType::HostSymTensor >
 public:
 
   // (elem, ipt, tensor_index)
-  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_host_memory_space::execution_space >;
+  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_host_space::execution_space >;
 
   Field( const std::string & name
        , int num_entries
@@ -288,7 +288,7 @@ class Field< FieldType::DeviceSymTensor >
 public:
 
   // (elem, ipt, tensor_index)
-  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_device_memory_space::execution_space >;
+  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][6], Layout, kokkos_device_space::execution_space >;
   using SubView = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
   using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));
 
@@ -318,7 +318,7 @@ class Field< FieldType::HostFullTensor >
 public:
 
   // (elem, ipt, tensor_index)
-  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_host_memory_space::execution_space >;
+  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_host_space::execution_space >;
 
   Field( const std::string & name
        , int num_entries
@@ -345,7 +345,7 @@ class Field< FieldType::DeviceFullTensor >
 public:
 
   // (elem, ipt, tensor_index)
-  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_device_memory_space::execution_space >;
+  using View = Kokkos::View< double *[NUM_INTEGRATION_POINTS_IN_HEX][9], Layout, kokkos_device_space::execution_space >;
   using SubView = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
   using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));
 
@@ -367,10 +367,10 @@ private:
   View data_;
 };
 
-// Field< FielType::HostVector>::View is a Kokkos::View< double *[3], Layout, kokkos_host_memory_space::execution_space >
+// Field< FielType::HostVector>::View is a Kokkos::View< double *[3], Layout, kokkos_host_space::execution_space >
 typedef Field< FieldType::HostScalar >::View                                          HostScalarView;
 typedef Field< FieldType::HostVector >::View                                          HostVectorView;
-typedef Kokkos::View< int *, Layout, kokkos_host_memory_space::execution_space >      HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
+typedef Kokkos::View< int *, Layout, kokkos_host_space::execution_space >             HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
 
 typedef Field< FieldType::DeviceScalar >::View                                        DeviceScalarView;
 typedef Field< FieldType::DeviceScalar >::GatheredView                                DeviceScalarGatheredView;
@@ -384,7 +384,7 @@ typedef Field< FieldType::DeviceFullTensor >::SingleEntryView                   
 typedef Field< FieldType::DeviceSymTensor >::View                                     DeviceSymTensorView;
 typedef Field< FieldType::DeviceSymTensor >::SubView                                  DeviceSymTensorSubView;
 typedef Field< FieldType::DeviceSymTensor >::SingleEntryView                          DeviceSymTensorSingleEntryView;
-typedef Kokkos::View< int *, Layout, kokkos_device_memory_space::execution_space >    DeviceElementConnectivityView;
+typedef Kokkos::View< int *, Layout, kokkos_device_space::execution_space >           DeviceElementConnectivityView;
 }
 
 // else for NIMBLE_HAVE_KOKKOS

@@ -48,22 +48,24 @@
 namespace nimble {
 
     void ParseMaterialParametersString(const char* material_parameters,
-                                     int& num_material_parameters,
-                                     char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                     double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM]) {
+                                       char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN],
+                                       int& num_material_parameters,
+                                       char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN],
+                                       double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM]) {
 
     num_material_parameters = 0;
 
     // The first string is the material name, followed by the material properties (key-value pairs)
 
     char material_parameter_value_strings[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-    size_t string_length = strlen(material_parameters); // NOT AVAILABLE ON GPU
+    size_t string_length = strlen(material_parameters);
     size_t sub_string_length = 0;
     bool last_char_was_space = false;
     bool is_material_name = true;
     bool is_param_name = false;
     bool is_param_value = false;
 
+    memset(material_name, 0, sizeof(material_name));
     for (int i=0 ; i<MaterialParameters::MAX_NUM_MAT_PARAM ; ++i) {
       memset(material_parameter_names[i], 0, sizeof(material_parameter_names[i]));
       memset(material_parameter_value_strings[i], 0, sizeof(material_parameter_value_strings[i]));
@@ -77,6 +79,7 @@ namespace nimble {
           if (is_material_name) {
             is_material_name = false;
             is_param_name = true;
+            sub_string_length = 0;
             num_material_parameters += 1;
           }
           else if (is_param_name) {
@@ -94,7 +97,10 @@ namespace nimble {
         last_char_was_space = true;
       }
       else {
-        if (is_param_name) {
+        if (is_material_name) {
+          material_name[sub_string_length++] = val;
+        }
+        else if (is_param_name) {
           material_parameter_names[num_material_parameters - 1][sub_string_length++] = val;
         }
         else if (is_param_value) {
@@ -104,8 +110,7 @@ namespace nimble {
       }
     }
     for (int i=0 ; i<num_material_parameters; ++i) {
-      material_parameter_values[i] = atof(material_parameter_value_strings[i]); // NOT AVAILABLE ON GPU
-      //printf("%s : %s : %e\n", material_parameter_names[i], material_parameter_value_strings[i], material_parameter_values[i]);
+      material_parameter_values[i] = atof(material_parameter_value_strings[i]);
     }
   }
 
