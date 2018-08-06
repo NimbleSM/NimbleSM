@@ -48,6 +48,10 @@
 #include "nimble_material.h"
 #include "nimble_kokkos_data_manager.h"
 
+#ifdef NIMBLE_HAVE_EXTRAS
+  #include "nimble_ngp_lame_material.h"
+#endif
+
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
 #else
