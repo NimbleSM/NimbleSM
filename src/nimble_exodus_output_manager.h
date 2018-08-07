@@ -71,6 +71,10 @@ namespace nimble_kokkos {
 
     std::map<int, std::vector< std::vector<double> > > GetElementDataForOutput(nimble_kokkos::ModelData& model_data);
 
+    std::map<int, std::vector<int> > GetSymTensorFieldIdsRequiringVolumeAverage() { return sym_tensor_field_ids_requiring_volume_average_; }
+
+    std::map<int, std::vector<int> > GetFullTensorFieldIdsRequiringVolumeAverage() { return full_tensor_field_ids_requiring_volume_average_; }
+
   private:
 
     std::vector<std::string> node_data_labels_;
@@ -85,6 +89,8 @@ namespace nimble_kokkos {
     std::map<int, std::vector<int> > elem_data_components_;
     std::map<int, std::vector< std::vector<double> > > elem_data_;
 
+    std::map<int, std::vector<int> > sym_tensor_field_ids_requiring_volume_average_;
+    std::map<int, std::vector<int> > full_tensor_field_ids_requiring_volume_average_;
   };
 
 } // namespace nimble

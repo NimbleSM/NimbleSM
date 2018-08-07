@@ -544,7 +544,6 @@ namespace nimble {
     int num_data_per_int_pt = num_elem_data / num_int_pt_per_elem;
 
     // Containers that will be passed to an individual element to compute element volume and volume-averaged quantities
-    double ref_coord[vector_size*num_node_per_elem];
     double cur_coord[vector_size*num_node_per_elem];
     unsigned int num_vol_ave_data = vol_ave_offsets_.size() / num_int_pt_per_elem;
     double int_pt_quantities[num_vol_ave_data*num_int_pt_per_elem];
@@ -558,7 +557,6 @@ namespace nimble {
       for (int node = 0 ; node < num_node_per_elem ; node++) {
         int node_id = elem_conn[i_elem*num_node_per_elem + node];
         for (int i = 0 ; i < vector_size ; i++) {
-          ref_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i];
           cur_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i] + displacement[vector_size*node_id + i];
         }
       }
@@ -567,8 +565,7 @@ namespace nimble {
       }
 
       // Compute element volume and volume-averaged quantities
-      element_->ComputeVolumeAverage(ref_coord,
-                                     cur_coord,
+      element_->ComputeVolumeAverage(cur_coord,
                                      num_vol_ave_data,
                                      &int_pt_quantities[0],
                                      volume,

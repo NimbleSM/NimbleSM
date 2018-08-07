@@ -230,10 +230,10 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
   void NeohookeanMaterial::GetStress(double time_previous,
                                      double time_current,
-                                     nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
-                                     nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-                                     nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_n,
-                                     nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_np1) {
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) {
 
     double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
     double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
@@ -244,7 +244,7 @@ namespace nimble {
       def_grad[i] = deformation_gradient_np1[i];
     }
     // Cauchy stress
-    nimble_kokkos::DeviceSymTensorSingleEntryView& sig = unrotated_stress_np1;
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& sig = unrotated_stress_np1;
 
     Polar_Decomp(def_grad, v, r);
 

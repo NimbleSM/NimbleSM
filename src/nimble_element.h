@@ -71,18 +71,33 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
     virtual void ComputeLumpedMass(const double density,
-                                   nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                   nimble_kokkos::DeviceScalarGatheredSubView lumped_mass) const = 0;
+                                   nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                   nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const = 0;
 #endif
 
     virtual double ComputeCharacteristicLength(const double* node_coords) = 0;
 
-    virtual void ComputeVolumeAverage(const double* node_reference_coords,
-                                      const double* node_current_coords,
+    virtual void ComputeVolumeAverage(const double* node_current_coords,
                                       int num_quantities,
                                       const double* int_pt_quantities,
                                       double& volume,
-                                      double* volume_averaged_quantity) = 0;
+                                      double* volume_averaged_quantity) const = 0;
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    NIMBLE_FUNCTION
+    virtual void ComputeVolumeAverageSymTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                               nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                               nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_quantities,
+                                               double& volume,
+                                               nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const = 0;
+
+    NIMBLE_FUNCTION
+    virtual void ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                                nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                                nimble_kokkos::DeviceFullTensorIntPtSubView int_pt_quantities,
+                                                double& volume,
+                                                nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const = 0;
+#endif
 
     virtual void ComputeDeformationGradients(const double* node_reference_coords,
                                              const double* node_current_coords,
@@ -90,9 +105,9 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
-    virtual void ComputeDeformationGradients(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                             nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                                             nimble_kokkos::DeviceFullTensorSubView deformation_gradients) const = 0;
+    virtual void ComputeDeformationGradients(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                             nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                             nimble_kokkos::DeviceFullTensorIntPtSubView deformation_gradients) const = 0;
 #endif
 
     virtual void ComputeTangent(const double* node_reference_coords,
@@ -105,10 +120,10 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
-    virtual void ComputeNodalForces(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                    nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                                    nimble_kokkos::DeviceSymTensorSubView element_stress_step_np1_d,
-                                    nimble_kokkos::DeviceVectorGatheredSubView element_internal_force_d) const = 0;
+    virtual void ComputeNodalForces(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                    nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                    nimble_kokkos::DeviceSymTensorIntPtSubView element_stress_step_np1_d,
+                                    nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d) const = 0;
 #endif
 
     NIMBLE_INLINE_FUNCTION
@@ -161,18 +176,33 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
     void ComputeLumpedMass(const double density,
-                           nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                           nimble_kokkos::DeviceScalarGatheredSubView lumped_mass) const ;
+                           nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                           nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const ;
 #endif
 
     double ComputeCharacteristicLength(const double* node_coords);
 
-    void ComputeVolumeAverage(const double* node_reference_coords,
-                              const double* node_current_coords,
+    void ComputeVolumeAverage(const double* node_current_coords,
                               int num_quantities,
                               const double* int_pt_quantities,
                               double& volume,
-                              double* volume_averaged_quantity);
+                              double* volume_averaged_quantity) const ;
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    NIMBLE_FUNCTION
+    void ComputeVolumeAverageSymTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                       nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_quantities,
+                                       double& volume,
+                                       nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const;
+
+    NIMBLE_FUNCTION
+    void ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                        nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                        nimble_kokkos::DeviceFullTensorIntPtSubView int_pt_quantities,
+                                        double& volume,
+                                        nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const;
+#endif
 
     void ComputeDeformationGradients(const double* node_reference_coords,
                                      const double* node_current_coords,
@@ -180,9 +210,9 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
-    void ComputeDeformationGradients(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                     nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                                     nimble_kokkos::DeviceFullTensorSubView deformation_gradients) const ;
+    void ComputeDeformationGradients(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                     nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                     nimble_kokkos::DeviceFullTensorIntPtSubView deformation_gradients) const ;
 #endif
 
     void ComputeTangent(const double* node_current_coords,
@@ -195,10 +225,10 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
-    void ComputeNodalForces(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                            nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                            nimble_kokkos::DeviceSymTensorSubView int_pt_stresses,
-                            nimble_kokkos::DeviceVectorGatheredSubView node_forces) const ;
+    void ComputeNodalForces(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                            nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                            nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_stresses,
+                            nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const ;
 #endif
 
   protected:

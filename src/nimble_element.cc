@@ -258,8 +258,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
   void HexElement::ComputeLumpedMass(const double density,
-                                     nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                     nimble_kokkos::DeviceScalarGatheredSubView lumped_mass) const {
+                                     nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                     nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const {
 
     double consistent_mass_matrix[][24] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
                                            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -376,12 +376,11 @@ namespace nimble {
     return characteristic_length;
   }
 
-  void HexElement::ComputeVolumeAverage(const double* node_reference_coords,
-                                        const double* node_current_coords,
+  void HexElement::ComputeVolumeAverage(const double* node_current_coords,
                                         int num_quantities,
                                         const double* int_pt_quantities,
                                         double& volume,
-                                        double* volume_averaged_quantities) {
+                                        double* volume_averaged_quantities) const {
 
     double cc1, cc2, cc3, sfd1, sfd2, sfd3;
     double jac_det;
@@ -425,6 +424,104 @@ namespace nimble {
       volume_averaged_quantities[i_quantity] /= volume;
     }
   }
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  void HexElement::ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                                  nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                                  nimble_kokkos::DeviceFullTensorIntPtSubView int_pt_quantities,
+                                                  double& volume,
+                                                  nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const {
+
+    double cc1, cc2, cc3, sfd1, sfd2, sfd3;
+    double jac_det;
+    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double vol_ave[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    int num_quantities = int_pt_quantities.extent(0);
+    volume = 0.0;
+
+    for (int int_pt=0 ; int_pt<num_int_pts_ ; int_pt++) {
+
+      // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
+      double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+      for (int n=0 ; n<num_nodes_ ; n++) {
+        cc1 = node_reference_coords(n,0) + node_displacements(n,0);
+        cc2 = node_reference_coords(n,1) + node_displacements(n,1);
+        cc3 = node_reference_coords(n,2) + node_displacements(n,2);
+        sfd1 = shape_fcn_deriv_[24*int_pt + 3*n];
+        sfd2 = shape_fcn_deriv_[24*int_pt + 3*n + 1];
+        sfd3 = shape_fcn_deriv_[24*int_pt + 3*n + 2];
+        a[0][0] += cc1 * sfd1;
+        a[0][1] += cc1 * sfd2;
+        a[0][2] += cc1 * sfd3;
+        a[1][0] += cc2 * sfd1;
+        a[1][1] += cc2 * sfd2;
+        a[1][2] += cc2 * sfd3;
+        a[2][0] += cc3 * sfd1;
+        a[2][1] += cc3 * sfd2;
+        a[2][2] += cc3 * sfd3;
+      }
+      jac_det = Invert3x3(a, a_inv);
+      volume += jac_det;
+      for (int i=0 ; i<num_quantities ; ++i) {
+        vol_ave[i] += int_pt_quantities(int_pt, i)*int_wts_[int_pt]*jac_det;
+      }
+    }
+
+    for (int i=0 ; i<num_quantities ; ++i) {
+      vol_ave[i] /= volume;
+      vol_ave_quantity[i] = vol_ave[i];
+    }
+  }
+
+  void HexElement::ComputeVolumeAverageSymTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                                 nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                                 nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_quantities,
+                                                 double& volume,
+                                                 nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const {
+
+    double cc1, cc2, cc3, sfd1, sfd2, sfd3;
+    double jac_det;
+    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double vol_ave[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    int num_quantities = int_pt_quantities.extent(0);
+    volume = 0.0;
+
+    for (int int_pt=0 ; int_pt<num_int_pts_ ; int_pt++) {
+
+      // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
+      double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+      for (int n=0 ; n<num_nodes_ ; n++) {
+        cc1 = node_reference_coords(n,0) + node_displacements(n,0);
+        cc2 = node_reference_coords(n,1) + node_displacements(n,1);
+        cc3 = node_reference_coords(n,2) + node_displacements(n,2);
+        sfd1 = shape_fcn_deriv_[24*int_pt + 3*n];
+        sfd2 = shape_fcn_deriv_[24*int_pt + 3*n + 1];
+        sfd3 = shape_fcn_deriv_[24*int_pt + 3*n + 2];
+        a[0][0] += cc1 * sfd1;
+        a[0][1] += cc1 * sfd2;
+        a[0][2] += cc1 * sfd3;
+        a[1][0] += cc2 * sfd1;
+        a[1][1] += cc2 * sfd2;
+        a[1][2] += cc2 * sfd3;
+        a[2][0] += cc3 * sfd1;
+        a[2][1] += cc3 * sfd2;
+        a[2][2] += cc3 * sfd3;
+      }
+      jac_det = Invert3x3(a, a_inv);
+      volume += jac_det;
+      for (int i=0 ; i<num_quantities ; ++i) {
+        vol_ave[i] += int_pt_quantities(int_pt, i)*int_wts_[int_pt]*jac_det;
+      }
+    }
+
+    for (int i=0 ; i<num_quantities ; ++i) {
+      vol_ave[i] /= volume;
+      vol_ave_quantity[i] = vol_ave[i];
+    }
+  }
+#endif
 
   void HexElement::ComputeDeformationGradients(const double* node_reference_coords,
                                                const double* node_current_coords,
@@ -500,9 +597,9 @@ namespace nimble {
   }
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  void HexElement::ComputeDeformationGradients(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                               nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                                               nimble_kokkos::DeviceFullTensorSubView deformation_gradients) const {
+  void HexElement::ComputeDeformationGradients(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                               nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                               nimble_kokkos::DeviceFullTensorIntPtSubView deformation_gradients) const {
 
     double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
     double b_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -756,10 +853,10 @@ namespace nimble {
   }
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  void HexElement::ComputeNodalForces(nimble_kokkos::DeviceVectorGatheredSubView node_reference_coords,
-                                      nimble_kokkos::DeviceVectorGatheredSubView node_displacements,
-                                      nimble_kokkos::DeviceSymTensorSubView int_pt_stresses,
-                                      nimble_kokkos::DeviceVectorGatheredSubView node_forces) const {
+  void HexElement::ComputeNodalForces(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                                      nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                                      nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_stresses,
+                                      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const {
 
     double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
     double jac_det;

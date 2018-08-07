@@ -70,7 +70,7 @@ namespace nimble_kokkos {
           int num_nodes = model_data.GetHostScalarNodeData(field_id).extent(0);
           node_data_labels_.push_back(node_label);
           node_data_field_ids_.push_back(field_id);
-          node_data_types_.push_back(FieldType::HostScalar);
+          node_data_types_.push_back(FieldType::HostScalarNode);
           node_data_components_.push_back(0);
           node_data_.push_back(std::vector<double>(num_nodes, 0.0));
         }
@@ -86,19 +86,19 @@ namespace nimble_kokkos {
           // x component
           node_data_labels_.push_back(node_label + "_x");
           node_data_field_ids_.push_back(field_id);
-          node_data_types_.push_back(FieldType::HostVector);
+          node_data_types_.push_back(FieldType::HostVectorNode);
           node_data_components_.push_back(K_X);
           node_data_.push_back(std::vector<double>(num_nodes, 0.0));
           // y component
           node_data_labels_.push_back(node_label + "_y");
           node_data_field_ids_.push_back(field_id);
-          node_data_types_.push_back(FieldType::HostVector);
+          node_data_types_.push_back(FieldType::HostVectorNode);
           node_data_components_.push_back(K_Y);
           node_data_.push_back(std::vector<double>(num_nodes, 0.0));
           // z component
           node_data_labels_.push_back(node_label + "_z");
           node_data_field_ids_.push_back(field_id);
-          node_data_types_.push_back(FieldType::HostVector);
+          node_data_types_.push_back(FieldType::HostVectorNode);
           node_data_components_.push_back(K_Z);
           node_data_.push_back(std::vector<double>(num_nodes, 0.0));
         }
@@ -112,117 +112,121 @@ namespace nimble_kokkos {
       elem_data_types_[block_id] = std::vector<FieldType>();
       elem_data_components_[block_id] = std::vector<int>();
       elem_data_[block_id] = std::vector< std::vector<double> >();
+      sym_tensor_field_ids_requiring_volume_average_[block_id] = std::vector<int>();
+      full_tensor_field_ids_requiring_volume_average_[block_id] = std::vector<int>();
     }
 
     for (unsigned int i_block=0 ; i_block<block_ids.size() ; ++i_block) {
 
       int block_id = block_ids[i_block];
 
-      std::vector<std::string> full_tensor_integration_point_data_labels = model_data.GetFullTensorIntegrationPointDataLabels(block_id);
-      for (auto const & requested_label : requested_labels) {
-        for (auto& ipt_label : full_tensor_integration_point_data_labels) {
-          if (requested_label == ipt_label) {
-            int field_id = model_data.GetFieldId(ipt_label);
-            int num_elem = model_data.GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1).extent(0);
-            // xx component
-            elem_data_labels_[block_id].push_back(ipt_label + "_xx");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_XX);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // yy component
-            elem_data_labels_[block_id].push_back(ipt_label + "_yy");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_YY);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // zz component
-            elem_data_labels_[block_id].push_back(ipt_label + "_zz");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_ZZ);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            //  xy component
-            elem_data_labels_[block_id].push_back(ipt_label + "_xy");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_XY);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // yz component
-            elem_data_labels_[block_id].push_back(ipt_label + "_yz");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_YZ);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // zx component
-            elem_data_labels_[block_id].push_back(ipt_label + "_zx");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_ZX);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // yx component
-            elem_data_labels_[block_id].push_back(ipt_label + "_yx");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_YX);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // zy component
-            elem_data_labels_[block_id].push_back(ipt_label + "_zy");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_ZY);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-            // xz component
-            elem_data_labels_[block_id].push_back(ipt_label + "_xz");
-            elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceFullTensor);
-            elem_data_components_[block_id].push_back(K_F_XZ);
-            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
-          }
-        }
-      }
-
       std::vector<std::string> symmetric_tensor_integration_point_data_labels = model_data.GetSymmetricTensorIntegrationPointDataLabels(block_id);
       for (auto const & requested_label : requested_labels) {
         for (auto& ipt_label : symmetric_tensor_integration_point_data_labels) {
           if (requested_label == ipt_label) {
             int field_id = model_data.GetFieldId(ipt_label);
+            sym_tensor_field_ids_requiring_volume_average_[block_id].push_back(field_id);
             int num_elem = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1).extent(0);
             // xx component
             elem_data_labels_[block_id].push_back(ipt_label + "_xx");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_XX);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
             // yy component
             elem_data_labels_[block_id].push_back(ipt_label + "_yy");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_YY);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
             // zz component
             elem_data_labels_[block_id].push_back(ipt_label + "_zz");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_ZZ);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
             //  xy component
             elem_data_labels_[block_id].push_back(ipt_label + "_xy");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_XY);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
             // yz component
             elem_data_labels_[block_id].push_back(ipt_label + "_yz");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_YZ);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
             // zx component
             elem_data_labels_[block_id].push_back(ipt_label + "_zx");
             elem_data_field_ids_[block_id].push_back(field_id);
-            elem_data_types_[block_id].push_back(FieldType::DeviceSymTensor);
+            elem_data_types_[block_id].push_back(FieldType::HostSymTensorElem);
             elem_data_components_[block_id].push_back(K_S_ZX);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+          }
+        }
+      }
+
+      std::vector<std::string> full_tensor_integration_point_data_labels = model_data.GetFullTensorIntegrationPointDataLabels(block_id);
+      for (auto const & requested_label : requested_labels) {
+        for (auto& ipt_label : full_tensor_integration_point_data_labels) {
+          if (requested_label == ipt_label) {
+            int field_id = model_data.GetFieldId(ipt_label);
+            full_tensor_field_ids_requiring_volume_average_[block_id].push_back(field_id);
+            int num_elem = model_data.GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1).extent(0);
+            // xx component
+            elem_data_labels_[block_id].push_back(ipt_label + "_xx");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_XX);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // yy component
+            elem_data_labels_[block_id].push_back(ipt_label + "_yy");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_YY);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // zz component
+            elem_data_labels_[block_id].push_back(ipt_label + "_zz");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_ZZ);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            //  xy component
+            elem_data_labels_[block_id].push_back(ipt_label + "_xy");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_XY);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // yz component
+            elem_data_labels_[block_id].push_back(ipt_label + "_yz");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_YZ);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // zx component
+            elem_data_labels_[block_id].push_back(ipt_label + "_zx");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_ZX);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // yx component
+            elem_data_labels_[block_id].push_back(ipt_label + "_yx");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_YX);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // zy component
+            elem_data_labels_[block_id].push_back(ipt_label + "_zy");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_ZY);
+            elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+            // xz component
+            elem_data_labels_[block_id].push_back(ipt_label + "_xz");
+            elem_data_field_ids_[block_id].push_back(field_id);
+            elem_data_types_[block_id].push_back(FieldType::HostFullTensorElem);
+            elem_data_components_[block_id].push_back(K_F_XZ);
             elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
           }
         }
@@ -234,14 +238,14 @@ namespace nimble_kokkos {
     for (unsigned int i_data=0 ; i_data < node_data_labels_.size() ; ++i_data) {
       int field_id = node_data_field_ids_.at(i_data);
       FieldType field_type = node_data_types_.at(i_data);
-      if (field_type == FieldType::HostScalar) {
-        HostScalarView data = model_data.GetHostScalarNodeData(field_id);
+      if (field_type == FieldType::HostScalarNode) {
+        HostScalarNodeView data = model_data.GetHostScalarNodeData(field_id);
         for (unsigned int i=0 ; i<node_data_[i_data].size() ; i++) {
           node_data_[i_data][i] = data(i);
         }
       }
-      else if (field_type == FieldType::HostVector) {
-        HostVectorView data = model_data.GetHostVectorNodeData(field_id);
+      else if (field_type == FieldType::HostVectorNode) {
+        HostVectorNodeView data = model_data.GetHostVectorNodeData(field_id);
         int component = node_data_components_[i_data];
         for (unsigned int i=0 ; i<node_data_[i_data].size() ; i++) {
           node_data_[i_data][i] = data(i, component);
@@ -253,6 +257,28 @@ namespace nimble_kokkos {
 
 
   std::map<int, std::vector< std::vector<double> > > ExodusOutputManager::GetElementDataForOutput(nimble_kokkos::ModelData& model_data) {
+
+    std::vector<int> block_ids = model_data.GetBlockIds();
+    for (auto const & block_id : block_ids) {
+      for (unsigned int i_data=0 ; i_data < elem_data_labels_.at(block_id).size() ; ++i_data) {
+        int field_id = elem_data_field_ids_.at(block_id).at(i_data);
+        FieldType field_type = elem_data_types_.at(block_id).at(i_data);
+        if (field_type == FieldType::HostSymTensorElem) {
+          HostSymTensorElemView data = model_data.GetHostSymTensorElementData(block_id, field_id);
+          int component = elem_data_components_.at(block_id).at(i_data);
+          for (unsigned int i=0 ; i<elem_data_.at(block_id)[i_data].size() ; i++) {
+            elem_data_.at(block_id)[i_data][i] = data(i, component);
+          }
+        }
+        else if (field_type == FieldType::HostFullTensorElem) {
+          HostFullTensorElemView data = model_data.GetHostFullTensorElementData(block_id, field_id);
+          int component = elem_data_components_.at(block_id).at(i_data);
+          for (unsigned int i=0 ; i<elem_data_.at(block_id)[i_data].size() ; i++) {
+            elem_data_.at(block_id)[i_data][i] = data(i, component);
+          }
+        }
+      }
+    }
 
     return elem_data_;
   }

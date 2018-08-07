@@ -72,7 +72,30 @@ class ModelData
   int AllocateIntegrationPointData(int block_id,
                                    nimble::Length length,
                                    std::string label,
-                                   int num_objects);
+                                   int num_objects,
+                                   std::vector<double> initial_value = std::vector<double>());
+
+  /* void SetFullTensorIntegrationPointDataInitialValue(int block_id, */
+  /*                                                    int field_id, */
+  /*                                                    double initial_values[9]) { */
+  /*   HostFullTensorView data_step_n_h = GetHostFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_N); */
+  /*   HostFullTensorView data_step_np1_h = GetHostFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1); */
+  /*   int num_elem = data_step_n_h.extent(0); */
+  /*   int num_int_pt = data_step_n_h.extent(1); */
+  /*   int num_entries = 9; */
+  /*   for (int i_elem=0 ; i_elem<num_elem ; ++i_elem) { */
+  /*     for (int i_int_pt=0 ; i_int_pt<num_int_pt ; ++i_int_pt) { */
+  /*       for (int i_entry=0 ; i_entry<num_entries ; ++i_entry) { */
+  /*         data_step_n_h(i_elem, i_int_pt, i_entry) = initial_values[i_entry]; */
+  /*         data_step_np1_h(i_elem, i_int_pt, i_entry) = initial_values[i_entry]; */
+  /*       } */
+  /*     } */
+  /*   } */
+  /*   DeviceFullTensorView data_step_n_d = GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_N); */
+  /*   DeviceFullTensorView data_step_np1_d = GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1); */
+  /*   Kokkos::deep_copy(data_step_n_d, data_step_n_h); */
+  /*   Kokkos::deep_copy(data_step_np1_d, data_step_np1_h); */
+  /* } */
 
   int GetFieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
 
@@ -82,55 +105,75 @@ class ModelData
 
   std::vector<std::string> GetVectorNodeDataLabels() const ;
 
-  std::vector<std::string> GetFullTensorIntegrationPointDataLabels(int block_id) const ;
-
   std::vector<std::string> GetSymmetricTensorIntegrationPointDataLabels(int block_id) const ;
 
-  HostScalarView GetHostScalarNodeData(int field_id);
+  std::vector<std::string> GetFullTensorIntegrationPointDataLabels(int block_id) const ;
 
-  HostVectorView GetHostVectorNodeData(int field_id);
+  HostScalarNodeView GetHostScalarNodeData(int field_id);
 
-  DeviceScalarView GetDeviceScalarNodeData(int field_id);
+  HostVectorNodeView GetHostVectorNodeData(int field_id);
 
-  DeviceVectorView GetDeviceVectorNodeData(int field_id);
+  HostSymTensorIntPtView GetHostSymTensorIntegrationPointData(int block_id,
+                                                              int field_id,
+                                                              nimble::Step step);
 
-  DeviceFullTensorView GetDeviceFullTensorIntegrationPointData(int block_id,
-                                                               int field_id,
-                                                               nimble::Step step);
+  HostFullTensorIntPtView GetHostFullTensorIntegrationPointData(int block_id,
+                                                                int field_id,
+                                                                nimble::Step step);
 
-  DeviceSymTensorView GetDeviceSymTensorIntegrationPointData(int block_id,
-                                                             int field_id,
-                                                             nimble::Step step);
+  HostSymTensorElemView GetHostSymTensorElementData(int block_id,
+                                                    int field_id);
 
-  DeviceScalarGatheredView GatherScalarNodeData(int field_id,
-                                                int num_elements,
-                                                int num_nodes_per_element,
-                                                DeviceElementConnectivityView elem_conn_d,
-                                                DeviceScalarGatheredView gathered_view_d);
+  HostFullTensorElemView GetHostFullTensorElementData(int block_id,
+                                                      int field_id);
 
-  DeviceVectorGatheredView GatherVectorNodeData(int field_id,
-                                                int num_elements,
-                                                int num_nodes_per_element,
-                                                DeviceElementConnectivityView elem_conn_d,
-                                                DeviceVectorGatheredView gathered_view_d);
+  DeviceScalarNodeView GetDeviceScalarNodeData(int field_id);
+
+  DeviceVectorNodeView GetDeviceVectorNodeData(int field_id);
+
+  DeviceSymTensorIntPtView GetDeviceSymTensorIntegrationPointData(int block_id,
+                                                                  int field_id,
+                                                                  nimble::Step step);
+
+  DeviceFullTensorIntPtView GetDeviceFullTensorIntegrationPointData(int block_id,
+                                                                    int field_id,
+                                                                    nimble::Step step);
+
+  DeviceSymTensorElemView GetDeviceSymTensorElementData(int block_id,
+                                                        int field_id);
+
+  DeviceFullTensorElemView GetDeviceFullTensorElementData(int block_id,
+                                                          int field_id);
+
+  DeviceScalarNodeGatheredView GatherScalarNodeData(int field_id,
+                                                    int num_elements,
+                                                    int num_nodes_per_element,
+                                                    DeviceElementConnectivityView elem_conn_d,
+                                                    DeviceScalarNodeGatheredView gathered_view_d);
+
+  DeviceVectorNodeGatheredView GatherVectorNodeData(int field_id,
+                                                    int num_elements,
+                                                    int num_nodes_per_element,
+                                                    DeviceElementConnectivityView elem_conn_d,
+                                                    DeviceVectorNodeGatheredView gathered_view_d);
 
   void ScatterScalarNodeData(int field_id,
                              int num_elements,
                              int num_nodes_per_element,
                              DeviceElementConnectivityView elem_conn_d,
-                             DeviceScalarGatheredView gathered_view_d);
+                             DeviceScalarNodeGatheredView gathered_view_d);
 
   void ScatterVectorNodeData(int field_id,
                              int num_elements,
                              int num_nodes_per_element,
                              DeviceElementConnectivityView elem_conn_d,
-                             DeviceVectorGatheredView gathered_view_d);
+                             DeviceVectorNodeGatheredView gathered_view_d);
 
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                    int num_elements,
                                                    int num_nodes_per_element,
                                                    DeviceElementConnectivityView elem_conn_d,
-                                                   DeviceScalarGatheredView gathered_view_d);
+                                                   DeviceScalarNodeGatheredView gathered_view_d);
 
  protected:
 

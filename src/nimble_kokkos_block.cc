@@ -102,8 +102,7 @@ namespace nimble_kokkos {
       double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
       nimble::ParseMaterialParametersString(macro_material_parameters_.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
       nimble::MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-
-      if (material_name == "neohookean") {
+      if (nimble::StringsAreEqual(material_name, "neohookean")) {
         material_host_ = std::make_shared<nimble::NeohookeanMaterial>(material_parameters_struct);
         material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NeohookeanMaterial)));
         nimble::Material* pointer_that_lives_on_the_stack = material_device_;
@@ -371,7 +370,6 @@ namespace nimble_kokkos {
     int num_data_per_int_pt = num_elem_data / num_int_pt_per_elem;
 
     // Containers that will be passed to an individual element to compute element volume and volume-averaged quantities
-    double ref_coord[vector_size*num_node_per_elem];
     double cur_coord[vector_size*num_node_per_elem];
     unsigned int num_vol_ave_data = vol_ave_offsets_.size() / num_int_pt_per_elem;
     double int_pt_quantities[num_vol_ave_data*num_int_pt_per_elem];
@@ -385,7 +383,6 @@ namespace nimble_kokkos {
       for (int node = 0 ; node < num_node_per_elem ; node++) {
         int node_id = elem_conn[i_elem*num_node_per_elem + node];
         for (int i = 0 ; i < vector_size ; i++) {
-          ref_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i];
           cur_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i] + displacement[vector_size*node_id + i];
         }
       }
@@ -394,8 +391,7 @@ namespace nimble_kokkos {
       }
 
       // Compute element volume and volume-averaged quantities
-      element_host_->ComputeVolumeAverage(ref_coord,
-                                          cur_coord,
+      element_host_->ComputeVolumeAverage(cur_coord,
                                           num_vol_ave_data,
                                           &int_pt_quantities[0],
                                           volume,

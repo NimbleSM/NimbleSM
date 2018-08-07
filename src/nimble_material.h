@@ -284,10 +284,10 @@ namespace nimble {
     NIMBLE_FUNCTION
     virtual void GetStress(double time_previous,
                            double time_current,
-                           nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
-                           nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-                           nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_n,
-                           nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_np1) = 0;
+                           nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                           nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                           nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
+                           nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) = 0;
 #endif
 
     NIMBLE_FUNCTION
@@ -367,10 +367,10 @@ namespace nimble {
     NIMBLE_FUNCTION
     void GetStress(double time_previous,
                    double time_current,
-                   nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
-                   nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-                   nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_n,
-                   nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_np1);
+                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1);
 #endif
 
     NIMBLE_FUNCTION
