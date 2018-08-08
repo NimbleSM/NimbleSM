@@ -119,39 +119,39 @@ namespace nimble_kokkos {
       field_id_to_host_element_data_index_.push_back(std::map<int, int>());
       field_id_to_device_element_data_index_.push_back(std::map<int, int>());
     }
-    int block_index = block_id_to_element_data_index_[block_id];
+    int block_index = block_id_to_element_data_index_.at(block_id);
 
     if (length == nimble::SYMMETRIC_TENSOR) {
-      device_element_data_[block_index].emplace_back( new Field< FieldType::DeviceSymTensorElem >( label, num_objects ) );
+      device_element_data_.at(block_index).emplace_back( new Field< FieldType::DeviceSymTensorElem >( label, num_objects ) );
     }
     else if (length == nimble::FULL_TENSOR) {
-      device_element_data_[block_index].emplace_back( new Field< FieldType::DeviceFullTensorElem >( label, num_objects ) );
+      device_element_data_.at(block_index).emplace_back( new Field< FieldType::DeviceFullTensorElem >( label, num_objects ) );
     }
     else {
       throw std::logic_error("\nError:  Invalid device data length in nimble_kokkos::ModelData::AllocateElementData().\n");
     }
 
-    field_id_to_device_element_data_index_[block_index][field_id] = device_element_data_[block_index].size() - 1;
+    field_id_to_device_element_data_index_.at(block_index)[field_id] = device_element_data_.at(block_index).size() - 1;
 
-    FieldBase * d_field = device_element_data_[block_index].back().get();
+    FieldBase * d_field = device_element_data_.at(block_index).back().get();
 
     if (d_field->type() == FieldType::DeviceSymTensorElem) {
       Field< FieldType::DeviceSymTensorElem > * field = dynamic_cast< Field< FieldType::DeviceSymTensorElem> * >( d_field );
       Field< FieldType::DeviceSymTensorElem >::View d_view = field->data();
       auto h_view = Kokkos::create_mirror_view( d_view );
-      host_element_data_[block_index].emplace_back( new Field< FieldType::HostSymTensorElem >( h_view ) );
+      host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorElem >( h_view ) );
     }
     else if (d_field->type() == FieldType::DeviceFullTensorElem) {
       Field< FieldType::DeviceFullTensorElem > * field = dynamic_cast< Field< FieldType::DeviceFullTensorElem> * >( d_field );
       Field< FieldType::DeviceFullTensorElem >::View d_view = field->data();
       auto h_view = Kokkos::create_mirror_view( d_view );
-      host_element_data_[block_index].emplace_back( new Field< FieldType::HostFullTensorElem >( h_view ) );
+      host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorElem >( h_view ) );
     }
     else {
       throw std::logic_error("\nError:  Invalid host data length in nimble_kokkos::ModelData::AllocateElementData().\n");
     }
 
-    field_id_to_host_element_data_index_[block_index][field_id] = host_element_data_.size() - 1;
+    field_id_to_host_element_data_index_.at(block_index)[field_id] = host_element_data_.at(block_index).size() - 1;
 
     return field_id;
   }
@@ -185,43 +185,43 @@ namespace nimble_kokkos {
       field_id_to_host_integration_point_data_index_.push_back(std::map<int, int>());
       field_id_to_device_integration_point_data_index_.push_back(std::map<int, int>());
     }
-    int block_index = block_id_to_integration_point_data_index_[block_id];
+    int block_index = block_id_to_integration_point_data_index_.at(block_id);
 
     if (length == nimble::SCALAR) {
-      device_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::DeviceScalarNode >( label, num_objects ) );
-      device_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::DeviceScalarNode >( label, num_objects ) );
+      device_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::DeviceScalarNode >( label, num_objects ) );
+      device_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::DeviceScalarNode >( label, num_objects ) );
     }
     else if (length == nimble::VECTOR) {
-      device_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::DeviceVectorNode >( label, num_objects ) );
-      device_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::DeviceVectorNode >( label, num_objects ) );
+      device_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::DeviceVectorNode >( label, num_objects ) );
+      device_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::DeviceVectorNode >( label, num_objects ) );
     }
     else if (length == nimble::SYMMETRIC_TENSOR) {
-      device_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::DeviceSymTensorIntPt >( label, num_objects ) );
-      device_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::DeviceSymTensorIntPt >( label, num_objects ) );
+      device_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::DeviceSymTensorIntPt >( label, num_objects ) );
+      device_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::DeviceSymTensorIntPt >( label, num_objects ) );
     }
     else if (length == nimble::FULL_TENSOR) {
-      device_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::DeviceFullTensorIntPt >( label, num_objects ) );
-      device_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::DeviceFullTensorIntPt >( label, num_objects ) );
+      device_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::DeviceFullTensorIntPt >( label, num_objects ) );
+      device_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::DeviceFullTensorIntPt >( label, num_objects ) );
     }
     else {
       throw std::logic_error("\nError:  Invalid device data length in nimble_kokkos::ModelData::AllocateIntegrationPointData().\n");
     }
 
-    field_id_to_device_integration_point_data_index_[block_index][field_id] = device_integration_point_data_step_n_[block_index].size() - 1;
+    field_id_to_device_integration_point_data_index_.at(block_index)[field_id] = device_integration_point_data_step_n_.at(block_index).size() - 1;
 
-    FieldBase * d_field_step_n = device_integration_point_data_step_n_[block_index].back().get();
-    FieldBase * d_field_step_np1 = device_integration_point_data_step_np1_[block_index].back().get();
+    FieldBase * d_field_step_n = device_integration_point_data_step_n_.at(block_index).back().get();
+    FieldBase * d_field_step_np1 = device_integration_point_data_step_np1_.at(block_index).back().get();
 
     if (d_field_step_n->type() == FieldType::DeviceScalarNode) {
       Field< FieldType::DeviceScalarNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_n );
       Field< FieldType::DeviceScalarNode >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
-      host_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_n ) );
+      host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_n ) );
 
       Field< FieldType::DeviceScalarNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_np1 );
       Field< FieldType::DeviceScalarNode >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
-      host_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_np1 ) );
+      host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_np1 ) );
 
       if (set_initial_value) {
         int num_elem = h_view_step_n.extent(0);
@@ -237,12 +237,12 @@ namespace nimble_kokkos {
       Field< FieldType::DeviceVectorNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_n );
       Field< FieldType::DeviceVectorNode >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
-      host_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_n ) );
+      host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_n ) );
 
       Field< FieldType::DeviceVectorNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_np1 );
       Field< FieldType::DeviceVectorNode >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
-      host_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_np1 ) );
+      host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_np1 ) );
 
       if (set_initial_value) {
         int num_elem = h_view_step_n.extent(0);
@@ -261,12 +261,12 @@ namespace nimble_kokkos {
       Field< FieldType::DeviceSymTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_n );
       Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
-      host_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_n ) );
+      host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_n ) );
 
       Field< FieldType::DeviceSymTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_np1 );
       Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
-      host_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_np1 ) );
+      host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_np1 ) );
 
       if (set_initial_value) {
         int num_elem = h_view_step_n.extent(0);
@@ -288,12 +288,12 @@ namespace nimble_kokkos {
       Field< FieldType::DeviceFullTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_n );
       Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
-      host_integration_point_data_step_n_[block_index].emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_n ) );
+      host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_n ) );
 
       Field< FieldType::DeviceFullTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_np1 );
       Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
-      host_integration_point_data_step_np1_[block_index].emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_np1 ) );
+      host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_np1 ) );
 
       if (set_initial_value) {
         int num_elem = h_view_step_n.extent(0);
@@ -315,7 +315,7 @@ namespace nimble_kokkos {
       throw std::logic_error("\nError:  Invalid host data length in nimble_kokkos::ModelData::AllocateElementData().\n");
     }
 
-    field_id_to_host_integration_point_data_index_[block_index][field_id] = host_integration_point_data_step_n_.size() - 1;
+    field_id_to_host_integration_point_data_index_.at(block_index)[field_id] = host_integration_point_data_step_n_.at(block_index).size() - 1;
 
     return field_id;
   }
@@ -369,11 +369,11 @@ namespace nimble_kokkos {
     for (auto const & entry : field_label_to_field_id_map_) {
       std::string const & field_label = entry.first;
       int field_id = entry.second;
-      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_[block_index]) {
+      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_.at(block_index)) {
         int ipt_data_field_id = ipt_entry.first;
         if (field_id == ipt_data_field_id) {
           int ipt_data_index = ipt_entry.second;
-          if (device_integration_point_data_step_np1_[block_index].at(ipt_data_index)->type() == FieldType::DeviceSymTensorIntPt) {
+          if (device_integration_point_data_step_np1_.at(block_index).at(ipt_data_index)->type() == FieldType::DeviceSymTensorIntPt) {
             if (std::find(ipt_data_labels.begin(), ipt_data_labels.end(), field_label) == ipt_data_labels.end()) {
               ipt_data_labels.push_back(field_label);
             }
@@ -390,11 +390,11 @@ namespace nimble_kokkos {
     for (auto const & entry : field_label_to_field_id_map_) {
       std::string const & field_label = entry.first;
       int field_id = entry.second;
-      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_[block_index]) {
+      for (auto const & ipt_entry : field_id_to_device_integration_point_data_index_.at(block_index)) {
         int ipt_data_field_id = ipt_entry.first;
         if (field_id == ipt_data_field_id) {
           int ipt_data_index = ipt_entry.second;
-          if (device_integration_point_data_step_np1_[block_index].at(ipt_data_index)->type() == FieldType::DeviceFullTensorIntPt) {
+          if (device_integration_point_data_step_np1_.at(block_index).at(ipt_data_index)->type() == FieldType::DeviceFullTensorIntPt) {
             if (std::find(ipt_data_labels.begin(), ipt_data_labels.end(), field_label) == ipt_data_labels.end()) {
               ipt_data_labels.push_back(field_label);
             }

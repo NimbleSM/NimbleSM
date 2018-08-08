@@ -436,7 +436,7 @@ namespace nimble {
     double jac_det;
     double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double vol_ave[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    int num_quantities = int_pt_quantities.extent(0);
+    int num_quantities = 9;
     volume = 0.0;
 
     for (int int_pt=0 ; int_pt<num_int_pts_ ; int_pt++) {
@@ -484,7 +484,7 @@ namespace nimble {
     double jac_det;
     double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double vol_ave[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    int num_quantities = int_pt_quantities.extent(0);
+    int num_quantities = 6;
     volume = 0.0;
 
     for (int int_pt=0 ; int_pt<num_int_pts_ ; int_pt++) {
