@@ -70,6 +70,7 @@ enum class FieldType : int
 , HostVectorNode, DeviceVectorNode
 , HostSymTensorIntPt, DeviceSymTensorIntPt
 , HostFullTensorIntPt, DeviceFullTensorIntPt
+, HostScalarElem, DeviceScalarElem
 , HostSymTensorElem, DeviceSymTensorElem
 , HostFullTensorElem, DeviceFullTensorElem
 };
@@ -102,6 +103,12 @@ std::ostream & operator << ( std::ostream & out, const FieldType f )
     break;
   case FieldType::DeviceFullTensorIntPt:
     out << "DeviceFullTensorIntPt";
+    break;
+  case FieldType::HostScalarElem:
+    out << "HostScalarElem";
+    break;
+  case FieldType::DeviceScalarElem:
+    out << "DeviceScalarElem";
     break;
   case FieldType::HostSymTensorElem:
     out << "HostSymTensorElem";
@@ -380,6 +387,59 @@ private:
 };
 
 template <>
+class Field< FieldType::HostScalarElem >
+  : public FieldBase
+{
+public:
+
+  // (elem)
+  using View = Kokkos::View< double *, kokkos_host_space::execution_space >;
+
+  Field( const std::string & name, int num_entries )
+    : FieldBase( name, FieldType::HostScalarElem )
+    , data_( name, num_entries )
+  {}
+
+  Field( View const & v )
+    : FieldBase( v.label(), FieldType::HostScalarElem )
+    , data_(v)
+  {}
+
+  View data() const noexcept { return data_; }
+
+private:
+  View data_;
+
+};
+
+template <>
+class Field< FieldType::DeviceScalarElem >
+  : public FieldBase
+{
+public:
+
+  // (node)
+  using View = Kokkos::View< double *, Layout, kokkos_device_space::execution_space >;
+  using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0)));
+
+ Field( const std::string & name, int num_entries )
+    : FieldBase( name, FieldType::DeviceScalarElem )
+    , data_( name, num_entries )
+  {}
+
+  Field( View const & v )
+    : FieldBase( v.label(), FieldType::DeviceScalarElem )
+    , data_(v)
+  {}
+
+  View data() const noexcept { return data_; }
+
+private:
+  View data_;
+
+};
+
+template <>
 class Field< FieldType::HostFullTensorElem >
   : public FieldBase
 {
@@ -495,6 +555,7 @@ typedef Field< FieldType::HostScalarNode >::View                                
 typedef Field< FieldType::HostVectorNode >::View                                      HostVectorNodeView;
 typedef Field< FieldType::HostFullTensorIntPt >::View                                 HostFullTensorIntPtView;
 typedef Field< FieldType::HostSymTensorIntPt >::View                                  HostSymTensorIntPtView;
+typedef Field< FieldType::HostScalarElem >::View                                      HostScalarElemView;
 typedef Field< FieldType::HostFullTensorElem >::View                                  HostFullTensorElemView;
 typedef Field< FieldType::HostSymTensorElem >::View                                   HostSymTensorElemView;
 typedef Kokkos::View< int *, Layout, kokkos_host_space::execution_space >             HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
@@ -511,6 +572,8 @@ typedef Field< FieldType::DeviceFullTensorIntPt >::SingleEntryView              
 typedef Field< FieldType::DeviceSymTensorIntPt >::View                                DeviceSymTensorIntPtView;
 typedef Field< FieldType::DeviceSymTensorIntPt >::SubView                             DeviceSymTensorIntPtSubView;
 typedef Field< FieldType::DeviceSymTensorIntPt >::SingleEntryView                     DeviceSymTensorIntPtSingleEntryView;
+typedef Field< FieldType::DeviceScalarElem >::View                                    DeviceScalarElemView;
+typedef Field< FieldType::DeviceScalarElem >::SingleEntryView                         DeviceScalarElemSingleEntryView;
 typedef Field< FieldType::DeviceFullTensorElem >::View                                DeviceFullTensorElemView;
 typedef Field< FieldType::DeviceFullTensorElem >::SingleEntryView                     DeviceFullTensorElemSingleEntryView;
 typedef Field< FieldType::DeviceSymTensorElem >::View                                 DeviceSymTensorElemView;

@@ -121,7 +121,10 @@ namespace nimble_kokkos {
     }
     int block_index = block_id_to_element_data_index_.at(block_id);
 
-    if (length == nimble::SYMMETRIC_TENSOR) {
+    if (length == nimble::SCALAR) {
+      device_element_data_.at(block_index).emplace_back( new Field< FieldType::DeviceScalarElem >( label, num_objects ) );
+    }
+    else if (length == nimble::SYMMETRIC_TENSOR) {
       device_element_data_.at(block_index).emplace_back( new Field< FieldType::DeviceSymTensorElem >( label, num_objects ) );
     }
     else if (length == nimble::FULL_TENSOR) {
@@ -135,7 +138,13 @@ namespace nimble_kokkos {
 
     FieldBase * d_field = device_element_data_.at(block_index).back().get();
 
-    if (d_field->type() == FieldType::DeviceSymTensorElem) {
+    if (d_field->type() == FieldType::DeviceScalarElem) {
+      Field< FieldType::DeviceScalarElem > * field = dynamic_cast< Field< FieldType::DeviceScalarElem> * >( d_field );
+      Field< FieldType::DeviceScalarElem >::View d_view = field->data();
+      auto h_view = Kokkos::create_mirror_view( d_view );
+      host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostScalarElem >( h_view ) );
+    }
+    else if (d_field->type() == FieldType::DeviceSymTensorElem) {
       Field< FieldType::DeviceSymTensorElem > * field = dynamic_cast< Field< FieldType::DeviceSymTensorElem> * >( d_field );
       Field< FieldType::DeviceSymTensorElem >::View d_view = field->data();
       auto h_view = Kokkos::create_mirror_view( d_view );
@@ -419,6 +428,16 @@ namespace nimble_kokkos {
     return derived_field_ptr->data();
   }
 
+  HostScalarElemView ModelData::GetHostScalarElementData(int block_id,
+                                                         int field_id) {
+    int block_index = block_id_to_element_data_index_.at(block_id);
+    int data_index = field_id_to_host_element_data_index_.at(block_index).at(field_id);
+    FieldBase* base_field_ptr(0);
+    base_field_ptr = host_element_data_.at(block_index).at(data_index).get();
+    Field< FieldType::HostScalarElem >* derived_field_ptr = static_cast< Field< FieldType::HostScalarElem >* >(base_field_ptr);
+    return derived_field_ptr->data();
+  }
+
   HostSymTensorIntPtView ModelData::GetHostSymTensorIntegrationPointData(int block_id,
                                                                          int field_id,
                                                                          nimble::Step step) {
@@ -514,6 +533,16 @@ namespace nimble_kokkos {
       base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
     }
     Field< FieldType::DeviceFullTensorIntPt >* derived_field_ptr = static_cast< Field< FieldType::DeviceFullTensorIntPt >* >(base_field_ptr);
+    return derived_field_ptr->data();
+  }
+
+  DeviceScalarElemView ModelData::GetDeviceScalarElementData(int block_id,
+                                                             int field_id) {
+    int block_index = block_id_to_element_data_index_.at(block_id);
+    int data_index = field_id_to_device_element_data_index_.at(block_index).at(field_id);
+    FieldBase* base_field_ptr(0);
+    base_field_ptr = device_element_data_.at(block_index).at(data_index).get();
+    Field< FieldType::DeviceScalarElem >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarElem >* >(base_field_ptr);
     return derived_field_ptr->data();
   }
 

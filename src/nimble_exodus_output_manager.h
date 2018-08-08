@@ -44,7 +44,8 @@
 #ifndef NIMBLE_EXODUS_OUTPUT_MANAGER_H
 #define NIMBLE_EXODUS_OUTPUT_MANAGER_H
 
-#include "nimble_kokkos_data_manager.h"
+#include "nimble_genesis_mesh.h"
+#include "nimble_kokkos_block.h"
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -58,10 +59,16 @@ namespace nimble_kokkos {
 
   public:
 
-    ExodusOutputManager() {};
+  ExodusOutputManager() : output_element_volume_(false), volume_field_id_(0) {};
 
     void SpecifyOutputFields(nimble_kokkos::ModelData& model_data,
                              std::string const & output_command_string);
+
+    void ComputeElementData(nimble::GenesisMesh& mesh,
+                            nimble_kokkos::ModelData& model_data,
+                            std::map<int, nimble_kokkos::Block>& blocks,
+                            std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& gathered_reference_coordinate_d,
+                            std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& gathered_displacement_d);
 
     std::vector<std::string> GetNodeDataLabelsForOutput() { return node_data_labels_; }
 
@@ -71,11 +78,9 @@ namespace nimble_kokkos {
 
     std::map<int, std::vector< std::vector<double> > > GetElementDataForOutput(nimble_kokkos::ModelData& model_data);
 
-    std::map<int, std::vector<int> > GetSymTensorFieldIdsRequiringVolumeAverage() { return sym_tensor_field_ids_requiring_volume_average_; }
-
-    std::map<int, std::vector<int> > GetFullTensorFieldIdsRequiringVolumeAverage() { return full_tensor_field_ids_requiring_volume_average_; }
-
   private:
+
+    bool output_element_volume_;
 
     std::vector<std::string> node_data_labels_;
     std::vector<int> node_data_field_ids_;
@@ -89,6 +94,7 @@ namespace nimble_kokkos {
     std::map<int, std::vector<int> > elem_data_components_;
     std::map<int, std::vector< std::vector<double> > > elem_data_;
 
+    int volume_field_id_;
     std::map<int, std::vector<int> > sym_tensor_field_ids_requiring_volume_average_;
     std::map<int, std::vector<int> > full_tensor_field_ids_requiring_volume_average_;
   };

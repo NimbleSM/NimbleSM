@@ -117,8 +117,21 @@ namespace nimble_kokkos {
     }
 
     for (unsigned int i_block=0 ; i_block<block_ids.size() ; ++i_block) {
-
       int block_id = block_ids[i_block];
+
+      // volume is special, it is not tied to integration point data
+      for (auto const & requested_label : requested_labels) {
+        if (requested_label == "volume") {
+          output_element_volume_ = true;
+          volume_field_id_ = model_data.GetFieldId(requested_label);
+          int num_elem = model_data.GetDeviceScalarElementData(block_id, volume_field_id_).extent(0);
+          elem_data_labels_[block_id].push_back(requested_label);
+          elem_data_field_ids_[block_id].push_back(volume_field_id_);
+          elem_data_types_[block_id].push_back(FieldType::HostScalarElem);
+          elem_data_components_[block_id].push_back(0);
+          elem_data_[block_id].push_back(std::vector<double>(num_elem, 0.0));
+        }
+      }
 
       std::vector<std::string> symmetric_tensor_integration_point_data_labels = model_data.GetSymmetricTensorIntegrationPointDataLabels(block_id);
       for (auto const & requested_label : requested_labels) {
@@ -234,6 +247,84 @@ namespace nimble_kokkos {
     }
   }
 
+  void ExodusOutputManager::ComputeElementData(nimble::GenesisMesh& mesh,
+                                               nimble_kokkos::ModelData& model_data,
+                                               std::map<int, nimble_kokkos::Block>& blocks,
+                                               std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& gathered_reference_coordinate_d,
+                                               std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& gathered_displacement_d) {
+    int block_index;
+    std::map<int, nimble_kokkos::Block>::iterator block_it;
+
+    // Element volume
+    if (output_element_volume_) {
+      for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+        int block_id = block_it->first;
+        nimble_kokkos::Block& block = block_it->second;
+        nimble::Element* element_d = block.GetDeviceElement();
+        int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+        int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
+        nimble_kokkos::DeviceElementConnectivityView elem_conn_d = block.GetDeviceElementConnectivityView();
+        nimble_kokkos::DeviceVectorNodeGatheredView gathered_reference_coordinate_block_d = gathered_reference_coordinate_d.at(block_index);
+        nimble_kokkos::DeviceVectorNodeGatheredView gathered_displacement_block_d = gathered_displacement_d.at(block_index);
+        nimble_kokkos::DeviceScalarElemView volume_d = model_data.GetDeviceScalarElementData(block_id, volume_field_id_);
+        Kokkos::parallel_for("Element Volume", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceScalarElemSingleEntryView element_volume_d = Kokkos::subview(volume_d, i_elem);
+            element_d->ComputeVolume(element_reference_coordinate_d,
+                                     element_displacement_d,
+                                     element_volume_d);
+          });
+        nimble_kokkos::HostScalarElemView volume_h = model_data.GetHostScalarElementData(block_id, volume_field_id_);
+        deep_copy(volume_h, volume_d);
+      }
+    }
+
+    // Volume averaging of symmetric and full tensors stored at integration points
+    for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+      int block_id = block_it->first;
+      nimble_kokkos::Block& block = block_it->second;
+      nimble::Element* element_d = block.GetDeviceElement();
+      int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+      int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
+      nimble_kokkos::DeviceElementConnectivityView elem_conn_d = block.GetDeviceElementConnectivityView();
+      nimble_kokkos::DeviceVectorNodeGatheredView gathered_reference_coordinate_block_d = gathered_reference_coordinate_d.at(block_index);
+      nimble_kokkos::DeviceVectorNodeGatheredView gathered_displacement_block_d = gathered_displacement_d.at(block_index);
+      for(auto & field_id : sym_tensor_field_ids_requiring_volume_average_.at(block_id)) {
+        nimble_kokkos::DeviceSymTensorIntPtView sym_tensor_data_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1);
+        nimble_kokkos::DeviceSymTensorElemView sym_tensor_data_vol_ave_d = model_data.GetDeviceSymTensorElementData(block_id, field_id);
+        Kokkos::parallel_for("Volume Averaging Sym Tensor", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceSymTensorIntPtSubView element_sym_tensor_step_np1_d = Kokkos::subview(sym_tensor_data_step_np1_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceSymTensorElemSingleEntryView element_sym_tensor_vol_ave = Kokkos::subview(sym_tensor_data_vol_ave_d, i_elem, Kokkos::ALL);
+            element_d->ComputeVolumeAverageSymTensor(element_reference_coordinate_d,
+                                                     element_displacement_d,
+                                                     element_sym_tensor_step_np1_d,
+                                                     element_sym_tensor_vol_ave);
+          });
+        nimble_kokkos::HostSymTensorElemView sym_tensor_data_vol_ave_h = model_data.GetHostSymTensorElementData(block_id, field_id);
+        deep_copy(sym_tensor_data_vol_ave_h, sym_tensor_data_vol_ave_d);
+      }
+      for(auto & field_id : full_tensor_field_ids_requiring_volume_average_.at(block_id)) {
+        nimble_kokkos::DeviceFullTensorIntPtView full_tensor_data_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1);
+        nimble_kokkos::DeviceFullTensorElemView full_tensor_data_vol_ave_d = model_data.GetDeviceFullTensorElementData(block_id, field_id);
+        Kokkos::parallel_for("Volume Averaging Full Tensor", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceFullTensorIntPtSubView element_full_tensor_step_np1_d = Kokkos::subview(full_tensor_data_step_np1_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+            nimble_kokkos::DeviceFullTensorElemSingleEntryView element_full_tensor_vol_ave = Kokkos::subview(full_tensor_data_vol_ave_d, i_elem, Kokkos::ALL);
+            element_d->ComputeVolumeAverageFullTensor(element_reference_coordinate_d,
+                                                      element_displacement_d,
+                                                      element_full_tensor_step_np1_d,
+                                                      element_full_tensor_vol_ave);
+          });
+        nimble_kokkos::HostFullTensorElemView full_tensor_data_vol_ave_h = model_data.GetHostFullTensorElementData(block_id, field_id);
+        deep_copy(full_tensor_data_vol_ave_h, full_tensor_data_vol_ave_d);
+      }
+    }
+  }
+
   std::vector< std::vector<double> > ExodusOutputManager::GetNodeDataForOutput(nimble_kokkos::ModelData& model_data) {
     for (unsigned int i_data=0 ; i_data < node_data_labels_.size() ; ++i_data) {
       int field_id = node_data_field_ids_.at(i_data);
@@ -255,15 +346,19 @@ namespace nimble_kokkos {
     return node_data_;
   }
 
-
   std::map<int, std::vector< std::vector<double> > > ExodusOutputManager::GetElementDataForOutput(nimble_kokkos::ModelData& model_data) {
-
     std::vector<int> block_ids = model_data.GetBlockIds();
     for (auto const & block_id : block_ids) {
       for (unsigned int i_data=0 ; i_data < elem_data_labels_.at(block_id).size() ; ++i_data) {
         int field_id = elem_data_field_ids_.at(block_id).at(i_data);
         FieldType field_type = elem_data_types_.at(block_id).at(i_data);
-        if (field_type == FieldType::HostSymTensorElem) {
+        if (field_type == FieldType::HostScalarElem) {
+          HostScalarElemView data = model_data.GetHostScalarElementData(block_id, field_id);
+          for (unsigned int i=0 ; i<elem_data_.at(block_id)[i_data].size() ; i++) {
+            elem_data_.at(block_id)[i_data][i] = data(i);
+          }
+        }
+        else if (field_type == FieldType::HostSymTensorElem) {
           HostSymTensorElemView data = model_data.GetHostSymTensorElementData(block_id, field_id);
           int component = elem_data_components_.at(block_id).at(i_data);
           for (unsigned int i=0 ; i<elem_data_.at(block_id)[i_data].size() ; i++) {
@@ -279,7 +374,6 @@ namespace nimble_kokkos {
         }
       }
     }
-
     return elem_data_;
   }
 

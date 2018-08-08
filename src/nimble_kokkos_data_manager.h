@@ -75,28 +75,6 @@ class ModelData
                                    int num_objects,
                                    std::vector<double> initial_value = std::vector<double>());
 
-  /* void SetFullTensorIntegrationPointDataInitialValue(int block_id, */
-  /*                                                    int field_id, */
-  /*                                                    double initial_values[9]) { */
-  /*   HostFullTensorView data_step_n_h = GetHostFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_N); */
-  /*   HostFullTensorView data_step_np1_h = GetHostFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1); */
-  /*   int num_elem = data_step_n_h.extent(0); */
-  /*   int num_int_pt = data_step_n_h.extent(1); */
-  /*   int num_entries = 9; */
-  /*   for (int i_elem=0 ; i_elem<num_elem ; ++i_elem) { */
-  /*     for (int i_int_pt=0 ; i_int_pt<num_int_pt ; ++i_int_pt) { */
-  /*       for (int i_entry=0 ; i_entry<num_entries ; ++i_entry) { */
-  /*         data_step_n_h(i_elem, i_int_pt, i_entry) = initial_values[i_entry]; */
-  /*         data_step_np1_h(i_elem, i_int_pt, i_entry) = initial_values[i_entry]; */
-  /*       } */
-  /*     } */
-  /*   } */
-  /*   DeviceFullTensorView data_step_n_d = GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_N); */
-  /*   DeviceFullTensorView data_step_np1_d = GetDeviceFullTensorIntegrationPointData(block_id, field_id, nimble::STEP_NP1); */
-  /*   Kokkos::deep_copy(data_step_n_d, data_step_n_h); */
-  /*   Kokkos::deep_copy(data_step_np1_d, data_step_np1_h); */
-  /* } */
-
   int GetFieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
 
   std::vector<int> GetBlockIds() const ;
@@ -121,6 +99,9 @@ class ModelData
                                                                 int field_id,
                                                                 nimble::Step step);
 
+  HostScalarElemView GetHostScalarElementData(int block_id,
+                                              int field_id);
+
   HostSymTensorElemView GetHostSymTensorElementData(int block_id,
                                                     int field_id);
 
@@ -138,6 +119,9 @@ class ModelData
   DeviceFullTensorIntPtView GetDeviceFullTensorIntegrationPointData(int block_id,
                                                                     int field_id,
                                                                     nimble::Step step);
+
+  DeviceScalarElemView GetDeviceScalarElementData(int block_id,
+                                                  int field_id);
 
   DeviceSymTensorElemView GetDeviceSymTensorElementData(int block_id,
                                                         int field_id);

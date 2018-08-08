@@ -84,18 +84,22 @@ namespace nimble {
                                       double* volume_averaged_quantity) const = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+
+    NIMBLE_FUNCTION
+    virtual void ComputeVolume(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                               nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                               nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const = 0;
+
     NIMBLE_FUNCTION
     virtual void ComputeVolumeAverageSymTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
                                                nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
                                                nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_quantities,
-                                               double& volume,
                                                nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const = 0;
 
     NIMBLE_FUNCTION
     virtual void ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
                                                 nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
                                                 nimble_kokkos::DeviceFullTensorIntPtSubView int_pt_quantities,
-                                                double& volume,
                                                 nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const = 0;
 #endif
 
@@ -189,18 +193,22 @@ namespace nimble {
                               double* volume_averaged_quantity) const ;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+
+    NIMBLE_FUNCTION
+    void ComputeVolume(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
+                       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
+                       nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const;
+
     NIMBLE_FUNCTION
     void ComputeVolumeAverageSymTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
                                        nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
                                        nimble_kokkos::DeviceSymTensorIntPtSubView int_pt_quantities,
-                                       double& volume,
                                        nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const;
 
     NIMBLE_FUNCTION
     void ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
                                         nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
                                         nimble_kokkos::DeviceFullTensorIntPtSubView int_pt_quantities,
-                                        double& volume,
                                         nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const;
 #endif
 
