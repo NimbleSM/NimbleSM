@@ -6,10 +6,11 @@ else()
 endif()
 
 set(NimbleSM_Serial ${PROJECT_BINARY_DIR}/src/NimbleSM_Serial)
-set(NimbleSM_Tpetra ${PROJECT_BINARY_DIR}/src/NimbleSM_Tpetra)
-set(NimbleSM_Darma ${PROJECT_BINARY_DIR}/src/NimbleSM_Darma)
 set(NimbleSM_MPI ${PROJECT_BINARY_DIR}/src/NimbleSM_MPI)
+set(NimbleSM_Kokkos ${PROJECT_BINARY_DIR}/src/NimbleSM_Kokkos)
+set(NimbleSM_Darma ${PROJECT_BINARY_DIR}/src/NimbleSM_Darma)
 set(NimbleSM_Qthreads ${PROJECT_BINARY_DIR}/src/NimbleSM_Qthreads)
+set(NimbleSM_Tpetra ${PROJECT_BINARY_DIR}/src/NimbleSM_Tpetra)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_exodiff_test.py
                ${CMAKE_CURRENT_BINARY_DIR}/run_exodiff_test.py COPYONLY)

@@ -83,15 +83,15 @@ void main_routine(int argc, char *argv[]) {
 
   // Banner
   if (my_mpi_rank == 0) {
-    std::cout << "\n--KokkosSandbox" << std::endl;
+    std::cout << "\n--NimbleSM_Kokkos" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
     if (argc != 2) {
-      std::cout << "Usage:  mpirun -np NP KokkosSandbox <input_deck.in>\n" << std::endl;
+      std::cout << "Usage:  mpirun -np NP NimbleSM_Kokkos <input_deck.in>\n" << std::endl;
       Kokkos::finalize();
       MPI_Finalize();
       exit(1);
     }
-    std::cout << "KokkosSandbox initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
+    std::cout << "NimbleSM_Kokkos initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
   }
 
   std::string input_deck_name = argv[1];
@@ -107,7 +107,7 @@ void main_routine(int argc, char *argv[]) {
   if (rve_genesis_file_name != "none") {
     rve_mesh.ReadFile(rve_genesis_file_name);
   }
-  std::string tag = "mpi";
+  std::string tag = "kokkos";
   std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();

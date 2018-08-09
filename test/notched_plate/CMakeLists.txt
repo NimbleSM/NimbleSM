@@ -32,6 +32,11 @@ if(NIMBLE_HAVE_MPI)
  add_test(notched_plate_mpi_np6 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck notched_plate.in --num-ranks 6)
 endif()
 
+if(NIMBLE_HAVE_KOKKOS)
+ add_test(notched_plate_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck notched_plate.in --num-ranks 1)
+ add_test(notched_plate_kokkos_np6 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck notched_plate.in --num-ranks 6)
+endif()
+
 if(NIMBLE_HAVE_TRILINOS)
   add_test(notched_plate_tpetra_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Tpetra}" --input-deck notched_plate.in --num-ranks 1)
   add_test(notched_plate_tpetra_np6 python ../run_exodiff_test.py --executable "${NimbleSM_Tpetra}" --input-deck notched_plate.in --num-ranks 6)
