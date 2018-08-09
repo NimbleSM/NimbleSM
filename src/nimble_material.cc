@@ -65,10 +65,10 @@ namespace nimble {
     bool is_param_name = false;
     bool is_param_value = false;
 
-    memset(material_name, 0, sizeof(material_name));
+    memset(material_name, 0, MaterialParameters::MAX_MAT_MODEL_STR_LEN);
     for (int i=0 ; i<MaterialParameters::MAX_NUM_MAT_PARAM ; ++i) {
-      memset(material_parameter_names[i], 0, sizeof(material_parameter_names[i]));
-      memset(material_parameter_value_strings[i], 0, sizeof(material_parameter_value_strings[i]));
+      memset(material_parameter_names[i], 0, MaterialParameters::MAX_MAT_MODEL_STR_LEN);
+      memset(material_parameter_value_strings[i], 0, MaterialParameters::MAX_MAT_MODEL_STR_LEN);
       material_parameter_values[i] = 0.0;
     }
 

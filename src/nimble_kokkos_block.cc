@@ -110,6 +110,7 @@ namespace nimble_kokkos {
             new (pointer_that_lives_on_the_stack) nimble::NeohookeanMaterial(material_parameters_struct);
           });
       }
+#ifdef NIMBLE_HAVE_EXTRAS
       // else if (is_lame_model) {
       //   material_host_ = std::make_shared<LAMEMaterial>(macro_material_parameters_);
       // }
@@ -121,6 +122,7 @@ namespace nimble_kokkos {
             new (pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct);
           });
       }
+#endif
       else {
         throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
       }

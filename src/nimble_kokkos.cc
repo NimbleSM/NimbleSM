@@ -163,7 +163,7 @@ void main_routine(int argc, char *argv[]) {
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
 
     std::vector<double> initial_value(9, 0.0);
-    initial_value[K_F_XX] = initial_value[K_F_YY] = initial_value[K_F_ZZ] = 1.0;
+    initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
     deformation_gradient_field_id =  model_data.AllocateIntegrationPointData(block_id,
                                                                              nimble::FULL_TENSOR,
                                                                              "deformation_gradient",
