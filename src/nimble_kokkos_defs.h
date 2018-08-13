@@ -558,7 +558,7 @@ typedef Field< FieldType::HostSymTensorIntPt >::View                            
 typedef Field< FieldType::HostScalarElem >::View                                      HostScalarElemView;
 typedef Field< FieldType::HostFullTensorElem >::View                                  HostFullTensorElemView;
 typedef Field< FieldType::HostSymTensorElem >::View                                   HostSymTensorElemView;
-typedef Kokkos::View< int *, Layout, kokkos_host_space::execution_space >             HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
+typedef Kokkos::View< int*, Layout, kokkos_host_space::execution_space >              HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
 
 typedef Field< FieldType::DeviceScalarNode >::View                                    DeviceScalarNodeView;
 typedef Field< FieldType::DeviceScalarNode >::GatheredView                            DeviceScalarNodeGatheredView;
@@ -578,7 +578,7 @@ typedef Field< FieldType::DeviceFullTensorElem >::View                          
 typedef Field< FieldType::DeviceFullTensorElem >::SingleEntryView                     DeviceFullTensorElemSingleEntryView;
 typedef Field< FieldType::DeviceSymTensorElem >::View                                 DeviceSymTensorElemView;
 typedef Field< FieldType::DeviceSymTensorElem >::SingleEntryView                      DeviceSymTensorElemSingleEntryView;
-typedef Kokkos::View< int *, Layout, kokkos_device_space::execution_space >           DeviceElementConnectivityView;
+typedef Kokkos::View< int*, Layout, kokkos_device_space::execution_space >            DeviceElementConnectivityView;
 }
 
 // else for NIMBLE_HAVE_KOKKOS

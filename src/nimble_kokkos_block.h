@@ -67,7 +67,7 @@ namespace nimble_kokkos {
   public:
 
   Block() : macro_material_parameters_("none"), vol_ave_volume_offset_(-1), rve_boundary_condition_strategy_("none"),
-      elem_conn_d("element_connectivity_d"), element_device_(0), material_device_(0) {}
+      elem_conn_d("element_connectivity_d", 0), element_device_(0), material_device_(0) {}
 
     virtual ~Block() {
       /* Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) { */

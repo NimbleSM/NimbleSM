@@ -460,7 +460,11 @@ namespace nimble {
       volume += jac_det;
     }
 
-    elem_volume(0) = volume;
+    // DJL cleaner to use
+    // elem_volume(0) = volume;
+    // but this isn't working with older versions of Kokkos
+    double* v = elem_volume.data();
+    *v = volume;
   }
 
   void HexElement::ComputeVolumeAverageFullTensor(nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
