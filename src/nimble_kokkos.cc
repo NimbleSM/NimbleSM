@@ -249,6 +249,8 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::resize(gathered_internal_force_d.at(block_index), num_elem_in_block);
   }
 
+  Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
+
   // Compute the lumped mass
   for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
     int block_id = block_it->first;

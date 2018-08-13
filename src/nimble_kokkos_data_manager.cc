@@ -612,7 +612,6 @@ namespace nimble_kokkos {
     FieldBase* base_field_ptr = device_node_data_.at(index).get();
     Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
     Field< FieldType::DeviceScalarNode >::AtomicView data = derived_field_ptr->data();
-    Kokkos::deep_copy(data, (double)(0.0));
     Kokkos::parallel_for("ScatterScalarNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
         for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
           data(elem_conn_d(num_nodes_per_element*i_elem + i_node)) += gathered_view_d(i_elem, i_node);
@@ -630,7 +629,6 @@ namespace nimble_kokkos {
     FieldBase* base_field_ptr = device_node_data_.at(index).get();
     Field< FieldType::DeviceVectorNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
     Field< FieldType::DeviceVectorNode >::AtomicView data = derived_field_ptr->data();
-    Kokkos::deep_copy(data, (double)(0.0));
     Kokkos::parallel_for("ScatterVectorNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
         for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
           int node_index = elem_conn_d(num_nodes_per_element*i_elem + i_node);
@@ -651,7 +649,6 @@ namespace nimble_kokkos {
     FieldBase* base_field_ptr = device_node_data_.at(index).get();
     Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
     auto data = derived_field_ptr->data();
-    Kokkos::deep_copy(data, (double)(0.0));
     auto scatter_view = Kokkos::Experimental::create_scatter_view(data); // DJL it is a terrible idea to allocate this here
     scatter_view.reset();
     Kokkos::parallel_for("GatherVectorNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
