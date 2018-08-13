@@ -37,22 +37,22 @@ NODAL VARIABLES relative 1.e-6 floor 0.0
 
 ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	deformation_gradient_xx        absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	deformation_gradient_xy        absolute 1.0e-14
-	deformation_gradient_xz        absolute 1.0e-14
-	deformation_gradient_yx        absolute 1.0e-14
+	deformation_gradient_xy        absolute 1.0e-12
+	deformation_gradient_xz        absolute 1.0e-12
+	deformation_gradient_yx        absolute 1.0e-12
 	deformation_gradient_yy        absolute 1.000000500000e-06    # min:      0.99999864 @ t3,b1,e60	max:       1.0000005 @ t3,b1,e55
-	deformation_gradient_yz        absolute 1.0e-14
-	deformation_gradient_zx        absolute 1.0e-14
-	deformation_gradient_zy        absolute 1.0e-14
+	deformation_gradient_yz        absolute 1.0e-12
+	deformation_gradient_zx        absolute 1.0e-12
+	deformation_gradient_zy        absolute 1.0e-12
 	deformation_gradient_zz        absolute 1.000000500000e-06    # min:      0.99999864 @ t3,b1,e60	max:       1.0000005 @ t3,b1,e55
 	ipt01_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt01_deformation_gradient_xy  absolute 1.0e-14
-	ipt01_deformation_gradient_xz  absolute 1.0e-14
+	ipt01_deformation_gradient_xy  absolute 1.0e-12
+	ipt01_deformation_gradient_xz  absolute 1.0e-12
 	ipt01_deformation_gradient_yx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
 	ipt01_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
-	ipt01_deformation_gradient_yz  absolute 1.0e-14
+	ipt01_deformation_gradient_yz  absolute 1.0e-12
 	ipt01_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt01_deformation_gradient_zy  absolute 1.0e-14
+	ipt01_deformation_gradient_zy  absolute 1.0e-12
 	ipt01_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
 	ipt01_stress_xx                absolute 5.284788700000e+03    # min:               0 @ t1,b1,e1	max:   5.2847887e+09 @ t4,b1,e23
 	ipt01_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
@@ -61,13 +61,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt01_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
 	ipt01_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3267021.1 @ t3,b1,e67
 	ipt02_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt02_deformation_gradient_xy  absolute 1.0e-14
-	ipt02_deformation_gradient_xz  absolute 1.0e-14
+	ipt02_deformation_gradient_xy  absolute 1.0e-12
+	ipt02_deformation_gradient_xz  absolute 1.0e-12
 	ipt02_deformation_gradient_yx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
 	ipt02_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
-	ipt02_deformation_gradient_yz  absolute 1.0e-14
+	ipt02_deformation_gradient_yz  absolute 1.0e-12
 	ipt02_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt02_deformation_gradient_zy  absolute 1.0e-14
+	ipt02_deformation_gradient_zy  absolute 1.0e-12
 	ipt02_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
 	ipt02_stress_xx                absolute 5.284788700000e+03    # min:               0 @ t1,b1,e1	max:   5.2847887e+09 @ t4,b1,e23
 	ipt02_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
@@ -76,13 +76,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt02_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
 	ipt02_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3267021.1 @ t3,b1,e67
 	ipt03_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt03_deformation_gradient_xy  absolute 1.0e-14
-	ipt03_deformation_gradient_xz  absolute 1.0e-14
+	ipt03_deformation_gradient_xy  absolute 1.0e-12
+	ipt03_deformation_gradient_xz  absolute 1.0e-12
 	ipt03_deformation_gradient_yx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
 	ipt03_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
-	ipt03_deformation_gradient_yz  absolute 1.0e-14
+	ipt03_deformation_gradient_yz  absolute 1.0e-12
 	ipt03_deformation_gradient_zx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
-	ipt03_deformation_gradient_zy  absolute 1.0e-14
+	ipt03_deformation_gradient_zy  absolute 1.0e-12
 	ipt03_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
 	ipt03_stress_xx                absolute 5.284788700000e+03    # min:               0 @ t1,b1,e1	max:   5.2847887e+09 @ t4,b1,e23
 	ipt03_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
@@ -91,13 +91,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt03_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
 	ipt03_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3267021.1 @ t3,b1,e67
 	ipt04_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt04_deformation_gradient_xy  absolute 1.0e-14
-	ipt04_deformation_gradient_xz  absolute 1.0e-14
+	ipt04_deformation_gradient_xy  absolute 1.0e-12
+	ipt04_deformation_gradient_xz  absolute 1.0e-12
 	ipt04_deformation_gradient_yx  absolute 6.717770800000e-13    # min:               0 @ t1,b1,e1	max:   6.7177708e-07 @ t3,b1,e61
 	ipt04_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
-	ipt04_deformation_gradient_yz  absolute 1.0e-14
+	ipt04_deformation_gradient_yz  absolute 1.0e-12
 	ipt04_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt04_deformation_gradient_zy  absolute 1.0e-14
+	ipt04_deformation_gradient_zy  absolute 1.0e-12
 	ipt04_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999834 @ t3,b1,e67	max:       1.0000006 @ t3,b1,e52
 	ipt04_stress_xx                absolute 5.284788700000e+03    # min:               0 @ t1,b1,e1	max:   5.2847887e+09 @ t4,b1,e23
 	ipt04_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
@@ -106,13 +106,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt04_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010317.5 @ t3,b1,e61
 	ipt04_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3267021.1 @ t3,b1,e67
 	ipt05_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt05_deformation_gradient_xy  absolute 1.0e-14
-	ipt05_deformation_gradient_xz  absolute 1.0e-14
+	ipt05_deformation_gradient_xy  absolute 1.0e-12
+	ipt05_deformation_gradient_xz  absolute 1.0e-12
 	ipt05_deformation_gradient_yx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
 	ipt05_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
-	ipt05_deformation_gradient_yz  absolute 1.0e-14
+	ipt05_deformation_gradient_yz  absolute 1.0e-12
 	ipt05_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt05_deformation_gradient_zy  absolute 1.0e-14
+	ipt05_deformation_gradient_zy  absolute 1.0e-12
 	ipt05_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
 	ipt05_stress_xx                absolute 5.284789600000e+03    # min:               0 @ t1,b1,e1	max:   5.2847896e+09 @ t4,b1,e23
 	ipt05_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
@@ -121,13 +121,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt05_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
 	ipt05_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3322427.7 @ t3,b1,e63
 	ipt06_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt06_deformation_gradient_xy  absolute 1.0e-14
-	ipt06_deformation_gradient_xz  absolute 1.0e-14
+	ipt06_deformation_gradient_xy  absolute 1.0e-12
+	ipt06_deformation_gradient_xz  absolute 1.0e-12
 	ipt06_deformation_gradient_yx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
 	ipt06_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
-	ipt06_deformation_gradient_yz  absolute 1.0e-14
+	ipt06_deformation_gradient_yz  absolute 1.0e-12
 	ipt06_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt06_deformation_gradient_zy  absolute 1.0e-14
+	ipt06_deformation_gradient_zy  absolute 1.0e-12
 	ipt06_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
 	ipt06_stress_xx                absolute 5.284789600000e+03    # min:               0 @ t1,b1,e1	max:   5.2847896e+09 @ t4,b1,e23
 	ipt06_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
@@ -136,13 +136,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt06_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
 	ipt06_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3322427.7 @ t3,b1,e63
 	ipt07_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt07_deformation_gradient_xy  absolute 1.0e-14
-	ipt07_deformation_gradient_xz  absolute 1.0e-14
+	ipt07_deformation_gradient_xy  absolute 1.0e-12
+	ipt07_deformation_gradient_xz  absolute 1.0e-12
 	ipt07_deformation_gradient_yx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
 	ipt07_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
-	ipt07_deformation_gradient_yz  absolute 1.0e-14
+	ipt07_deformation_gradient_yz  absolute 1.0e-12
 	ipt07_deformation_gradient_zx  absolute 6.717771000000e-13    # min:               0 @ t1,b1,e1	max:    6.717771e-07 @ t3,b1,e61
-	ipt07_deformation_gradient_zy  absolute 1.0e-14
+	ipt07_deformation_gradient_zy  absolute 1.0e-12
 	ipt07_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
 	ipt07_stress_xx                absolute 5.284789600000e+03    # min:               0 @ t1,b1,e1	max:   5.2847896e+09 @ t4,b1,e23
 	ipt07_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
@@ -151,13 +151,13 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	ipt07_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
 	ipt07_stress_zz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       3322427.7 @ t3,b1,e63
 	ipt08_deformation_gradient_xx  absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
-	ipt08_deformation_gradient_xy  absolute 1.0e-14
-	ipt08_deformation_gradient_xz  absolute 1.0e-14
+	ipt08_deformation_gradient_xy  absolute 1.0e-12
+	ipt08_deformation_gradient_xz  absolute 1.0e-12
 	ipt08_deformation_gradient_yx  absolute 6.717770800000e-13    # min:               0 @ t1,b1,e1	max:   6.7177708e-07 @ t3,b1,e61
 	ipt08_deformation_gradient_yy  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
-	ipt08_deformation_gradient_yz  absolute 1.0e-14
+	ipt08_deformation_gradient_yz  absolute 1.0e-12
 	ipt08_deformation_gradient_zx  absolute 6.717770900000e-13    # min:               0 @ t1,b1,e1	max:   6.7177709e-07 @ t3,b1,e61
-	ipt08_deformation_gradient_zy  absolute 1.0e-14
+	ipt08_deformation_gradient_zy  absolute 1.0e-12
 	ipt08_deformation_gradient_zz  absolute 1.000000600000e-06    # min:      0.99999833 @ t3,b1,e63	max:       1.0000006 @ t3,b1,e48
 	ipt08_stress_xx                absolute 5.284789600000e+03    # min:               0 @ t1,b1,e1	max:   5.2847896e+09 @ t4,b1,e23
 	ipt08_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       1010314.3 @ t3,b1,e61
