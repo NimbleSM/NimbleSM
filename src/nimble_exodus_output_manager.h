@@ -89,8 +89,10 @@ namespace nimble_kokkos {
     std::vector< std::vector<double> > node_data_;
 
     std::map<int, std::vector<std::string> > elem_data_labels_;
-    std::map<int, std::vector<int> > elem_data_field_ids_;
+    std::map<int, std::vector<int> > elem_data_iptdata_field_ids_;
+    std::map<int, std::vector<int> > elem_data_edata_field_ids_;
     std::map<int, std::vector<FieldType> > elem_data_types_;
+    std::map<int, std::vector<int> > elem_data_integration_point_index_;
     std::map<int, std::vector<int> > elem_data_components_;
     std::map<int, std::vector< std::vector<double> > > elem_data_;
 
