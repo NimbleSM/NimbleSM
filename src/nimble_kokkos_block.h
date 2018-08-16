@@ -66,7 +66,7 @@ namespace nimble_kokkos {
 
   public:
 
-  Block() : macro_material_parameters_("none"), vol_ave_volume_offset_(-1), rve_boundary_condition_strategy_("none"),
+  Block() : macro_material_parameters_("none"), rve_boundary_condition_strategy_("none"),
       elem_conn_d("element_connectivity_d", 0), element_device_(0), material_device_(0) {}
 
     virtual ~Block() {
@@ -83,16 +83,9 @@ namespace nimble_kokkos {
 
     void Initialize(std::string const & macro_material_parameters);
 
-    /* void Initialize(std::string const & macro_material_parameters, */
-    /*                 std::map<int, std::string> const & rve_material_parameters, */
-    /*                 GenesisMesh const & rve_mesh, */
-    /*                 std::string rve_boundary_condition_strategy); */
-
     void InstantiateMaterialModel();
 
     void InstantiateElement();
-
-    void GetIntegrationPointDataLabelsAndLengths(std::vector< std::pair<std::string, nimble::Length> >& data_labels_and_lengths);
 
     double GetDensity() const {
       return material_host_->GetDensity();
@@ -116,15 +109,6 @@ namespace nimble_kokkos {
                                    int num_elem,
                                    const int * const elem_conn) const;
 
-    void InitializeElementData(int num_elem_in_block,
-                               std::vector<int> const & elem_global_ids_in_block,
-                               std::vector<int> const & rve_output_global_elem_ids,
-                               std::vector<std::string> const & elem_data_labels,
-                               std::vector<std::string> const & derived_elem_data_labels,
-                               std::vector<double>& elem_data_n,
-                               std::vector<double>& elem_data_np1,
-                               nimble_kokkos::DataManager& data_manager);
-
     template <typename MatT>
     void ComputeTangentStiffnessMatrix(int num_global_unknowns,
                                        const double * const reference_coordinates,
@@ -134,19 +118,7 @@ namespace nimble_kokkos {
                                        const int * const global_node_ids,
                                        MatT & tangent_stiffness) const ;
 
-    void ComputeDerivedElementData(const double * const reference_coordinates,
-                                   const double * const displacement,
-                                   int num_elem,
-                                   const int * const elem_conn,
-                                   int num_elem_data,
-                                   std::vector<double> const & elem_data_np1,
-                                   int num_derived_elem_data,
-                                   std::vector< std::vector<double> >& derived_elem_data);
-
   private:
-
-    void DetermineDataOffsets(std::vector<std::string> const & elem_data_labels,
-                              std::vector<std::string> const & derived_elem_data_labels);
 
     std::string macro_material_parameters_;
     std::map<int, std::string> rve_material_parameters_;
@@ -154,12 +126,6 @@ namespace nimble_kokkos {
     std::vector<int> rve_output_global_elem_ids_;
     // todo: can we avoid carrying the rve_mesh around?
     //GenesisMesh rve_mesh_;
-    std::vector<int> def_grad_offset_;
-    std::vector<int> stress_offset_;
-    std::vector<int> state_data_offset_;
-    int vol_ave_volume_offset_;
-    std::vector<int> vol_ave_offsets_;
-    std::map<int, int> vol_ave_index_to_derived_data_index_;
 
     // element connectivity
     DeviceElementConnectivityView elem_conn_d;
