@@ -253,6 +253,9 @@ namespace nimble {
     virtual ~Material() {}
 
     NIMBLE_FUNCTION
+    virtual bool IsNGPLAMEModel() const { return false; }
+
+    NIMBLE_FUNCTION
     virtual int NumStateVariables() const = 0;
 
     NIMBLE_FUNCTION
