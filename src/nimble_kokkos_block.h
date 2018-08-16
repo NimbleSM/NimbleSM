@@ -81,9 +81,10 @@ namespace nimble_kokkos {
       }
     }
 
-    void Initialize(std::string const & macro_material_parameters);
+    void Initialize(std::string const & macro_material_parameters,
+                    int num_elements);
 
-    void InstantiateMaterialModel();
+    void InstantiateMaterialModel(int num_material_points);
 
     void InstantiateElement();
 

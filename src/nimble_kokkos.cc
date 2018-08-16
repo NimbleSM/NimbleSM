@@ -156,11 +156,12 @@ void main_routine(int argc, char *argv[]) {
     std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
+    int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
     //blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy);
-    blocks.at(block_id).Initialize(macro_material_parameters);
+    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block);
     //int num_integration_points_per_element = blocks.at(block_id).GetHostElement()->NumIntegrationPointsPerElement();
-    int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
+
 
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;

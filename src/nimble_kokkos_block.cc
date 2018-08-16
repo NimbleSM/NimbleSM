@@ -54,79 +54,55 @@
 
 namespace nimble_kokkos {
 
-  void Block::Initialize(std::string const & macro_material_parameters) {
+  void Block::Initialize(std::string const & macro_material_parameters,
+                         int num_elements) {
     macro_material_parameters_ = macro_material_parameters;
-
-
-    // DJL NGP LAME MATERIAL MODELS NEED TO KNOW THE TOTAL NUMBER OF INTEGRATION POINTS
-
-
-    InstantiateMaterialModel();
     InstantiateElement();
+    int num_material_points = num_elements * element_host_->NumIntegrationPointsPerElement();
+    InstantiateMaterialModel(num_material_points);
   }
 
-  void Block::InstantiateMaterialModel() {
+  void Block::InstantiateMaterialModel(int num_material_points) {
 
-    if (macro_material_parameters_ != "none" && rve_material_parameters_.size() == 0) {
+    // the first entry in the material parameters string is the material model name
+    size_t space_pos = macro_material_parameters_.find(" ");
+    std::string name = macro_material_parameters_.substr(0, space_pos);
 
-      // the first entry in the material parameters string is the material model name
-      size_t space_pos = macro_material_parameters_.find(" ");
-      std::string name = macro_material_parameters_.substr(0, space_pos);
-
-      // LAME material models are designated with lame_
 #ifdef NIMBLE_HAVE_EXTRAS
-      bool is_lame_model = false;
-      if (name.size() > 5 && name.substr(0,5) == "lame_") {
-        is_lame_model = true;
-      }
-
-      // NGP LAME material models are designated with ngp_lame_
-      bool is_ngp_lame_model = false;
-      if (name.size() > 9 && name.substr(0,9) == "ngp_lame_") {
-        is_ngp_lame_model = true;
-      }
+    // NGP LAME material models are designated with ngp_lame_
+    bool is_ngp_lame_model = false;
+    if (name.size() > 9 && name.substr(0,9) == "ngp_lame_") {
+      is_ngp_lame_model = true;
+    }
 #endif
 
-      char material_name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-      int num_material_parameters;
-      char material_parameter_names[nimble::MaterialParameters::MAX_NUM_MAT_PARAM][nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-      double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
-      nimble::ParseMaterialParametersString(macro_material_parameters_.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-      nimble::MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-      if (nimble::StringsAreEqual(material_name, "neohookean")) {
-        material_host_ = std::make_shared<nimble::NeohookeanMaterial>(material_parameters_struct);
-        material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NeohookeanMaterial)));
-        nimble::Material* pointer_that_lives_on_the_stack = material_device_;
-        Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-            new (pointer_that_lives_on_the_stack) nimble::NeohookeanMaterial(material_parameters_struct);
-          });
-      }
+    char material_name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+    int num_material_parameters;
+    char material_parameter_names[nimble::MaterialParameters::MAX_NUM_MAT_PARAM][nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+    double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
+    nimble::ParseMaterialParametersString(macro_material_parameters_.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
+    nimble::MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values, num_material_points);
+    if (nimble::StringsAreEqual(material_name, "neohookean")) {
+      material_host_ = std::make_shared<nimble::NeohookeanMaterial>(material_parameters_struct);
+      material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NeohookeanMaterial)));
+      nimble::Material* pointer_that_lives_on_the_stack = material_device_;
+      Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
+          new (pointer_that_lives_on_the_stack) nimble::NeohookeanMaterial(material_parameters_struct);
+        });
+    }
 #ifdef NIMBLE_HAVE_EXTRAS
-      // else if (is_lame_model) {
-      //   material_host_ = std::make_shared<LAMEMaterial>(macro_material_parameters_);
-      // }
-      else if (is_ngp_lame_model) {
-        std::cout << "DEBUGGING is_ngp_lame_model" << std::endl;
-        material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct);
-        material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NGPLAMEMaterial)));
-        nimble::Material* pointer_that_lives_on_the_stack = material_device_;
-        Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-            new (pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct);
-          });
-      }
+    else if (is_ngp_lame_model) {
+      std::cout << "DEBUGGING is_ngp_lame_model" << std::endl;
+      material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct);
+      material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NGPLAMEMaterial)));
+      nimble::Material* pointer_that_lives_on_the_stack = material_device_;
+      Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
+          new (pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct);
+        });
+    }
 #endif
-      else {
-        throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
-      }
-    }
-    // else if (macro_material_parameters_ == "none" && rve_material_parameters_.size() != 0) {
-    //   material_host_ = std::make_shared<RVE>(rve_material_parameters_, rve_mesh_, rve_boundary_condition_strategy_);
-    // }
-    else if (macro_material_parameters_ != "none" && rve_material_parameters_.size() != 0) {
-      throw std::logic_error("\nError:  Assigning both a macroscale material and an RVE material to the same block is currently not supported.\n");
-    }
-    else{
-      throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material parameters\n");
+    else {
+      throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
     }
   }
 

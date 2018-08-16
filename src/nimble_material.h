@@ -86,7 +86,7 @@ namespace nimble {
     static const int MAX_MAT_MODEL_STR_LEN = 64;
 
     NIMBLE_INLINE_FUNCTION
-    MaterialParameters() : num_material_parameters_(0) {
+    MaterialParameters() : num_material_parameters_(0), num_material_points_(0) {
       for (int i=0 ; i<MAX_NUM_MAT_PARAM ; ++i) {
         for (int j=0 ; j<MAX_MAT_MODEL_STR_LEN ; ++j) {
           material_parameter_names_[i][j] = '\0';
@@ -99,8 +99,9 @@ namespace nimble {
     MaterialParameters(const char material_name[MAX_MAT_MODEL_STR_LEN],
                        int num_material_parameters,
                        const char material_parameter_names[MAX_NUM_MAT_PARAM][MAX_MAT_MODEL_STR_LEN],
-                       const double material_parameter_values[MAX_NUM_MAT_PARAM])
-      : num_material_parameters_(num_material_parameters) {
+                       const double material_parameter_values[MAX_NUM_MAT_PARAM],
+                       int num_material_points = 0)
+      : num_material_parameters_(num_material_parameters), num_material_points_(num_material_points) {
       for (int i=0 ; i<MAX_MAT_MODEL_STR_LEN ; ++i) {
         material_name_[i] = material_name[i];
       }
@@ -180,6 +181,11 @@ namespace nimble {
     }
 
     NIMBLE_INLINE_FUNCTION
+    int GetNumMaterialPoints() const {
+      return num_material_points_;
+    }
+
+    NIMBLE_INLINE_FUNCTION
     void Print() const {
       printf("\n--MaterialParameters\n");
       printf("  material name %s\n", material_name_);
@@ -227,6 +233,7 @@ namespace nimble {
     int num_material_parameters_ = 0;
     char material_parameter_names_[MAX_NUM_MAT_PARAM][MAX_MAT_MODEL_STR_LEN];
     double material_parameter_values_[MAX_NUM_MAT_PARAM];
+    int num_material_points_;
   };
 
   void ParseMaterialParametersString(const char* material_parameters,
