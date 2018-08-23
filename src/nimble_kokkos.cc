@@ -494,13 +494,10 @@ void main_routine(int argc, char *argv[]) {
 #ifdef NIMBLE_HAVE_EXTRAS
     if (blocks.begin()->second.GetHostMaterialModel()->IsNGPLAMEModel()) {
       // NGP LAME parallel_for to calculate stress
-      typedef struct NGPLAMEMaterialPtrStruct {
-        nimble::NGPLAMEMaterial* ptr;
-      } NGPLAMEMaterialPtr ;
-      Kokkos::View<NGPLAMEMaterialPtr*> ngp_lame_materials_d("NGP LAME Material Models", 1);
-      NGPLAMEMaterialPtr junk;
-      junk.ptr = dynamic_cast<nimble::NGPLAMEMaterial*>(blocks.begin()->second.GetDeviceMaterialModel());
-      ngp_lame_materials_d(0) = junk;
+      Kokkos::View<nimble::NGPLAMEMaterialPtr*> ngp_lame_materials_d("NGP LAME Material Models", 1);
+      nimble::NGPLAMEMaterialPtr ngp_lame_material_ptr_struct;
+      ngp_lame_material_ptr_struct.ptr = dynamic_cast<nimble::NGPLAMEMaterial*>(blocks.begin()->second.GetDeviceMaterialModel());
+      ngp_lame_materials_d(0) = ngp_lame_material_ptr_struct;
       const Kokkos::TeamPolicy<> team_loop(num_blocks, Kokkos::AUTO);
       Kokkos::parallel_for("compute stress", team_loop, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team) {
           int team_id = team.league_rank();
