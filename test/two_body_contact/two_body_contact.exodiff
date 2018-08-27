@@ -1,0 +1,44 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.89) Modified: 2017-09-19
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2018/08/27   14:19:33 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NimbleSM/test/two_body_contact/two_body_contact.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 2, Nodes = 996, Elements = 648, Nodesets = 2, Sidesets = 0
+#          Vars: Global = 0, Nodal = 6, Element = 0, Nodeset = 0, Sideset = 0, Times = 22
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           0.001 @ t22
+
+
+# No GLOBAL VARIABLES
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x   absolute 1.479104000000e-08    # min:               0 @ t1,n18	max:      0.01479104 @ t22,n17
+	displacement_y   absolute 3.646970400000e-10    # min:               0 @ t1,n18	max:   0.00036469704 @ t22,n706
+	displacement_z   absolute 5.123030500000e-09    # min:               0 @ t1,n18	max:    0.0051230305 @ t22,n676
+	contact_force_x  absolute 3.013862400000e-02    # min:               0 @ t1,n18	max:       30138.624 @ t6,n676
+	contact_force_y  absolute 3.526010500000e-03    # min:               0 @ t1,n18	max:       3526.0105 @ t6,n240
+	contact_force_z  absolute 5.768328100000e-03    # min:               0 @ t1,n18	max:       5768.3281 @ t6,n676
+
+# No ELEMENT VARIABLES
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+
