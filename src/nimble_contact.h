@@ -49,6 +49,7 @@
 #include <limits>
 #include <cmath>
 #include "nimble_genesis_mesh.h"
+#include "nimble_kokkos_defs.h"
 
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
@@ -57,7 +58,7 @@
 
 namespace nimble {
 
-  inline
+  NIMBLE_INLINE_FUNCTION
   double TriangleArea(const double * const pt_1,
                       const double * const pt_2,
                       const double * const pt_3) {
@@ -89,64 +90,79 @@ namespace nimble {
       TRIANGLE=3
     } CONTACT_ENTITY_TYPE;
 
-    ContactEntity(std::vector<double> const & coord,
+    ContactEntity(CONTACT_ENTITY_TYPE entity_type,
+                  int contant_entity_global_id,
+                  double const coord[],
                   double characteristic_length,
-                  std::vector< std::vector< std::pair<int, double> > > const & map_to_mesh_nodes,
-                  int global_id)
-      : coord_(coord),
-        char_len_(characteristic_length),
-        map_to_mesh_nodes_(map_to_mesh_nodes),
-        global_id_(global_id) {
+                  int node_id_for_node_1,
+                  int node_id_for_node_2 = 0,
+                  int node_ids_for_fictitious_node[4] = 0)
+      : entity_type_(entity_type),
+        contant_entity_global_id_(contant_entity_global_id),
+        char_len_(characteristic_length) {
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
-          if (coord_.size() == 3) {
-            entity_type_ = NODE;
+          if (entity_type_ == NODE) {
             num_nodes_ = 1;
+            node_id_for_node_1_ = node_id_for_node_1;
           }
-          else if (coord_.size() == 9) {
-            entity_type_ = TRIANGLE;
+          else if (entity_type_ == TRIANGLE) {
             num_nodes_ = 3;
+            node_id_for_node_1_ = node_id_for_node_1;
+            node_id_for_node_2_ = node_id_for_node_2;
+            for (int i=0 ; i<4 ; i++) {
+              node_ids_for_fictitious_node_[i] = node_ids_for_fictitious_node[i];
+            }
           }
           else{
-            throw std::logic_error("\n**** Error in ContactEntity constructor, invalid array length.\n");
+            printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
           }
 
-          // sanity check on map to mesh nodes
-          if (coord_.size() != 3*map_to_mesh_nodes_.size()) {
-            throw std::logic_error("\n**** Error in ContactEntity constructor, array length mismatch.\n");
+          for (unsigned int i=0 ; i<3*num_nodes_ ; i++) {
+            coord_[i] = coord[i];
           }
 
           SetBoundingBox();
-
-          force_.resize(coord_.size());
         }
 
     virtual ~ContactEntity() {}
 
     void SetCoordinates(const double * const coord) {
-      for (unsigned int i_node=0 ; i_node<num_nodes_ ; i_node++){
-        for (int i_dof = 0 ; i_dof < 3 ; i_dof++) {
-          coord_[3*i_node + i_dof] = 0.0;
-        }
-        for (auto const & entry : map_to_mesh_nodes_.at(i_node)) {
-          int node_id = entry.first;
-          double multiplier = entry.second;
-          for (int i_dof = 0 ; i_dof < 3 ; i_dof++) {
-            coord_[3*i_node + i_dof] += multiplier * coord[3*node_id + i_dof];
-          }
-        }
+      int n0 = 3*node_id_for_node_1_;
+      coord_[0] = coord[n0];
+      coord_[1] = coord[n0+1];
+      coord_[2] = coord[n0+2];
+      if (entity_type_ == TRIANGLE) {
+        n0 = 3*node_id_for_node_2_;
+        coord_[3] = coord[n0];
+        coord_[4] = coord[n0+1];
+        coord_[5] = coord[n0+2];
+        n0 = 3*node_ids_for_fictitious_node_[0];
+        int n1 = 3*node_ids_for_fictitious_node_[1];
+        int n2 = 3*node_ids_for_fictitious_node_[2];
+        int n3 = 3*node_ids_for_fictitious_node_[3];
+        coord_[6] = (coord[n0]   + coord[n1]   + coord[n2]   + coord[n3]  ) / 4.0;
+        coord_[7] = (coord[n0+1] + coord[n1+1] + coord[n2+1] + coord[n3+1]) / 4.0;
+        coord_[8] = (coord[n0+2] + coord[n1+2] + coord[n2+2] + coord[n3+2]) / 4.0;
       }
       SetBoundingBox();
     }
 
     void GetForces(double * const force) {
-      for (unsigned int i_node=0 ; i_node<num_nodes_ ; i_node++){
-        for (auto const & entry : map_to_mesh_nodes_.at(i_node)) {
-          int node_id = entry.first;
-          double multiplier = entry.second;
-          for (int i_dof = 0 ; i_dof < 3 ; i_dof++) {
-            force[3*node_id + i_dof] += multiplier * force_[3*i_node + i_dof];
-          }
+      int n = 3*node_id_for_node_1_;
+      force[n]   += force_[0];
+      force[n+1] += force_[1];
+      force[n+2] += force_[2];
+      if (entity_type_ == TRIANGLE) {
+        n = 3*node_id_for_node_2_;
+        force[n]   += force_[3];
+        force[n+1] += force_[4];
+        force[n+2] += force_[5];
+        for (int i=0 ; i<4 ; i++) {
+          int n = 3*node_ids_for_fictitious_node_[i];
+          force[n]   += force_[6] / 4.0;
+          force[n+1] += force_[7] / 4.0;
+          force[n+2] += force_[8] / 4.0;
         }
       }
     }
@@ -160,12 +176,12 @@ namespace nimble {
     double get_z_max() const { return bounding_box_z_max_; }
 
     // Functions for bvh contact search
-    int global_id() const { return global_id_; }
+    int contant_entity_global_id() const { return contant_entity_global_id_; }
     const double* centroid() const { return centroid_; }
 #ifdef NIMBLE_HAVE_BVH
     bvh::dop_26<double> kdop() const {
       std::vector< std::array< double, 3 > > vertices;
-      for ( std::size_t i = 0; i < coord_.size(); i += 3 )
+      for ( std::size_t i = 0; i < 3*num_nodes_; i += 3 )
       {
         vertices.push_back( {{ coord_[i], coord_[i + 1], coord_[i + 2] }} );
       }
@@ -244,13 +260,13 @@ namespace nimble {
       }
     }
 
-    int global_id_ = -1;
+    int contant_entity_global_id_ = -1;
 
     // positions of nodes that define triangular contact patch
     CONTACT_ENTITY_TYPE entity_type_;
     int num_nodes_;
-    std::vector<double> coord_;
-    std::vector<double> force_;
+    double coord_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    double force_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     double char_len_;
 
     // bounding box for NimbleSMExtras contact search routines
@@ -265,9 +281,9 @@ namespace nimble {
     double centroid_[3] = {0.0, 0.0, 0.0};
 
     // map for moving displacement/forces to/from the contact manager data structures
-    // the vector has one entry for each node in the contact entity, where each entry is a list of pairs
-    // the first item in the pair is a node id, the second is a fraction of the force to transfer to that node
-    std::vector< std::vector< std::pair<int, double> > > map_to_mesh_nodes_;
+    int node_id_for_node_1_;
+    int node_id_for_node_2_;
+    int node_ids_for_fictitious_node_[4]; // fictitious node maps to multiple real nodes
   };
 
   class ContactManager {

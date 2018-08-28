@@ -50,6 +50,7 @@
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_data_manager.h"
 #include "nimble_kokkos_block.h"
+#include "nimble_contact.h"
 
 #include <iostream>
 
@@ -103,6 +104,26 @@ void main_routine(int argc, char *argv[]) {
   nimble_kokkos::DataManager data_manager;
   nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
 
+  nimble::ContactManager contact_manager;
+  bool contact_enabled = parser.HasContact();
+  if (contact_enabled) {
+    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    double penalty_parameter;
+    nimble::ParseContactCommand(parser.ContactString(),
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
+    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
+    mesh.BlockNamesToBlockIds(contact_master_block_names,
+                              contact_master_block_ids);
+    mesh.BlockNamesToBlockIds(contact_slave_block_names,
+                              contact_slave_block_ids);
+    contact_manager.SetPenaltyParameter(penalty_parameter);
+    contact_manager.CreateContactEntities(mesh,
+                                          contact_master_block_ids,
+                                          contact_slave_block_ids);
+  }
+
   int lumped_mass_field_id = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   nimble_kokkos::HostScalarNodeView lumped_mass_h = model_data.GetHostScalarNodeData(lumped_mass_field_id);
   nimble_kokkos::DeviceScalarNodeView lumped_mass_d = model_data.GetDeviceScalarNodeData(lumped_mass_field_id);
@@ -129,6 +150,10 @@ void main_routine(int argc, char *argv[]) {
   nimble_kokkos::HostVectorNodeView internal_force_h = model_data.GetHostVectorNodeData(internal_force_field_id);
   nimble_kokkos::DeviceVectorNodeView internal_force_d = model_data.GetDeviceVectorNodeData(internal_force_field_id);
 
+  int contact_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
+  nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(contact_force_field_id);
+  nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(contact_force_field_id);
+
   int deformation_gradient_field_id(-1);
   int stress_field_id(-1);
 
@@ -152,11 +177,11 @@ void main_routine(int argc, char *argv[]) {
 
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
-    deformation_gradient_field_id =  model_data.AllocateIntegrationPointData(block_id,
-                                                                             nimble::FULL_TENSOR,
-                                                                             "deformation_gradient",
-                                                                             num_elements_in_block,
-                                                                             initial_value);
+    deformation_gradient_field_id = model_data.AllocateIntegrationPointData(block_id,
+                                                                            nimble::FULL_TENSOR,
+                                                                            "deformation_gradient",
+                                                                            num_elements_in_block,
+                                                                            initial_value);
 
     // volume-averaged quantities for I/O are stored as element data
     model_data.AllocateElementData(block_id,
@@ -228,6 +253,7 @@ void main_routine(int argc, char *argv[]) {
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_reference_coordinates", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
   for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index+=1, block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -235,6 +261,7 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::resize(gathered_reference_coordinate_d.at(block_index), num_elem_in_block);
     Kokkos::resize(gathered_displacement_d.at(block_index), num_elem_in_block);
     Kokkos::resize(gathered_internal_force_d.at(block_index), num_elem_in_block);
+    Kokkos::resize(gathered_contact_force_d.at(block_index), num_elem_in_block);
   }
 
   Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
@@ -372,6 +399,7 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
+    Kokkos::deep_copy(contact_force_d, (double)(0.0));
 
     // Compute element-level kinematics
     for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
@@ -572,11 +600,19 @@ void main_routine(int argc, char *argv[]) {
     // Perform a reduction to obtain correct values on MPI boundaries
     mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
 
+
+    // Evaluate the contact force
+    // if (contact_enabled) {
+    //   contact_manager.ApplyDisplacements(displacement);
+    //   contact_manager.ComputeContactForce(step+1, visualize_output && is_output_step);
+    //   contact_manager.GetForces(contact_force);
+    // }
+
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_nodes ; ++i) {
-      acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0));
-      acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1));
-      acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2));
+      acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0) + contact_force_h(i,0));
+      acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1) + contact_force_h(i,1));
+      acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2) + contact_force_h(i,2));
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}

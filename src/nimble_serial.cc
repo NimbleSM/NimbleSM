@@ -224,32 +224,26 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = mesh.GetNumBlocks();
 
   nimble::ContactManager contact_manager;
-
   bool contact_enabled = parser.HasContact();
-
   if (contact_enabled) {
-
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
     nimble::ParseContactCommand(parser.ContactString(),
-                                        contact_master_block_names,
-                                        contact_slave_block_names,
-                                        penalty_parameter);
-
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
     std::vector<int> contact_master_block_ids, contact_slave_block_ids;
     mesh.BlockNamesToBlockIds(contact_master_block_names,
                               contact_master_block_ids);
     mesh.BlockNamesToBlockIds(contact_slave_block_names,
                               contact_slave_block_ids);
-
     contact_manager.SetPenaltyParameter(penalty_parameter);
-
     contact_manager.CreateContactEntities(mesh,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
-    
-    if ( visualize_output )
+    if (visualize_output) {
       contact_manager.WriteContactEntitiesToVTKFile(0);
+    }
   }
 
   std::vector<int> global_node_ids(num_nodes);

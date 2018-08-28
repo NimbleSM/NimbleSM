@@ -328,6 +328,9 @@ namespace nimble {
     for (auto face : master_skin_faces) {
 
       int num_nodes_in_face = static_cast<int>(face.size());
+      if (num_nodes_in_face != 4) {
+        throw std::logic_error("\nError in ContactManager::CreateContactEntities(), invalid number of face nodes.\n");
+      }
 
       // determine a characteristic length based on max edge length
       double max_edge_length = std::numeric_limits<double>::lowest();
@@ -361,28 +364,18 @@ namespace nimble {
       // Create a map for transfering displacements and contact forces from the nodes on the
       // triangle patch to the contact manager data structures.  There is a 1-to-1 transfer for the two real nodes,
       // and for the fictitious node the mapping applies an equal fraction of the displacement/force
-      // at the fictitious node to each real node in the original mesh face
-      std::vector< std::vector< std::pair<int, double> > > map_to_mesh_nodes(3);
-
-      // The real nodes always map to a single node in the mesh
-      map_to_mesh_nodes[0].resize(1);
-      map_to_mesh_nodes[1].resize(1);
-
-      // The ficitious nodes always map equally to the nodes in the face
-      double fraction_of_force = 1.0/static_cast<double>(num_nodes_in_face);
-      for (int i=0 ; i<num_nodes_in_face ; i++){
-        int node_id = face[i];
-        map_to_mesh_nodes[2].push_back(std::pair<int, double>(node_id, fraction_of_force));
+      // at the fictitious node to each for four real nodes in the original mesh face
+      int node_ids_for_fictitious_node[4];
+      for (int i=0 ; i<4 ; i++){
+        node_ids_for_fictitious_node[i] = face[i];
       }
 
-      std::vector<double> model_coord(9);
+      double model_coord[9];
       int node_id_1, node_id_2;
 
       // triangle node_0, node_1, fictitious_node
       node_id_1 = face[0];
       node_id_2 = face[1];
-      map_to_mesh_nodes[0][0] = std::pair<int,double>(node_id_1, 1.0);
-      map_to_mesh_nodes[1][0] = std::pair<int,double>(node_id_2, 1.0);
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id_1+i];
         model_coord[3+i] = coord_[3*node_id_2+i];
@@ -390,16 +383,17 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      contact_faces_.push_back( ContactEntity(model_coord,
+      contact_faces_.push_back( ContactEntity(ContactEntity::TRIANGLE,
+                                              contact_entity_id++,
+                                              model_coord,
                                               characteristic_length,
-                                              map_to_mesh_nodes,
-                                              contact_entity_id++) );
+                                              node_id_1,
+                                              node_id_2,
+                                              node_ids_for_fictitious_node) );
 
       // triangle node_1, node_2, fictitious_node
       node_id_1 = face[1];
       node_id_2 = face[2];
-      map_to_mesh_nodes[0][0] = std::pair<int,double>(node_id_1, 1.0);
-      map_to_mesh_nodes[1][0] = std::pair<int,double>(node_id_2, 1.0);
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id_1+i];
         model_coord[3+i] = coord_[3*node_id_2+i];
@@ -407,16 +401,17 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      contact_faces_.push_back( ContactEntity(model_coord,
+      contact_faces_.push_back( ContactEntity(ContactEntity::TRIANGLE,
+                                              contact_entity_id++,
+                                              model_coord,
                                               characteristic_length,
-                                              map_to_mesh_nodes,
-                                              contact_entity_id++) );
+                                              node_id_1,
+                                              node_id_2,
+                                              node_ids_for_fictitious_node) );
 
       // triangle node_2, node_3, fictitious_node
       node_id_1 = face[2];
       node_id_2 = face[3];
-      map_to_mesh_nodes[0][0] = std::pair<int,double>(node_id_1, 1.0);
-      map_to_mesh_nodes[1][0] = std::pair<int,double>(node_id_2, 1.0);
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id_1+i];
         model_coord[3+i] = coord_[3*node_id_2+i];
@@ -424,16 +419,17 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      contact_faces_.push_back( ContactEntity(model_coord,
+      contact_faces_.push_back( ContactEntity(ContactEntity::TRIANGLE,
+                                              contact_entity_id++,
+                                              model_coord,
                                               characteristic_length,
-                                              map_to_mesh_nodes,
-                                              contact_entity_id++) );
+                                              node_id_1,
+                                              node_id_2,
+                                              node_ids_for_fictitious_node) );
 
       // triangle node_3, node_0, fictitious_node
       node_id_1 = face[3];
       node_id_2 = face[0];
-      map_to_mesh_nodes[0][0] = std::pair<int,double>(node_id_1, 1.0);
-      map_to_mesh_nodes[1][0] = std::pair<int,double>(node_id_2, 1.0);
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id_1+i];
         model_coord[3+i] = coord_[3*node_id_2+i];
@@ -441,10 +437,13 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      contact_faces_.push_back( ContactEntity(model_coord,
+      contact_faces_.push_back( ContactEntity(ContactEntity::TRIANGLE,
+                                              contact_entity_id++,
+                                              model_coord,
                                               characteristic_length,
-                                              map_to_mesh_nodes,
-                                              contact_entity_id++) );
+                                              node_id_1,
+                                              node_id_2,
+                                              node_ids_for_fictitious_node) );
     }
 
     // Store nodes in slave faces
@@ -489,24 +488,16 @@ namespace nimble {
       }
     }
     for (auto const & node_id : slave_node_ids) {
-
-      std::vector<double> model_coord(3);
+      double model_coord[3];
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id+i];
       }
-
       double characteristic_length = slave_node_characteristic_lengths.at(node_id);
-
-      std::pair<int, double> node_id_and_multiplier(node_id, 1.0);
-      std::vector< std::pair<int, double> > node_id_and_multiplier_vec;
-      node_id_and_multiplier_vec.push_back(node_id_and_multiplier);
-      std::vector< std::vector< std::pair<int, double> > > map_to_mesh_nodes;
-      map_to_mesh_nodes.push_back(node_id_and_multiplier_vec);
-
-      contact_nodes_.push_back( ContactEntity(model_coord,
+      contact_nodes_.push_back( ContactEntity(ContactEntity::NODE,
+                                              contact_entity_id++,
+                                              model_coord,
                                               characteristic_length,
-                                              map_to_mesh_nodes,
-                                              contact_entity_id++) );
+                                              node_id) );
     }
 
     std::cout << "Contact initialization:" << std::endl;
