@@ -51,6 +51,8 @@
 
 #include "Kokkos_Core.hpp"
 
+namespace nimble_kokkos {
+
 // Define HOST execution space, memory space, and device
 using kokkos_host_execution_space = Kokkos::Serial::execution_space;
 #ifdef KOKKOS_ENABLE_CUDA_UVM
@@ -71,8 +73,6 @@ using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_memo
 using kokkos_device = Kokkos::Device<kokkos_device_execution_space, kokkos_device_memory_space>;
 
 using kokkos_layout = kokkos_device_execution_space::array_layout;
-
-namespace nimble_kokkos {
 
 // Layout should not be specified unless you're using teams (and maybe not even if you are)
 //using Layout = kokkos_device_memory_space::execution_space::array_layout;
@@ -570,6 +570,7 @@ typedef Field< FieldType::HostSymTensorIntPt >::View                            
 typedef Field< FieldType::HostScalarElem >::View                                      HostScalarElemView;
 typedef Field< FieldType::HostFullTensorElem >::View                                  HostFullTensorElemView;
 typedef Field< FieldType::HostSymTensorElem >::View                                   HostSymTensorElemView;
+typedef Kokkos::View< int*, kokkos_layout, kokkos_host >                              HostIntegerArrayView;
 typedef Kokkos::View< int*, kokkos_layout, kokkos_host >                              HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
 
 typedef Field< FieldType::DeviceScalarNode >::View                                    DeviceScalarNodeView;
@@ -590,6 +591,7 @@ typedef Field< FieldType::DeviceFullTensorElem >::View                          
 typedef Field< FieldType::DeviceFullTensorElem >::SingleEntryView                     DeviceFullTensorElemSingleEntryView;
 typedef Field< FieldType::DeviceSymTensorElem >::View                                 DeviceSymTensorElemView;
 typedef Field< FieldType::DeviceSymTensorElem >::SingleEntryView                      DeviceSymTensorElemSingleEntryView;
+typedef Kokkos::View< int*, kokkos_layout, kokkos_device >                            DeviceIntegerArrayView;
 typedef Kokkos::View< int*, kokkos_layout, kokkos_device >                            DeviceElementConnectivityView;
 }
 

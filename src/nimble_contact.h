@@ -46,7 +46,7 @@
 
 #include <vector>
 #include <map>
-#include <limits>
+#include <float.h>
 #include <cmath>
 #include "nimble_genesis_mesh.h"
 #include "nimble_kokkos_defs.h"
@@ -89,6 +89,8 @@ namespace nimble {
       NODE=1,
       TRIANGLE=3
     } CONTACT_ENTITY_TYPE;
+
+    ContactEntity() : entity_type_(NONE) {}
 
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contant_entity_global_id,
@@ -194,12 +196,12 @@ namespace nimble {
 
       centroid_[0] = centroid_[1] = centroid_[2] = 0.0;
 
-      bounding_box_x_min_ = std::numeric_limits<double>::max();
-      bounding_box_x_max_ = std::numeric_limits<double>::lowest();
-      bounding_box_y_min_ = std::numeric_limits<double>::max();
-      bounding_box_y_max_ = std::numeric_limits<double>::lowest();
-      bounding_box_z_min_ = std::numeric_limits<double>::max();
-      bounding_box_z_max_ = std::numeric_limits<double>::lowest();
+      bounding_box_x_min_ = DBL_MAX;
+      bounding_box_x_max_ = -DBL_MAX;
+      bounding_box_y_min_ = DBL_MAX;
+      bounding_box_y_max_ = -DBL_MAX;
+      bounding_box_z_min_ = DBL_MAX;
+      bounding_box_z_max_ = -DBL_MAX;
 
       for (int i_node=0 ; i_node<num_nodes_ ; i_node++) {
 
@@ -238,7 +240,7 @@ namespace nimble {
     void ComputeNodalContactForces(const double * const contact_force,
                                    const double * const closest_point_projection) {
 
-      std::vector<double> N(num_nodes_);
+      double N[3] = {0.0, 0.0, 0.0};
 
       if (entity_type_ == NODE) {
         N[0] = 1.0;
@@ -263,27 +265,27 @@ namespace nimble {
     int contant_entity_global_id_ = -1;
 
     // positions of nodes that define triangular contact patch
-    CONTACT_ENTITY_TYPE entity_type_;
-    int num_nodes_;
+    CONTACT_ENTITY_TYPE entity_type_ = NONE;
+    int num_nodes_ = 0;
     double coord_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     double force_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    double char_len_;
+    double char_len_ = 0.0;
 
     // bounding box for NimbleSMExtras contact search routines
-    double bounding_box_x_min_;
-    double bounding_box_x_max_;
-    double bounding_box_y_min_;
-    double bounding_box_y_max_;
-    double bounding_box_z_min_;
-    double bounding_box_z_max_;
+    double bounding_box_x_min_ = -DBL_MAX;
+    double bounding_box_x_max_ =  DBL_MAX;
+    double bounding_box_y_min_ = -DBL_MAX;
+    double bounding_box_y_max_ =  DBL_MAX;
+    double bounding_box_z_min_ = -DBL_MAX;
+    double bounding_box_z_max_ =  DBL_MAX;
 
     // centroid for bvh search routines
     double centroid_[3] = {0.0, 0.0, 0.0};
 
     // map for moving displacement/forces to/from the contact manager data structures
-    int node_id_for_node_1_;
-    int node_id_for_node_2_;
-    int node_ids_for_fictitious_node_[4]; // fictitious node maps to multiple real nodes
+    int node_id_for_node_1_ = -1;
+    int node_id_for_node_2_ = -1;
+    int node_ids_for_fictitious_node_[4] = {-1, -1, -1, -1}; // fictitious node maps to multiple real nodes
   };
 
   class ContactManager {
@@ -306,6 +308,13 @@ namespace nimble {
     void CreateContactEntities(GenesisMesh const & mesh,
                                std::vector<int> master_block_ids,
                                std::vector<int> slave_block_ids);
+
+    template <typename ArgT>
+    void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
+                                    std::vector<int> const & slave_node_ids,
+                                    std::map<int, double> const & slave_node_char_lens,
+                                    ArgT& contact_nodes,
+                                    ArgT& contact_faces) const ;
 
     void ApplyDisplacements(const double * const displacement) {
       for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
@@ -346,16 +355,27 @@ namespace nimble {
 
   protected:
 
+    bool contact_enabled_ = false;
+    double penalty_parameter_;
+
     std::vector<int> node_ids_;
-    std::map<int, int> genesis_mesh_node_id_to_contact_vector_id_;
     std::vector<double> model_coord_;
     std::vector<double> coord_;
     std::vector<double> force_;
-
-    bool contact_enabled_ = false;
     std::vector<ContactEntity> contact_faces_;
     std::vector<ContactEntity> contact_nodes_;
-    double penalty_parameter_;
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
+    nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
+    nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
+    nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
+
+    using HostContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_host >;
+    using DeviceContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device >;
+    DeviceContactEntityArrayView contact_faces_d_ = DeviceContactEntityArrayView("contact_faces_d", 1);
+    DeviceContactEntityArrayView contact_nodes_d_ = DeviceContactEntityArrayView("contact_nodes_d", 1);
+#endif
   };
 
 } // namespace nimble
