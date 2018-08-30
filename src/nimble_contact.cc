@@ -708,6 +708,11 @@ namespace nimble {
     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_proximity_search");
     stk::search::MortonLBVHSearch_Timers timers;
 
+
+    // PLAN:  Call other version of TimedMortonLBVHSearch that takes trees
+    // store trees in contact manger
+    // at each step, update min max values in tree ON DEVICE using a to-be-written device_set_box
+
     stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(contact_nodes_,
                                                                                              contact_faces_,
                                                                                              collision_list,

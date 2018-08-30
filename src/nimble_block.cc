@@ -108,6 +108,9 @@ namespace nimble {
       if (StringsAreEqual(material_name, "neohookean")) {
         material_ = std::make_shared<NeohookeanMaterial>(material_parameters_struct);
       }
+      else if (StringsAreEqual(material_name, "elastic")) {
+        material_ = std::make_shared<ElasticMaterial>(material_parameters_struct);
+      }
 #ifdef NIMBLE_HAVE_EXTRAS
       else if (is_lame_model) {
         material_ = std::make_shared<LAMEMaterial>(material_parameters_struct);

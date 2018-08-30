@@ -114,6 +114,113 @@ namespace nimble {
     }
   }
 
+  ElasticMaterial::ElasticMaterial(MaterialParameters const & material_parameters)
+    : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
+    dim_ = 3;
+    density_ = material_parameters_.GetParameterValue("density");
+    bulk_modulus_ =  material_parameters_.GetParameterValue("bulk_modulus");
+    shear_modulus_ =  material_parameters_.GetParameterValue("shear_modulus");
+  }
+
+  void ElasticMaterial::GetStress(int elem_id,
+                                     int num_pts,
+                                     double time_previous,
+                                     double time_current,
+                                     const double * const deformation_gradient_n,
+                                     const double * const deformation_gradient_np1,
+                                     const double * const unrotated_stress_n,
+                                     double* unrotated_stress_np1,
+                                     const double * const state_data_n,
+                                     double* state_data_np1,
+                                     DataManager& data_manager,
+                                     bool is_output_step) {
+
+    double* stress = unrotated_stress_np1;
+    const double * def_grad = deformation_gradient_np1;
+    double strain[6];
+    double trace_strain;
+
+    double two_mu = 2.0 * shear_modulus_;
+    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
+
+    for (int pt = 0 ; pt < num_pts ; pt++, def_grad+=9, stress+=6){
+      strain[K_S_XX] = def_grad[K_F_XX] - 1.0;
+      strain[K_S_YY] = def_grad[K_F_YY] - 1.0;
+      strain[K_S_ZZ] = def_grad[K_F_ZZ] - 1.0;
+      strain[K_S_XY] = 0.5*(def_grad[K_F_XY] + def_grad[K_F_YX]);
+      strain[K_S_YZ] = 0.5*(def_grad[K_F_YZ] + def_grad[K_F_ZY]);
+      strain[K_S_ZX] = 0.5*(def_grad[K_F_ZX] + def_grad[K_F_XZ]);
+
+      trace_strain = strain[K_S_XX] + strain[K_S_YY] + strain[K_S_ZZ];
+
+      stress[K_S_XX] = two_mu * strain[K_S_XX] + lambda * trace_strain;
+      stress[K_S_YY] = two_mu * strain[K_S_YY] + lambda * trace_strain;
+      stress[K_S_ZZ] = two_mu * strain[K_S_ZZ] + lambda * trace_strain;
+      stress[K_S_XY] = two_mu * strain[K_S_XY];
+      stress[K_S_YZ] = two_mu * strain[K_S_YZ];
+      stress[K_S_ZX] = two_mu * strain[K_S_ZX];
+    }
+  }
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  void ElasticMaterial::GetStress(double time_previous,
+                                     double time_current,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) {
+    printf("\nError:  ElasticMaterial::GetStress() not implemented for cuda.\n");
+  }
+#endif
+
+  void ElasticMaterial::GetTangent(int num_pts,
+                                   double* material_tangent) const {
+
+    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
+    double mu = shear_modulus_;
+    double two_mu = 2.0*shear_modulus_;
+
+    for (int int_pt=0 ; int_pt<num_pts ; int_pt++) {
+      int offset = int_pt*36;
+      material_tangent[offset]      = lambda + two_mu;
+      material_tangent[offset + 1]  = lambda;
+      material_tangent[offset + 2]  = lambda;
+      material_tangent[offset + 3]  = 0.0;
+      material_tangent[offset + 4]  = 0.0;
+      material_tangent[offset + 5]  = 0.0;
+      material_tangent[offset + 6]  = lambda;
+      material_tangent[offset + 7]  = lambda + two_mu;
+      material_tangent[offset + 8]  = lambda;
+      material_tangent[offset + 9]  = 0.0;
+      material_tangent[offset + 10] = 0.0;
+      material_tangent[offset + 11] = 0.0;
+      material_tangent[offset + 12] = lambda;
+      material_tangent[offset + 13] = lambda;
+      material_tangent[offset + 14] = lambda + two_mu;
+      material_tangent[offset + 15] = 0.0;
+      material_tangent[offset + 16] = 0.0;
+      material_tangent[offset + 17] = 0.0;
+      material_tangent[offset + 18] = 0.0;
+      material_tangent[offset + 19] = 0.0;
+      material_tangent[offset + 20] = 0.0;
+      material_tangent[offset + 21] = mu;
+      material_tangent[offset + 22] = 0.0;
+      material_tangent[offset + 23] = 0.0;
+      material_tangent[offset + 24] = 0.0;
+      material_tangent[offset + 25] = 0.0;
+      material_tangent[offset + 26] = 0.0;
+      material_tangent[offset + 27] = 0.0;
+      material_tangent[offset + 28] = mu;
+      material_tangent[offset + 29] = 0.0;
+      material_tangent[offset + 30] = 0.0;
+      material_tangent[offset + 31] = 0.0;
+      material_tangent[offset + 32] = 0.0;
+      material_tangent[offset + 33] = 0.0;
+      material_tangent[offset + 34] = 0.0;
+      material_tangent[offset + 35] = mu;
+    }
+  }
+
   NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const & material_parameters)
     : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
     dim_ = 3;
@@ -332,24 +439,25 @@ namespace nimble {
 
     double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
     double mu = shear_modulus_;
+    double two_mu = 2.0*shear_modulus_;
 
     for (int int_pt=0 ; int_pt<num_pts ; int_pt++) {
       int offset = int_pt*36;
-      material_tangent[offset]      = lambda + 2.0*mu;
+      material_tangent[offset]      = lambda + two_mu;
       material_tangent[offset + 1]  = lambda;
       material_tangent[offset + 2]  = lambda;
       material_tangent[offset + 3]  = 0.0;
       material_tangent[offset + 4]  = 0.0;
       material_tangent[offset + 5]  = 0.0;
       material_tangent[offset + 6]  = lambda;
-      material_tangent[offset + 7]  = lambda + 2.0*mu;
+      material_tangent[offset + 7]  = lambda + two_mu;
       material_tangent[offset + 8]  = lambda;
       material_tangent[offset + 9]  = 0.0;
       material_tangent[offset + 10] = 0.0;
       material_tangent[offset + 11] = 0.0;
       material_tangent[offset + 12] = lambda;
       material_tangent[offset + 13] = lambda;
-      material_tangent[offset + 14] = lambda + 2.0*mu;
+      material_tangent[offset + 14] = lambda + two_mu;
       material_tangent[offset + 15] = 0.0;
       material_tangent[offset + 16] = 0.0;
       material_tangent[offset + 17] = 0.0;
