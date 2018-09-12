@@ -320,6 +320,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                   elem_conn,
                                   lumped_mass);
     double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
+                                                                    displacement,
                                                                     num_elem_in_block,
                                                                     elem_conn);
     if (block_critical_time_step < critical_time_step) {

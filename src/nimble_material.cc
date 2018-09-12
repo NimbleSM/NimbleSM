@@ -123,17 +123,17 @@ namespace nimble {
   }
 
   void ElasticMaterial::GetStress(int elem_id,
-                                     int num_pts,
-                                     double time_previous,
-                                     double time_current,
-                                     const double * const deformation_gradient_n,
-                                     const double * const deformation_gradient_np1,
-                                     const double * const unrotated_stress_n,
-                                     double* unrotated_stress_np1,
-                                     const double * const state_data_n,
-                                     double* state_data_np1,
-                                     DataManager& data_manager,
-                                     bool is_output_step) {
+                                  int num_pts,
+                                  double time_previous,
+                                  double time_current,
+                                  const double * const deformation_gradient_n,
+                                  const double * const deformation_gradient_np1,
+                                  const double * const unrotated_stress_n,
+                                  double* unrotated_stress_np1,
+                                  const double * const state_data_n,
+                                  double* state_data_np1,
+                                  DataManager& data_manager,
+                                  bool is_output_step) {
 
     double* stress = unrotated_stress_np1;
     const double * def_grad = deformation_gradient_np1;
