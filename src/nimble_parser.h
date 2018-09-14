@@ -101,7 +101,7 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_DARMA
     template< typename ArchiveType >
     void serialize(ArchiveType& ar) {
-      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_ | exodus_file_name_ | use_two_level_mesh_decomposition_ | write_timing_data_file_ | time_integration_scheme_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_ | contact_string_ | microscale_output_element_ids_ | material_strings_ | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_ | boundary_condition_strings_ | output_field_string_;
+      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_ | exodus_file_name_ | use_two_level_mesh_decomposition_ | write_timing_data_file_ | time_integration_scheme_ | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_ | contact_string_ | microscale_output_element_ids_ | material_strings_ | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_ | boundary_condition_strings_ | output_field_string_;
     }
 #endif
 
@@ -124,6 +124,10 @@ namespace nimble {
       }
       return time_integration_scheme_;
     }
+
+    double NonlinearSolverRelativeTolerance() const { return nonlinear_solver_relative_tolerance_; }
+
+    int NonlinearSolverMaxIterations() const { return nonlinear_solver_max_iterations_; }
 
     double FinalTime() const { return final_time_; }
 
@@ -190,6 +194,8 @@ namespace nimble {
     std::string exodus_file_name_;
     bool use_two_level_mesh_decomposition_;
     bool write_timing_data_file_;
+    double nonlinear_solver_relative_tolerance_;
+    int nonlinear_solver_max_iterations_;
     std::string time_integration_scheme_;
     double final_time_;
     int num_load_steps_;

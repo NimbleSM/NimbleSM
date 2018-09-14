@@ -62,7 +62,11 @@ namespace nimble {
     double det = mat[0][0] * minor0 - mat[0][1] * minor1 + mat[0][2] * minor2;
 
     if (det <= 0.0) {
+#ifdef NIMBLE_HAVE_KOKKOS
       printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+#else
+      throw std::logic_error("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+#endif
     }
 
     inv[0][0] = minor0 / det;
@@ -101,7 +105,11 @@ namespace nimble {
       }
       if (big < tiny){
         // No nonzero largest element.
+#ifdef NIMBLE_HAVE_KOKKOS
         printf("\n**** Error in HexElement::Invert3x3LUDecomp(), singular matrix.\n");
+#else
+        throw std::logic_error("\n**** Error in HexElement::Invert3x3LUDecomp(), singular matrix.\n");
+#endif
       }
       vv[i] = 1.0/big;
     }
@@ -143,7 +151,11 @@ namespace nimble {
 
       if(fabs(a[j][j]) < tiny){
         // matrix is singular and we're about to divide by zero
+#ifdef NIMBLE_HAVE_KOKKOS
         printf("\n**** Error in HexElement::Invert3x3LUDecomp(), singular matrix.\n");
+#else
+        throw std::logic_error("\n**** Error in HexElement::Invert3x3LUDecomp(), singular matrix.\n");
+#endif
       }
 
       // divide by the pivot element

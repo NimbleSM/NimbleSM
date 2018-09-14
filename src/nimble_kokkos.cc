@@ -429,7 +429,6 @@ void main_routine(int argc, char *argv[]) {
       nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
                                                                                                                                     deformation_gradient_field_id,
                                                                                                                                     nimble::STEP_NP1);
-
       // COMPUTE DEFORMATION GRADIENTS
       Kokkos::parallel_for("Deformation Gradient", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
           nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
