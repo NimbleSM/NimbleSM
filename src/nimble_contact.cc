@@ -719,9 +719,9 @@ namespace nimble {
                                                                                              timers);
 
     auto num_collisions = collision_list.get_num_collisions();
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points(num_collisions);
-    gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles(num_collisions);
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points(num_collisions);
+    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points("points", num_collisions);
+    gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
+    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest points", num_collisions);
 
     std::map<int, std::vector<int> > collision_indices_for_each_contact_node;
     for (int i=0 ; i<num_collisions ; i++) {
