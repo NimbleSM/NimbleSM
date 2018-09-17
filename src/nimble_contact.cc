@@ -43,10 +43,6 @@
 
 #include "nimble_contact.h"
 
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_extras_contact_includes.h"
-#endif
-
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/broadphase.hpp>
   #include <bvh/narrowphase.hpp>
@@ -708,17 +704,43 @@ namespace nimble {
     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_proximity_search");
     stk::search::MortonLBVHSearch_Timers timers;
 
+    stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
+    contact_nodes_tree_loader(contact_nodes_search_tree_, contact_nodes_.size());
 
-    // PLAN:  Call other version of TimedMortonLBVHSearch that takes trees
-    // store trees in contact manger
-    // at each step, update min max values in tree ON DEVICE using a to-be-written device_set_box
+    Kokkos::parallel_for("Load contact nodes search tree",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_nodes_.size()),
+                         KOKKOS_LAMBDA(const int i_contact_node) {
+      double min_x = contact_nodes_d_(i_contact_node).get_x_min();
+      double max_x = contact_nodes_d_(i_contact_node).get_x_max();
+      double min_y = contact_nodes_d_(i_contact_node).get_y_min();
+      double max_y = contact_nodes_d_(i_contact_node).get_y_max();
+      double min_z = contact_nodes_d_(i_contact_node).get_z_min();
+      double max_z = contact_nodes_d_(i_contact_node).get_z_max();
+      contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x, min_y, max_y, min_z, max_z);
+    });
 
-    stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(contact_nodes_,
-                                                                                             contact_faces_,
+    stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
+    contact_faces_tree_loader(contact_faces_search_tree_, contact_faces_.size());
+
+    Kokkos::parallel_for("Load contact faces search tree",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_faces_.size()),
+                         KOKKOS_LAMBDA(const int i_contact_face) {
+      double min_x = contact_faces_d_(i_contact_face).get_x_min();
+      double max_x = contact_faces_d_(i_contact_face).get_x_max();
+      double min_y = contact_faces_d_(i_contact_face).get_y_min();
+      double max_y = contact_faces_d_(i_contact_face).get_y_max();
+      double min_z = contact_faces_d_(i_contact_face).get_z_min();
+      double max_z = contact_faces_d_(i_contact_face).get_z_max();
+      contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x, min_y, max_y, min_z, max_z);
+    });
+
+    stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(contact_nodes_search_tree_,
+                                                                                             contact_faces_search_tree_,
                                                                                              collision_list,
                                                                                              timers);
 
     auto num_collisions = collision_list.get_num_collisions();
+    std::cout << "DEBUGGING Kokkos contact search, num_collisions = " << num_collisions << std::endl;
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points("points", num_collisions);
     gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest points", num_collisions);

@@ -601,11 +601,12 @@ void main_routine(int argc, char *argv[]) {
 
 
     // Evaluate the contact force
-    // if (contact_enabled) {
-    //   contact_manager.ApplyDisplacements(displacement);
-    //   contact_manager.ComputeContactForce(step+1, visualize_output && is_output_step);
-    //   contact_manager.GetForces(contact_force);
-    // }
+    if (contact_enabled) {
+       contact_manager.ApplyDisplacements(displacement_d);
+       contact_manager.ComputeContactForce(step+1, false);
+       contact_manager.GetForces(contact_force_d);
+    }
+    Kokkos::deep_copy(contact_force_h, contact_force_d);
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_nodes ; ++i) {

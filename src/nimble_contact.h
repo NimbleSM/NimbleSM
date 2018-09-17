@@ -51,6 +51,10 @@
 #include "nimble_genesis_mesh.h"
 #include "nimble_kokkos_defs.h"
 
+#ifdef NIMBLE_HAVE_EXTRAS
+  #include "nimble_extras_contact_includes.h"
+#endif
+
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
   #include <bvh/tree.hpp>
@@ -129,7 +133,8 @@ namespace nimble {
 
     virtual ~ContactEntity() {}
 
-    void SetCoordinates(const double * const coord) {
+    template <typename ArgT>
+    void SetCoordinates(ArgT coord) {
       int n0 = 3*node_id_for_node_1_;
       coord_[0] = coord[n0];
       coord_[1] = coord[n0+1];
@@ -150,7 +155,8 @@ namespace nimble {
       SetBoundingBox();
     }
 
-    void GetForces(double * const force) {
+    template <typename ArgT>
+    void GetForces(ArgT force) {
       int n = 3*node_id_for_node_1_;
       force[n]   += force_[0];
       force[n+1] += force_[1];
@@ -292,7 +298,12 @@ namespace nimble {
 
   public:
 
-  ContactManager() : penalty_parameter_(0.0) {}
+    ContactManager() : penalty_parameter_(0.0)
+#ifdef NIMBLE_HAVE_EXTRAS
+      , contact_nodes_search_tree_("contact nodes search tree")
+      , contact_faces_search_tree_("contact faces search tree")
+#endif
+      {}
 
     virtual ~ContactManager() {}
 
@@ -331,6 +342,32 @@ namespace nimble {
       }
     }
 
+#ifdef NIMBLE_HAVE_KOKKOS
+    void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
+
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, node_ids_d_.extent(0)),
+                         KOKKOS_LAMBDA(const int i) {
+        int node_id = node_ids_d_(i);
+        coord_d_(3*i)   = model_coord_d_(3*i)   + displacement_d(node_id, 0);
+        coord_d_(3*i+1) = model_coord_d_(3*i+1) + displacement_d(node_id, 1);
+        coord_d_(3*i+2) = model_coord_d_(3*i+2) + displacement_d(node_id, 2);
+      });
+      Kokkos::fence();
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_nodes_d_.extent(0)),
+                         KOKKOS_LAMBDA(const int i_node) {
+        contact_nodes_d_(i_node).SetCoordinates(coord_d_);
+      });
+
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_faces_d_.extent(0)),
+                         KOKKOS_LAMBDA(const int i_face) {
+        contact_faces_d_(i_face).SetCoordinates(coord_d_);
+      });
+    }
+#endif
+
     void GetForces(double * const contact_force) {
       for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
         int node_id = node_ids_[i_node];
@@ -339,6 +376,20 @@ namespace nimble {
         }
       }
     }
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+
+      Kokkos::parallel_for("ContactManager::GetForces",
+                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, node_ids_d_.extent(0)),
+                         KOKKOS_LAMBDA(const int i) {
+        int node_id = node_ids_d_(i);
+        contact_force_d(node_id, 0) = force_d_(3*i);
+        contact_force_d(node_id, 1) = force_d_(3*i+1);
+        contact_force_d(node_id, 2) = force_d_(3*i+2);
+      });
+    }
+#endif
 
     void ComputeContactForce(int step, bool debug_output);
 
@@ -375,6 +426,11 @@ namespace nimble {
     using DeviceContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device >;
     DeviceContactEntityArrayView contact_faces_d_ = DeviceContactEntityArrayView("contact_faces_d", 1);
     DeviceContactEntityArrayView contact_nodes_d_ = DeviceContactEntityArrayView("contact_nodes_d", 1);
+#endif
+
+#ifdef NIMBLE_HAVE_EXTRAS
+    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
+    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
 #endif
   };
 
