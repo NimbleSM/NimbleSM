@@ -90,6 +90,14 @@ namespace nimble_kokkos {
           new (pointer_that_lives_on_the_stack) nimble::NeohookeanMaterial(material_parameters_struct);
         });
     }
+    else if (nimble::StringsAreEqual(material_name, "elastic")) {
+      material_host_ = std::make_shared<nimble::ElasticMaterial>(material_parameters_struct);
+      material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::ElasticMaterial)));
+      nimble::Material* pointer_that_lives_on_the_stack = material_device_;
+      Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
+          new (pointer_that_lives_on_the_stack) nimble::ElasticMaterial(material_parameters_struct);
+        });
+    }
 #ifdef NIMBLE_HAVE_EXTRAS
     else if (is_ngp_lame_model) {
       std::cout << "DEBUGGING is_ngp_lame_model" << std::endl;

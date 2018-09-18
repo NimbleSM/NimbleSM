@@ -367,6 +367,7 @@ namespace nimble {
     CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_, contact_faces_);
 
 #ifdef NIMBLE_HAVE_KOKKOS
+
     nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
     for (unsigned int i_node=0 ; i_node<node_ids_.size() ; i_node++) {
       node_ids_h[i_node] = node_ids_[i_node];
@@ -583,16 +584,17 @@ namespace nimble {
     std::vector< std::vector<int> > vtk_triangles(faces.size());
 
     vis_file << "POINTS " << nodes.size() + 3*faces.size() << " float" << std::endl;
+
     for (int i=0 ; i<nodes.size() ; i++) {
-      vis_file << nodes[i].coord_[0] << " " << nodes[i].coord_[1] << " " << nodes[i].coord_[2] << std::endl;
+      vis_file << nodes[i].coord_1_x_ << " " << nodes[i].coord_1_y_ << " " << nodes[i].coord_1_z_ << std::endl;
       vtk_vertices[i] = i;
     }
     int offset = static_cast<int>(vtk_vertices.size());
     for (int i=0 ; i<faces.size() ; i++) {
       ContactEntity const & face = faces[i];
-      vis_file << face.coord_[0] << " " << face.coord_[1] << " " << face.coord_[2] << std::endl;
-      vis_file << face.coord_[3] << " " << face.coord_[4] << " " << face.coord_[5] << std::endl;
-      vis_file << face.coord_[6] << " " << face.coord_[7] << " " << face.coord_[8] << std::endl;
+      vis_file << face.coord_1_x_ << " " << face.coord_1_y_ << " " << face.coord_1_z_ << std::endl;
+      vis_file << face.coord_2_x_ << " " << face.coord_2_y_ << " " << face.coord_2_z_ << std::endl;
+      vis_file << face.coord_3_x_ << " " << face.coord_3_y_ << " " << face.coord_3_z_ << std::endl;
       vtk_triangles[i].push_back(offset + 3*i);
       vtk_triangles[i].push_back(offset + 3*i + 1);
       vtk_triangles[i].push_back(offset + 3*i + 2);
@@ -701,14 +703,16 @@ namespace nimble {
 #endif
 
 #ifdef NIMBLE_HAVE_EXTRAS
+    /*
     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_proximity_search");
     stk::search::MortonLBVHSearch_Timers timers;
 
     stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
     contact_nodes_tree_loader(contact_nodes_search_tree_, contact_nodes_.size());
 
+    int num_contact_nodes = contact_nodes_.size();
     Kokkos::parallel_for("Load contact nodes search tree",
-                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_nodes_.size()),
+                         num_contact_nodes,
                          KOKKOS_LAMBDA(const int i_contact_node) {
       double min_x = contact_nodes_d_(i_contact_node).get_x_min();
       double max_x = contact_nodes_d_(i_contact_node).get_x_max();
@@ -722,8 +726,9 @@ namespace nimble {
     stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
     contact_faces_tree_loader(contact_faces_search_tree_, contact_faces_.size());
 
+    int num_contact_faces = contact_faces_.size();
     Kokkos::parallel_for("Load contact faces search tree",
-                         Kokkos::RangePolicy<nimble_kokkos::kokkos_device_execution_space>(0, contact_faces_.size()),
+                         num_contact_faces,
                          KOKKOS_LAMBDA(const int i_contact_face) {
       double min_x = contact_faces_d_(i_contact_face).get_x_min();
       double max_x = contact_faces_d_(i_contact_face).get_x_max();
@@ -950,7 +955,7 @@ namespace nimble {
         node.GetForces(force_.data());
         face.GetForces(force_.data());
     }
-
+    */
 #endif
   }
 

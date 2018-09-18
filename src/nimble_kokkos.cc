@@ -602,9 +602,9 @@ void main_routine(int argc, char *argv[]) {
 
     // Evaluate the contact force
     if (contact_enabled) {
-       contact_manager.ApplyDisplacements(displacement_d);
-       contact_manager.ComputeContactForce(step+1, false);
-       contact_manager.GetForces(contact_force_d);
+      contact_manager.ApplyDisplacements(displacement_d);
+      contact_manager.ComputeContactForce(step+1, false);
+      contact_manager.GetForces(contact_force_d);
     }
     Kokkos::deep_copy(contact_force_h, contact_force_d);
 
