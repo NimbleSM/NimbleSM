@@ -430,32 +430,41 @@ namespace nimble {
     }
 
 #ifdef NIMBLE_HAVE_KOKKOS
+
     void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
 
       int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+      int num_contact_node_entities = contact_nodes_d_.extent(0);
+      int num_contact_face_entities = contact_faces_d_.extent(0);
+
+      // circumvent lambda *this glitch
+      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+      nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
+      nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
+      DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+      DeviceContactEntityArrayView contact_faces = contact_faces_d_;
 
       Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
                            num_nodes_in_contact_manager,
                            KOKKOS_LAMBDA(const int i) {
-        //int node_id = node_ids_d_(i);
-        //printf("\nDEBUGGING node_id %d", node_id);
-        //coord_d_(3*i)   = model_coord_d_(3*i)   + displacement_d(node_id, 0);
-        //coord_d_(3*i+1) = model_coord_d_(3*i+1) + displacement_d(node_id, 1);
-        //coord_d_(3*i+2) = model_coord_d_(3*i+2) + displacement_d(node_id, 2);
+        int node_id = node_ids(i);
+        coord(3*i)   = model_coord(3*i)   + displacement_d(node_id, 0);
+        coord(3*i+1) = model_coord(3*i+1) + displacement_d(node_id, 1);
+        coord(3*i+2) = model_coord(3*i+2) + displacement_d(node_id, 2);
       });
-      /*
+
       Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
-                         num_nodes_in_contact_manager,
+                         num_contact_node_entities,
                          KOKKOS_LAMBDA(const int i_node) {
-        contact_nodes_d_(i_node).SetCoordinates(coord_d_);
+        contact_nodes(i_node).SetCoordinates(coord);
       });
 
       Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
-                         num_nodes_in_contact_manager,
+                         num_contact_face_entities,
                          KOKKOS_LAMBDA(const int i_face) {
-        contact_faces_d_(i_face).SetCoordinates(coord_d_);
+        contact_faces(i_face).SetCoordinates(coord);
       });
-      */
+
     }
 #endif
 
@@ -470,17 +479,21 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+
       int num_nodes_in_contact_manager = node_ids_d_.extent(0);
-      /*
+
+      // circumvent lambda *this glitch
+      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+      nimble_kokkos::DeviceScalarNodeView force = force_d_;
+
       Kokkos::parallel_for("ContactManager::GetForces",
                          num_nodes_in_contact_manager,
                          KOKKOS_LAMBDA(const int i) {
-        int node_id = node_ids_d_(i);
-        contact_force_d(node_id, 0) = force_d_(3*i);
-        contact_force_d(node_id, 1) = force_d_(3*i+1);
-        contact_force_d(node_id, 2) = force_d_(3*i+2);
+        int node_id = node_ids(i);
+        contact_force_d(node_id, 0) = force(3*i);
+        contact_force_d(node_id, 1) = force(3*i+1);
+        contact_force_d(node_id, 2) = force(3*i+2);
       });
-      */
     }
 #endif
 

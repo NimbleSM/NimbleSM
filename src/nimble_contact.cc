@@ -703,7 +703,7 @@ namespace nimble {
 #endif
 
 #ifdef NIMBLE_HAVE_EXTRAS
-    /*
+
     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_proximity_search");
     stk::search::MortonLBVHSearch_Timers timers;
 
@@ -711,15 +711,16 @@ namespace nimble {
     contact_nodes_tree_loader(contact_nodes_search_tree_, contact_nodes_.size());
 
     int num_contact_nodes = contact_nodes_.size();
+    DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
     Kokkos::parallel_for("Load contact nodes search tree",
                          num_contact_nodes,
                          KOKKOS_LAMBDA(const int i_contact_node) {
-      double min_x = contact_nodes_d_(i_contact_node).get_x_min();
-      double max_x = contact_nodes_d_(i_contact_node).get_x_max();
-      double min_y = contact_nodes_d_(i_contact_node).get_y_min();
-      double max_y = contact_nodes_d_(i_contact_node).get_y_max();
-      double min_z = contact_nodes_d_(i_contact_node).get_z_min();
-      double max_z = contact_nodes_d_(i_contact_node).get_z_max();
+      double min_x = contact_nodes(i_contact_node).get_x_min();
+      double max_x = contact_nodes(i_contact_node).get_x_max();
+      double min_y = contact_nodes(i_contact_node).get_y_min();
+      double max_y = contact_nodes(i_contact_node).get_y_max();
+      double min_z = contact_nodes(i_contact_node).get_z_min();
+      double max_z = contact_nodes(i_contact_node).get_z_max();
       contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x, min_y, max_y, min_z, max_z);
     });
 
@@ -727,15 +728,16 @@ namespace nimble {
     contact_faces_tree_loader(contact_faces_search_tree_, contact_faces_.size());
 
     int num_contact_faces = contact_faces_.size();
+    DeviceContactEntityArrayView contact_faces = contact_faces_d_;
     Kokkos::parallel_for("Load contact faces search tree",
                          num_contact_faces,
                          KOKKOS_LAMBDA(const int i_contact_face) {
-      double min_x = contact_faces_d_(i_contact_face).get_x_min();
-      double max_x = contact_faces_d_(i_contact_face).get_x_max();
-      double min_y = contact_faces_d_(i_contact_face).get_y_min();
-      double max_y = contact_faces_d_(i_contact_face).get_y_max();
-      double min_z = contact_faces_d_(i_contact_face).get_z_min();
-      double max_z = contact_faces_d_(i_contact_face).get_z_max();
+      double min_x = contact_faces(i_contact_face).get_x_min();
+      double max_x = contact_faces(i_contact_face).get_x_max();
+      double min_y = contact_faces(i_contact_face).get_y_min();
+      double max_y = contact_faces(i_contact_face).get_y_max();
+      double min_z = contact_faces(i_contact_face).get_z_min();
+      double max_z = contact_faces(i_contact_face).get_z_max();
       contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x, min_y, max_y, min_z, max_z);
     });
 
@@ -749,7 +751,7 @@ namespace nimble {
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points("points", num_collisions);
     gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest points", num_collisions);
-
+    /*
     std::map<int, std::vector<int> > collision_indices_for_each_contact_node;
     for (int i=0 ; i<num_collisions ; i++) {
       int node_index = collision_list.m_data(i,0);
