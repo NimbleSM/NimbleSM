@@ -179,6 +179,12 @@ if(HAVE_NIMBLE_EXTRAS)
 endif()
 endif()
 
+# Temporary workaround for nvida builds
+if(NIMBLE_NVIDIA_BUILD)
+  add_definitions(-DNIMBLE_NVIDIA_BUILD)
+  set(NIMBLE_NVIDIA_BUILD TRUE)
+endif()
+
 # Exodus library dependencies
 IF(NOT HAVE_TRILINOS AND NOT HAVE_NIMBLE_EXTRAS)
   IF(EXODUS_INCLUDE_DIR AND EXODUS_LIB_DIR)
