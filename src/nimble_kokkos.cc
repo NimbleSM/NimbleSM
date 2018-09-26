@@ -160,7 +160,6 @@ void main_routine(int argc, char *argv[]) {
   // Blocks
   // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble_kokkos::Block> blocks;
-
   std::map<int, nimble_kokkos::Block>::iterator block_it;
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
@@ -485,7 +484,7 @@ void main_routine(int argc, char *argv[]) {
       else {
 #ifdef NIMBLE_HAVE_EXTRAS
         nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = ngp_lame_material_d->GetNGPLAMEData();
+        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                     stress_field_id,
                                                                                                                     nimble::STEP_N);
@@ -539,7 +538,7 @@ void main_routine(int argc, char *argv[]) {
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
 
         nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = ngp_lame_material_d->GetNGPLAMEData();
+        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                       stress_field_id,
                                                                                                                       nimble::STEP_NP1);

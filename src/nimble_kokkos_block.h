@@ -106,6 +106,10 @@ namespace nimble_kokkos {
 
     DeviceElementConnectivityView& GetDeviceElementConnectivityView() { return elem_conn_d; }
 
+#ifdef NIMBLE_HAVE_EXTRAS
+    std::shared_ptr<nimble::NGPLAMEMaterial::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
+#endif
+
     double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
                                    const double * const node_displacements,
                                    int num_elem,
@@ -138,6 +142,10 @@ namespace nimble_kokkos {
 
     std::shared_ptr<nimble::Material> material_host_ = nullptr;
     nimble::Material* material_device_;
+
+#ifdef NIMBLE_HAVE_EXTRAS
+    std::shared_ptr<nimble::NGPLAMEMaterial::NGPLAMEData> ngp_lame_data_;
+#endif
   };
 
 } // namespace nimble

@@ -100,12 +100,15 @@ namespace nimble_kokkos {
     }
 #ifdef NIMBLE_HAVE_EXTRAS
     else if (is_ngp_lame_model) {
-      std::cout << "DEBUGGING is_ngp_lame_model" << std::endl;
-      material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct);
+      int num_state_data = 0;
+      ngp_lame_data_ = std::make_shared<nimble::NGPLAMEMaterial::NGPLAMEData>(num_material_points, num_state_data);
+      // copy to local variable is needed due to lambda glitch with *this pointer
+      nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *ngp_lame_data_;
+      material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct, ngp_lame_data);
       material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NGPLAMEMaterial)));
-      nimble::Material* pointer_that_lives_on_the_stack = material_device_;
+      nimble::Material* material_pointer_that_lives_on_the_stack = material_device_;
       Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-          new (pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct);
+          new (material_pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct, ngp_lame_data);
         });
     }
 #endif
