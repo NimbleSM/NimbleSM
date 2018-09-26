@@ -807,9 +807,9 @@ namespace nimble {
       int first_collision_index = collision_indices[0];
       double pt_value[3];
       //points.getPointValue(first_collision_index, pt_value);
-      pt_value[0] = points.m_hostData(first_collision_index, 0);
-      pt_value[1] = points.m_hostData(first_collision_index, 1);
-      pt_value[2] = points.m_hostData(first_collision_index, 2);
+      pt_value[0] = points.m_hostData(first_collision_index).X();
+      pt_value[1] = points.m_hostData(first_collision_index).Y();
+      pt_value[2] = points.m_hostData(first_collision_index).Z();
 
       int contact_node_index = collision_list.hm_data(first_collision_index,0);
 
@@ -826,9 +826,9 @@ namespace nimble {
 
         double closest_pt_value[3], proj_vector[3];
         //closest_points.getPointValue(collision_index, closest_pt_value);
-        closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-        closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-        closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+        closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+        closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+        closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
 
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
@@ -836,17 +836,17 @@ namespace nimble {
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
         //triangles.getVertexValue(collision_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(collision_index, 0, 0);
-        tri_node_1[1] = triangles.m_hostData(collision_index, 0, 1);
-        tri_node_1[2] = triangles.m_hostData(collision_index, 0, 2);
+        tri_node_1[0] = triangles.m_hostData(collision_index).GetNode(0)[0];
+        tri_node_1[1] = triangles.m_hostData(collision_index).GetNode(0)[1];
+        tri_node_1[2] = triangles.m_hostData(collision_index).GetNode(0)[2];
         //triangles.getVertexValue(collision_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(collision_index, 1, 0);
-        tri_node_2[1] = triangles.m_hostData(collision_index, 1, 1);
-        tri_node_2[2] = triangles.m_hostData(collision_index, 1, 2);
+        tri_node_2[0] = triangles.m_hostData(collision_index).GetNode(1)[0];
+        tri_node_2[1] = triangles.m_hostData(collision_index).GetNode(1)[1];
+        tri_node_2[2] = triangles.m_hostData(collision_index).GetNode(1)[2];
         //triangles.getVertexValue(collision_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(collision_index, 2, 0);
-        tri_node_3[1] = triangles.m_hostData(collision_index, 2, 1);
-        tri_node_3[2] = triangles.m_hostData(collision_index, 2, 2);
+        tri_node_3[0] = triangles.m_hostData(collision_index).GetNode(2)[0];
+        tri_node_3[1] = triangles.m_hostData(collision_index).GetNode(2)[1];
+        tri_node_3[2] = triangles.m_hostData(collision_index).GetNode(2)[2];
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
           tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
@@ -889,9 +889,9 @@ namespace nimble {
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : node_and_edge_projections) {
           //closest_points.getPointValue(collision_index, closest_pt_value);
-          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -909,9 +909,9 @@ namespace nimble {
 
         double closest_pt_value[3], proj_vector[3], distance;
         //closest_points.getPointValue(face_projections[0], closest_pt_value);
-        closest_pt_value[0] = closest_points.m_hostData(face_projections[0], 0);
-        closest_pt_value[1] = closest_points.m_hostData(face_projections[0], 1);
-        closest_pt_value[2] = closest_points.m_hostData(face_projections[0], 2);
+        closest_pt_value[0] = closest_points.m_hostData(face_projections[0]).X();
+        closest_pt_value[1] = closest_points.m_hostData(face_projections[0]).Y();
+        closest_pt_value[2] = closest_points.m_hostData(face_projections[0]).Z();
 
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
@@ -925,9 +925,9 @@ namespace nimble {
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : face_projections) {
           //closest_points.getPointValue(collision_index, closest_pt_value);
-          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -959,27 +959,27 @@ namespace nimble {
 
         double pt_value[3], closest_pt_value[3];
         //points.getPointValue(contact_index, pt_value);
-        pt_value[0] = points.m_hostData(contact_index, 0);
-        pt_value[1] = points.m_hostData(contact_index, 1);
-        pt_value[2] = points.m_hostData(contact_index, 2);
+        pt_value[0] = points.m_hostData(contact_index).X();
+        pt_value[1] = points.m_hostData(contact_index).Y();
+        pt_value[2] = points.m_hostData(contact_index).Z();
         //closest_points.getPointValue(contact_index, closest_pt_value);
-        closest_pt_value[0] = closest_points.m_hostData(contact_index, 0);
-        closest_pt_value[1] = closest_points.m_hostData(contact_index, 1);
-        closest_pt_value[2] = closest_points.m_hostData(contact_index, 2);
+        closest_pt_value[0] = closest_points.m_hostData(contact_index).X();
+        closest_pt_value[1] = closest_points.m_hostData(contact_index).Y();
+        closest_pt_value[2] = closest_points.m_hostData(contact_index).Z();
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
         //triangles.getVertexValue(contact_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(contact_index, 0, 0);
-        tri_node_1[1] = triangles.m_hostData(contact_index, 0, 1);
-        tri_node_1[2] = triangles.m_hostData(contact_index, 0, 2);
+        tri_node_1[0] = triangles.m_hostData(contact_index).GetNode(0)[0];
+        tri_node_1[1] = triangles.m_hostData(contact_index).GetNode(0)[1];
+        tri_node_1[2] = triangles.m_hostData(contact_index).GetNode(0)[2];
         //triangles.getVertexValue(contact_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(contact_index, 1, 0);
-        tri_node_2[1] = triangles.m_hostData(contact_index, 1, 1);
-        tri_node_2[2] = triangles.m_hostData(contact_index, 1, 2);
+        tri_node_2[0] = triangles.m_hostData(contact_index).GetNode(1)[0];
+        tri_node_2[1] = triangles.m_hostData(contact_index).GetNode(1)[1];
+        tri_node_2[2] = triangles.m_hostData(contact_index).GetNode(1)[2];
         //triangles.getVertexValue(contact_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(contact_index, 2, 0);
-        tri_node_3[1] = triangles.m_hostData(contact_index, 2, 1);
-        tri_node_3[2] = triangles.m_hostData(contact_index, 2, 2);
+        tri_node_3[0] = triangles.m_hostData(contact_index).GetNode(2)[0];
+        tri_node_3[1] = triangles.m_hostData(contact_index).GetNode(2)[1];
+        tri_node_3[2] = triangles.m_hostData(contact_index).GetNode(2)[2];
 
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
