@@ -56,6 +56,8 @@
 #include <algorithm>
 #include <set>
 
+#define NVIDIA_BUILD
+
 namespace nimble {
 
 #ifdef NIMBLE_HAVE_EXTRAS
@@ -807,9 +809,15 @@ namespace nimble {
       int first_collision_index = collision_indices[0];
       double pt_value[3];
       //points.getPointValue(first_collision_index, pt_value);
+#ifdef NVIDIA_BUILD
+      pt_value[0] = points.m_hostData(first_collision_index, 0);
+      pt_value[1] = points.m_hostData(first_collision_index, 1);
+      pt_value[2] = points.m_hostData(first_collision_index, 2);
+#else
       pt_value[0] = points.m_hostData(first_collision_index).X();
       pt_value[1] = points.m_hostData(first_collision_index).Y();
       pt_value[2] = points.m_hostData(first_collision_index).Z();
+#endif
 
       int contact_node_index = collision_list.hm_data(first_collision_index,0);
 
@@ -826,15 +834,35 @@ namespace nimble {
 
         double closest_pt_value[3], proj_vector[3];
         //closest_points.getPointValue(collision_index, closest_pt_value);
+#ifdef NVIDIA_BUILD
+        closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+        closest_pt_value[1] = closest_points.m_hostData(collision_index, 2);
+        closest_pt_value[2] = closest_points.m_hostData(collision_index, 3);
+#else
         closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
         closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
         closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#endif
 
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
         }
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
+#ifdef NVIDIA_BUILD
+        //triangles.getVertexValue(collision_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(collision_index, 0, 0);
+        tri_node_1[1] = triangles.m_hostData(collision_index, 0, 1);
+        tri_node_1[2] = triangles.m_hostData(collision_index, 0, 2);
+        //triangles.getVertexValue(collision_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(collision_index, 1, 0);
+        tri_node_2[1] = triangles.m_hostData(collision_index, 1, 1);
+        tri_node_2[2] = triangles.m_hostData(collision_index, 1, 2);
+        //triangles.getVertexValue(collision_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(collision_index, 2, 0);
+        tri_node_3[1] = triangles.m_hostData(collision_index, 2, 1);
+        tri_node_3[2] = triangles.m_hostData(collision_index, 2, 2);
+#else
         //triangles.getVertexValue(collision_index, 0, tri_node_1);
         tri_node_1[0] = triangles.m_hostData(collision_index).GetNode(0)[0];
         tri_node_1[1] = triangles.m_hostData(collision_index).GetNode(0)[1];
@@ -847,6 +875,7 @@ namespace nimble {
         tri_node_3[0] = triangles.m_hostData(collision_index).GetNode(2)[0];
         tri_node_3[1] = triangles.m_hostData(collision_index).GetNode(2)[1];
         tri_node_3[2] = triangles.m_hostData(collision_index).GetNode(2)[2];
+#endif
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
           tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
@@ -889,9 +918,15 @@ namespace nimble {
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : node_and_edge_projections) {
           //closest_points.getPointValue(collision_index, closest_pt_value);
+#ifdef NVIDIA_BUILD
+          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
+          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+#else
           closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
           closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
           closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#endif
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -909,10 +944,15 @@ namespace nimble {
 
         double closest_pt_value[3], proj_vector[3], distance;
         //closest_points.getPointValue(face_projections[0], closest_pt_value);
+#ifdef NVIDIA_BUILD
+        closest_pt_value[0] = closest_points.m_hostData(face_projections[0], 0);
+        closest_pt_value[1] = closest_points.m_hostData(face_projections[0], 1);
+        closest_pt_value[2] = closest_points.m_hostData(face_projections[0], 2);
+#else
         closest_pt_value[0] = closest_points.m_hostData(face_projections[0]).X();
         closest_pt_value[1] = closest_points.m_hostData(face_projections[0]).Y();
         closest_pt_value[2] = closest_points.m_hostData(face_projections[0]).Z();
-
+#endif
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
         }
@@ -925,9 +965,15 @@ namespace nimble {
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : face_projections) {
           //closest_points.getPointValue(collision_index, closest_pt_value);
-          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
-          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
-          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#ifdef NVIDIA_BUILD
+          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
+          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+#else
+          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
+          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+#endif
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -958,6 +1004,16 @@ namespace nimble {
         ContactEntity & face = contact_faces_h_[contact_face_index];
 
         double pt_value[3], closest_pt_value[3];
+#ifdef NVIDIA_BUILD
+        //points.getPointValue(contact_index, pt_value);
+        pt_value[0] = points.m_hostData(contact_index, 0);
+        pt_value[1] = points.m_hostData(contact_index, 1);
+        pt_value[2] = points.m_hostData(contact_index, 2);
+        //closest_points.getPointValue(contact_index, closest_pt_value);
+        closest_pt_value[0] = closest_points.m_hostData(contact_index, 0);
+        closest_pt_value[1] = closest_points.m_hostData(contact_index, 1);
+        closest_pt_value[2] = closest_points.m_hostData(contact_index, 2);
+#else
         //points.getPointValue(contact_index, pt_value);
         pt_value[0] = points.m_hostData(contact_index).X();
         pt_value[1] = points.m_hostData(contact_index).Y();
@@ -966,8 +1022,23 @@ namespace nimble {
         closest_pt_value[0] = closest_points.m_hostData(contact_index).X();
         closest_pt_value[1] = closest_points.m_hostData(contact_index).Y();
         closest_pt_value[2] = closest_points.m_hostData(contact_index).Z();
+#endif
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
+#ifdef NVIDIA_BUILD
+        //triangles.getVertexValue(contact_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(contact_index, 0, 0);
+        tri_node_1[1] = triangles.m_hostData(contact_index, 0, 1);
+        tri_node_1[2] = triangles.m_hostData(contact_index, 0, 2);
+        //triangles.getVertexValue(contact_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(contact_index, 1, 0);
+        tri_node_2[1] = triangles.m_hostData(contact_index, 1, 1);
+        tri_node_2[2] = triangles.m_hostData(contact_index, 1, 2);
+        //triangles.getVertexValue(contact_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(contact_index, 2, 0);
+        tri_node_3[1] = triangles.m_hostData(contact_index, 2, 1);
+        tri_node_3[2] = triangles.m_hostData(contact_index, 2, 2);
+#else
         //triangles.getVertexValue(contact_index, 0, tri_node_1);
         tri_node_1[0] = triangles.m_hostData(contact_index).GetNode(0)[0];
         tri_node_1[1] = triangles.m_hostData(contact_index).GetNode(0)[1];
@@ -980,6 +1051,7 @@ namespace nimble {
         tri_node_3[0] = triangles.m_hostData(contact_index).GetNode(2)[0];
         tri_node_3[1] = triangles.m_hostData(contact_index).GetNode(2)[1];
         tri_node_3[2] = triangles.m_hostData(contact_index).GetNode(2)[2];
+#endif
 
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
