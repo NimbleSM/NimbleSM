@@ -43,7 +43,6 @@
 
 #include "nimble_kokkos_block.h"
 #include "nimble_linear_solver.h"
-//#include "nimble_data_manager.h"
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -100,16 +99,53 @@ namespace nimble_kokkos {
     }
 #ifdef NIMBLE_HAVE_EXTRAS
     else if (is_ngp_lame_model) {
-      int num_state_data = 0;
+
+      lame::ngp::MaterialType ngp_lame_material_type;
+      int num_state_data;
+      std::vector<double> parameters_vec;
+      std::vector<lame::ngp::UserFunction> mat_functions;
+
+      if (nimble::StringsAreEqual(material_name, "ngp_lame_hypoelastic")) {
+        ngp_lame_material_type = lame::ngp::MaterialType::HYPOELASTIC;
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("bulk_modulus"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("shear_modulus"));
+        num_state_data = 0;
+      }
+      else if(nimble::StringsAreEqual(material_name, "ngp_lame_neohookean")) {
+        ngp_lame_material_type = lame::ngp::MaterialType::NEOHOOKEAN;
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("bulk_modulus"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("shear_modulus"));
+        num_state_data = 0;
+      }
+      else if(nimble::StringsAreEqual(material_name, "ngp_lame_j2_plasticity")) {
+        ngp_lame_material_type = lame::ngp::MaterialType::J2_PLASTICITY;
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("youngs_modulus"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("poisson_ratio"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("yield_stress"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("beta"));
+        parameters_vec.push_back(material_parameters_struct.GetParameterValue("hardening_modulus"));
+        num_state_data = 12;
+      }
+      else {
+        throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid NGP LAME material model name.\n");
+      }
+
+      lame::ngp::MaterialProps mat_props(parameters_vec);
+      lame::ngp::MaterialAllocator* ngp_lame_material_allocator = lame::ngp::MaterialAllocator::create(ngp_lame_material_type,
+                                                                                                       parameters_vec,
+                                                                                                       mat_functions);
       ngp_lame_data_ = std::make_shared<nimble::NGPLAMEMaterial::NGPLAMEData>(num_material_points, num_state_data);
-      // copy to local variable is needed due to lambda glitch with *this pointer
-      nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *ngp_lame_data_;
-      material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct, ngp_lame_data);
-      material_device_ = static_cast<nimble::Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(nimble::NGPLAMEMaterial)));
-      nimble::Material* material_pointer_that_lives_on_the_stack = material_device_;
-      Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-          new (material_pointer_that_lives_on_the_stack) nimble::NGPLAMEMaterial(material_parameters_struct, ngp_lame_data);
-        });
+      double dt = 1.0;
+      lame::ngp::MaterialParams mat_params(ngp_lame_data_->disp_grad_,
+                                           ngp_lame_data_->velo_grad_,
+                                           ngp_lame_data_->stress_old_,
+                                           ngp_lame_data_->stress_new_,
+                                           ngp_lame_data_->state_old_,
+                                           ngp_lame_data_->state_new_,
+                                           dt);
+      mtk_ngp::DevicePtr<lame::ngp::Material> ngp_lame_material_d =
+        ngp_lame_material_allocator->allocate_device_material(mat_params, num_material_points);
+      material_host_ = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct, ngp_lame_material_d);
     }
 #endif
     else {

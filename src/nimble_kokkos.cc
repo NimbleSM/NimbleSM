@@ -71,6 +71,20 @@ void main_routine(int argc, char *argv[]) {
 
   // Banner
   if (my_mpi_rank == 0) {
+
+    std::string nimble_have_kokkos("false");
+#ifdef NIMBLE_HAVE_KOKKOS
+    nimble_have_kokkos = "true";
+#endif
+    std::string kokkos_enable_cuda("false");
+#ifdef KOKKOS_ENABLE_CUDA
+    kokkos_enable_cuda = "true";
+#endif
+    std::string kokkos_enable_cuda_uvm("false");
+#ifdef KOKKOS_ENABLE_CUDA_UVM
+    kokkos_enable_cuda_uvm = "true";
+#endif
+
     std::cout << "\n--NimbleSM_Kokkos" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
     if (argc != 2) {
@@ -80,6 +94,18 @@ void main_routine(int argc, char *argv[]) {
       exit(1);
     }
     std::cout << "NimbleSM_Kokkos initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
+
+    std::cout << "\nKokkos configuration:" << std::endl;
+    std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
+    std::cout << "  KOKKOS_ENABLE_CUDA               " << kokkos_enable_cuda << std::endl;
+    std::cout << "  KOKKOS_ENABLE_CUDA_UVM           " << kokkos_enable_cuda_uvm << std::endl;
+    std::cout << "  kokkos_host_execution_space      " << typeid(nimble_kokkos::kokkos_host_execution_space).name() << std::endl;
+    std::cout << "  kokkos_host_mirror_memory_space  " << typeid(nimble_kokkos::kokkos_host_mirror_memory_space).name() << std::endl;
+    std::cout << "  kokkos_host                      " << typeid(nimble_kokkos::kokkos_host).name() << std::endl;
+    std::cout << "  kokkos_device_execution_space    " << typeid(nimble_kokkos::kokkos_device_execution_space).name() << std::endl;
+    std::cout << "  kokkos_device_memory_space       " << typeid(nimble_kokkos::kokkos_device_memory_space).name() << std::endl;
+    std::cout << "  kokkos_device                    " << typeid(nimble_kokkos::kokkos_device).name() << std::endl;
+    std::cout << "  kokkos_layout                    " << typeid(nimble_kokkos::kokkos_layout).name() << std::endl;
   }
 
   std::string input_deck_name = argv[1];
@@ -181,7 +207,6 @@ void main_routine(int argc, char *argv[]) {
                                                                             "deformation_gradient",
                                                                             num_elements_in_block,
                                                                             initial_value);
-
     // volume-averaged quantities for I/O are stored as element data
     model_data.AllocateElementData(block_id,
                                    nimble::FULL_TENSOR,
@@ -483,7 +508,6 @@ void main_routine(int argc, char *argv[]) {
       }
       else {
 #ifdef NIMBLE_HAVE_EXTRAS
-        nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
         nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                     stress_field_id,
@@ -519,33 +543,36 @@ void main_routine(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_EXTRAS
     if (blocks.begin()->second.GetHostMaterialModel()->IsNGPLAMEModel()) {
-      // NGP LAME parallel_for to calculate stress
-      Kokkos::View<nimble::NGPLAMEMaterialPtr*> ngp_lame_materials_d("NGP LAME Material Models", 1);
-      nimble::NGPLAMEMaterialPtr ngp_lame_material_ptr_struct;
-      ngp_lame_material_ptr_struct.ptr = dynamic_cast<nimble::NGPLAMEMaterial*>(blocks.begin()->second.GetDeviceMaterialModel());
-      ngp_lame_materials_d(0) = ngp_lame_material_ptr_struct;
+
+      // Create a view of NGP LAME material models for use in team loop
+      Kokkos::View<mtk_ngp::DevicePtr<lame::ngp::Material>*> ngp_lame_materials_d("NGP LAME Material Models", num_blocks);
+      auto ngp_lame_materials_h = Kokkos::create_mirror_view(ngp_lame_materials_d);
+      for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+        nimble::NGPLAMEMaterial* nimble_ngp_lame_material_model = dynamic_cast<nimble::NGPLAMEMaterial*>(block_it->second.GetHostMaterialModel().get());
+        ngp_lame_materials_h(block_index) = nimble_ngp_lame_material_model->GetNGPLAMEMaterialModel();
+      }
+      Kokkos::deep_copy(ngp_lame_materials_d, ngp_lame_materials_h);
+
+      // Compute stress
       const Kokkos::TeamPolicy<> team_loop(num_blocks, Kokkos::AUTO);
-      Kokkos::parallel_for("compute stress", team_loop, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team) {
+      Kokkos::parallel_for("NGP LAME Stress", team_loop, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team) {
           int team_id = team.league_rank();
-          ngp_lame_materials_d[team_id].ptr->GetNGPLAMEMaterial()->compute_stress(team);
+          ngp_lame_materials_d[team_id]->compute_stress(team);
         });
-      // Copy stress back to Nimble data structures
+
+      // Copy stress back to the Nimble data structures
       for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
         int block_id = block_it->first;
         nimble_kokkos::Block& block = block_it->second;
-        nimble::Material* material_d = block.GetDeviceMaterialModel();
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
-
-        nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
         nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                       stress_field_id,
                                                                                                                       nimble::STEP_NP1);
-
         typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
         MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
-        Kokkos::parallel_for("NGP LAME Kinematics", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
+        Kokkos::parallel_for("NGP LAME Stress Copy", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
             nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
             int i_mat_pt = i_elem*num_integration_points_per_element + i_ipt;
             for (int i=0 ; i<6 ; i++) {
