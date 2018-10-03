@@ -968,9 +968,9 @@ namespace nimble {
           closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
           closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
 #else
-          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
 #endif
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
