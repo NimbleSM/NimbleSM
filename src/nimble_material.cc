@@ -169,7 +169,30 @@ namespace nimble {
                                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
                                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
                                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) {
-    printf("\nError:  ElasticMaterial::GetStress() not implemented for cuda.\n");
+
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = unrotated_stress_np1;
+    double strain[6];
+    double trace_strain;
+
+    double two_mu = 2.0 * shear_modulus_;
+    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
+
+    strain[K_S_XX] = def_grad[K_F_XX] - 1.0;
+    strain[K_S_YY] = def_grad[K_F_YY] - 1.0;
+    strain[K_S_ZZ] = def_grad[K_F_ZZ] - 1.0;
+    strain[K_S_XY] = 0.5*(def_grad[K_F_XY] + def_grad[K_F_YX]);
+    strain[K_S_YZ] = 0.5*(def_grad[K_F_YZ] + def_grad[K_F_ZY]);
+    strain[K_S_ZX] = 0.5*(def_grad[K_F_ZX] + def_grad[K_F_XZ]);
+
+    trace_strain = strain[K_S_XX] + strain[K_S_YY] + strain[K_S_ZZ];
+
+    stress[K_S_XX] = two_mu * strain[K_S_XX] + lambda * trace_strain;
+    stress[K_S_YY] = two_mu * strain[K_S_YY] + lambda * trace_strain;
+    stress[K_S_ZZ] = two_mu * strain[K_S_ZZ] + lambda * trace_strain;
+    stress[K_S_XY] = two_mu * strain[K_S_XY];
+    stress[K_S_YZ] = two_mu * strain[K_S_YZ];
+    stress[K_S_ZX] = two_mu * strain[K_S_ZX];
   }
 #endif
 
@@ -351,7 +374,10 @@ namespace nimble {
       def_grad[i] = deformation_gradient_np1[i];
     }
     // Cauchy stress
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& sig = unrotated_stress_np1;
+    double sig[6];
+    for (int i=0 ; i<6 ; i++) {
+      sig[i] = unrotated_stress_np1[i];
+    }
 
     Polar_Decomp(def_grad, v, r);
 
@@ -407,30 +433,29 @@ namespace nimble {
     byy = byy - trace/3.0;
     bzz = bzz - trace/3.0;
 
-    sig(K_S_XX_) = pressure + shear_modulus_*bxx/xj;
-    sig(K_S_YY_) = pressure + shear_modulus_*byy/xj;
-    sig(K_S_ZZ_) = pressure + shear_modulus_*bzz/xj;
-    sig(K_S_XY_) =            shear_modulus_*bxy/xj;
-    sig(K_S_YZ_) =            shear_modulus_*byz/xj;
-    sig(K_S_ZX_) =            shear_modulus_*bzx/xj;
+    sig[K_S_XX_] = pressure + shear_modulus_*bxx/xj;
+    sig[K_S_YY_] = pressure + shear_modulus_*byy/xj;
+    sig[K_S_ZZ_] = pressure + shear_modulus_*bzz/xj;
+    sig[K_S_XY_] =            shear_modulus_*bxy/xj;
+    sig[K_S_YZ_] =            shear_modulus_*byz/xj;
+    sig[K_S_ZX_] =            shear_modulus_*bzx/xj;
 
-    sxx = sig(K_S_XX_)*r[K_F_XX_] + sig(K_S_XY_)*r[K_F_YX_] + sig(K_S_XZ_)*r[K_F_ZX_];
-    syx = sig(K_S_YX_)*r[K_F_XX_] + sig(K_S_YY_)*r[K_F_YX_] + sig(K_S_YZ_)*r[K_F_ZX_];
-    szx = sig(K_S_ZX_)*r[K_F_XX_] + sig(K_S_ZY_)*r[K_F_YX_] + sig(K_S_ZZ_)*r[K_F_ZX_];
-    sxy = sig(K_S_XX_)*r[K_F_XY_] + sig(K_S_XY_)*r[K_F_YY_] + sig(K_S_XZ_)*r[K_F_ZY_];
-    syy = sig(K_S_YX_)*r[K_F_XY_] + sig(K_S_YY_)*r[K_F_YY_] + sig(K_S_YZ_)*r[K_F_ZY_];
-    szy = sig(K_S_ZX_)*r[K_F_XY_] + sig(K_S_ZY_)*r[K_F_YY_] + sig(K_S_ZZ_)*r[K_F_ZY_];
-    sxz = sig(K_S_XX_)*r[K_F_XZ_] + sig(K_S_XY_)*r[K_F_YZ_] + sig(K_S_XZ_)*r[K_F_ZZ_];
-    syz = sig(K_S_YX_)*r[K_F_XZ_] + sig(K_S_YY_)*r[K_F_YZ_] + sig(K_S_YZ_)*r[K_F_ZZ_];
-    szz = sig(K_S_ZX_)*r[K_F_XZ_] + sig(K_S_ZY_)*r[K_F_YZ_] + sig(K_S_ZZ_)*r[K_F_ZZ_];
+    sxx = sig[K_S_XX_]*r[K_F_XX_] + sig[K_S_XY_]*r[K_F_YX_] + sig[K_S_XZ_]*r[K_F_ZX_];
+    syx = sig[K_S_YX_]*r[K_F_XX_] + sig[K_S_YY_]*r[K_F_YX_] + sig[K_S_YZ_]*r[K_F_ZX_];
+    szx = sig[K_S_ZX_]*r[K_F_XX_] + sig[K_S_ZY_]*r[K_F_YX_] + sig[K_S_ZZ_]*r[K_F_ZX_];
+    sxy = sig[K_S_XX_]*r[K_F_XY_] + sig[K_S_XY_]*r[K_F_YY_] + sig[K_S_XZ_]*r[K_F_ZY_];
+    syy = sig[K_S_YX_]*r[K_F_XY_] + sig[K_S_YY_]*r[K_F_YY_] + sig[K_S_YZ_]*r[K_F_ZY_];
+    szy = sig[K_S_ZX_]*r[K_F_XY_] + sig[K_S_ZY_]*r[K_F_YY_] + sig[K_S_ZZ_]*r[K_F_ZY_];
+    sxz = sig[K_S_XX_]*r[K_F_XZ_] + sig[K_S_XY_]*r[K_F_YZ_] + sig[K_S_XZ_]*r[K_F_ZZ_];
+    syz = sig[K_S_YX_]*r[K_F_XZ_] + sig[K_S_YY_]*r[K_F_YZ_] + sig[K_S_YZ_]*r[K_F_ZZ_];
+    szz = sig[K_S_ZX_]*r[K_F_XZ_] + sig[K_S_ZY_]*r[K_F_YZ_] + sig[K_S_ZZ_]*r[K_F_ZZ_];
 
-    sig(K_S_XX_) = r[K_F_XX_]*sxx + r[K_F_YX_]*syx + r[K_F_ZX_]*szx;
-    sig(K_S_YY_) = r[K_F_XY_]*sxy + r[K_F_YY_]*syy + r[K_F_ZY_]*szy;
-    sig(K_S_ZZ_) = r[K_F_XZ_]*sxz + r[K_F_YZ_]*syz + r[K_F_ZZ_]*szz;
-    sig(K_S_XY_) = r[K_F_XX_]*sxy + r[K_F_YX_]*syy + r[K_F_ZX_]*szy;
-    sig(K_S_YZ_) = r[K_F_XY_]*sxz + r[K_F_YY_]*syz + r[K_F_ZY_]*szz;
-    sig(K_S_ZX_) = r[K_F_XZ_]*sxx + r[K_F_YZ_]*syx + r[K_F_ZZ_]*szx;
-
+    unrotated_stress_np1(K_S_XX_) = r[K_F_XX_]*sxx + r[K_F_YX_]*syx + r[K_F_ZX_]*szx;
+    unrotated_stress_np1(K_S_YY_) = r[K_F_XY_]*sxy + r[K_F_YY_]*syy + r[K_F_ZY_]*szy;
+    unrotated_stress_np1(K_S_ZZ_) = r[K_F_XZ_]*sxz + r[K_F_YZ_]*syz + r[K_F_ZZ_]*szz;
+    unrotated_stress_np1(K_S_XY_) = r[K_F_XX_]*sxy + r[K_F_YX_]*syy + r[K_F_ZX_]*szy;
+    unrotated_stress_np1(K_S_YZ_) = r[K_F_XY_]*sxz + r[K_F_YY_]*syz + r[K_F_ZY_]*szz;
+    unrotated_stress_np1(K_S_ZX_) = r[K_F_XZ_]*sxx + r[K_F_YZ_]*syx + r[K_F_ZZ_]*szx;
   }
 #endif
 
