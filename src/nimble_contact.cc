@@ -1593,8 +1593,6 @@ namespace nimble {
     bvh::vt::vt_collection_to_mpi( results_vec, std::move( results ) );
     bvh::vt::debug( "{}: ============end get results\n", ::vt::theContext()->getNode() );
     
-    results.unwrap().destroy();
-    
     bvh::bvh_tree_26d::collision_query_result_type collision_result;
     
     for ( const auto &r : results_vec )
