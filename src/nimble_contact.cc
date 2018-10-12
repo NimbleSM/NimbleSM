@@ -56,6 +56,12 @@
   #include <bvh/narrowphase.hpp>
   #include <bvh/tree.hpp>
   #include <bvh/vis/vis_bvh.hpp>
+  #include <bvh/patch.hpp>
+#ifdef NIMBLE_HAVE_MPI
+  #include <bvh/vt/mpi_interop.hpp>
+  #include <bvh/vt/broadphase.hpp>
+  #include <bvh/vt/tree_build.hpp>
+#endif
 #endif
 
 #include <iostream>
@@ -292,6 +298,23 @@ namespace nimble {
     return;
   }
 
+  ContactManager::ContactManager(size_t dicing_factor)
+    : penalty_parameter_(0.0),
+      dicing_factor_(dicing_factor)
+#ifdef NIMBLE_HAVE_EXTRAS
+      , contact_nodes_search_tree_("contact nodes search tree")
+      , contact_faces_search_tree_("contact faces search tree")
+#endif
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+      , collision_world_(bvh::vt::context::current()->num_ranks() * dicing_factor),
+      face_patch_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
+      node_patch_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
+      test_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor)))
+#endif
+  {
+  
+  }
+  
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
                                         nimble::MPIContainer & mpi_container,
@@ -1497,5 +1520,137 @@ namespace nimble {
       contact_faces_d, num_contact_nodes, contact_manager_force_d);
 #endif
 #endif
+
   }
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+  namespace
+  {
+    bvh::span< ContactEntity, bvh::dynamic_extent() >
+    span_for_decomp(int od, int od_factor, std::vector<ContactEntity> &_vec)
+    {
+      auto size = _vec.size();
+
+      auto count = size / static_cast<std::size_t>(od_factor);
+      auto rem = size % static_cast<std::size_t>(od_factor);
+      
+      bvh::span< ContactEntity, bvh::dynamic_extent() > sp( &_vec[0], _vec.size() );
+      
+      if (od < rem) {
+        return sp.subspan(od * (count + 1), count + 1);
+      } else {
+        return sp.subspan(rem + od * count, count);
+      }
+    }
+    
+    void
+    build_patch(ContactManager::patch_collection &patch_collection,
+                               std::vector<ContactEntity> &entities,
+                               int od_factor) {
+      // Build patches (averages centroids and builds kdops)
+      // od_factor is used for overdecomposition
+      // TODO: Use tree splitting metric for splitting patches rather than indices
+
+      int rank = bvh::vt::context::current()->rank();
+
+      std::vector< bvh::patch< ContactEntity > >  patches_vec;
+      patches_vec.reserve( static_cast< std::size_t >( od_factor ) );
+      for ( int i = 0; i < od_factor; ++i )
+      {
+        patches_vec.emplace_back(i + rank * od_factor, span_for_decomp(i, od_factor, entities));
+      }
+      
+      bvh::vt::vt_collection_data(patches_vec, patch_collection);
+    }
+  }
+#endif
+
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+
+  void
+  ContactManager::ComputeParallelContactForce(int step, bool is_output_step, bool visualize) {
+    
+    if (penalty_parameter_ <= 0.0) {
+      throw std::logic_error("\nError in ComputeParallelContactForce(), invalid penalty_parameter.\n");
+    }
+    auto od_factor = static_cast<int>(dicing_factor_);
+    
+    build_patch(face_patch_collection_, contact_faces_, od_factor);
+    build_patch(node_patch_collection_, contact_nodes_, od_factor);
+    
+    //face_patch_collection_.finish();
+    //node_patch_collection_.finish();
+    
+    //face_patch_collection_.wait();
+    //node_patch_collection_.wait();
+    
+    collision_world_.build_trees( node_patch_collection_ );
+    auto results = collision_world_.find_collisions( face_patch_collection_, &bvh::narrowphase_patch< ContactEntity > );
+    
+#if 1
+    
+    std::vector< bvh::bvh_tree_26d::collision_query_result_type > results_vec(dicing_factor_);
+    bvh::vt::debug( "{}: ============begin get results\n", ::vt::theContext()->getNode() );
+    bvh::vt::vt_collection_to_mpi( results_vec, std::move( results ) );
+    bvh::vt::debug( "{}: ============end get results\n", ::vt::theContext()->getNode() );
+    
+    results.unwrap().destroy();
+    
+    bvh::bvh_tree_26d::collision_query_result_type collision_result;
+    
+    for ( const auto &r : results_vec )
+      collision_result.pairs.insert( collision_result.end(), r.begin(), r.end() );
+
+    unsigned long long total_num_collisions = 0;
+    for ( auto &&v : results_vec)
+      total_num_collisions += v.size();
+    
+    int rank = bvh::vt::context::current()->rank();
+    
+    if ( is_output_step )
+    {
+      unsigned long long ncollisions = total_num_collisions;
+      MPI_Reduce(&ncollisions, &total_num_collisions, 1, MPI_UNSIGNED_LONG_LONG,
+          MPI_SUM, 0, MPI_COMM_WORLD );
+      
+      if (rank == 0)
+        bvh::vt::print( "num collisions: {}\n", total_num_collisions );
+      //VisualizeCollisionInfo(faces_tree, nodes_tree, collision_results, step);
+      std::vector<ContactEntity> colliding_faces;
+      std::vector<ContactEntity> noncolliding_faces;
+      for ( auto &&face : contact_faces_ )
+      {
+        if ( std::count_if( collision_result.begin(), collision_result.end(),
+                            [&face]( auto &&pair ){ return pair.first == face.global_id(); } ) )
+        {
+          colliding_faces.push_back(face);
+        } else {
+          noncolliding_faces.push_back(face);
+        }
+      }
+
+      std::vector<ContactEntity> colliding_nodes;
+      std::vector<ContactEntity> noncolliding_nodes;
+      for ( auto &&node : contact_nodes_ )
+      {
+        if ( std::count_if( collision_result.begin(), collision_result.end(),
+                            [&node]( auto &&pair ){ return pair.first == node.global_id(); } ) )
+        {
+          colliding_nodes.push_back(node);
+        } else {
+          noncolliding_nodes.push_back(node);
+        }
+      }
+      
+      std::stringstream colliding_out_name;
+      colliding_out_name << "contact_entities_colliding." << rank << '.';
+
+      std::stringstream noncolliding_out_name;
+      noncolliding_out_name << "contact_entities_noncolliding_." << rank << '.';
+      
+      WriteContactEntitiesToVTKFile(colliding_faces, colliding_nodes, colliding_out_name.str(), step);
+      WriteContactEntitiesToVTKFile(noncolliding_faces, noncolliding_nodes, noncolliding_out_name.str(), step);
+    }
+#endif
+  }
+#endif
 }

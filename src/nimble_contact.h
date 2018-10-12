@@ -60,6 +60,13 @@
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
   #include <bvh/tree.hpp>
+  #include <bvh/patch.hpp>
+  #include <bvh/perf/instrument.hpp>
+#ifdef BVH_ENABLE_VT
+  #include <bvh/vt/collection.hpp>
+  #include <bvh/vt/helpers.hpp>
+  #include <bvh/vt/collision_world.hpp>
+#endif
 #endif
 
 namespace nimble {
@@ -521,13 +528,8 @@ namespace nimble {
       NODE_OR_EDGE=1,
       FACE=2
     } PROJECTION_TYPE;
-
-    ContactManager() : penalty_parameter_(0.0)
-#ifdef NIMBLE_HAVE_EXTRAS
-      , contact_nodes_search_tree_("contact nodes search tree")
-      , contact_faces_search_tree_("contact faces search tree")
-#endif
-      {}
+    
+    explicit ContactManager( std::size_t dicing_factor = 1);
 
     virtual ~ContactManager() {}
 
@@ -654,13 +656,19 @@ namespace nimble {
       });
     }
 #endif
+    
+    void ComputeContactForce(int step, bool is_output_step, bool visualize = false);
 
     void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
                                 std::vector<ContactEntity> const & triangles,
                                 std::vector<ContactEntity::vertex>& closest_points,
                                 std::vector<PROJECTION_TYPE>& projection_types);
-
-    void ComputeContactForce(int step, bool debug_output);
+    
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+    using patch_collection = bvh::vt::future_collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
+    
+    void ComputeParallelContactForce(int step, bool is_output_step, bool visualize = false);
+#endif
 
     void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
@@ -707,6 +715,67 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_EXTRAS
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
+#endif
+    
+    std::size_t dicing_factor_; ///< Patch dicing factor for overdecomposition
+
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+    
+    bvh::vt::collision_world<bvh::patch<ContactEntity>, bvh::bvh_tree_26d>  collision_world_;
+    
+    patch_collection face_patch_collection_;
+    patch_collection node_patch_collection_;
+    
+    struct bad : public bvh::perf::instrument< bad >
+    {
+      bad() : data( 1 )
+      {
+      }
+      
+      std::vector< unsigned char > data;
+
+      template< typename Serializer >
+      friend bvh::serializer_interface< Serializer > &
+      operator<<( bvh::serializer_interface< Serializer > &_serializer,
+                  const bad &_bad )
+      {
+        _serializer << _bad.data;
+
+        return _serializer;
+      }
+
+      template< typename Serializer >
+      friend bvh::serializer_interface< Serializer > &
+      operator>>( bvh::serializer_interface< Serializer > &_serializer,
+                  bad &_bad )
+      {
+        _serializer >> _bad.data;
+
+        return _serializer;
+      }
+      
+      friend rpc::byte_stream &
+      operator<<( rpc::byte_stream &_serializer,
+                  const bad &_bad )
+      {
+        bvh::serializer_interface< rpc::byte_stream > s( _serializer );
+        s << _bad;
+
+        return _serializer;
+      }
+      
+      friend rpc::byte_stream &
+      operator>>( rpc::byte_stream &_serializer,
+                  bad &_bad )
+      {
+        bvh::serializer_interface< rpc::byte_stream > s( _serializer );
+        s >> _bad;
+
+        return _serializer;
+      }
+    };
+
+    bvh::vt::future_collection< bad, bvh::vt::index_1d > test_collection_;
 #endif
 
 public:
