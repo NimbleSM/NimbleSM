@@ -1,13 +1,14 @@
-genesis input file:               quasistatic_tension.g
-exodus output file:               quasistatic_tension.e
-time integration scheme:          quasistatic
-final time:                       1.0
-number of load steps:             3
-output frequency:                 1
-output fields:                    volume displacement deformation_gradient stress
-material parameters:              material_1 neohookean density 7.8 bulk_modulus 1.6e12 shear_modulus 0.8e12
-macroscale block:                 block_1 material_1
-boundary condition:               prescribed_displacement nodelist_1 x "-0.01 * t"
-boundary condition:               prescribed_displacement nodelist_2 x " 0.01 * t"
-boundary condition:               prescribed_displacement nodelist_3 y 0.0
-boundary condition:               prescribed_displacement nodelist_4 z 0.0
+genesis input file:                    quasistatic_tension.g
+exodus output file:                    quasistatic_tension.e
+time integration scheme:               quasistatic
+nonlinear solver relative tolerance:   1.0e-10
+final time:                            1.0
+number of load steps:                  3
+output frequency:                      1
+output fields:                         volume displacement deformation_gradient stress
+material parameters:                   material_1 neohookean density 7.8 bulk_modulus 1.6e12 shear_modulus 0.8e12
+macroscale block:                      block_1 material_1
+boundary condition:                    prescribed_displacement nodelist_1 x "-0.01 * t"
+boundary condition:                    prescribed_displacement nodelist_2 x " 0.01 * t"
+boundary condition:                    prescribed_displacement nodelist_3 y 0.0
+boundary condition:                    prescribed_displacement nodelist_4 z 0.0

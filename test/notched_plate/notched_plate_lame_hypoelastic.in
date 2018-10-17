@@ -1,5 +1,5 @@
 genesis input file:               notched_plate.g
-exodus output file:               notched_plate.e
+exodus output file:               notched_plate_lame_hypoelastic.e
 final time:                       2.0e-6
 number of load steps:             150
 output frequency:                 30

@@ -110,7 +110,7 @@ namespace nimble {
   class CRSMatrixContainer {
 
   public:
-    CRSMatrixContainer(){}
+    CRSMatrixContainer() : num_rows_(0) {}
 
     ~CRSMatrixContainer(){}
 

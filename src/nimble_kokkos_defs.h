@@ -56,19 +56,24 @@ namespace nimble_kokkos {
 // Define HOST execution space, memory space, and device
 using kokkos_host_execution_space = Kokkos::Serial::execution_space;
 #ifdef KOKKOS_ENABLE_CUDA_UVM
-  using kokkos_host_memory_space = Kokkos::CudaUVMSpace::memory_space;
+  using kokkos_host_mirror_memory_space = Kokkos::CudaUVMSpace::memory_space;
 #else
-  using kokkos_host_memory_space = Kokkos::Serial::memory_space;
+  using kokkos_host_mirror_memory_space = Kokkos::Serial::memory_space;
 #endif
-using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_memory_space>;
+using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_mirror_memory_space>;
 
 // Define DEVICE execution space, memory space, and device
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA_UVM
   using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
-  using kokkos_device_memory_space = Kokkos::Cuda::memory_space;
+  using kokkos_device_memory_space = Kokkos::CudaUVMSpace::memory_space;
 #else
-  using kokkos_device_execution_space = Kokkos::Serial::execution_space;
-  using kokkos_device_memory_space = Kokkos::Serial::memory_space;
+  #ifdef KOKKOS_ENABLE_CUDA
+    using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
+    using kokkos_device_memory_space = Kokkos::Cuda::memory_space;
+  #else
+    using kokkos_device_execution_space = Kokkos::Serial::execution_space;
+    using kokkos_device_memory_space = Kokkos::Serial::memory_space;
+  #endif
 #endif
 using kokkos_device = Kokkos::Device<kokkos_device_execution_space, kokkos_device_memory_space>;
 
@@ -570,8 +575,8 @@ typedef Field< FieldType::HostSymTensorIntPt >::View                            
 typedef Field< FieldType::HostScalarElem >::View                                      HostScalarElemView;
 typedef Field< FieldType::HostFullTensorElem >::View                                  HostFullTensorElemView;
 typedef Field< FieldType::HostSymTensorElem >::View                                   HostSymTensorElemView;
-typedef Kokkos::View< int*, kokkos_layout, kokkos_host >                              HostIntegerArrayView;
-typedef Kokkos::View< int*, kokkos_layout, kokkos_host >                              HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
+typedef Kokkos::View< int*, kokkos_host >                                             HostIntegerArrayView;
+typedef Kokkos::View< int*, kokkos_host >                                             HostElementConnectivityView; // TODO THIS SHOULD BE A 2D ARRAY, BUT IT'S TRICKY BECAUSE NUM NODES PER ELEMENT IS NOT KNOWN
 
 typedef Field< FieldType::DeviceScalarNode >::View                                    DeviceScalarNodeView;
 typedef Field< FieldType::DeviceScalarNode >::GatheredView                            DeviceScalarNodeGatheredView;
@@ -591,8 +596,8 @@ typedef Field< FieldType::DeviceFullTensorElem >::View                          
 typedef Field< FieldType::DeviceFullTensorElem >::SingleEntryView                     DeviceFullTensorElemSingleEntryView;
 typedef Field< FieldType::DeviceSymTensorElem >::View                                 DeviceSymTensorElemView;
 typedef Field< FieldType::DeviceSymTensorElem >::SingleEntryView                      DeviceSymTensorElemSingleEntryView;
-typedef Kokkos::View< int*, kokkos_layout, kokkos_device >                            DeviceIntegerArrayView;
-typedef Kokkos::View< int*, kokkos_layout, kokkos_device >                            DeviceElementConnectivityView;
+typedef Kokkos::View< int*, kokkos_device >                                           DeviceIntegerArrayView;
+typedef Kokkos::View< int*, kokkos_device >                                           DeviceElementConnectivityView;
 }
 
 // else for NIMBLE_HAVE_KOKKOS

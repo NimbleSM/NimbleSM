@@ -496,7 +496,9 @@ namespace nimble {
 
     ModelData& model_data = data_manager_handle.get_reference().GetMacroScaleData();
 
-    int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
+    int displacement_field_id = model_data.GetFieldId("displacement");
+    const double * const displacement = model_data.GetNodeData(displacement_field_id);
+    int coordinate_field_id = model_data.GetFieldId("reference_coordinate");
     const double * const reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
     std::map<int, Block> & blocks = model_data.GetBlocks();
 
@@ -509,6 +511,7 @@ namespace nimble {
       int num_elem_in_block = macroscale_mesh_handle.get_value().GetNumElementsInBlock(block_id);
       const int * const elem_conn = macroscale_mesh_handle.get_value().GetConnectivity(block_id);
       double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
+                                                                      displacement,
                                                                       num_elem_in_block,
                                                                       elem_conn);
       if (block_critical_time_step < max_stable_time_step) {

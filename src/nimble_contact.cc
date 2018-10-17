@@ -43,10 +43,6 @@
 
 #include "nimble_contact.h"
 
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_extras_contact_includes.h"
-#endif
-
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/broadphase.hpp>
   #include <bvh/narrowphase.hpp>
@@ -371,6 +367,7 @@ namespace nimble {
     CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_, contact_faces_);
 
 #ifdef NIMBLE_HAVE_KOKKOS
+
     nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
     for (unsigned int i_node=0 ; i_node<node_ids_.size() ; i_node++) {
       node_ids_h[i_node] = node_ids_[i_node];
@@ -393,14 +390,14 @@ namespace nimble {
     Kokkos::deep_copy(coord_d_, model_coord_h);
     Kokkos::deep_copy(force_d_, 0.0);
 
-    HostContactEntityArrayView contact_nodes_h("contact_nodes_h", slave_node_ids.size());
-    HostContactEntityArrayView contact_faces_h("contact_faces_h", 4*master_skin_faces.size());
-    CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_h, contact_faces_h);
+    Kokkos::resize(contact_nodes_h_, slave_node_ids.size());
+    Kokkos::resize(contact_faces_h_, 4*master_skin_faces.size());
+    CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_h_, contact_faces_h_);
 
     Kokkos::resize(contact_nodes_d_, slave_node_ids.size());
     Kokkos::resize(contact_faces_d_, 4*master_skin_faces.size());
-    Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h);
-    Kokkos::deep_copy(contact_faces_d_, contact_faces_h);
+    Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
+    Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
 #endif
 
     std::cout << "Contact initialization:" << std::endl;
@@ -587,16 +584,17 @@ namespace nimble {
     std::vector< std::vector<int> > vtk_triangles(faces.size());
 
     vis_file << "POINTS " << nodes.size() + 3*faces.size() << " float" << std::endl;
+
     for (int i=0 ; i<nodes.size() ; i++) {
-      vis_file << nodes[i].coord_[0] << " " << nodes[i].coord_[1] << " " << nodes[i].coord_[2] << std::endl;
+      vis_file << nodes[i].coord_1_x_ << " " << nodes[i].coord_1_y_ << " " << nodes[i].coord_1_z_ << std::endl;
       vtk_vertices[i] = i;
     }
     int offset = static_cast<int>(vtk_vertices.size());
     for (int i=0 ; i<faces.size() ; i++) {
       ContactEntity const & face = faces[i];
-      vis_file << face.coord_[0] << " " << face.coord_[1] << " " << face.coord_[2] << std::endl;
-      vis_file << face.coord_[3] << " " << face.coord_[4] << " " << face.coord_[5] << std::endl;
-      vis_file << face.coord_[6] << " " << face.coord_[7] << " " << face.coord_[8] << std::endl;
+      vis_file << face.coord_1_x_ << " " << face.coord_1_y_ << " " << face.coord_1_z_ << std::endl;
+      vis_file << face.coord_2_x_ << " " << face.coord_2_y_ << " " << face.coord_2_z_ << std::endl;
+      vis_file << face.coord_3_x_ << " " << face.coord_3_y_ << " " << face.coord_3_z_ << std::endl;
       vtk_triangles[i].push_back(offset + 3*i);
       vtk_triangles[i].push_back(offset + 3*i + 1);
       vtk_triangles[i].push_back(offset + 3*i + 2);
@@ -705,54 +703,101 @@ namespace nimble {
 #endif
 
 #ifdef NIMBLE_HAVE_EXTRAS
-    stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_proximity_search");
+
+    stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_collision_list");
     stk::search::MortonLBVHSearch_Timers timers;
 
+    stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
+    contact_nodes_tree_loader(contact_nodes_search_tree_, contact_nodes_.size());
 
-    // PLAN:  Call other version of TimedMortonLBVHSearch that takes trees
-    // store trees in contact manger
-    // at each step, update min max values in tree ON DEVICE using a to-be-written device_set_box
+    int num_contact_nodes = contact_nodes_.size();
+    DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+    Kokkos::parallel_for("Load contact nodes search tree",
+                         num_contact_nodes,
+                         KOKKOS_LAMBDA(const int i_contact_node) {
+      double min_x = contact_nodes(i_contact_node).get_x_min();
+      double max_x = contact_nodes(i_contact_node).get_x_max();
+      double min_y = contact_nodes(i_contact_node).get_y_min();
+      double max_y = contact_nodes(i_contact_node).get_y_max();
+      double min_z = contact_nodes(i_contact_node).get_z_min();
+      double max_z = contact_nodes(i_contact_node).get_z_max();
+      contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x, min_y, max_y, min_z, max_z);
+    });
 
-    stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(contact_nodes_,
-                                                                                             contact_faces_,
+    stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
+    contact_faces_tree_loader(contact_faces_search_tree_, contact_faces_.size());
+
+    int num_contact_faces = contact_faces_.size();
+    DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+    Kokkos::parallel_for("Load contact faces search tree",
+                         num_contact_faces,
+                         KOKKOS_LAMBDA(const int i_contact_face) {
+      double min_x = contact_faces(i_contact_face).get_x_min();
+      double max_x = contact_faces(i_contact_face).get_x_max();
+      double min_y = contact_faces(i_contact_face).get_y_min();
+      double max_y = contact_faces(i_contact_face).get_y_max();
+      double min_z = contact_faces(i_contact_face).get_z_min();
+      double max_z = contact_faces(i_contact_face).get_z_max();
+      contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x, min_y, max_y, min_z, max_z);
+    });
+
+    stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(contact_nodes_search_tree_,
+                                                                                             contact_faces_search_tree_,
                                                                                              collision_list,
                                                                                              timers);
 
     auto num_collisions = collision_list.get_num_collisions();
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points(num_collisions);
-    gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles(num_collisions);
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points(num_collisions);
+    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points("points", num_collisions);
+    gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
+    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest_points", num_collisions);
+
+    // TODO CARRY OUT ENFORCEMENT ON THE DEVICE
+    // For now, copy everything to the host (ugh)
+    collision_list.sync_from_device();
+    Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
+    Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
 
     std::map<int, std::vector<int> > collision_indices_for_each_contact_node;
     for (int i=0 ; i<num_collisions ; i++) {
-      int node_index = collision_list.m_data(i,0);
+      int node_index = collision_list.hm_data(i,0);
       collision_indices_for_each_contact_node[node_index] = std::vector<int>();
     }
 
     for (int i_collision=0 ; i_collision<num_collisions ; i_collision++) {
-      int contact_node_index = collision_list.m_data(i_collision,0);
-      int contact_face_index = collision_list.m_data(i_collision,1);
-      ContactEntity const & node = contact_nodes_[contact_node_index];
-      ContactEntity const & face = contact_faces_[contact_face_index];
-      points.setPointValue(i_collision, node.coord_[0], node.coord_[1], node.coord_[2]);
-      triangles.setVertexValues(i_collision,
-                                mtk::Vec3<double>(face.coord_[0], face.coord_[1], face.coord_[2]),
-                                mtk::Vec3<double>(face.coord_[3], face.coord_[4], face.coord_[5]),
-                                mtk::Vec3<double>(face.coord_[6], face.coord_[7], face.coord_[8]));
+      int contact_node_index = collision_list.hm_data(i_collision,0);
+      int contact_face_index = collision_list.hm_data(i_collision,1);
+      ContactEntity const & node = contact_nodes_h_[contact_node_index];
+      ContactEntity const & face = contact_faces_h_[contact_face_index];
+      points.setHostPointValue(i_collision, node.coord_1_x_, node.coord_1_y_, node.coord_1_z_);
+      triangles.setHostVertexValues(i_collision,
+                                    mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
+                                    mtk::Vec3<double>(face.coord_2_x_, face.coord_2_y_, face.coord_2_z_),
+                                    mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
       collision_indices_for_each_contact_node[contact_node_index].push_back(i_collision);
     }
 
+    // TEMP COPY TO DEVICE
+    points.inhaleHostData();
+    triangles.inhaleHostData();
+
     constexpr bool save_projection_types_computed = true;
-    Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space> proj_types_returned;
+    Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space> proj_types_returned_d;
     if (save_projection_types_computed) {
-      Kokkos::resize(proj_types_returned, num_collisions);
+      Kokkos::resize(proj_types_returned_d, num_collisions);
     }
 
     Kokkos::Impl::Timer timer;
     gtk::ComputeProjections<nimble_kokkos::kokkos_device_execution_space, save_projection_types_computed> projection(points,
                                                                                                                      triangles,
                                                                                                                      closest_points,
-                                                                                                                     proj_types_returned);
+                                                                                                                     proj_types_returned_d);
+
+    // TEMP COPY TO HOST
+    Kokkos::deep_copy(closest_points.m_hostData, closest_points.m_data);
+
+    Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space>::HostMirror proj_types_returned_h;
+    Kokkos::resize(proj_types_returned_h, proj_types_returned_d.extent(0));
+    Kokkos::deep_copy(proj_types_returned_h, proj_types_returned_d);
 
     std::vector<int> contact_collisions;
 
@@ -761,31 +806,74 @@ namespace nimble {
       std::vector<int> const & collision_indices = entry.second;
       int first_collision_index = collision_indices[0];
       double pt_value[3];
-      points.getPointValue(first_collision_index, pt_value);
+      //points.getPointValue(first_collision_index, pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+      pt_value[0] = points.m_hostData(first_collision_index, 0);
+      pt_value[1] = points.m_hostData(first_collision_index, 1);
+      pt_value[2] = points.m_hostData(first_collision_index, 2);
+#else
+      pt_value[0] = points.m_hostData(first_collision_index).X();
+      pt_value[1] = points.m_hostData(first_collision_index).Y();
+      pt_value[2] = points.m_hostData(first_collision_index).Z();
+#endif
 
-      int contact_node_index = collision_list.m_data(first_collision_index,0);
+      int contact_node_index = collision_list.hm_data(first_collision_index,0);
 
       std::vector<int> face_projections;
       std::vector<int> node_and_edge_projections;
 
       for (auto const & collision_index : collision_indices) {
 
-        int contact_node_index_check = collision_list.m_data(collision_index,0);
-        int contact_face_index = collision_list.m_data(collision_index,1);
+        int contact_node_index_check = collision_list.hm_data(collision_index,0);
+        int contact_face_index = collision_list.hm_data(collision_index,1);
         if (contact_node_index_check != contact_node_index) {
           throw std::logic_error("\nError in ComputeContactForce(), bad node index.\n");
         }
 
         double closest_pt_value[3], proj_vector[3];
-        closest_points.getPointValue(collision_index, closest_pt_value);
+        //closest_points.getPointValue(collision_index, closest_pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+        closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+        closest_pt_value[1] = closest_points.m_hostData(collision_index, 2);
+        closest_pt_value[2] = closest_points.m_hostData(collision_index, 3);
+#else
+        closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+        closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+        closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#endif
+
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
         }
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
-        triangles.getVertexValue(collision_index, 0, tri_node_1);
-        triangles.getVertexValue(collision_index, 1, tri_node_2);
-        triangles.getVertexValue(collision_index, 2, tri_node_3);
+#ifdef NIMBLE_NVIDIA_BUILD
+        //triangles.getVertexValue(collision_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(collision_index, 0, 0);
+        tri_node_1[1] = triangles.m_hostData(collision_index, 0, 1);
+        tri_node_1[2] = triangles.m_hostData(collision_index, 0, 2);
+        //triangles.getVertexValue(collision_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(collision_index, 1, 0);
+        tri_node_2[1] = triangles.m_hostData(collision_index, 1, 1);
+        tri_node_2[2] = triangles.m_hostData(collision_index, 1, 2);
+        //triangles.getVertexValue(collision_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(collision_index, 2, 0);
+        tri_node_3[1] = triangles.m_hostData(collision_index, 2, 1);
+        tri_node_3[2] = triangles.m_hostData(collision_index, 2, 2);
+#else
+        //triangles.getVertexValue(collision_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(collision_index).GetNode(0)[0];
+        tri_node_1[1] = triangles.m_hostData(collision_index).GetNode(0)[1];
+        tri_node_1[2] = triangles.m_hostData(collision_index).GetNode(0)[2];
+        //triangles.getVertexValue(collision_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(collision_index).GetNode(1)[0];
+        tri_node_2[1] = triangles.m_hostData(collision_index).GetNode(1)[1];
+        tri_node_2[2] = triangles.m_hostData(collision_index).GetNode(1)[2];
+        //triangles.getVertexValue(collision_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(collision_index).GetNode(2)[0];
+        tri_node_3[1] = triangles.m_hostData(collision_index).GetNode(2)[1];
+        tri_node_3[2] = triangles.m_hostData(collision_index).GetNode(2)[2];
+#endif
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
           tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
@@ -800,7 +888,7 @@ namespace nimble {
         bool penetration = (dot >= 0.0);
 
         if (penetration) {
-          gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned[collision_index]);
+          gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_h[collision_index]);
           switch (type) {
           case gtk::NODE_PROJECTION:
             node_and_edge_projections.push_back(collision_index);
@@ -827,7 +915,16 @@ namespace nimble {
         double min_distance(std::numeric_limits<double>::max());
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : node_and_edge_projections) {
-          closest_points.getPointValue(collision_index, closest_pt_value);
+          //closest_points.getPointValue(collision_index, closest_pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
+          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+#else
+          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#endif
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -843,9 +940,17 @@ namespace nimble {
         has_contact = true;
         contact_index = face_projections[0];
 
-
         double closest_pt_value[3], proj_vector[3], distance;
-        closest_points.getPointValue(face_projections[0], closest_pt_value);
+        //closest_points.getPointValue(face_projections[0], closest_pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+        closest_pt_value[0] = closest_points.m_hostData(face_projections[0], 0);
+        closest_pt_value[1] = closest_points.m_hostData(face_projections[0], 1);
+        closest_pt_value[2] = closest_points.m_hostData(face_projections[0], 2);
+#else
+        closest_pt_value[0] = closest_points.m_hostData(face_projections[0]).X();
+        closest_pt_value[1] = closest_points.m_hostData(face_projections[0]).Y();
+        closest_pt_value[2] = closest_points.m_hostData(face_projections[0]).Z();
+#endif
         for (int i=0 ; i<3 ; i++) {
           proj_vector[i] = closest_pt_value[i] - pt_value[i];
         }
@@ -857,7 +962,16 @@ namespace nimble {
         double min_distance(std::numeric_limits<double>::max());
         double closest_pt_value[3], proj_vector[3], distance;
         for (auto & collision_index : face_projections) {
-          closest_points.getPointValue(collision_index, closest_pt_value);
+          //closest_points.getPointValue(collision_index, closest_pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
+          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
+          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
+#else
+          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
+          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
+          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
+#endif
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
@@ -882,19 +996,61 @@ namespace nimble {
       force_[i] = 0.0;
     }
     for (auto const & contact_index : contact_collisions) {
-        int contact_node_index = collision_list.m_data(contact_index,0);
-        int contact_face_index = collision_list.m_data(contact_index,1);
-        ContactEntity & node = contact_nodes_[contact_node_index];
-        ContactEntity & face = contact_faces_[contact_face_index];
+        int contact_node_index = collision_list.hm_data(contact_index,0);
+        int contact_face_index = collision_list.hm_data(contact_index,1);
+        ContactEntity & node = contact_nodes_h_[contact_node_index];
+        ContactEntity & face = contact_faces_h_[contact_face_index];
 
         double pt_value[3], closest_pt_value[3];
-        points.getPointValue(contact_index, pt_value);
-        closest_points.getPointValue(contact_index, closest_pt_value);
+#ifdef NIMBLE_NVIDIA_BUILD
+        //points.getPointValue(contact_index, pt_value);
+        pt_value[0] = points.m_hostData(contact_index, 0);
+        pt_value[1] = points.m_hostData(contact_index, 1);
+        pt_value[2] = points.m_hostData(contact_index, 2);
+        //closest_points.getPointValue(contact_index, closest_pt_value);
+        closest_pt_value[0] = closest_points.m_hostData(contact_index, 0);
+        closest_pt_value[1] = closest_points.m_hostData(contact_index, 1);
+        closest_pt_value[2] = closest_points.m_hostData(contact_index, 2);
+#else
+        //points.getPointValue(contact_index, pt_value);
+        pt_value[0] = points.m_hostData(contact_index).X();
+        pt_value[1] = points.m_hostData(contact_index).Y();
+        pt_value[2] = points.m_hostData(contact_index).Z();
+        //closest_points.getPointValue(contact_index, closest_pt_value);
+        closest_pt_value[0] = closest_points.m_hostData(contact_index).X();
+        closest_pt_value[1] = closest_points.m_hostData(contact_index).Y();
+        closest_pt_value[2] = closest_points.m_hostData(contact_index).Z();
+#endif
 
         double tri_node_1[3], tri_node_2[3], tri_node_3[3];
-        triangles.getVertexValue(contact_index, 0, tri_node_1);
-        triangles.getVertexValue(contact_index, 1, tri_node_2);
-        triangles.getVertexValue(contact_index, 2, tri_node_3);
+#ifdef NIMBLE_NVIDIA_BUILD
+        //triangles.getVertexValue(contact_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(contact_index, 0, 0);
+        tri_node_1[1] = triangles.m_hostData(contact_index, 0, 1);
+        tri_node_1[2] = triangles.m_hostData(contact_index, 0, 2);
+        //triangles.getVertexValue(contact_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(contact_index, 1, 0);
+        tri_node_2[1] = triangles.m_hostData(contact_index, 1, 1);
+        tri_node_2[2] = triangles.m_hostData(contact_index, 1, 2);
+        //triangles.getVertexValue(contact_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(contact_index, 2, 0);
+        tri_node_3[1] = triangles.m_hostData(contact_index, 2, 1);
+        tri_node_3[2] = triangles.m_hostData(contact_index, 2, 2);
+#else
+        //triangles.getVertexValue(contact_index, 0, tri_node_1);
+        tri_node_1[0] = triangles.m_hostData(contact_index).GetNode(0)[0];
+        tri_node_1[1] = triangles.m_hostData(contact_index).GetNode(0)[1];
+        tri_node_1[2] = triangles.m_hostData(contact_index).GetNode(0)[2];
+        //triangles.getVertexValue(contact_index, 1, tri_node_2);
+        tri_node_2[0] = triangles.m_hostData(contact_index).GetNode(1)[0];
+        tri_node_2[1] = triangles.m_hostData(contact_index).GetNode(1)[1];
+        tri_node_2[2] = triangles.m_hostData(contact_index).GetNode(1)[2];
+        //triangles.getVertexValue(contact_index, 2, tri_node_3);
+        tri_node_3[0] = triangles.m_hostData(contact_index).GetNode(2)[0];
+        tri_node_3[1] = triangles.m_hostData(contact_index).GetNode(2)[1];
+        tri_node_3[2] = triangles.m_hostData(contact_index).GetNode(2)[2];
+#endif
+
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
           tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
@@ -929,6 +1085,11 @@ namespace nimble {
         face.GetForces(force_.data());
     }
 
+    nimble_kokkos::HostScalarNodeView force_h("contact force_h", force_d_.extent(0));
+    for (int i=0 ; i<force_.size() ; i++) {
+      force_h(i) = force_[i];
+    }
+    Kokkos::deep_copy(force_d_, force_h);
 #endif
   }
 

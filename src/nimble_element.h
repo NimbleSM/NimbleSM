@@ -134,6 +134,23 @@ namespace nimble {
     double Invert3x3(double mat[][3],
                      double inv[][3]) const ;
 
+    NIMBLE_INLINE_FUNCTION
+    void LU_Decompose(double mat[][3],
+                      int index[]) const ;
+
+    NIMBLE_INLINE_FUNCTION
+    void LU_Solve(double a[][3],
+                  int index[3],
+                  double b[3]) const ;
+
+    NIMBLE_INLINE_FUNCTION
+    void LU_Invert(double mat[][3],
+                   double inv[][3]) const ;
+
+    NIMBLE_INLINE_FUNCTION
+    double MatrixInverseCheckCorrectness(double mat[][3],
+                                         double inv[][3]) const ;
+
   protected:
 
     const int K_S_XX_ = 0 ;

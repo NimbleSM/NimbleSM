@@ -179,7 +179,7 @@ namespace nimble {
   }
 
   Parser::Parser() : file_name_("none"), genesis_file_name_("none"),  use_two_level_mesh_decomposition_(false), write_timing_data_file_(false), rve_genesis_file_name_("none"), exodus_file_name_("none"),
-                     time_integration_scheme_("explicit"), final_time_(1.0), num_load_steps_(0), output_frequency_(1), reduction_version_(6), microscale_boundary_condition_strategy_("periodic bc") {
+                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), reduction_version_(6), microscale_boundary_condition_strategy_("periodic bc") {
     material_strings_["rve"] = "none";
   }
 
@@ -267,6 +267,12 @@ namespace nimble {
         }
         else if (key == "time integration scheme") {
           time_integration_scheme_ = value;
+        }
+        else if (key == "nonlinear solver relative tolerance") {
+          nonlinear_solver_relative_tolerance_ = std::atof(value.c_str());
+        }
+        else if (key == "nonlinear solver maximum iterations") {
+          nonlinear_solver_max_iterations_ = std::atoi(value.c_str());
         }
         else if (key == "final time") {
           final_time_ = std::atof(value.c_str());

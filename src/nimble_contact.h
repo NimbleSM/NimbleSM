@@ -51,6 +51,10 @@
 #include "nimble_genesis_mesh.h"
 #include "nimble_kokkos_defs.h"
 
+#ifdef NIMBLE_HAVE_EXTRAS
+  #include "nimble_extras_contact_includes.h"
+#endif
+
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
   #include <bvh/tree.hpp>
@@ -59,15 +63,16 @@
 namespace nimble {
 
   NIMBLE_INLINE_FUNCTION
-  double TriangleArea(const double * const pt_1,
-                      const double * const pt_2,
-                      const double * const pt_3) {
-
+  double TriangleArea(double pt_1_x, double pt_1_y, double pt_1_z,
+                      double pt_2_x, double pt_2_y, double pt_2_z,
+                      double pt_3_x, double pt_3_y, double pt_3_z) {
     double a[3], b[3], cross[3], area;
-    for (int i=0 ; i<3 ; ++i) {
-      a[i] = pt_2[i] - pt_1[i];
-      b[i] = pt_3[i] - pt_1[i];
-    }
+    a[0] = pt_2_x - pt_1_x;
+    a[1] = pt_2_y - pt_1_y;
+    a[2] = pt_2_z - pt_1_z;
+    b[0] = pt_3_x - pt_1_x;
+    b[1] = pt_3_y - pt_1_y;
+    b[2] = pt_3_z - pt_1_z;
     cross[0] = b[1]*a[2] - b[2]*a[1];
     cross[1] = b[0]*a[2] - b[2]*a[0];
     cross[2] = b[0]*a[1] - b[1]*a[0];
@@ -90,8 +95,10 @@ namespace nimble {
       TRIANGLE=3
     } CONTACT_ENTITY_TYPE;
 
-    ContactEntity() : entity_type_(NONE) {}
+    NIMBLE_FUNCTION
+    ContactEntity() {}
 
+    NIMBLE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contant_entity_global_id,
                   double const coord[],
@@ -112,120 +119,170 @@ namespace nimble {
             num_nodes_ = 3;
             node_id_for_node_1_ = node_id_for_node_1;
             node_id_for_node_2_ = node_id_for_node_2;
-            for (int i=0 ; i<4 ; i++) {
-              node_ids_for_fictitious_node_[i] = node_ids_for_fictitious_node[i];
-            }
+            node_id_1_for_fictitious_node_ = node_ids_for_fictitious_node[0];
+            node_id_2_for_fictitious_node_ = node_ids_for_fictitious_node[1];
+            node_id_3_for_fictitious_node_ = node_ids_for_fictitious_node[2];
+            node_id_4_for_fictitious_node_ = node_ids_for_fictitious_node[3];
           }
           else{
             printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
           }
-
-          for (unsigned int i=0 ; i<3*num_nodes_ ; i++) {
-            coord_[i] = coord[i];
+          coord_1_x_ = coord[0];
+          coord_1_y_ = coord[1];
+          coord_1_z_ = coord[2];
+          if (entity_type_ == TRIANGLE) {
+            coord_2_x_ = coord[3];
+            coord_2_y_ = coord[4];
+            coord_2_z_ = coord[5];
+            coord_3_x_ = coord[6];
+            coord_3_y_ = coord[7];
+            coord_3_z_ = coord[8];
           }
-
           SetBoundingBox();
         }
 
-    virtual ~ContactEntity() {}
+    NIMBLE_FUNCTION
+    ~ContactEntity() {}
 
-    void SetCoordinates(const double * const coord) {
+    template <typename ArgT>
+    NIMBLE_INLINE_FUNCTION
+    void SetCoordinates(ArgT coord) {
       int n0 = 3*node_id_for_node_1_;
-      coord_[0] = coord[n0];
-      coord_[1] = coord[n0+1];
-      coord_[2] = coord[n0+2];
+      coord_1_x_ = coord[n0];
+      coord_1_y_ = coord[n0+1];
+      coord_1_z_ = coord[n0+2];
       if (entity_type_ == TRIANGLE) {
         n0 = 3*node_id_for_node_2_;
-        coord_[3] = coord[n0];
-        coord_[4] = coord[n0+1];
-        coord_[5] = coord[n0+2];
-        n0 = 3*node_ids_for_fictitious_node_[0];
-        int n1 = 3*node_ids_for_fictitious_node_[1];
-        int n2 = 3*node_ids_for_fictitious_node_[2];
-        int n3 = 3*node_ids_for_fictitious_node_[3];
-        coord_[6] = (coord[n0]   + coord[n1]   + coord[n2]   + coord[n3]  ) / 4.0;
-        coord_[7] = (coord[n0+1] + coord[n1+1] + coord[n2+1] + coord[n3+1]) / 4.0;
-        coord_[8] = (coord[n0+2] + coord[n1+2] + coord[n2+2] + coord[n3+2]) / 4.0;
+        coord_2_x_ = coord[n0];
+        coord_2_y_ = coord[n0+1];
+        coord_2_z_ = coord[n0+2];
+        n0 = 3*node_id_1_for_fictitious_node_;
+        int n1 = 3*node_id_2_for_fictitious_node_;
+        int n2 = 3*node_id_3_for_fictitious_node_;
+        int n3 = 3*node_id_4_for_fictitious_node_;
+        coord_3_x_ = (coord[n0]   + coord[n1]   + coord[n2]   + coord[n3]  ) / 4.0;
+        coord_3_y_ = (coord[n0+1] + coord[n1+1] + coord[n2+1] + coord[n3+1]) / 4.0;
+        coord_3_z_ = (coord[n0+2] + coord[n1+2] + coord[n2+2] + coord[n3+2]) / 4.0;
       }
       SetBoundingBox();
     }
 
-    void GetForces(double * const force) {
+    template <typename ArgT>
+    NIMBLE_INLINE_FUNCTION
+    void GetForces(ArgT force) {
       int n = 3*node_id_for_node_1_;
-      force[n]   += force_[0];
-      force[n+1] += force_[1];
-      force[n+2] += force_[2];
+      force[n]   += force_1_x_;
+      force[n+1] += force_1_y_;
+      force[n+2] += force_1_z_;
       if (entity_type_ == TRIANGLE) {
         n = 3*node_id_for_node_2_;
-        force[n]   += force_[3];
-        force[n+1] += force_[4];
-        force[n+2] += force_[5];
-        for (int i=0 ; i<4 ; i++) {
-          int n = 3*node_ids_for_fictitious_node_[i];
-          force[n]   += force_[6] / 4.0;
-          force[n+1] += force_[7] / 4.0;
-          force[n+2] += force_[8] / 4.0;
-        }
+        force[n]   += force_2_x_;
+        force[n+1] += force_2_y_;
+        force[n+2] += force_2_z_;
+        int n = 3*node_id_1_for_fictitious_node_;
+        force[n]   += force_3_x_ / 4.0;
+        force[n+1] += force_3_y_ / 4.0;
+        force[n+2] += force_3_z_ / 4.0;
+        n = 3*node_id_2_for_fictitious_node_;
+        force[n]   += force_3_x_ / 4.0;
+        force[n+1] += force_3_y_ / 4.0;
+        force[n+2] += force_3_z_ / 4.0;
+        n = 3*node_id_3_for_fictitious_node_;
+        force[n]   += force_3_x_ / 4.0;
+        force[n+1] += force_3_y_ / 4.0;
+        force[n+2] += force_3_z_ / 4.0;
+        n = 3*node_id_4_for_fictitious_node_;
+        force[n]   += force_3_x_ / 4.0;
+        force[n+1] += force_3_y_ / 4.0;
+        force[n+2] += force_3_z_ / 4.0;
       }
     }
 
     // functions required for NimbleSMExtras contact search
+    NIMBLE_INLINE_FUNCTION
     double get_x_min() const { return bounding_box_x_min_; }
+    NIMBLE_INLINE_FUNCTION
     double get_x_max() const { return bounding_box_x_max_; }
+    NIMBLE_INLINE_FUNCTION
     double get_y_min() const { return bounding_box_y_min_; }
+    NIMBLE_INLINE_FUNCTION
     double get_y_max() const { return bounding_box_y_max_; }
+    NIMBLE_INLINE_FUNCTION
     double get_z_min() const { return bounding_box_z_min_; }
+    NIMBLE_INLINE_FUNCTION
     double get_z_max() const { return bounding_box_z_max_; }
 
     // Functions for bvh contact search
-    int contant_entity_global_id() const { return contant_entity_global_id_; }
-    const double* centroid() const { return centroid_; }
+    //int contant_entity_global_id() const { return contant_entity_global_id_; }
+    //const double* centroid() const {
+    //  // FIX ME
+    //  // centroid is now stored as centroid_x_ centroid_y_ and centroid_z_
+    //  // using arrays complicates kokkos / cuda mem copies, so I just unrolled everything
+    //  return centroid_;
+    //}
 #ifdef NIMBLE_HAVE_BVH
     bvh::dop_26<double> kdop() const {
       std::vector< std::array< double, 3 > > vertices;
-      for ( std::size_t i = 0; i < 3*num_nodes_; i += 3 )
-      {
-        vertices.push_back( {{ coord_[i], coord_[i + 1], coord_[i + 2] }} );
+      vertices.push_back( {{ coord_1_x_, coord_1_y_, coord_1_z_ }} );
+      if (entity_type_ == TRIANGLE) {
+        vertices.push_back( {{ coord_2_x_, coord_2_y_, coord_2_z_ }} );
+        vertices.push_back( {{ coord_3_x_, coord_3_y_, coord_3_z_ }} );
       }
       const double inflation_length = 0.15 * char_len_;
       return bvh::dop_26< double >::from_vertices( vertices.begin(), vertices.end(), inflation_length );
     }
 #endif
 
+    NIMBLE_INLINE_FUNCTION
     void SetBoundingBox() {
 
-      centroid_[0] = centroid_[1] = centroid_[2] = 0.0;
+      centroid_x_ = coord_1_x_;
+      centroid_y_ = coord_1_y_;
+      centroid_z_ = coord_1_z_;
+      bounding_box_x_min_ = coord_1_x_;
+      bounding_box_x_max_ = coord_1_x_;
+      bounding_box_y_min_ = coord_1_y_;
+      bounding_box_y_max_ = coord_1_y_;
+      bounding_box_z_min_ = coord_1_z_;
+      bounding_box_z_max_ = coord_1_z_;
 
-      bounding_box_x_min_ = DBL_MAX;
-      bounding_box_x_max_ = -DBL_MAX;
-      bounding_box_y_min_ = DBL_MAX;
-      bounding_box_y_max_ = -DBL_MAX;
-      bounding_box_z_min_ = DBL_MAX;
-      bounding_box_z_max_ = -DBL_MAX;
-
-      for (int i_node=0 ; i_node<num_nodes_ ; i_node++) {
-
-        centroid_[0] += coord_[3*i_node];
-        centroid_[1] += coord_[3*i_node+1];
-        centroid_[2] += coord_[3*i_node+2];
-
-        if (coord_[3*i_node] < bounding_box_x_min_)
-          bounding_box_x_min_ = coord_[3*i_node];
-        if (coord_[3*i_node] > bounding_box_x_max_)
-          bounding_box_x_max_ = coord_[3*i_node];
-        if (coord_[3*i_node+1] < bounding_box_y_min_)
-          bounding_box_y_min_ = coord_[3*i_node+1];
-        if (coord_[3*i_node+1] > bounding_box_y_max_)
-          bounding_box_y_max_ = coord_[3*i_node+1];
-        if (coord_[3*i_node+2] < bounding_box_z_min_)
-          bounding_box_z_min_ = coord_[3*i_node+2];
-        if (coord_[3*i_node+2] > bounding_box_z_max_)
-          bounding_box_z_max_ = coord_[3*i_node+2];
+      // todo, try ternary operator here
+      if (entity_type_ == TRIANGLE) {
+        centroid_x_ += coord_2_x_;
+        centroid_y_ += coord_2_y_;
+        centroid_z_ += coord_2_z_;
+        if (coord_2_x_ < bounding_box_x_min_)
+          bounding_box_x_min_ = coord_2_x_;
+        if (coord_2_x_ > bounding_box_x_max_)
+          bounding_box_x_max_ = coord_2_x_;
+        if (coord_2_y_ < bounding_box_y_min_)
+          bounding_box_y_min_ = coord_2_y_;
+        if (coord_2_y_ > bounding_box_y_max_)
+          bounding_box_y_max_ = coord_2_y_;
+        if (coord_2_z_ < bounding_box_z_min_)
+          bounding_box_z_min_ = coord_2_z_;
+        if (coord_2_z_ > bounding_box_z_max_)
+          bounding_box_z_max_ = coord_2_z_;
+        centroid_x_ += coord_3_x_;
+        centroid_y_ += coord_3_y_;
+        centroid_z_ += coord_3_z_;
+        if (coord_3_x_ < bounding_box_x_min_)
+          bounding_box_x_min_ = coord_3_x_;
+        if (coord_3_x_ > bounding_box_x_max_)
+          bounding_box_x_max_ = coord_3_x_;
+        if (coord_3_y_ < bounding_box_y_min_)
+          bounding_box_y_min_ = coord_3_y_;
+        if (coord_3_y_ > bounding_box_y_max_)
+          bounding_box_y_max_ = coord_3_y_;
+        if (coord_3_z_ < bounding_box_z_min_)
+          bounding_box_z_min_ = coord_3_z_;
+        if (coord_3_z_ > bounding_box_z_max_)
+          bounding_box_z_max_ = coord_3_z_;
       }
 
-      centroid_[0] /= num_nodes_;
-      centroid_[1] /= num_nodes_;
-      centroid_[2] /= num_nodes_;
+      centroid_x_ /= num_nodes_;
+      centroid_y_ /= num_nodes_;
+      centroid_z_ /= num_nodes_;
 
       double inflation_length = 0.15 * char_len_;
 
@@ -237,6 +294,7 @@ namespace nimble {
       bounding_box_z_max_ += inflation_length;
     }
 
+    NIMBLE_INLINE_FUNCTION
     void ComputeNodalContactForces(const double * const contact_force,
                                    const double * const closest_point_projection) {
 
@@ -247,18 +305,30 @@ namespace nimble {
       }
       else if (entity_type_ == TRIANGLE) {
         // Find the natural coordinates of the closest_point_projection
-        double area_1 = TriangleArea(closest_point_projection, &coord_[3], &coord_[6]);
-        double area_2 = TriangleArea(&coord_[0], closest_point_projection, &coord_[6]);
-        double full_area = TriangleArea(&coord_[0], &coord_[3], &coord_[6]);
+        double area_1 = TriangleArea(closest_point_projection[0], closest_point_projection[1], closest_point_projection[2],
+                                     coord_2_x_, coord_2_y_, coord_2_z_,
+                                     coord_3_x_, coord_3_y_, coord_3_z_);
+        double area_2 = TriangleArea(coord_1_x_, coord_1_y_, coord_1_z_,
+                                     closest_point_projection[0], closest_point_projection[1], closest_point_projection[2],
+                                     coord_3_x_, coord_3_y_, coord_3_z_);
+        double full_area = TriangleArea(coord_1_x_, coord_1_y_, coord_1_z_,
+                                        coord_2_x_, coord_2_y_, coord_2_z_,
+                                        coord_3_x_, coord_3_y_, coord_3_z_);
         N[0] = area_1/full_area;
         N[1] = area_2/full_area;
         N[2] = 1.0 - N[0] - N[1];
       }
 
-      for (int i_node = 0; i_node < num_nodes_ ; ++i_node) {
-        for (int i=0 ; i<3 ; ++i) {
-          force_[3*i_node + i] = N[i_node] * contact_force[i];
-        }
+      force_1_x_ = N[0] * contact_force[0];
+      force_1_y_ = N[0] * contact_force[1];
+      force_1_z_ = N[0] * contact_force[2];
+      if (entity_type_ == TRIANGLE) {
+        force_2_x_ = N[1] * contact_force[3];
+        force_2_y_ = N[1] * contact_force[4];
+        force_2_z_ = N[1] * contact_force[5];
+        force_3_x_ = N[2] * contact_force[6];
+        force_3_y_ = N[2] * contact_force[7];
+        force_3_z_ = N[2] * contact_force[8];
       }
     }
 
@@ -267,8 +337,25 @@ namespace nimble {
     // positions of nodes that define triangular contact patch
     CONTACT_ENTITY_TYPE entity_type_ = NONE;
     int num_nodes_ = 0;
-    double coord_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    double force_[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    double coord_1_x_ = 0.0;
+    double coord_1_y_ = 0.0;
+    double coord_1_z_ = 0.0;
+    double coord_2_x_ = 0.0;
+    double coord_2_y_ = 0.0;
+    double coord_2_z_ = 0.0;
+    double coord_3_x_ = 0.0;
+    double coord_3_y_ = 0.0;
+    double coord_3_z_ = 0.0;
+    double force_1_x_ = 0.0;
+    double force_1_y_ = 0.0;
+    double force_1_z_ = 0.0;
+    double force_2_x_ = 0.0;
+    double force_2_y_ = 0.0;
+    double force_2_z_ = 0.0;
+    double force_3_x_ = 0.0;
+    double force_3_y_ = 0.0;
+    double force_3_z_ = 0.0;
+
     double char_len_ = 0.0;
 
     // bounding box for NimbleSMExtras contact search routines
@@ -280,19 +367,30 @@ namespace nimble {
     double bounding_box_z_max_ =  DBL_MAX;
 
     // centroid for bvh search routines
-    double centroid_[3] = {0.0, 0.0, 0.0};
+    double centroid_x_ = 0.0;
+    double centroid_y_ = 0.0;
+    double centroid_z_ = 0.0;
 
     // map for moving displacement/forces to/from the contact manager data structures
     int node_id_for_node_1_ = -1;
     int node_id_for_node_2_ = -1;
-    int node_ids_for_fictitious_node_[4] = {-1, -1, -1, -1}; // fictitious node maps to multiple real nodes
+    // fictitious node maps to multiple real nodes
+    int node_id_1_for_fictitious_node_ = -1;
+    int node_id_2_for_fictitious_node_ = -1;
+    int node_id_3_for_fictitious_node_ = -1;
+    int node_id_4_for_fictitious_node_ = -1;
   };
 
   class ContactManager {
 
   public:
 
-  ContactManager() : penalty_parameter_(0.0) {}
+    ContactManager() : penalty_parameter_(0.0)
+#ifdef NIMBLE_HAVE_EXTRAS
+      , contact_nodes_search_tree_("contact nodes search tree")
+      , contact_faces_search_tree_("contact faces search tree")
+#endif
+      {}
 
     virtual ~ContactManager() {}
 
@@ -331,6 +429,45 @@ namespace nimble {
       }
     }
 
+#ifdef NIMBLE_HAVE_KOKKOS
+
+    void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
+
+      int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+      int num_contact_node_entities = contact_nodes_d_.extent(0);
+      int num_contact_face_entities = contact_faces_d_.extent(0);
+
+      // circumvent lambda *this glitch
+      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+      nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
+      nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
+      DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+      DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
+                           num_nodes_in_contact_manager,
+                           KOKKOS_LAMBDA(const int i) {
+        int node_id = node_ids(i);
+        coord(3*i)   = model_coord(3*i)   + displacement_d(node_id, 0);
+        coord(3*i+1) = model_coord(3*i+1) + displacement_d(node_id, 1);
+        coord(3*i+2) = model_coord(3*i+2) + displacement_d(node_id, 2);
+      });
+
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
+                         num_contact_node_entities,
+                         KOKKOS_LAMBDA(const int i_node) {
+        contact_nodes(i_node).SetCoordinates(coord);
+      });
+
+      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
+                         num_contact_face_entities,
+                         KOKKOS_LAMBDA(const int i_face) {
+        contact_faces(i_face).SetCoordinates(coord);
+      });
+
+    }
+#endif
+
     void GetForces(double * const contact_force) {
       for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
         int node_id = node_ids_[i_node];
@@ -339,6 +476,26 @@ namespace nimble {
         }
       }
     }
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+
+      int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+
+      // circumvent lambda *this glitch
+      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+      nimble_kokkos::DeviceScalarNodeView force = force_d_;
+
+      Kokkos::parallel_for("ContactManager::GetForces",
+                         num_nodes_in_contact_manager,
+                         KOKKOS_LAMBDA(const int i) {
+        int node_id = node_ids(i);
+        contact_force_d(node_id, 0) = force(3*i);
+        contact_force_d(node_id, 1) = force(3*i+1);
+        contact_force_d(node_id, 2) = force(3*i+2);
+      });
+    }
+#endif
 
     void ComputeContactForce(int step, bool debug_output);
 
@@ -371,10 +528,19 @@ namespace nimble {
     nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
     nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
 
-    using HostContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_host >;
     using DeviceContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device >;
     DeviceContactEntityArrayView contact_faces_d_ = DeviceContactEntityArrayView("contact_faces_d", 1);
     DeviceContactEntityArrayView contact_nodes_d_ = DeviceContactEntityArrayView("contact_nodes_d", 1);
+
+    // TODO remove this once enforcement is on device
+    using HostContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_host >;
+    HostContactEntityArrayView contact_faces_h_ = HostContactEntityArrayView("contact_faces_h", 1);
+    HostContactEntityArrayView contact_nodes_h_ = HostContactEntityArrayView("contact_nodes_h", 1);
+#endif
+
+#ifdef NIMBLE_HAVE_EXTRAS
+    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
+    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
 #endif
   };
 

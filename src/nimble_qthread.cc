@@ -301,7 +301,7 @@ static aligned_t QthreadsInitializeExodusOutput(void *arg)
   }
 
   char serial_file_name[nimble::MAX_C_STR_SIZE];
-  strcpy(serial_file_name, parser_g.GenesisFileName().c_str());
+  strcpy(serial_file_name, parser_g.ExodusFileName().c_str());
 
   char file_name_extension[nimble::MAX_C_STR_SIZE];
   file_name_extension[0] = 'e';
@@ -314,13 +314,13 @@ static aligned_t QthreadsInitializeExodusOutput(void *arg)
   char exodus_file_name[nimble::MAX_C_STR_SIZE];
 
   nimble::IOFileNameThreadSafe(serial_file_name,
-                                       file_name_extension,
-                                       file_label,
-                                       name_mpi_rank,
-                                       name_mpi_num_ranks,
-                                       name_qthread_job_id,
-                                       name_qthread_number_of_workers,
-                                       exodus_file_name);
+                               file_name_extension,
+                               file_label,
+                               name_mpi_rank,
+                               name_mpi_num_ranks,
+                               name_qthread_job_id,
+                               name_qthread_number_of_workers,
+                               exodus_file_name);
 
   ModelData& model_data = data_manager_array[qthread_job_id].GetMacroScaleData();
 
