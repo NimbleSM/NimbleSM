@@ -197,6 +197,10 @@ IF(NOT HAVE_TRILINOS AND NOT HAVE_NIMBLE_EXTRAS)
   ENDIF()
 ENDIF()
 
+IF(CRAY)
+  set(Exodus_LIBS ${Exodus_LIBS} hdf5_hl hdf5 z)
+ENDIF()
+
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(examples)
