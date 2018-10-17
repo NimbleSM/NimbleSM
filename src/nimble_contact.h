@@ -95,19 +95,32 @@ namespace nimble {
       TRIANGLE=3
     } CONTACT_ENTITY_TYPE;
 
+    struct vertex {
+      vertex() {
+        coords_[0] = coords_[1] = coords_[2] = 0.0;
+      }
+      double& operator[](int i) {
+        return coords_[i];
+      }
+      double operator[](int i) const {
+        return coords_[i];
+      }
+      double coords_[3];
+    };
+
     NIMBLE_FUNCTION
     ContactEntity() {}
 
     NIMBLE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
-                  int contant_entity_global_id,
+                  int contact_entity_global_id,
                   double const coord[],
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
                   int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
-        contant_entity_global_id_(contant_entity_global_id),
+        contact_entity_global_id_(contact_entity_global_id),
         char_len_(characteristic_length) {
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
@@ -213,32 +226,43 @@ namespace nimble {
     double get_z_max() const { return bounding_box_z_max_; }
 
     // Functions for bvh contact search
-    //int contant_entity_global_id() const { return contant_entity_global_id_; }
-    //const double* centroid() const {
-    //  // FIX ME
-    //  // centroid is now stored as centroid_x_ centroid_y_ and centroid_z_
-    //  // using arrays complicates kokkos / cuda mem copies, so I just unrolled everything
-    //  return centroid_;
-    //}
+    int contact_entity_global_id() const { return contact_entity_global_id_; }
+
+    vertex centroid() const {
+      return centroid_;
+    }
+
 #ifdef NIMBLE_HAVE_BVH
     bvh::dop_26<double> kdop() const {
-      std::vector< std::array< double, 3 > > vertices;
-      vertices.push_back( {{ coord_1_x_, coord_1_y_, coord_1_z_ }} );
-      if (entity_type_ == TRIANGLE) {
-        vertices.push_back( {{ coord_2_x_, coord_2_y_, coord_2_z_ }} );
-        vertices.push_back( {{ coord_3_x_, coord_3_y_, coord_3_z_ }} );
-      }
       const double inflation_length = 0.15 * char_len_;
-      return bvh::dop_26< double >::from_vertices( vertices.begin(), vertices.end(), inflation_length );
+      if (entity_type == NODE) {
+        vertex v;
+        v[0] = coord_1_x_;
+        v[1] = coord_1_y_;
+        v[2] = coord_1_z_;
+        return bvh::dop_26< double >::from_vertices( &v, &v + 1, inflation_length );
+      }
+      // entity_type_ == TRIANGLE
+      vertex v[3];
+      v[0][0] = coord_1_x_;
+      v[0][1] = coord_1_y_;
+      v[0][2] = coord_1_z_;
+      v[1][0] = coord_2_x_;
+      v[1][1] = coord_2_y_;
+      v[1][2] = coord_2_z_;
+      v[2][0] = coord_3_x_;
+      v[2][1] = coord_3_y_;
+      v[2][2] = coord_3_z_;
+      return bvh::dop_26< double >::from_vertices( &v, &v + 3, inflation_length );
     }
 #endif
 
     NIMBLE_INLINE_FUNCTION
     void SetBoundingBox() {
 
-      centroid_x_ = coord_1_x_;
-      centroid_y_ = coord_1_y_;
-      centroid_z_ = coord_1_z_;
+      centroid_[0] = coord_1_x_;
+      centroid_[1] = coord_1_y_;
+      centroid_[2] = coord_1_z_;
       bounding_box_x_min_ = coord_1_x_;
       bounding_box_x_max_ = coord_1_x_;
       bounding_box_y_min_ = coord_1_y_;
@@ -248,9 +272,9 @@ namespace nimble {
 
       // todo, try ternary operator here
       if (entity_type_ == TRIANGLE) {
-        centroid_x_ += coord_2_x_;
-        centroid_y_ += coord_2_y_;
-        centroid_z_ += coord_2_z_;
+        centroid_[0] += coord_2_x_;
+        centroid_[1] += coord_2_y_;
+        centroid_[2] += coord_2_z_;
         if (coord_2_x_ < bounding_box_x_min_)
           bounding_box_x_min_ = coord_2_x_;
         if (coord_2_x_ > bounding_box_x_max_)
@@ -263,9 +287,9 @@ namespace nimble {
           bounding_box_z_min_ = coord_2_z_;
         if (coord_2_z_ > bounding_box_z_max_)
           bounding_box_z_max_ = coord_2_z_;
-        centroid_x_ += coord_3_x_;
-        centroid_y_ += coord_3_y_;
-        centroid_z_ += coord_3_z_;
+        centroid_[0] += coord_3_x_;
+        centroid_[1] += coord_3_y_;
+        centroid_[2] += coord_3_z_;
         if (coord_3_x_ < bounding_box_x_min_)
           bounding_box_x_min_ = coord_3_x_;
         if (coord_3_x_ > bounding_box_x_max_)
@@ -280,9 +304,9 @@ namespace nimble {
           bounding_box_z_max_ = coord_3_z_;
       }
 
-      centroid_x_ /= num_nodes_;
-      centroid_y_ /= num_nodes_;
-      centroid_z_ /= num_nodes_;
+      centroid_[0] /= num_nodes_;
+      centroid_[1] /= num_nodes_;
+      centroid_[2] /= num_nodes_;
 
       double inflation_length = 0.15 * char_len_;
 
@@ -332,7 +356,7 @@ namespace nimble {
       }
     }
 
-    int contant_entity_global_id_ = -1;
+    int contact_entity_global_id_ = -1;
 
     // positions of nodes that define triangular contact patch
     CONTACT_ENTITY_TYPE entity_type_ = NONE;
@@ -367,9 +391,7 @@ namespace nimble {
     double bounding_box_z_max_ =  DBL_MAX;
 
     // centroid for bvh search routines
-    double centroid_x_ = 0.0;
-    double centroid_y_ = 0.0;
-    double centroid_z_ = 0.0;
+    vertex centroid_;
 
     // map for moving displacement/forces to/from the contact manager data structures
     int node_id_for_node_1_ = -1;
