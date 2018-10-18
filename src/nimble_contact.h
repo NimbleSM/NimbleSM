@@ -518,6 +518,12 @@ namespace nimble {
       contact_entities[i] = entity;
     }
   }
+#ifdef NIMBLE_HAVE_BVH
+  // Free functions for accessing entity info for bvh
+  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity );
+  std::size_t get_entity_global_id( const ContactEntity &_entity );
+  tim::vec3d get_entity_centroid( const ContactEntity &_entity );
+#endif
 
   class ContactManager {
 
@@ -810,8 +816,6 @@ public:
 
 };
 
-} // namespace nimble
-
 
 #ifdef NIMBLE_HAVE_BVH
 namespace bvh
@@ -839,5 +843,6 @@ namespace bvh
   };
 }
 #endif  // NIMBLE_HAVE_BVH
+} // namespace nimble
 
 #endif // NIMBLE_MATERIAL_H
