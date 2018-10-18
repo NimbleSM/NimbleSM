@@ -632,7 +632,7 @@ namespace nimble {
     for ( auto &&face : contact_faces_ )
     {
       if ( std::count_if( collision_result.begin(), collision_result.end(),
-                          [&face]( auto &&pair ){ return pair.first == face.global_id(); } ) )
+                          [&face]( auto &&pair ){ return pair.first == face.contact_entity_global_id(); } ) )
       {
         colliding_faces.push_back(face);
       } else {
@@ -645,7 +645,7 @@ namespace nimble {
     for ( auto &&node : contact_nodes_ )
     {
       if ( std::count_if( collision_result.begin(), collision_result.end(),
-                          [&node]( auto &&pair ){ return pair.first == node.global_id(); } ) )
+                          [&node]( auto &&pair ){ return pair.first == node.contact_entity_global_id(); } ) )
       {
         colliding_nodes.push_back(node);
       } else {

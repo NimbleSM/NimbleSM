@@ -235,7 +235,7 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_BVH
     bvh::dop_26<double> kdop() const {
       const double inflation_length = 0.15 * char_len_;
-      if (entity_type == NODE) {
+      if (entity_type_ == NODE) {
         vertex v;
         v[0] = coord_1_x_;
         v[1] = coord_1_y_;
@@ -253,7 +253,7 @@ namespace nimble {
       v[2][0] = coord_3_x_;
       v[2][1] = coord_3_y_;
       v[2][2] = coord_3_z_;
-      return bvh::dop_26< double >::from_vertices( &v, &v + 3, inflation_length );
+      return bvh::dop_26< double >::from_vertices( v, v + 3, inflation_length );
     }
 #endif
 
@@ -567,5 +567,33 @@ namespace nimble {
   };
 
 } // namespace nimble
+
+
+#ifdef NIMBLE_HAVE_BVH
+namespace bvh
+{
+  /**
+   * Adapter for bvh to get contact entity collision info
+   */
+  template<>
+  struct get_entity_info< nimble::ContactEntity >
+  {
+    static decltype(auto) get_kdop( const nimble::ContactEntity &_entity )
+    {
+      return _entity.kdop();
+    }
+    
+    static decltype(auto) get_global_id( const nimble::ContactEntity &_entity )
+    {
+      return _entity.contact_entity_global_id();
+    }
+    
+    static decltype(auto) get_centroid( const nimble::ContactEntity &_entity )
+    {
+      return _entity.centroid();
+    }
+  };
+}
+#endif  // NIMBLE_HAVE_BVH
 
 #endif // NIMBLE_MATERIAL_H
