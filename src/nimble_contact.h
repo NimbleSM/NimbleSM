@@ -80,6 +80,25 @@ namespace nimble {
     return area;
   }
 
+  NIMBLE_INLINE_FUNCTION
+  double PointEdgeClosestPointFindT(double const p1[],
+                                    double const p2[],
+                                    double const p[]) {
+    return ((p[0] - p1[0] )*(p2[0] - p1[0]) + (p[1] - p1[1] )*(p2[1] - p1[1]) + (p[2] - p1[2] )*(p2[2] - p1[2]))
+      / ((p2[0] - p1[0])*(p2[0] - p1[0]) + (p2[1] - p1[1])*(p2[1] - p1[1]) + (p2[2] - p1[2])*(p2[2] - p1[2]));
+  }
+
+  NIMBLE_INLINE_FUNCTION
+  double PointEdgeClosestPointFindDistanceSquared(double const p1[],
+                                                  double const p2[],
+                                                  double const p[],
+                                                  double t) {
+    double temp1 = p1[0] + (p2[0] - p1[0])*t - p[0];
+    double temp2 = p1[1] + (p2[1] - p1[1])*t - p[1];
+    double temp3 = p1[2] + (p2[2] - p1[2])*t - p[2];
+    return (temp1*temp1 + temp2*temp2 + temp3*temp3);
+  }
+
   void ParseContactCommand(std::string const & command,
                            std::vector<std::string> & master_block_names,
                            std::vector<std::string> & slave_block_names,
@@ -407,6 +426,12 @@ namespace nimble {
 
   public:
 
+    typedef enum ProjectionType {
+      UNKNOWN=0,
+      NODE_OR_EDGE=1,
+      FACE=2
+    } PROJECTION_TYPE;
+
     ContactManager() : penalty_parameter_(0.0)
 #ifdef NIMBLE_HAVE_EXTRAS
       , contact_nodes_search_tree_("contact nodes search tree")
@@ -519,12 +544,19 @@ namespace nimble {
     }
 #endif
 
+    void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
+                                std::vector<ContactEntity> const & triangles,
+                                std::vector<ContactEntity::vertex>& closest_points,
+                                std::vector<PROJECTION_TYPE>& projection_types);
+
     void ComputeContactForce(int step, bool debug_output);
 
     void WriteContactEntitiesToVTKFile(int step);
-    void WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &_faces,
-                                       const std::vector<ContactEntity> &_nodes,
-                                       const std::string &_prefix, int step);
+
+    void WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
+                                       const std::vector<ContactEntity> &nodes,
+                                       const std::string &prefix,
+                                       int step);
 
 #ifdef NIMBLE_HAVE_BVH
     void VisualizeCollisionInfo(const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,

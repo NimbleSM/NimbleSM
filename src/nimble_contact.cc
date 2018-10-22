@@ -42,6 +42,7 @@
 */
 
 #include "nimble_contact.h"
+#include "nimble_utils.h"
 
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/broadphase.hpp>
@@ -561,10 +562,11 @@ namespace nimble {
   void
   ContactManager::WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
                                                 const std::vector<ContactEntity> &nodes,
-                                                const std::string &_prefix, int step) {
+                                                const std::string &prefix,
+                                                int step) {
 
     std::stringstream file_name_ss;
-    file_name_ss << _prefix << step << ".vtk";
+    file_name_ss << prefix << step << ".vtk";
     std::ofstream vis_file;
     vis_file.open(file_name_ss.str().c_str());
 
@@ -676,6 +678,182 @@ namespace nimble {
 #endif
   }
 #endif
+
+  void
+  ContactManager::ClosestPointProjection(std::vector<ContactEntity> const & nodes,
+                                         std::vector<ContactEntity> const & triangles,
+                                         std::vector<ContactEntity::vertex>& closest_points,
+                                         std::vector<ContactManager::PROJECTION_TYPE>& projection_types) {
+
+    // Wolfgang Heidrich, 2005, Computing the Barycentric Coordinates of a Projected Point, Journal of Graphics Tools, pp 9-12, 10(3).
+
+    double tol = 1.0e-16;
+
+    for (unsigned int i_proj=0 ; i_proj<nodes.size() ; i_proj++) {
+
+      ContactEntity const & node = nodes[i_proj];
+      ContactEntity const & tri = triangles[i_proj];
+
+      double p[3];
+      p[0] = node.coord_1_x_;
+      p[1] = node.coord_1_y_;
+      p[2] = node.coord_1_z_;
+
+      double p1[3];
+      p1[0] = tri.coord_1_x_;
+      p1[1] = tri.coord_1_y_;
+      p1[2] = tri.coord_1_z_;
+
+      double p2[3];
+      p2[0] = tri.coord_2_x_;
+      p2[1] = tri.coord_2_y_;
+      p2[2] = tri.coord_2_z_;
+
+      double p3[3];
+      p3[0] = tri.coord_3_x_;
+      p3[1] = tri.coord_3_y_;
+      p3[2] = tri.coord_3_z_;
+
+      double u[3], v[3], w[3];
+      for (int i=0 ; i<3 ; i++) {
+        u[i] = p2[i] - p1[i];
+        v[i] = p3[i] - p1[i];
+        w[i] = p[i]  - p1[i];
+      }
+
+      double n[3];
+      CrossProduct(u, v, n);
+
+      double n_squared = n[0]*n[0] + n[1]*n[1] + n[2]*n[2];
+
+      double cross[3];
+      CrossProduct(u, w, cross);
+      double gamma = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+
+      CrossProduct(w, v, cross);
+      double beta = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+
+      double alpha = 1 - gamma - beta;
+
+      bool alpha_is_zero, alpha_in_range;
+      (alpha > -tol && alpha < tol) ? alpha_is_zero = true : alpha_is_zero = false;
+      (alpha > -tol && alpha < 1.0 + tol) ? alpha_in_range = true : alpha_in_range = false;
+
+      bool beta_is_zero, beta_in_range;
+      (beta > -tol && beta < tol) ? beta_is_zero = true : beta_is_zero = false;
+      (beta > -tol && beta < 1.0 + tol) ? beta_in_range = true : beta_in_range = false;
+
+      bool gamma_is_zero, gamma_in_range;
+      (gamma > -tol && gamma < tol) ? gamma_is_zero = true : gamma_is_zero = false;
+      (gamma > -tol && gamma < 1.0 + tol) ? gamma_in_range = true : gamma_in_range = false;
+
+      if (alpha_in_range && beta_in_range && gamma_in_range) {
+        closest_points[i_proj].coords_[0] = alpha*p1[0] + beta*p2[0] + gamma*p3[0];
+        closest_points[i_proj].coords_[1] = alpha*p1[1] + beta*p2[1] + gamma*p3[1];
+        closest_points[i_proj].coords_[2] = alpha*p1[2] + beta*p2[2] + gamma*p3[2];
+        if (alpha_is_zero || beta_is_zero || gamma_is_zero) {
+          projection_types[i_proj] = PROJECTION_TYPE::NODE_OR_EDGE;
+        }
+        else {
+          projection_types[i_proj] = PROJECTION_TYPE::FACE;
+        }
+      }
+      else {
+
+        projection_types[i_proj] = PROJECTION_TYPE::NODE_OR_EDGE;
+
+        double x = p1[0] - p[0];
+        double y = p1[1] - p[1];
+        double z = p1[2] - p[2];
+        double distance_squared = x*x + y*y + z*z;
+
+        double min_distance_squared = distance_squared;
+        double min_distance_squared_t;
+        int min_case = 1;
+
+        x = p2[0] - p[0];
+        y = p2[1] - p[1];
+        z = p2[2] - p[2];
+        distance_squared = x*x + y*y + z*z;
+        if (distance_squared < min_distance_squared) {
+          min_distance_squared = distance_squared;
+          min_case = 2;
+        }
+
+        x = p3[0] - p[0];
+        y = p3[1] - p[1];
+        z = p3[2] - p[2];
+        distance_squared = x*x + y*y + z*z;
+        if (distance_squared < min_distance_squared) {
+          min_distance_squared = distance_squared;
+          min_case = 3;
+        }
+
+        double t = PointEdgeClosestPointFindT(p1, p2, p);
+        if (t > 0.0 && t < 1.0) {
+          distance_squared = PointEdgeClosestPointFindDistanceSquared(p1, p2, p, t);
+          if (distance_squared < min_distance_squared) {
+            min_distance_squared = distance_squared;
+            min_distance_squared_t = t;
+            min_case = 4;
+          }
+        }
+
+        t = PointEdgeClosestPointFindT(p2, p3, p);
+        if (t > 0.0 && t < 1.0) {
+          distance_squared = PointEdgeClosestPointFindDistanceSquared(p2, p3, p, t);
+          if (distance_squared < min_distance_squared) {
+            min_distance_squared = distance_squared;
+            min_distance_squared_t = t;
+            min_case = 5;
+          }
+        }
+
+        t = PointEdgeClosestPointFindT(p3, p1, p);
+        if (t > 0.0 && t < 1.0) {
+          distance_squared = PointEdgeClosestPointFindDistanceSquared(p3, p1, p, t);
+          if (distance_squared < min_distance_squared) {
+            min_distance_squared = distance_squared;
+            min_distance_squared_t = t;
+            min_case = 6;
+          }
+        }
+
+        switch (min_case) {
+        case 1:
+          closest_points[i_proj].coords_[0] = p1[0];
+          closest_points[i_proj].coords_[1] = p1[1];
+          closest_points[i_proj].coords_[2] = p1[2];
+          break;
+        case 2:
+          closest_points[i_proj].coords_[0] = p2[0];
+          closest_points[i_proj].coords_[1] = p2[1];
+          closest_points[i_proj].coords_[2] = p2[2];
+          break;
+        case 3:
+          closest_points[i_proj].coords_[0] = p3[0];
+          closest_points[i_proj].coords_[1] = p3[1];
+          closest_points[i_proj].coords_[2] = p3[2];
+          break;
+        case 4:
+          closest_points[i_proj].coords_[0] = p1[0] + (p2[0] - p1[0])*min_distance_squared_t;
+          closest_points[i_proj].coords_[1] = p1[1] + (p2[1] - p1[1])*min_distance_squared_t;
+          closest_points[i_proj].coords_[2] = p1[2] + (p2[2] - p1[2])*min_distance_squared_t;
+          break;
+        case 5:
+          closest_points[i_proj].coords_[0] = p2[0] + (p3[0] - p2[0])*min_distance_squared_t;
+          closest_points[i_proj].coords_[1] = p2[1] + (p3[1] - p2[1])*min_distance_squared_t;
+          closest_points[i_proj].coords_[2] = p2[2] + (p3[2] - p2[2])*min_distance_squared_t;
+          break;
+        case 6:
+          closest_points[i_proj].coords_[0] = p3[0] + (p1[0] - p3[0])*min_distance_squared_t;
+          closest_points[i_proj].coords_[1] = p3[1] + (p1[1] - p3[1])*min_distance_squared_t;
+          closest_points[i_proj].coords_[2] = p3[2] + (p1[2] - p3[2])*min_distance_squared_t;
+          break;
+        }
+      }
+    }
+  }
 
   void
   ContactManager::ComputeContactForce(int step, bool debug_output) {
@@ -791,6 +969,60 @@ namespace nimble {
                                                                                                                      triangles,
                                                                                                                      closest_points,
                                                                                                                      proj_types_returned_d);
+
+
+    // DEBUGGING
+    // std::vector<ContactEntity> temp_nodes(num_collisions);
+    // std::vector<ContactEntity> temp_triangles(num_collisions);
+    // std::vector<ContactEntity::vertex> test_closest_points(num_collisions);
+    // std::vector<ContactManager::PROJECTION_TYPE> test_projection_types(num_collisions);
+    // for (int i_collision=0 ; i_collision<num_collisions ; i_collision++) {
+    //   int contact_node_index = collision_list.hm_data(i_collision,0);
+    //   int contact_face_index = collision_list.hm_data(i_collision,1);
+    //   ContactEntity const & node = contact_nodes_h_[contact_node_index];
+    //   ContactEntity const & face = contact_faces_h_[contact_face_index];
+    //   temp_nodes[i_collision] = node;
+    //   temp_triangles[i_collision] = face;
+    // }
+    // ClosestPointProjection(temp_nodes, temp_triangles, test_closest_points, test_projection_types);
+
+    // for (int i=0 ; i<num_collisions ; i++) {
+    //   std::string test_type_str;
+    //   if (test_projection_types[i] == NODE_OR_EDGE) test_type_str = "NODE_OR_EDGE";
+    //   else if(test_projection_types[i] == FACE) test_type_str = "FACE";
+
+
+    //   gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_d[i]);
+    //   std::string type_str;
+    //   if (type == gtk::NODE_PROJECTION) type_str = "NODE";
+    //   else if(type == gtk::EDGE_PROJECTION) type_str = "EDGE";
+    //   else if(type == gtk::FACE_PROJECTION) type_str = "FACE";
+
+    //   if ((type == gtk::NODE_PROJECTION || type == gtk::EDGE_PROJECTION) && test_projection_types[i] != NODE_OR_EDGE) {
+    //     std::cout << "\nDISAGREEMENT ON NODE_OR_EDGE" << std::endl;
+    //     std::cout << "(" << test_closest_points[i].coords_[0] << ", " << test_closest_points[i].coords_[1] << ", " << test_closest_points[i].coords_[2] << ") " << test_type_str << std::endl;
+    //     std::cout << "(" << closest_points.m_hostData(i).X() <<  ", " << closest_points.m_hostData(i).Y() << ", " << closest_points.m_hostData(i).Z() << ") " << type_str << std::endl;
+    //   }
+    //   else if(type == gtk::FACE_PROJECTION && test_projection_types[i] != FACE) {
+    //     std::cout << "DISAGREEMENT ON FACE" << std::endl;
+    //   }
+
+    //   double junk = (test_closest_points[i].coords_[0] - closest_points.m_hostData(i).X())*(test_closest_points[i].coords_[0] - closest_points.m_hostData(i).X()) +
+    //     (test_closest_points[i].coords_[1] - closest_points.m_hostData(i).Y())*(test_closest_points[i].coords_[1] - closest_points.m_hostData(i).Y()) +
+    //     (test_closest_points[i].coords_[2] - closest_points.m_hostData(i).Z())*(test_closest_points[i].coords_[2] - closest_points.m_hostData(i).Z());
+    //   if (junk > 1.0e-12) {
+    //     std::cout << "\nDISAGREEMENT ON DISTANCE " << type_str << std::endl;
+    //     double dist1 = std::sqrt((test_closest_points[i].coords_[0] - contact_nodes_h_[i].coord_1_x_)*(test_closest_points[i].coords_[0] - contact_nodes_h_[i].coord_1_x_) +
+    //                              (test_closest_points[i].coords_[1] - contact_nodes_h_[i].coord_1_y_)*(test_closest_points[i].coords_[1] - contact_nodes_h_[i].coord_1_y_) +
+    //                              (test_closest_points[i].coords_[2] - contact_nodes_h_[i].coord_1_z_)*(test_closest_points[i].coords_[2] - contact_nodes_h_[i].coord_1_z_));
+    //     double dist2 = std::sqrt((closest_points.m_hostData(i).X() - contact_nodes_h_[i].coord_1_x_)*(closest_points.m_hostData(i).X() - contact_nodes_h_[i].coord_1_x_) +
+    //                              (closest_points.m_hostData(i).Y() - contact_nodes_h_[i].coord_1_y_)*(closest_points.m_hostData(i).Y() - contact_nodes_h_[i].coord_1_y_) +
+    //                              (closest_points.m_hostData(i).Z() - contact_nodes_h_[i].coord_1_z_)*(closest_points.m_hostData(i).Z() - contact_nodes_h_[i].coord_1_z_));
+    //     std::cout << "(" << test_closest_points[i].coords_[0] << ", " << test_closest_points[i].coords_[1] << ", " << test_closest_points[i].coords_[2] << ") " << test_type_str << ", " << dist1 << std::endl;
+    //     std::cout << "(" << closest_points.m_hostData(i).X() <<  ", " << closest_points.m_hostData(i).Y() << ", " << closest_points.m_hostData(i).Z() << ") " << type_str << ", " << dist2 << std::endl;
+    //   }
+    // }
+    // END DEBUGGING
 
     // TEMP COPY TO HOST
     Kokkos::deep_copy(closest_points.m_hostData, closest_points.m_data);
