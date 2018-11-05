@@ -68,11 +68,6 @@ void PrintReductionTimingInfo();
 #include <vector>
 
 #include "nimble.mpi.reduction.reduction_base.h"
-#include "nimble.mpi.reduction.v1.h"
-#include "nimble.mpi.reduction.v2.h"
-#include "nimble.mpi.reduction.v3.h"
-#include "nimble.mpi.reduction.v4.h"
-#include "nimble.mpi.reduction.v5.h"
 #include "nimble.mpi.reduction.v6.h"
 #include "nimble.quanta.stopwatch.h"
 namespace nimble
@@ -136,48 +131,11 @@ std::pair<ReductionInfoBase*, int> GetReductionInfoTypeByVersion(
     std::vector<int> const& global_node_ids,
     const mpicontext& context)
 {
-  if (context.is_root())
-    std::cout << "     mpi reduction version " << version << std::endl;
-  if (version == 0)
-  {
-    // 0 means "use default version"
-    // The current default version is 5
-    version = 6;
-  }
-  context.print_if_root("\"reduction version\": ", std::cerr);
-  context.print_formatted(std::to_string(version), "[", ", ", "],\n", std::cerr);
+  version = 6;
+
   ReductionInfoBase* reduction_method;
   quanta::stopwatch s{};
-  switch (version)
-  {
-    case 1:
-      reduction_method = reduction_v1::GenerateReductionInfo(
-          global_node_ids, context.get_rank(), context.get_size());
-      break;
-    case 2:
-      reduction_method = reduction_v2::GenerateReductionInfo(
-          global_node_ids, context.get_rank(), context.get_size());
-      break;
-    case 3:
-      reduction_method = reduction_v3::GenerateReductionInfo(
-          global_node_ids, context.get_rank(), context.get_size());
-      break;
-    case 4:
-      reduction_method = reduction_v4::GenerateReductionInfo(
-          global_node_ids, context.get_rank(), context.get_size());
-      break;
-    case 5: reduction_method = reduction_v5::GenerateReductionInfo(global_node_ids, context); break;
-    case 6: reduction_method = reduction_v6::GenerateReductionInfo(global_node_ids, context); break;
-    default:
-      throw new std::invalid_argument(
-          "From: MPIContainer::Initialize in mimimultiscale_mpi_utils.cc:\n"
-          "Error: Bad reduction version given.\n"
-          "Reduction version should be an integer in the range [1,5] "
-          "or it should be 0, which indicates that the reduction version "
-          "is to be determined automatically.\n"
-          "Recieved: " +
-          std::to_string(version) + "\n");
-  }
+  reduction_method = reduction_v6::GenerateReductionInfo(global_node_ids, context);
   double _elapsed = s.age();
   context.print_if_root("\"GenerateReductionInfo benchmark\": ", std::cerr);
   context.print_formatted(std::to_string(_elapsed), "[", ", ", "]\n", std::cerr);
@@ -215,18 +173,6 @@ class MPIContainer
     double& total_reduction_time = ReductionTimingInfo.second;
     quanta::stopwatch s;
     s.reset();
-    //The below commented-out code was used to test reduction version 6 using a lookup function
-    //Instead of reading directly from a pointer. 
-    /*
-    if(_reduction_version == 6) {
-      auto lookup = [data, field_size = data_dimension](int node_id, int index) -> double& {
-        return data[node_id * field_size + index];
-      };
-      auto& reduction_info = (reduction_v6::ReductionInfo&)*MeshReductionInfo.get();
-      reduction_info.PerformReduction(lookup, data_dimension);
-    }
-    else MeshReductionInfo->PerformReduction(data, data_dimension);
-    */
     MeshReductionInfo->PerformReduction(data, data_dimension);
     total_reduction_time += s.age();
     int& total_reduction_calls = ReductionTimingInfo.first;
@@ -238,21 +184,8 @@ class MPIContainer
     double& total_reduction_time = ReductionTimingInfo.second;
     quanta::stopwatch s;
     s.reset();
-    switch (_reduction_version)
-    {
-      case 6:
-      {
-        auto& reduction_info = (reduction_v6::ReductionInfo&)*MeshReductionInfo.get();
-        reduction_info.PerformReduction(lookup, data_dimension);
-        break;
-      }
-      default:
-      {
-        throw std::runtime_error(
-            "Use of kokkos lookup function not supported for reduction versions earlier than "
-            "version 6.");
-      }
-    }
+    auto& reduction_info = (reduction_v6::ReductionInfo&)*MeshReductionInfo.get();
+    reduction_info.PerformReduction(lookup, data_dimension);
     total_reduction_time += s.age();
     int& total_reduction_calls = ReductionTimingInfo.first;
     total_reduction_calls += 1;

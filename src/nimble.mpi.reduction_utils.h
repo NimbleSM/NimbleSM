@@ -56,6 +56,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "nimble_id_pair.h"
 #include "nimble.mpi.mpicontext.h"
 #include "nimble.mpi.serialization.h"
 
