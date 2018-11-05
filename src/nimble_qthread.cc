@@ -708,8 +708,7 @@ int main(int argc, char *argv[]) {
 
   // Initialize the MPI container
   nimble::MPIContainer mpi_container;
-  int mpi_reduction_version = parser_g.ReductionVersion();
-  mpi_container.Initialize(global_node_ids_shared_mem, mpi_reduction_version);
+  mpi_container.Initialize(global_node_ids_shared_mem);
 
   // Initialize the boundary condition manager
   for(unsigned long i = 0; i < qt_num_workers; i++) {

@@ -341,7 +341,7 @@ void main_routine(int argc, char *argv[]) {
     global_node_ids[n] = global_node_ids_ptr[n];
   }
   nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids, parser.ReductionVersion());
+  mpi_container.Initialize(global_node_ids);
 
   int mpi_scalar_dimension = 1;
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);

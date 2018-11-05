@@ -221,7 +221,9 @@ int main(int argc, char *argv[]) {
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
   #ifdef NIMBLE_HAVE_MPI
-  nimble::PrintReductionTimingInfo();
+  if (parser.WriteTimingDataFile()) {
+    nimble::PrintReductionTimingInfo();
+  }
   #endif
 
   MPI_Finalize();
@@ -252,7 +254,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   // In this call, each rank determines which nodes are shared with which other ranks
   // This information is stored so that the vector reductions will work later
   nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids, parser.ReductionVersion());
+  mpi_container.Initialize(global_node_ids);
 
   int num_global_data = 0;
   std::vector<double> global_data(num_global_data);

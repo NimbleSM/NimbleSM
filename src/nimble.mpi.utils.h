@@ -146,7 +146,7 @@ class MPIContainer
 {
   std::unique_ptr<ReductionInfoBase> MeshReductionInfo;
 
-  int _reduction_version;
+  int _reduction_version = 6;
 
  public:
   MPIContainer() {}
@@ -156,7 +156,7 @@ class MPIContainer
   // We'll need, for example, a list of the nodes that are shared and the rank(s) that they're
   // shared with Then, in VectorReduction, we'll send arrays of data to/from ranks that share nodes
   // To start with, each rank has a list of its global nodes (this is passed in as global_node_ids)
-  void Initialize(std::vector<int> const& global_node_ids, int reduction_version)
+  void Initialize(std::vector<int> const& global_node_ids)
   {
     using namespace std;
 
@@ -164,9 +164,8 @@ class MPIContainer
     MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
     mpicontext context{duplicate_of_world};
     std::pair<ReductionInfoBase*, int> reduction_info =
-        GetReductionInfoTypeByVersion(reduction_version, global_node_ids, context);
+        GetReductionInfoTypeByVersion(_reduction_version, global_node_ids, context);
     MeshReductionInfo.reset(reduction_info.first);
-    this->_reduction_version = reduction_info.second;
   }
   void VectorReduction(int data_dimension, double* data)
   {
@@ -205,7 +204,7 @@ class MPIContainer
  public:
   MPIContainer() {}
 
-  void Initialize(std::vector<int> const& global_node_ids, int reduction_version)
+  void Initialize(std::vector<int> const& global_node_ids)
   {
     throw std::runtime_error(
         "[Called MPIContainer.Initialize()]: Calling MPI functions in version compiled without "

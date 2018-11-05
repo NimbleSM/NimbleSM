@@ -135,8 +135,6 @@ namespace nimble {
 
     int OutputFrequency() const { return output_frequency_; }
 
-    int ReductionVersion() const { return reduction_version_; }
-
     bool HasContact() const {
       if (contact_string_.size() == 0)
         return false;
@@ -200,7 +198,6 @@ namespace nimble {
     double final_time_;
     int num_load_steps_;
     int output_frequency_;
-    int reduction_version_;
     std::string contact_string_;
     std::vector<int> microscale_output_element_ids_;
     std::map<std::string, std::string> material_strings_;
