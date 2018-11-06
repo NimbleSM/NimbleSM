@@ -87,7 +87,7 @@ namespace nimble {
     }
 #endif
 
-    void Initialize(int dim,
+    bool Initialize(int dim,
                     std::string bc_string,
                     std::map<int, std::string> const & node_set_names);
 

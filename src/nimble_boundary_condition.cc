@@ -48,9 +48,10 @@
 
 namespace nimble {
 
-  void BoundaryCondition::Initialize(int dim,
+  bool BoundaryCondition::Initialize(int dim,
                                      std::string bc_string,
                                      std::map<int, std::string> const & node_set_names) {
+    bool is_valid = true;
 
     dim_ = dim;
     std::string bc_type_string("undefined");
@@ -78,7 +79,7 @@ namespace nimble {
         rve_macroscale_deformation_gradient_strings_[i] = def_grad_component_string.substr(first_pos + 1, last_pos - first_pos - 1);
       }
       // the periodic rve boundary conditions does not have a node set, coordinate, magnitude, etc.
-      return;
+      return is_valid;
     }
     else if (bc_type_string == "rve_fixed_displacement") {
       bc_type_ = RVE_FIXED_DISPLACEMENT;
@@ -119,7 +120,8 @@ namespace nimble {
       }
     }
     if (node_set_id_ == -1) {
-      throw std::logic_error("Error processing boundary condition, node set not found: " + node_set_name_);
+      // Either 1) no nodes on this processor belong to the node set, or 2) the node set doesn't exist at all.
+      is_valid = false;
     }
 
     if( coordinate_string == "x" ) {
@@ -134,6 +136,8 @@ namespace nimble {
     else {
       throw std::logic_error("Error processing boundary condition, unknown coordinate: " + coordinate_string);
     }
+
+    return is_valid;
   }
 
   void BoundaryCondition::GetRVEMacroscaleDeformationGradient(double time,

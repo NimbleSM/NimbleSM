@@ -44,6 +44,10 @@
 #include "nimble_contact.h"
 #include "nimble_utils.h"
 
+#ifdef NIMBLE_HAVE_MPI
+  #include "mpi.h"
+#endif
+
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/broadphase.hpp>
   #include <bvh/narrowphase.hpp>
@@ -141,10 +145,12 @@ namespace nimble {
 
   std::vector< std::vector<int> >
   ContactManager::SkinBlocks(GenesisMesh const & mesh,
-                             std::vector<int> block_ids) {
+                             std::vector<int> const & partition_boundary_node_ids,
+                             std::vector<int> const & block_ids) {
 
     std::map< std::vector<int>, std::vector<int> > faces;
     std::map< std::vector<int>, std::vector<int> >::iterator face_it;
+    std::set<int> partition_boundary_node_ids_set(partition_boundary_node_ids.begin(), partition_boundary_node_ids.end());
 
     for (auto & block_id : block_ids) {
 
@@ -249,10 +255,17 @@ namespace nimble {
     for (auto face : faces) {
       if (face.second[0] == 1) {
         std::vector<int> skin_face;
+        bool boundary_face = true;
         for (int i=0 ; i<face.second.size()-1 ; i++) {
-          skin_face.push_back(face.second.at(i+1));
+          int id = face.second.at(i+1);
+          skin_face.push_back(id);
+          if (boundary_face && (partition_boundary_node_ids_set.find(id) == partition_boundary_node_ids_set.end())) {
+            boundary_face = false;
+          }
         }
-        skin_faces.push_back(skin_face);
+        if (!boundary_face) {
+          skin_faces.push_back(skin_face);
+        }
       }
       else if (face.second[0] != 2) {
         throw std::logic_error("Error in mesh skinning routine, face found more than two times!\n");
@@ -264,8 +277,9 @@ namespace nimble {
 
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
-                                        std::vector<int> master_block_ids,
-                                        std::vector<int> slave_block_ids) {
+                                        std::vector<int> const & partition_boundary_node_ids,
+                                        std::vector<int> const & master_block_ids,
+                                        std::vector<int> const & slave_block_ids) {
     contact_enabled_ = true;
 
     const double* coord_x = mesh.GetCoordinatesX();
@@ -273,8 +287,8 @@ namespace nimble {
     const double* coord_z = mesh.GetCoordinatesZ();
 
     // find all the element faces on the master and slave contact blocks
-    std::vector< std::vector<int> > master_skin_faces = SkinBlocks(mesh, master_block_ids);
-    std::vector< std::vector<int> > slave_skin_faces = SkinBlocks(mesh, slave_block_ids);
+    std::vector< std::vector<int> > master_skin_faces = SkinBlocks(mesh, partition_boundary_node_ids, master_block_ids);
+    std::vector< std::vector<int> > slave_skin_faces = SkinBlocks(mesh, partition_boundary_node_ids, slave_block_ids);
 
     // construct containers for the subset of the model that is involved with contact
     std::set<int> node_ids_set;
@@ -401,9 +415,26 @@ namespace nimble {
     Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
 #endif
 
-    std::cout << "Contact initialization:" << std::endl;
-    std::cout << "  number of triangular contact facets (master blocks): " << contact_faces_.size() << std::endl;
-    std::cout << "  number of contact nodes (slave blocks): " << contact_nodes_.size() << "\n" << std::endl;
+    int mpi_rank = 0;
+    int num_contact_faces = contact_faces_.size();
+    int num_contact_nodes = contact_nodes_.size();
+
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    std::vector<int> input(2);
+    std::vector<int> output(2);
+    input[0] = num_contact_faces;
+    input[1] = num_contact_nodes;
+    MPI_Reduce(input.data(), output.data(), input.size(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    num_contact_faces = output[0];
+    num_contact_nodes = output[1];
+#endif
+
+    if (mpi_rank == 0) {
+      std::cout << "Contact initialization:" << std::endl;
+      std::cout << "  number of triangular contact facets (master blocks): " << num_contact_faces << std::endl;
+      std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
+    }
   }
 
   template <typename ArgT>

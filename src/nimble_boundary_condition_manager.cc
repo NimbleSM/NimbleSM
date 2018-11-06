@@ -66,8 +66,10 @@ namespace nimble {
 
     for (int i=0 ; i<bc_strings.size() ; i++) {
       BoundaryCondition bc;
-      bc.Initialize(dim_, bc_strings[i], node_set_names);
-      boundary_conditions_.push_back(bc);
+      bool is_valid = bc.Initialize(dim_, bc_strings[i], node_set_names);
+      if (is_valid) {
+        boundary_conditions_.push_back(bc);
+      }
     }
   }
 

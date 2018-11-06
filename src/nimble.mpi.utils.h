@@ -137,8 +137,8 @@ std::pair<ReductionInfoBase*, int> GetReductionInfoTypeByVersion(
   quanta::stopwatch s{};
   reduction_method = reduction_v6::GenerateReductionInfo(global_node_ids, context);
   double _elapsed = s.age();
-  context.print_if_root("\"GenerateReductionInfo benchmark\": ", std::cerr);
-  context.print_formatted(std::to_string(_elapsed), "[", ", ", "]\n", std::cerr);
+  /* context.print_if_root("\"GenerateReductionInfo benchmark\": ", std::cerr); */
+  /* context.print_formatted(std::to_string(_elapsed), "[", ", ", "]\n", std::cerr); */
   return {reduction_method, version};
 }
 

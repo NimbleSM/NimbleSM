@@ -444,15 +444,17 @@ namespace nimble {
     bool ContactEnabled() { return contact_enabled_; }
 
     std::vector< std::vector<int> > SkinBlocks(GenesisMesh const & mesh,
-                                               std::vector<int> block_ids);
+                                               std::vector<int> const & partition_boundary_node_ids,
+                                               std::vector<int> const & block_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
     }
 
     void CreateContactEntities(GenesisMesh const & mesh,
-                               std::vector<int> master_block_ids,
-                               std::vector<int> slave_block_ids);
+                               std::vector<int> const & partition_boundary_node_ids,
+                               std::vector<int> const & master_block_ids,
+                               std::vector<int> const & slave_block_ids);
 
     template <typename ArgT>
     void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,

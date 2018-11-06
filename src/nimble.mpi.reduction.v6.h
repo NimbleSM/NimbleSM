@@ -127,15 +127,15 @@ struct ReductionInfo : public ReductionInfoBase
         }
       }
       double _time = s.age();
-      context.print_formatted(std::to_string(_time),
-                              "\"reduction_v6 time to create comms\": [",
-                              ", ",
-                              "],\n",
-                              std::cerr);
+      /* context.print_formatted(std::to_string(_time), */
+      /*                         "\"reduction_v6 time to create comms\": [", */
+      /*                         ", ", */
+      /*                         "],\n", */
+      /*                         std::cerr); */
     }
 
     if (comms.size() != clique_ids.size())
-      throw std::logic_error("Oh noes! Something terrible happened!");
+      throw std::logic_error("**** Error, comms.size() != clique_ids.size().");
 
     for (size_t i = 0; i < clique_ids.size(); ++i)
     {

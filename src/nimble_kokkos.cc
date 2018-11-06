@@ -106,6 +106,7 @@ void main_routine(int argc, char *argv[]) {
     std::cout << "  kokkos_device_memory_space       " << typeid(nimble_kokkos::kokkos_device_memory_space).name() << std::endl;
     std::cout << "  kokkos_device                    " << typeid(nimble_kokkos::kokkos_device).name() << std::endl;
     std::cout << "  kokkos_layout                    " << typeid(nimble_kokkos::kokkos_layout).name() << std::endl;
+    std::cout << std::endl;
   }
 
   std::string input_deck_name = argv[1];
@@ -337,14 +338,14 @@ void main_routine(int argc, char *argv[]) {
                                 contact_slave_block_names,
                                 penalty_parameter);
     std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToBlockIds(contact_master_block_names,
-                              contact_master_block_ids);
-    mesh.BlockNamesToBlockIds(contact_slave_block_names,
-                              contact_slave_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
+                                         contact_master_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
+                                         contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     std::vector<int> mpi_boundary_node_local_ids = mpi_container.GetPartitionBoundaryNodeLocalIds();
-    //std::cout << "DEBUGGING mpi_boundary_node_local_ids.size() " << mpi_boundary_node_local_ids.size() << std::endl;
     contact_manager.CreateContactEntities(mesh,
+                                          mpi_boundary_node_local_ids,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
   }
