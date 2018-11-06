@@ -146,6 +146,12 @@ struct ReductionInfo : public ReductionInfoBase
         return global_ids[a] < global_ids[b];
       });
       this->cliques.emplace_back(std::move(index_list), index_list.size() * 3, comm);
+
+      // DEBUGGING
+      int my_mpi_comm_world_rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_comm_world_rank);
+      std::cout << "DEBUGGING rank " << my_mpi_comm_world_rank << " is adding a clique with index_list.size() " << index_list.size() << std::endl;
+      // DEBUGGING
     }
   }
 
@@ -183,6 +189,10 @@ struct ReductionInfo : public ReductionInfoBase
     std::set<int> index_set;
     for (auto& clique : cliques)
     {
+      // DJL todo, expand this function to also return the mpi ranks associated with each shared node
+      // std::vector<int> temp = clique.GetMPICommWorldRanks();
+      // int min_mpi_comm_world_rank = clique.GetMPICommWorldRanks()[0];
+
       int num_indices = clique.GetNumIndices();
       int const * clique_indices = clique.GetIndices();
       for (int i=0 ; i<num_indices ; i++)

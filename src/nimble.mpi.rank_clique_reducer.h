@@ -232,5 +232,16 @@ struct ReductionClique_t
   {
     return indices.get();
   }
+  std::vector<int> GetMPICommWorldRanks()
+  {
+    int my_mpi_comm_world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_comm_world_rank);
+    int clique_comm_size;
+    MPI_Comm_size(clique_comm, &clique_comm_size);
+    std::vector<int> mpi_comm_world_ranks(clique_comm_size);
+    MPI_Allgather(&my_mpi_comm_world_rank, 1, MPI_INT, mpi_comm_world_ranks.data(), 1, MPI_INT, clique_comm);
+    std::sort(mpi_comm_world_ranks.begin(), mpi_comm_world_ranks.end());
+    return mpi_comm_world_ranks;
+  }
 };
 }   // namespace nimble
