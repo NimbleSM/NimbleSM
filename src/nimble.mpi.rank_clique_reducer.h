@@ -20,11 +20,11 @@ namespace nimble
 {
 struct ReductionClique_t
 {
-  std::unique_ptr<int[]> indicies;
+  std::unique_ptr<int[]> indices;
   std::unique_ptr<double[]> sendbuffer;
   std::unique_ptr<double[]> recvbuffer;
   int buffersize;
-  int n_indicies;
+  int n_indices;
   MPI_Comm clique_comm;
   MPI_Request Iallreduce_request;
   bool exists_active_asyncreduce_request = false;
@@ -47,33 +47,33 @@ struct ReductionClique_t
                     int buffersize,
                     int comm_color,
                     const mpicontext& context) :
-    indicies{new int[index_list.size()]},
+    indices{new int[index_list.size()]},
     sendbuffer{new double[buffersize]},
     recvbuffer{new double[buffersize]},
     buffersize{buffersize},
-    n_indicies{(int)index_list.size()},
+    n_indices{(int)index_list.size()},
     // Actual instantiation of clique_comm is performed by MPI_Comm_split
     clique_comm{}
   {
-    std::copy_n(index_list.data(), index_list.size(), indicies.get());
+    std::copy_n(index_list.data(), index_list.size(), indices.get());
     // printf("rank %d: Splitting %d with comm color %d\n", context.get_rank(), context.get_comm(),
     // comm_color);
     MPI_Comm_split(context.get_comm(), comm_color, context.get_rank(), &clique_comm);
   }
   ReductionClique_t(const std::vector<int>& index_list, int buffersize, MPI_Comm clique_comm) :
-    indicies{new int[index_list.size()]},
+    indices{new int[index_list.size()]},
     sendbuffer{new double[buffersize]},
     recvbuffer{new double[buffersize]},
     buffersize{buffersize},
-    n_indicies{(int)index_list.size()},
+    n_indices{(int)index_list.size()},
     clique_comm{clique_comm}
   {
-    std::copy_n(index_list.data(), index_list.size(), indicies.get());
+    std::copy_n(index_list.data(), index_list.size(), indices.get());
   }
   ReductionClique_t(ReductionClique_t&& source) = default;
   ReductionClique_t& operator=(ReductionClique_t&& source) = default;
-  bool okayfieldsizeQ(int field_size) { return field_size * n_indicies <= buffersize; }
-  void fitnewfieldsize(int new_field_size) { resizebuffer(n_indicies * new_field_size); }
+  bool okayfieldsizeQ(int field_size) { return field_size * n_indices <= buffersize; }
+  void fitnewfieldsize(int new_field_size) { resizebuffer(n_indices * new_field_size); }
   void resizebuffer(int newbuffersize)
   {
     sendbuffer.reset(new double[newbuffersize]);
@@ -85,7 +85,7 @@ struct ReductionClique_t
   void pack(double* source)
   {
     double* destscan = sendbuffer.get();
-    int *index_ptr = indicies.get(), *index_ptr_end = index_ptr + n_indicies;
+    int *index_ptr = indices.get(), *index_ptr_end = index_ptr + n_indices;
     for (; index_ptr < index_ptr_end; ++index_ptr)
     {
       double* sourcescan = source + (*index_ptr) * field_size;
@@ -101,7 +101,7 @@ struct ReductionClique_t
   void unpack(double* dest)
   {
     double* sourcescan = recvbuffer.get();
-    int *index_ptr = indicies.get(), *index_ptr_end = index_ptr + n_indicies;
+    int *index_ptr = indices.get(), *index_ptr_end = index_ptr + n_indices;
     for (; index_ptr < index_ptr_end; ++index_ptr)
     {
       double* destscan = dest + (*index_ptr) * field_size;
@@ -118,7 +118,7 @@ struct ReductionClique_t
   {
     double* destscan = sendbuffer.get();
 
-    for (int index : quanta::arrayview_t<int>(indicies.get(), n_indicies))
+    for (int index : quanta::arrayview_t<int>(indices.get(), n_indices))
     {
       for (int j = 0; j < field_size; ++j)
       {
@@ -130,7 +130,7 @@ struct ReductionClique_t
   void unpack(Lookup& dest)
   {
     double* sourcescan = recvbuffer.get();
-    for (int index : quanta::arrayview_t<int>(indicies.get(), n_indicies))
+    for (int index : quanta::arrayview_t<int>(indices.get(), n_indices))
     {
       for (int j = 0; j < field_size; ++j)
       {
@@ -153,7 +153,7 @@ struct ReductionClique_t
     pack<field_size>(data);
     MPI_Allreduce(sendbuffer.get(),
                   recvbuffer.get(),
-                  n_indicies * field_size,
+                  n_indices * field_size,
                   MPI_DOUBLE,
                   MPI_SUM,
                   clique_comm);
@@ -174,7 +174,7 @@ struct ReductionClique_t
     pack<field_size>(databuffer);
     MPI_Iallreduce(sendbuffer.get(),
                    recvbuffer.get(),
-                   n_indicies * field_size,
+                   n_indices * field_size,
                    MPI_DOUBLE,
                    MPI_SUM,
                    clique_comm,
@@ -223,6 +223,14 @@ struct ReductionClique_t
       throw std::logic_error(
           "asyncreduce_finalize(data) was called "
           "without an active asynchronous reduce request.");
+  }
+  int GetNumIndices()
+  {
+    return n_indices;
+  }
+  int const * GetIndices()
+  {
+    return indices.get();
   }
 };
 }   // namespace nimble

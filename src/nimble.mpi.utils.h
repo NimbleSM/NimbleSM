@@ -167,6 +167,10 @@ class MPIContainer
         GetReductionInfoTypeByVersion(_reduction_version, global_node_ids, context);
     MeshReductionInfo.reset(reduction_info.first);
   }
+  std::vector<int> GetPartitionBoundaryNodeLocalIds()
+  {
+    return MeshReductionInfo->GetAllIndices();
+  }
   void VectorReduction(int data_dimension, double* data)
   {
     double& total_reduction_time = ReductionTimingInfo.second;

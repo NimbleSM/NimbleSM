@@ -130,26 +130,6 @@ void main_routine(int argc, char *argv[]) {
   nimble_kokkos::DataManager data_manager;
   nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
 
-  nimble::ContactManager contact_manager;
-  bool contact_enabled = parser.HasContact();
-  if (contact_enabled) {
-    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
-    double penalty_parameter;
-    nimble::ParseContactCommand(parser.ContactString(),
-                                contact_master_block_names,
-                                contact_slave_block_names,
-                                penalty_parameter);
-    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToBlockIds(contact_master_block_names,
-                              contact_master_block_ids);
-    mesh.BlockNamesToBlockIds(contact_slave_block_names,
-                              contact_slave_block_ids);
-    contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh,
-                                          contact_master_block_ids,
-                                          contact_slave_block_ids);
-  }
-
   int lumped_mass_field_id = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   nimble_kokkos::HostScalarNodeView lumped_mass_h = model_data.GetHostScalarNodeData(lumped_mass_field_id);
   nimble_kokkos::DeviceScalarNodeView lumped_mass_d = model_data.GetDeviceScalarNodeData(lumped_mass_field_id);
@@ -346,6 +326,28 @@ void main_routine(int argc, char *argv[]) {
   int mpi_scalar_dimension = 1;
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
+
+  nimble::ContactManager contact_manager;
+  bool contact_enabled = parser.HasContact();
+  if (contact_enabled) {
+    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    double penalty_parameter;
+    nimble::ParseContactCommand(parser.ContactString(),
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
+    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
+    mesh.BlockNamesToBlockIds(contact_master_block_names,
+                              contact_master_block_ids);
+    mesh.BlockNamesToBlockIds(contact_slave_block_names,
+                              contact_slave_block_ids);
+    contact_manager.SetPenaltyParameter(penalty_parameter);
+    std::vector<int> mpi_boundary_node_local_ids = mpi_container.GetPartitionBoundaryNodeLocalIds();
+    //std::cout << "DEBUGGING mpi_boundary_node_local_ids.size() " << mpi_boundary_node_local_ids.size() << std::endl;
+    contact_manager.CreateContactEntities(mesh,
+                                          contact_master_block_ids,
+                                          contact_slave_block_ids);
+  }
 
   // MPI vector reduction on lumped mass
   for (unsigned int i=0 ; i<num_nodes ; i++) {

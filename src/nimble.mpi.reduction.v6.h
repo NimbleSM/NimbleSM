@@ -53,6 +53,7 @@
 #include <random>
 #include <stdexcept>
 #include <type_traits>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -177,6 +178,21 @@ struct ReductionInfo : public ReductionInfoBase
       }
     }
   }
+  std::vector<int> GetAllIndices()
+  {
+    std::set<int> index_set;
+    for (auto& clique : cliques)
+    {
+      int num_indices = clique.GetNumIndices();
+      int const * clique_indices = clique.GetIndices();
+      for (int i=0 ; i<num_indices ; i++)
+      {
+        index_set.insert(clique_indices[i]);
+      }
+    }
+    std::vector<int> all_indices(index_set.begin(), index_set.end());
+    return all_indices;
+  }
   void PerformReduction(double* data, int field_size)
   {
     switch (field_size)
@@ -299,7 +315,7 @@ ReductionInfoBase* GenerateReductionInfo(const std::vector<int>& raw_global_ids,
       remap(all_global_ids, make_indexer(clique_lookup.data() - min_id));
     };
 
-    // Imma use dis one fo now
+    // Use the unordered map version for now
     find_cliques_with_unordered_map();
     /*
     At this point, every global id has been replaced with a clique id. If the clique id is smaller
