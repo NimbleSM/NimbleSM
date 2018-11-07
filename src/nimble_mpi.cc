@@ -87,6 +87,10 @@ int main(int argc, char *argv[]) {
 
   MPI_Init(&argc, &argv);
 
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
+
   int mpi_err;
   int num_mpi_ranks;
   int my_mpi_rank;
@@ -231,6 +235,10 @@ int main(int argc, char *argv[]) {
   else if (time_integration_scheme == "quasistatic") {
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::finalize();
+#endif
 
   MPI_Finalize();
 
