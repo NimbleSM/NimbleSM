@@ -1,0 +1,11 @@
+var searchData=
+[
+  ['value',['value',['../structnimble_1_1quanta_1_1assigner__t.html#a769c3fb093d83b83214c6431c19e34e1',1,'nimble::quanta::assigner_t::value()'],['../struct_expression_parsing_1_1_generic_constant.html#a0d179d2171f0c40e9a42d7c1d1116ad8',1,'ExpressionParsing::GenericConstant::value()'],['../struct_expression_parsing_1_1_generic_reference.html#add0e162fc1ef7a60acd7f711ccd8050d',1,'ExpressionParsing::GenericReference::value()']]],
+  ['variables',['variables',['../class_expression_parsing_1_1_equation_context.html#a8564084f5d5ce5eadac6272a72cd0b6b',1,'ExpressionParsing::EquationContext']]],
+  ['varible',['Varible',['../structnimble_1_1_node.html#a0efc2d433d5cc995b929ea4f18896644af1a27ea998c7353279222f7e435f4d96',1,'nimble::Node']]],
+  ['vector',['Vector',['../nimble__view_8h.html#a4f60f902380ca276516182ecfe0dc3d0a57dea6f5039281b7fee517fc43bf3110',1,'Vector():&#160;nimble_view.h'],['../namespacenimble.html#a66cdfe6c32a387ab01fc3c74e154877ba9b6a8a5e2ece5246bc2ffb43d74a7707',1,'nimble::VECTOR()']]],
+  ['vectorreduction',['VectorReduction',['../classnimble_1_1_m_p_i_container.html#a494053fad1d83c9ce56d6bdb841cd2af',1,'nimble::MPIContainer::VectorReduction(int data_dimension, double *data)'],['../classnimble_1_1_m_p_i_container.html#a4fb03a5b359ed236f599b28a26202be4',1,'nimble::MPIContainer::VectorReduction(int data_dimension, Lookup &amp;lookup)'],['../classnimble_1_1_tpetra_container.html#aa2be16ad5cfcd59decc4b486a5f23f8a',1,'nimble::TpetraContainer::VectorReduction()']]],
+  ['view',['View',['../classnimble_1_1_view.html',1,'nimble::View&lt; FieldT &gt;'],['../classnimble_1_1_view.html#ac22c0e8a8074aaa7d1ed049cbe87e591',1,'nimble::View::View(int num_entries)'],['../classnimble_1_1_view.html#a23b6bb489ed4f81ed7d0eaab476664e2',1,'nimble::View::View(const View &amp;)=default'],['../classnimble_1_1_view.html#a0a79d1974c1e98793b295189e9d37bda',1,'nimble::View::View(View &amp;&amp;)=default']]],
+  ['viewify',['Viewify',['../class_viewify.html',1,'Viewify'],['../class_viewify.html#a21717229450afe2d6ce9950db8446a1c',1,'Viewify::Viewify()']]],
+  ['visualize_5foutput',['visualize_output',['../nimble__serial_8cc.html#a0ed9f3b6eb7fac1be19a348f47b0cbb0',1,'nimble_serial.cc']]]
+];
