@@ -329,6 +329,73 @@ namespace nimble {
     MaterialParameters material_parameters_;
   };
 
+  class ElasticMaterial : public Material {
+
+  public:
+
+    NIMBLE_FUNCTION
+    ElasticMaterial(MaterialParameters const & material_parameters);
+
+    NIMBLE_FUNCTION
+    virtual ~ElasticMaterial() {}
+
+    NIMBLE_FUNCTION
+    int NumStateVariables() const { return num_state_variables_; };
+
+    NIMBLE_FUNCTION
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+      printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableLabel().\n");
+    }
+
+    NIMBLE_FUNCTION
+    double GetStateVariableInitialValue(int index) const  {
+      printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableInitialValue().\n");
+      return 0.0;
+    }
+
+    NIMBLE_FUNCTION
+    double GetDensity() const { return density_; }
+
+    NIMBLE_FUNCTION
+    double GetBulkModulus() const { return bulk_modulus_; }
+
+    NIMBLE_FUNCTION
+    void GetStress(int elem_id,
+                   int num_pts,
+                   double time_previous,
+                   double time_current,
+                   const double * const deformation_gradient_n,
+                   const double * const deformation_gradient_np1,
+                   const double * const unrotated_stress_n,
+                   double* unrotated_stress_np1,
+                   const double * const state_data_n,
+                   double* state_data_np1,
+                   DataManager& data_manager,
+                   bool is_output_step);
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    NIMBLE_FUNCTION
+    void GetStress(double time_previous,
+                   double time_current,
+                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1);
+#endif
+
+    NIMBLE_FUNCTION
+    void GetTangent(int num_pts,
+                    double* material_tangent) const ;
+
+  private:
+
+    int num_state_variables_;
+    int dim_;
+    double density_;
+    double bulk_modulus_;
+    double shear_modulus_;
+  };
+
   class NeohookeanMaterial : public Material {
 
   public:

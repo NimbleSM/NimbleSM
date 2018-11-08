@@ -90,6 +90,8 @@ namespace nimble {
 
     unsigned int GetNumBlocks() const { return block_ids_.size(); }
 
+    bool HasBlock(std::string const & block_name) const;
+
     std::vector<int> GetBlockIds() const { return block_ids_; }
 
     int GetNumElementsInBlock(int block_id) const;
@@ -108,8 +110,8 @@ namespace nimble {
 
     int GetBlockId(std::string const & block_name) const;
 
-    void BlockNamesToBlockIds(std::vector<std::string> const & block_names,
-                              std::vector<int> & block_ids);
+    void BlockNamesToOnProcessorBlockIds(std::vector<std::string> const & block_names,
+                                         std::vector<int> & block_ids);
 
     int GetDim() const { return dim_; }
 

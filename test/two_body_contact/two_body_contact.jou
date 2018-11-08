@@ -1,6 +1,6 @@
 
 reset
-create brick x 0.01 y 0.1 z 0.1
+create brick x 0.01 y 0.07 z 0.07
 create sphere radius 0.02
 volume 2 move x -0.028 y 0.0 z 0.0
 block 1 volume 1

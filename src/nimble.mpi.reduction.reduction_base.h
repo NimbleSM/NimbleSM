@@ -48,11 +48,8 @@ namespace nimble
 {
 struct ReductionInfoBase
 {
+  virtual std::vector<int> GetAllIndices() = 0;
   virtual void PerformReduction(double* data, int field_size) = 0;
-};
-struct ReductionInfoDoNothing : ReductionInfoBase
-{
-  void PerformReduction(double* data, int field_size){};
 };
 }   // namespace nimble
 

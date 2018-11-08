@@ -179,6 +179,12 @@ if(HAVE_NIMBLE_EXTRAS)
 endif()
 endif()
 
+# Temporary workaround for nvida builds
+if(NIMBLE_NVIDIA_BUILD)
+  add_definitions(-DNIMBLE_NVIDIA_BUILD)
+  set(NIMBLE_NVIDIA_BUILD TRUE)
+endif()
+
 # Exodus library dependencies
 IF(NOT HAVE_TRILINOS AND NOT HAVE_NIMBLE_EXTRAS)
   IF(EXODUS_INCLUDE_DIR AND EXODUS_LIB_DIR)
@@ -195,6 +201,10 @@ IF(NOT HAVE_TRILINOS AND NOT HAVE_NIMBLE_EXTRAS)
     MESSAGE("-- EXODUS is NOT enabled.")
     set(Exodus_LIBS )
   ENDIF()
+ENDIF()
+
+IF(CRAY)
+  set(Exodus_LIBS ${Exodus_LIBS} hdf5_hl hdf5 z)
 ENDIF()
 
 add_subdirectory(src)

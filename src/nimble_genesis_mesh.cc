@@ -429,6 +429,15 @@ namespace nimble {
     return elem_type;
   }
 
+  bool GenesisMesh::HasBlock(std::string const & block_name) const {
+    for (auto & entry : block_names_) {
+      if (entry.second == block_name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   int GenesisMesh::GetBlockId(std::string const & block_name) const {
     for (auto & entry : block_names_) {
       if (entry.second == block_name) {
@@ -438,11 +447,14 @@ namespace nimble {
     throw std::logic_error("\n**** Error in GenesisMesh::GetBlockId(), block name not found.\n");
   }
 
-  void GenesisMesh::BlockNamesToBlockIds(std::vector<std::string> const & block_names,
-                                         std::vector<int> & block_ids) {
+  void GenesisMesh::BlockNamesToOnProcessorBlockIds(std::vector<std::string> const & block_names,
+                                                    std::vector<int> & block_ids) {
     block_ids.clear();
     for (auto & name : block_names) {
-      block_ids.push_back(GetBlockId(name));
+      // if the block name is not on this processor, do not add it to the list of block ids
+      if (HasBlock(name)) {
+        block_ids.push_back(GetBlockId(name));
+      }
     }
   }
 

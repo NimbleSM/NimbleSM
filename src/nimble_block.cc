@@ -108,6 +108,9 @@ namespace nimble {
       if (StringsAreEqual(material_name, "neohookean")) {
         material_ = std::make_shared<NeohookeanMaterial>(material_parameters_struct);
       }
+      else if (StringsAreEqual(material_name, "elastic")) {
+        material_ = std::make_shared<ElasticMaterial>(material_parameters_struct);
+      }
 #ifdef NIMBLE_HAVE_EXTRAS
       else if (is_lame_model) {
         material_ = std::make_shared<LAMEMaterial>(material_parameters_struct);
@@ -199,7 +202,8 @@ namespace nimble {
     }
   }
 
-  double Block::ComputeCriticalTimeStep(const double * const node_coordinates,
+  double Block::ComputeCriticalTimeStep(const double * const node_reference_coordinates,
+                                        const double * const node_displacements,
                                         int num_elem,
                                         const int * const elem_conn) const {
     int dim = element_->Dim();
@@ -221,7 +225,7 @@ namespace nimble {
       for (int node=0 ; node<num_node_per_elem ; node++) {
         int node_id = elem_conn[elem*num_node_per_elem + node];
         for (int i=0 ; i<vector_size ; i++) {
-          node_coord[node*vector_size + i] = node_coordinates[vector_size*node_id + i];
+          node_coord[node*vector_size + i] = node_reference_coordinates[vector_size*node_id + i] + node_displacements[vector_size*node_id + i];
         }
       }
 

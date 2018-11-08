@@ -50,6 +50,7 @@
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_data_manager.h"
 #include "nimble_kokkos_block.h"
+#include "nimble_contact.h"
 
 #include <iostream>
 
@@ -70,6 +71,20 @@ void main_routine(int argc, char *argv[]) {
 
   // Banner
   if (my_mpi_rank == 0) {
+
+    std::string nimble_have_kokkos("false");
+#ifdef NIMBLE_HAVE_KOKKOS
+    nimble_have_kokkos = "true";
+#endif
+    std::string kokkos_enable_cuda("false");
+#ifdef KOKKOS_ENABLE_CUDA
+    kokkos_enable_cuda = "true";
+#endif
+    std::string kokkos_enable_cuda_uvm("false");
+#ifdef KOKKOS_ENABLE_CUDA_UVM
+    kokkos_enable_cuda_uvm = "true";
+#endif
+
     std::cout << "\n--NimbleSM_Kokkos" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
     if (argc != 2) {
@@ -79,6 +94,19 @@ void main_routine(int argc, char *argv[]) {
       exit(1);
     }
     std::cout << "NimbleSM_Kokkos initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
+
+    std::cout << "\nKokkos configuration:" << std::endl;
+    std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
+    std::cout << "  KOKKOS_ENABLE_CUDA               " << kokkos_enable_cuda << std::endl;
+    std::cout << "  KOKKOS_ENABLE_CUDA_UVM           " << kokkos_enable_cuda_uvm << std::endl;
+    std::cout << "  kokkos_host_execution_space      " << typeid(nimble_kokkos::kokkos_host_execution_space).name() << std::endl;
+    std::cout << "  kokkos_host_mirror_memory_space  " << typeid(nimble_kokkos::kokkos_host_mirror_memory_space).name() << std::endl;
+    std::cout << "  kokkos_host                      " << typeid(nimble_kokkos::kokkos_host).name() << std::endl;
+    std::cout << "  kokkos_device_execution_space    " << typeid(nimble_kokkos::kokkos_device_execution_space).name() << std::endl;
+    std::cout << "  kokkos_device_memory_space       " << typeid(nimble_kokkos::kokkos_device_memory_space).name() << std::endl;
+    std::cout << "  kokkos_device                    " << typeid(nimble_kokkos::kokkos_device).name() << std::endl;
+    std::cout << "  kokkos_layout                    " << typeid(nimble_kokkos::kokkos_layout).name() << std::endl;
+    std::cout << std::endl;
   }
 
   std::string input_deck_name = argv[1];
@@ -129,13 +157,16 @@ void main_routine(int argc, char *argv[]) {
   nimble_kokkos::HostVectorNodeView internal_force_h = model_data.GetHostVectorNodeData(internal_force_field_id);
   nimble_kokkos::DeviceVectorNodeView internal_force_d = model_data.GetDeviceVectorNodeData(internal_force_field_id);
 
+  int contact_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
+  nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(contact_force_field_id);
+  nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(contact_force_field_id);
+
   int deformation_gradient_field_id(-1);
   int stress_field_id(-1);
 
   // Blocks
   // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble_kokkos::Block> blocks;
-
   std::map<int, nimble_kokkos::Block>::iterator block_it;
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
@@ -152,12 +183,11 @@ void main_routine(int argc, char *argv[]) {
 
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
-    deformation_gradient_field_id =  model_data.AllocateIntegrationPointData(block_id,
-                                                                             nimble::FULL_TENSOR,
-                                                                             "deformation_gradient",
-                                                                             num_elements_in_block,
-                                                                             initial_value);
-
+    deformation_gradient_field_id = model_data.AllocateIntegrationPointData(block_id,
+                                                                            nimble::FULL_TENSOR,
+                                                                            "deformation_gradient",
+                                                                            num_elements_in_block,
+                                                                            initial_value);
     // volume-averaged quantities for I/O are stored as element data
     model_data.AllocateElementData(block_id,
                                    nimble::FULL_TENSOR,
@@ -228,6 +258,7 @@ void main_routine(int argc, char *argv[]) {
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_reference_coordinates", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
   for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index+=1, block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -235,6 +266,7 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::resize(gathered_reference_coordinate_d.at(block_index), num_elem_in_block);
     Kokkos::resize(gathered_displacement_d.at(block_index), num_elem_in_block);
     Kokkos::resize(gathered_internal_force_d.at(block_index), num_elem_in_block);
+    Kokkos::resize(gathered_contact_force_d.at(block_index), num_elem_in_block);
   }
 
   Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
@@ -290,11 +322,33 @@ void main_routine(int argc, char *argv[]) {
     global_node_ids[n] = global_node_ids_ptr[n];
   }
   nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids, parser.ReductionVersion());
+  mpi_container.Initialize(global_node_ids);
 
   int mpi_scalar_dimension = 1;
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
+
+  nimble::ContactManager contact_manager;
+  bool contact_enabled = parser.HasContact();
+  if (contact_enabled) {
+    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    double penalty_parameter;
+    nimble::ParseContactCommand(parser.ContactString(),
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
+    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
+    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
+                                         contact_master_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
+                                         contact_slave_block_ids);
+    contact_manager.SetPenaltyParameter(penalty_parameter);
+    std::vector<int> mpi_boundary_node_local_ids = mpi_container.GetPartitionBoundaryNodeLocalIds();
+    contact_manager.CreateContactEntities(mesh,
+                                          mpi_boundary_node_local_ids,
+                                          contact_master_block_ids,
+                                          contact_slave_block_ids);
+  }
 
   // MPI vector reduction on lumped mass
   for (unsigned int i=0 ; i<num_nodes ; i++) {
@@ -372,6 +426,7 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
+    Kokkos::deep_copy(contact_force_d, (double)(0.0));
 
     // Compute element-level kinematics
     for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
@@ -401,7 +456,6 @@ void main_routine(int argc, char *argv[]) {
       nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
                                                                                                                                     deformation_gradient_field_id,
                                                                                                                                     nimble::STEP_NP1);
-
       // COMPUTE DEFORMATION GRADIENTS
       Kokkos::parallel_for("Deformation Gradient", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
           nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
@@ -457,8 +511,7 @@ void main_routine(int argc, char *argv[]) {
       }
       else {
 #ifdef NIMBLE_HAVE_EXTRAS
-        nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = ngp_lame_material_d->GetNGPLAMEData();
+        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                     stress_field_id,
                                                                                                                     nimble::STEP_N);
@@ -493,33 +546,36 @@ void main_routine(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_EXTRAS
     if (blocks.begin()->second.GetHostMaterialModel()->IsNGPLAMEModel()) {
-      // NGP LAME parallel_for to calculate stress
-      Kokkos::View<nimble::NGPLAMEMaterialPtr*> ngp_lame_materials_d("NGP LAME Material Models", 1);
-      nimble::NGPLAMEMaterialPtr ngp_lame_material_ptr_struct;
-      ngp_lame_material_ptr_struct.ptr = dynamic_cast<nimble::NGPLAMEMaterial*>(blocks.begin()->second.GetDeviceMaterialModel());
-      ngp_lame_materials_d(0) = ngp_lame_material_ptr_struct;
+
+      // Create a view of NGP LAME material models for use in team loop
+      Kokkos::View<mtk_ngp::DevicePtr<lame::ngp::Material>*> ngp_lame_materials_d("NGP LAME Material Models", num_blocks);
+      auto ngp_lame_materials_h = Kokkos::create_mirror_view(ngp_lame_materials_d);
+      for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+        nimble::NGPLAMEMaterial* nimble_ngp_lame_material_model = dynamic_cast<nimble::NGPLAMEMaterial*>(block_it->second.GetHostMaterialModel().get());
+        ngp_lame_materials_h(block_index) = nimble_ngp_lame_material_model->GetNGPLAMEMaterialModel();
+      }
+      Kokkos::deep_copy(ngp_lame_materials_d, ngp_lame_materials_h);
+
+      // Compute stress
       const Kokkos::TeamPolicy<> team_loop(num_blocks, Kokkos::AUTO);
-      Kokkos::parallel_for("compute stress", team_loop, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team) {
+      Kokkos::parallel_for("NGP LAME Stress", team_loop, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team) {
           int team_id = team.league_rank();
-          ngp_lame_materials_d[team_id].ptr->GetNGPLAMEMaterial()->compute_stress(team);
+          ngp_lame_materials_d[team_id]->compute_stress(team);
         });
-      // Copy stress back to Nimble data structures
+
+      // Copy stress back to the Nimble data structures
       for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
         int block_id = block_it->first;
         nimble_kokkos::Block& block = block_it->second;
-        nimble::Material* material_d = block.GetDeviceMaterialModel();
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
-
-        nimble::NGPLAMEMaterial* ngp_lame_material_d = dynamic_cast<nimble::NGPLAMEMaterial*>(material_d);
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = ngp_lame_material_d->GetNGPLAMEData();
+        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                       stress_field_id,
                                                                                                                       nimble::STEP_NP1);
-
         typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
         MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
-        Kokkos::parallel_for("NGP LAME Kinematics", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
+        Kokkos::parallel_for("NGP LAME Stress Copy", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
             nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
             int i_mat_pt = i_elem*num_integration_points_per_element + i_ipt;
             for (int i=0 ; i<6 ; i++) {
@@ -572,11 +628,20 @@ void main_routine(int argc, char *argv[]) {
     // Perform a reduction to obtain correct values on MPI boundaries
     mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
 
+
+    // Evaluate the contact force
+    if (contact_enabled) {
+      contact_manager.ApplyDisplacements(displacement_d);
+      contact_manager.ComputeContactForce(step+1, false);
+      contact_manager.GetForces(contact_force_d);
+    }
+    Kokkos::deep_copy(contact_force_h, contact_force_d);
+
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_nodes ; ++i) {
-      acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0));
-      acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1));
-      acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2));
+      acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0) + contact_force_h(i,0));
+      acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1) + contact_force_h(i,1));
+      acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2) + contact_force_h(i,2));
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}

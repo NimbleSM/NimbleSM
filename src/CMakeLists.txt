@@ -4,7 +4,6 @@ set(NIMBLE_SOURCES
   nimble_data_utils.cc
   nimble_mesh_utils.cc
   nimble_tpetra_utils.cc
-  nimble.mpi.utils.cc
   nimble_block.cc
   nimble_element.cc
   nimble_exodus_output.cc

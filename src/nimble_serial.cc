@@ -59,16 +59,31 @@
 #include <limits>
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
-			   nimble::GenesisMesh & mesh,
-			   nimble::DataManager & data_manager,
-			   nimble::BoundaryConditionManager & boundary_condition_manager,
-         nimble::ExodusOutput & exodus_output);
+                           nimble::GenesisMesh & mesh,
+                           nimble::DataManager & data_manager,
+                           nimble::BoundaryConditionManager & boundary_condition_manager,
+                           nimble::ExodusOutput & exodus_output);
 
 int QuasistaticTimeIntegrator(nimble::Parser & parser,
-			      nimble::GenesisMesh & mesh,
-			      nimble::DataManager & data_manager,
-			      nimble::BoundaryConditionManager & boundary_condition_manager,
-            nimble::ExodusOutput & exodus_output);
+                              nimble::GenesisMesh & mesh,
+                              nimble::DataManager & data_manager,
+                              nimble::BoundaryConditionManager & boundary_condition_manager,
+                              nimble::ExodusOutput & exodus_output);
+
+double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
+                                  nimble::DataManager & data_manager,
+                                  nimble::BoundaryConditionManager & bc,
+                                  int linear_system_num_unknowns,
+                                  std::vector<int> & linear_system_global_node_ids,
+                                  double time_previous,
+                                  double time_current,
+                                  double const * reference_coordinate,
+                                  double const * velocity,
+                                  double const * trial_displacement,
+                                  double* internal_force,
+                                  double* residual_vector,
+                                  double const * rve_macroscale_deformation_gradient,
+                                  bool is_output_step);
 
 // global for toggling visualization for collison
 // TODO: move to some sort of configuration or command line switch
@@ -122,10 +137,12 @@ int main(int argc, char *argv[]) {
   int lumped_mass_field_id = macroscale_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   int reference_coordinate_field_id = macroscale_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
   int displacement_field_id = macroscale_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
+  int trial_displacement_field_id = macroscale_data.AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
   int displacement_fluctuation_field_id = macroscale_data.AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
   int velocity_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
   int acceleration_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
   int internal_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+  int trial_internal_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
   int external_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
   int contact_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
   int skin_node_field_id =  macroscale_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
@@ -198,10 +215,10 @@ int main(int argc, char *argv[]) {
   }
 
   if (time_integration_scheme == "explicit") {
-    ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
+    status = ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
   }
   else if (time_integration_scheme == "quasistatic") {
-    QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
+    status = QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
   }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -212,9 +229,9 @@ int main(int argc, char *argv[]) {
 }
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
-			   nimble::GenesisMesh & mesh,
-			   nimble::DataManager & data_manager,
-			   nimble::BoundaryConditionManager & bc,
+                           nimble::GenesisMesh & mesh,
+                           nimble::DataManager & data_manager,
+                           nimble::BoundaryConditionManager & bc,
                            nimble::ExodusOutput & exodus_output) {
 
   nimble::ModelData & macroscale_data = data_manager.GetMacroScaleData();
@@ -224,32 +241,28 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = mesh.GetNumBlocks();
 
   nimble::ContactManager contact_manager;
-
   bool contact_enabled = parser.HasContact();
-
   if (contact_enabled) {
-
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
     nimble::ParseContactCommand(parser.ContactString(),
-                                        contact_master_block_names,
-                                        contact_slave_block_names,
-                                        penalty_parameter);
-
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
     std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToBlockIds(contact_master_block_names,
-                              contact_master_block_ids);
-    mesh.BlockNamesToBlockIds(contact_slave_block_names,
-                              contact_slave_block_ids);
-
+    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
+                                         contact_master_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
+                                         contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-
+    std::vector<int> partition_boundary_node_ids; // empty for serial execution
     contact_manager.CreateContactEntities(mesh,
+                                          partition_boundary_node_ids,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
-    
-    if ( visualize_output )
+    if (visualize_output) {
       contact_manager.WriteContactEntitiesToVTKFile(0);
+    }
   }
 
   std::vector<int> global_node_ids(num_nodes);
@@ -300,6 +313,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                   elem_conn,
                                   lumped_mass);
     double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
+                                                                    displacement,
                                                                     num_elem_in_block,
                                                                     elem_conn);
     if (block_critical_time_step < critical_time_step) {
@@ -485,9 +499,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 }
 
 int QuasistaticTimeIntegrator(nimble::Parser & parser,
-			      nimble::GenesisMesh & mesh,
-			      nimble::DataManager & data_manager,
-			      nimble::BoundaryConditionManager & bc,
+                              nimble::GenesisMesh & mesh,
+                              nimble::DataManager & data_manager,
+                              nimble::BoundaryConditionManager & bc,
                               nimble::ExodusOutput & exodus_output) {
   int status = 0;
 
@@ -527,21 +541,26 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
 
   int reference_coordinate_field_id = macroscale_data.GetFieldId("reference_coordinate");
   int displacement_field_id = macroscale_data.GetFieldId("displacement");
+  int trial_displacement_field_id = macroscale_data.GetFieldId("trial_displacement");
   int displacement_fluctuation_field_id = macroscale_data.GetFieldId("displacement_fluctuation");
-  int velocity_field_id =  macroscale_data.GetFieldId("velocity");
-  int internal_force_field_id =  macroscale_data.GetFieldId("internal_force");
-  int external_force_field_id =  macroscale_data.GetFieldId("external_force");
+  int velocity_field_id = macroscale_data.GetFieldId("velocity");
+  int internal_force_field_id = macroscale_data.GetFieldId("internal_force");
+  int trial_internal_force_field_id = macroscale_data.GetFieldId("trial_internal_force");
+  int external_force_field_id = macroscale_data.GetFieldId("external_force");
 
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();
   double* reference_coordinate = macroscale_data.GetNodeData(reference_coordinate_field_id);
   double* physical_displacement = macroscale_data.GetNodeData(displacement_field_id);
+  double* trial_displacement = macroscale_data.GetNodeData(trial_displacement_field_id);
   double* displacement_fluctuation = macroscale_data.GetNodeData(displacement_fluctuation_field_id);
   double* velocity = macroscale_data.GetNodeData(velocity_field_id);
   double* internal_force = macroscale_data.GetNodeData(internal_force_field_id);
+  double* trial_internal_force = macroscale_data.GetNodeData(trial_internal_force_field_id);
   double* external_force = macroscale_data.GetNodeData(external_force_field_id);
 
   std::vector<double> residual_vector(linear_system_num_unknowns, 0.0);
+  std::vector<double> trial_residual_vector(linear_system_num_unknowns, 0.0);
   std::vector<double> linear_solver_solution(linear_system_num_unknowns, 0.0);
   double* displacement = physical_displacement;
   if (bc.IsPeriodicRVEProblem()) {
@@ -614,74 +633,37 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
     time_current += final_time/num_load_steps;
     delta_time = time_current - time_previous;
 
-    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3));
-
-    bc.GetRVEMacroscaleDeformationGradient(time_current, rve_macroscale_deformation_gradient.data());
-
-    // Compute the residual, which is a norm of the (rearranged) nodal force vector, with the dof associated
-    // with kinematic BC removed.
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      internal_force[i] = 0.0;
-    }
-    for (auto& block_it : blocks) {
-      int block_id = block_it.first;
-      int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-      int const * elem_conn = mesh.GetConnectivity(block_id);
-      std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
-      nimble::Block& block = block_it.second;
-      std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
-      std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
-      block.ComputeInternalForce(reference_coordinate,
-                                 displacement,
-                                 velocity,
-                                 rve_macroscale_deformation_gradient.data(),
-                                 internal_force,
-                                 time_previous,
-                                 time_current,
-                                 num_elem_in_block,
-                                 elem_conn,
-                                 elem_global_ids.data(),
-                                 elem_data_labels.at(block_id),
-                                 elem_data_n,
-                                 elem_data_np1,
-                                 data_manager,
-                                 false);
-    }
-    for (int i=0 ; i<linear_system_num_nodes*dim ; i++) {
-      residual_vector[i] = 0.0;
-    }
-    for (int n=0 ; n<num_nodes ; n++) {
-      int ls_id = linear_system_global_node_ids[n];
-      for (int dof=0 ; dof<dim ; dof++) {
-        int local_index = n * dim + dof;
-        int ls_index = ls_id * dim + dof;
-        if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
-          throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
-        }
-        residual_vector[ls_index] += -1.0 * internal_force[local_index];
-      }
-    }
-    bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector.data());
-    double l2_norm(0.0), infinity_norm(0.0);
-    for (int i=0 ; i<linear_system_num_unknowns ; i++) {
-      double f = std::fabs(residual_vector[i]);
-      l2_norm += f * f;
-      if (f > infinity_norm) {
-        infinity_norm = f;
-      }
-    }
-    l2_norm = std::sqrt(l2_norm);
-    double residual = l2_norm + 20.0 * infinity_norm;
-    double convergence_tolerance = 1.0e-6 * residual;
-    int iteration(0), max_nonlinear_iterations(50);
-
-    std::cout << "\nStep " << step+1 << std::scientific << std::setprecision(3) << ", time " << time_current << ", delta_time " << delta_time << ", convergence tolerance " << convergence_tolerance << std::endl;
-    std::cout << "  iteration " << iteration << ": residual = " << residual << std::endl;
-
     bool is_output_step = false;
     if (step%output_frequency == 0 || step == num_load_steps - 1) {
       is_output_step = true;
     }
+
+    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3));
+
+    bc.GetRVEMacroscaleDeformationGradient(time_current, rve_macroscale_deformation_gradient.data());
+
+    // Compute the residual, which is a norm of the (rearranged) nodal force vector, with the dof associated with kinematic BC removed.
+    double residual = ComputeQuasistaticResidual(mesh,
+                                                 data_manager,
+                                                 bc,
+                                                 linear_system_num_unknowns,
+                                                 linear_system_global_node_ids,
+                                                 time_previous,
+                                                 time_current,
+                                                 reference_coordinate,
+                                                 velocity,
+                                                 displacement,
+                                                 internal_force,
+                                                 residual_vector.data(),
+                                                 rve_macroscale_deformation_gradient.data(),
+                                                 is_output_step);
+
+    int iteration(0);
+    int max_nonlinear_iterations = parser.NonlinearSolverMaxIterations();
+    double convergence_tolerance = parser.NonlinearSolverRelativeTolerance() * residual;
+
+    std::cout << "\nStep " << step+1 << std::scientific << std::setprecision(3) << ", time " << time_current << ", delta_time " << delta_time << ", convergence tolerance " << convergence_tolerance << std::endl;
+    std::cout << "  iteration " << iteration << ": residual = " << residual << std::endl;
 
     while (residual > convergence_tolerance && iteration < max_nonlinear_iterations) {
 
@@ -713,17 +695,17 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
       int num_cg_iterations(0);
       std::fill(linear_solver_solution.begin(), linear_solver_solution.end(), 0.0);
       bool success = nimble::CG_SolveSystem(tangent_stiffness,
-                                                    residual_vector.data(),
-                                                    cg_scratch,
-                                                    linear_solver_solution.data(),
-                                                    num_cg_iterations);
+                                            residual_vector.data(),
+                                            cg_scratch,
+                                            linear_solver_solution.data(),
+                                            num_cg_iterations);
       if (!success) {
         throw std::logic_error("\nError:  CG linear solver failed to converge.\n");
       }
 
-      // todo: apply a line search
+      // LINE SEARCH
 
-      // update the trial solution
+      // evaluate residual for alpha = 1.0
       for (int n=0 ; n<linear_system_num_nodes ; n++) {
         std::vector<int> const & node_ids = map_from_linear_system[n];
         for (auto const & node_id : node_ids) {
@@ -733,17 +715,85 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
             if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
               throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
             }
-            displacement[local_index] -= linear_solver_solution[ls_index];
+            trial_displacement[local_index] = displacement[local_index] - linear_solver_solution[ls_index];
           }
-          // if we are solving a standard problem, then displacement is the physical_displacement
-          // if we are solving a periodic RVE problem, then displacement is the displacement_fluctuation,
-          // and we need to set physical_displacement manually and include the macroscale deformation gradient
-          if (bc.IsPeriodicRVEProblem()) {
+        }
+      }
+      double trial_residual = ComputeQuasistaticResidual(mesh,
+                                                         data_manager,
+                                                         bc,
+                                                         linear_system_num_unknowns,
+                                                         linear_system_global_node_ids,
+                                                         time_previous,
+                                                         time_current,
+                                                         reference_coordinate,
+                                                         velocity,
+                                                         trial_displacement,
+                                                         trial_internal_force,
+                                                         trial_residual_vector.data(),
+                                                         rve_macroscale_deformation_gradient.data(),
+                                                         is_output_step);
+
+      // secant line search
+      double sr(0.0), s_trial_r(0.0);
+      for (int n=0 ; n<linear_system_num_unknowns ; n++) {
+        sr += linear_solver_solution[n] * residual_vector[n];
+        s_trial_r += linear_solver_solution[n] * trial_residual_vector[n];
+      }
+      double alpha = -1.0 * sr / (s_trial_r - sr);
+
+     // evaluate residual for alpha computed with secant line search
+      for (int n=0 ; n<linear_system_num_nodes ; n++) {
+        std::vector<int> const & node_ids = map_from_linear_system[n];
+        for (auto const & node_id : node_ids) {
+          for (int dof=0 ; dof<dim ; dof++) {
+            int local_index = node_id * dim + dof;
+            int ls_index = n * dim + dof;
+            if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
+              throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
+            }
+            displacement[local_index] -= alpha*linear_solver_solution[ls_index];
+          }
+        }
+      }
+      residual = ComputeQuasistaticResidual(mesh,
+                                            data_manager,
+                                            bc,
+                                            linear_system_num_unknowns,
+                                            linear_system_global_node_ids,
+                                            time_previous,
+                                            time_current,
+                                            reference_coordinate,
+                                            velocity,
+                                            displacement,
+                                            internal_force,
+                                            residual_vector.data(),
+                                            rve_macroscale_deformation_gradient.data(),
+                                            is_output_step);
+
+      // if the alpha = 1.0 result was better, use alpha = 1.0
+      if (trial_residual < residual) {
+        residual = trial_residual;
+        for (int i=0 ; i<num_unknowns ; i++) {
+          displacement[i] = trial_displacement[i];
+          internal_force[i] = trial_internal_force[i];
+        }
+        for (int i=0 ; i<linear_system_num_unknowns ; i++) {
+          residual_vector[i] = trial_residual_vector[i];
+        }
+      }
+
+      // if we are solving a standard problem, then displacement is the physical_displacement
+      // if we are solving a periodic RVE problem, then displacement is the displacement_fluctuation,
+      // and we need to set physical_displacement manually and include the macroscale deformation gradient
+      if (bc.IsPeriodicRVEProblem()) {
+        for (int n=0 ; n<linear_system_num_nodes ; n++) {
+          std::vector<int> const & node_ids = map_from_linear_system[n];
+          for (auto const & node_id : node_ids) {
             std::vector<double> const & F = rve_macroscale_deformation_gradient;
             int i_x = node_id * dim;
             int i_y = node_id * dim + 1;
             int i_z = node_id * dim + 2;
-            // todo:  this is currently hard-coded to 3D
             physical_displacement[i_x] = displacement[i_x]
               + (F[K_F_XX] - identity[K_F_XX]) * (reference_coordinate[i_x] - rve_center.at(0))
               + (F[K_F_XY] - identity[K_F_XY]) * (reference_coordinate[i_y] - rve_center.at(1))
@@ -760,68 +810,16 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
         }
       }
 
-      // check convergence
-      for (int i=0 ; i<num_unknowns ; ++i) {
-        internal_force[i] = 0.0;
-      }
-      for (auto& block_it : blocks) {
-        int block_id = block_it.first;
-        int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-        int const * elem_conn = mesh.GetConnectivity(block_id);
-        std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
-        nimble::Block& block = block_it.second;
-        std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
-        std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
-        block.ComputeInternalForce(reference_coordinate,
-                                   displacement,
-                                   velocity,
-                                   rve_macroscale_deformation_gradient.data(),
-                                   internal_force,
-                                   time_previous,
-                                   time_current,
-                                   num_elem_in_block,
-                                   elem_conn,
-                                   elem_global_ids.data(),
-                                   elem_data_labels.at(block_id),
-                                   elem_data_n,
-                                   elem_data_np1,
-                                   data_manager,
-                                   is_output_step);
-      }
-      for (int i=0 ; i<linear_system_num_nodes*dim ; i++) {
-        residual_vector[i] = 0.0;
-      }
-      for (int n=0 ; n<num_nodes ; n++) {
-        int ls_id = linear_system_global_node_ids[n];
-        for (int dof=0 ; dof<dim ; dof++) {
-          int local_index = n * dim + dof;
-          int ls_index = ls_id * dim + dof;
-          if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
-            throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
-          }
-          residual_vector[ls_index] += -1.0 * internal_force[local_index];
-        }
-      }
-      bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector.data());
-      double l2_norm(0.0), infinity_norm(0.0);
-      for (int i=0 ; i<num_nodes ; i++) {
-        double f = std::fabs(residual_vector[i]);
-        l2_norm += f * f;
-        if (f > infinity_norm) {
-          infinity_norm = f;
-        }
-      }
-      l2_norm = std::sqrt(l2_norm);
-      residual = l2_norm + 20.0 * infinity_norm;
-
       iteration += 1;
-
-      std::cout << "  iteration " << iteration << ": residual = " << residual << ", linear cg iterations = " << num_cg_iterations << std::endl;
+      std::cout << "  iteration " << iteration << ": residual = " << residual << std::endl;
 
     } // while (residual > convergence_tolerance ... )
 
     if (iteration == max_nonlinear_iterations) {
-      std::cout << "\n**** Nonlinear solver failed to converge in " << max_nonlinear_iterations << " iterations.\n" << std::endl;
+      std::cout << "\n**** Nonlinear solver failed to converge!\n" << std::endl;
+      std::cout << "**** Relevant input deck parameters for the nonlinear solver:" << std::endl;
+      std::cout << "****   nonlinear solver relative tolerance:  " << parser.NonlinearSolverRelativeTolerance() << std::endl;
+      std::cout << "****   nonlinear solver maximum iterations:  " << parser.NonlinearSolverMaxIterations() << std::endl;
       status = 1;
       return status;
     }
@@ -862,4 +860,82 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   std::cout << "\nComplete.\n" << std::endl;
 
   return status;
+}
+
+double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
+                                  nimble::DataManager & data_manager,
+                                  nimble::BoundaryConditionManager & bc,
+                                  int linear_system_num_unknowns,
+                                  std::vector<int> & linear_system_global_node_ids,
+                                  double time_previous,
+                                  double time_current,
+                                  double const * reference_coordinate,
+                                  double const * velocity,
+                                  double const * displacement,
+                                  double* internal_force,
+                                  double* residual_vector,
+                                  double const * rve_macroscale_deformation_gradient,
+                                  bool is_output_step) {
+
+  nimble::ModelData & macroscale_data = data_manager.GetMacroScaleData();
+  std::map<int, nimble::Block>& blocks = macroscale_data.GetBlocks();
+  std::map<int, std::vector<std::string> > const & elem_data_labels = macroscale_data.GetElementDataLabels();
+  int dim = mesh.GetDim();
+  int num_nodes = mesh.GetNumNodes();
+  int num_unknowns = num_nodes * mesh.GetDim();
+
+  for (int i=0 ; i<num_unknowns ; ++i) {
+    internal_force[i] = 0.0;
+  }
+  for (auto& block_it : blocks) {
+    int block_id = block_it.first;
+    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    int const * elem_conn = mesh.GetConnectivity(block_id);
+    std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
+    nimble::Block& block = block_it.second;
+    std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
+    std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
+    block.ComputeInternalForce(reference_coordinate,
+                               displacement,
+                               velocity,
+                               rve_macroscale_deformation_gradient,
+                               internal_force,
+                               time_previous,
+                               time_current,
+                               num_elem_in_block,
+                               elem_conn,
+                               elem_global_ids.data(),
+                               elem_data_labels.at(block_id),
+                               elem_data_n,
+                               elem_data_np1,
+                               data_manager,
+                               is_output_step);
+  }
+  for (int i=0 ; i<linear_system_num_unknowns ; i++) {
+    residual_vector[i] = 0.0;
+  }
+  for (int n=0 ; n<num_nodes ; n++) {
+    int ls_id = linear_system_global_node_ids[n];
+    for (int dof=0 ; dof<dim ; dof++) {
+      int local_index = n * dim + dof;
+      int ls_index = ls_id * dim + dof;
+      if (ls_index < 0 || ls_index > linear_system_num_unknowns - 1) {
+        throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
+      }
+      residual_vector[ls_index] += -1.0 * internal_force[local_index];
+    }
+  }
+  bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector);
+  double l2_norm(0.0), infinity_norm(0.0);
+  for (int i=0 ; i<num_nodes ; i++) {
+    double f = std::fabs(residual_vector[i]);
+    l2_norm += f * f;
+    if (f > infinity_norm) {
+      infinity_norm = f;
+    }
+  }
+  l2_norm = std::sqrt(l2_norm);
+  double residual = l2_norm + 20.0 * infinity_norm;
+
+  return residual;
 }

@@ -53,6 +53,7 @@
 #include <random>
 #include <stdexcept>
 #include <type_traits>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -126,15 +127,15 @@ struct ReductionInfo : public ReductionInfoBase
         }
       }
       double _time = s.age();
-      context.print_formatted(std::to_string(_time),
-                              "\"reduction_v6 time to create comms\": [",
-                              ", ",
-                              "],\n",
-                              std::cerr);
+      /* context.print_formatted(std::to_string(_time), */
+      /*                         "\"reduction_v6 time to create comms\": [", */
+      /*                         ", ", */
+      /*                         "],\n", */
+      /*                         std::cerr); */
     }
 
     if (comms.size() != clique_ids.size())
-      throw std::logic_error("Oh noes! Something terrible happened!");
+      throw std::logic_error("**** Error, comms.size() != clique_ids.size().");
 
     for (size_t i = 0; i < clique_ids.size(); ++i)
     {
@@ -145,6 +146,12 @@ struct ReductionInfo : public ReductionInfoBase
         return global_ids[a] < global_ids[b];
       });
       this->cliques.emplace_back(std::move(index_list), index_list.size() * 3, comm);
+
+      // DEBUGGING
+      int my_mpi_comm_world_rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_comm_world_rank);
+      std::cout << "DEBUGGING rank " << my_mpi_comm_world_rank << " is adding a clique with index_list.size() " << index_list.size() << std::endl;
+      // DEBUGGING
     }
   }
 
@@ -176,6 +183,25 @@ struct ReductionInfo : public ReductionInfoBase
         }
       }
     }
+  }
+  std::vector<int> GetAllIndices()
+  {
+    std::set<int> index_set;
+    for (auto& clique : cliques)
+    {
+      // DJL todo, expand this function to also return the mpi ranks associated with each shared node
+      // std::vector<int> temp = clique.GetMPICommWorldRanks();
+      // int min_mpi_comm_world_rank = clique.GetMPICommWorldRanks()[0];
+
+      int num_indices = clique.GetNumIndices();
+      int const * clique_indices = clique.GetIndices();
+      for (int i=0 ; i<num_indices ; i++)
+      {
+        index_set.insert(clique_indices[i]);
+      }
+    }
+    std::vector<int> all_indices(index_set.begin(), index_set.end());
+    return all_indices;
   }
   void PerformReduction(double* data, int field_size)
   {
@@ -299,7 +325,7 @@ ReductionInfoBase* GenerateReductionInfo(const std::vector<int>& raw_global_ids,
       remap(all_global_ids, make_indexer(clique_lookup.data() - min_id));
     };
 
-    // Imma use dis one fo now
+    // Use the unordered map version for now
     find_cliques_with_unordered_map();
     /*
     At this point, every global id has been replaced with a clique id. If the clique id is smaller
