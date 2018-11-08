@@ -41,8 +41,8 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_QUANTA_ARRAYVIEW_H
-#define NIMBLE_QUANTA_ARRAYVIEW_H
+#ifndef NIMBLE_ARRAYVIEW_H
+#define NIMBLE_ARRAYVIEW_H
 
 #include <iterator>
 #include <memory>
@@ -51,8 +51,6 @@
 #include <vector>
 
 namespace nimble
-{
-namespace quanta
 {
 template<class T>
 class arrayview_t
@@ -220,7 +218,6 @@ class spanarray
     return sections[section_index][element_index];
   }
 };
-}   // namespace quanta
 }   // namespace nimble
 
-#endif // NIMBLE_QUANTA_ARRAYVIEW_H
+#endif // NIMBLE_ARRAYVIEW_H

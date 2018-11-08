@@ -12,8 +12,8 @@
 #include "nimble.mpi.mpicontext.h"
 #include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction_utils.h"
-#include "nimble.quanta.arrayview.h"
-#include "nimble.quanta.h"
+#include "nimble_arrayview.h"
+
 namespace nimble
 {
 struct ReductionClique_t
@@ -116,7 +116,7 @@ struct ReductionClique_t
   {
     double* destscan = sendbuffer.get();
 
-    for (int index : quanta::arrayview_t<int>(indices.get(), n_indices))
+    for (int index : arrayview_t<int>(indices.get(), n_indices))
     {
       for (int j = 0; j < field_size; ++j)
       {
@@ -128,7 +128,7 @@ struct ReductionClique_t
   void unpack(Lookup& dest)
   {
     double* sourcescan = recvbuffer.get();
-    for (int index : quanta::arrayview_t<int>(indices.get(), n_indices))
+    for (int index : arrayview_t<int>(indices.get(), n_indices))
     {
       for (int j = 0; j < field_size; ++j)
       {

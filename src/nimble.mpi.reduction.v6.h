@@ -55,21 +55,15 @@
 #include <stdexcept>
 #include <type_traits>
 #include <set>
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "nimble.mpi.rank_clique_reducer.h"
 #include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction_utils.h"
-#include "nimble.quanta.arrayview.h"
 #include "nimble.quanta.h"
 #include "nimble.quanta.functional.cc"
-//#include "nimble.quanta.out.h"
-#include "nimble.quanta.stopwatch.h"
-
-#ifndef NIMBLE_HAVE_DARMA
-#include <vector>
-#endif
 
 namespace nimble
 {
@@ -117,7 +111,6 @@ struct ReductionInfo : public ReductionInfoBase
     comms.reserve(clique_ids.size());
 
     {
-      quanta::stopwatch s;
       for (int color : clique_colors)
       {
         MPI_Comm comm = context.split_by_color(color);
@@ -126,12 +119,6 @@ struct ReductionInfo : public ReductionInfoBase
           comms.push_back(comm);
         }
       }
-      double _time = s.age();
-      /* context.print_formatted(std::to_string(_time), */
-      /*                         "\"reduction_v6 time to create comms\": [", */
-      /*                         ", ", */
-      /*                         "],\n", */
-      /*                         std::cerr); */
     }
 
     if (comms.size() != clique_ids.size())

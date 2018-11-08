@@ -57,7 +57,7 @@
 
 #include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction.v6.h"
-#include "nimble.quanta.stopwatch.h"
+
 namespace nimble
 {
 
