@@ -315,6 +315,73 @@ id_array_t& remap_ids_with_map_in_place(id_array_t& ids)
   return ids;
 }
 
+template<class list_t>
+struct indexer_t
+{
+  list_t& list;
+  constexpr indexer_t(list_t& list) : list(list) {}
+  constexpr indexer_t(const indexer_t&) = default;
+  template<class int_t>
+  auto operator()(int_t&& index) const -> decltype(list[index])
+  {
+    return list[index];
+  }
+};
+template<class T>
+struct indexer_t<T*>
+{
+  T* const ptr;
+  constexpr indexer_t(T* const ptr) : ptr(ptr) {}
+  indexer_t(const indexer_t&) = default;
+  template<class int_t>
+  T& operator()(int_t&& index) const
+  {
+    return ptr[index];
+  }
+};
+template<class T>
+indexer_t<T> make_indexer(T& list)
+{
+  return indexer_t<T>(list);
+}
+template<class T>
+indexer_t<T*> make_indexer(T* ptr)
+{
+  return indexer_t<T*>(ptr);
+}
+
+template<class int_t = int>
+class invoke_counter_t
+{
+  mutable int_t count;
+
+ public:
+  invoke_counter_t() : count{} {}
+  invoke_counter_t(int_t i) : count{i} {}
+  invoke_counter_t(const invoke_counter_t&) = default;
+  invoke_counter_t(invoke_counter_t&&)      = default;
+  invoke_counter_t& operator=(const invoke_counter_t&) = default;
+  invoke_counter_t& operator=(invoke_counter_t&&) = default;
+  void reset(const int_t& value = 0) { count = value; }
+  int_t& get_count() const { return count; }
+  auto operator()() const -> decltype(count++) { return count++; }
+  auto increment() const -> decltype(count++) { return count++; }
+};
+template<class int_t>
+invoke_counter_t<int_t> make_counter(int_t initial = 0)
+{
+  return invoke_counter_t<int_t>{initial};
+}
+
+template<class list_t, class F>
+void remap(list_t& list, F&& func)
+{
+  for (auto& elem : list)
+  {
+    elem = func(elem);
+  }
+}
+
 #ifdef TEST_QUANTA
 #include <chrono>
 

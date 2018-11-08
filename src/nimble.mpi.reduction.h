@@ -62,7 +62,6 @@
 #include "nimble.mpi.rank_clique_reducer.h"
 #include "nimble.mpi.reduction_utils.h"
 #include "nimble.quanta.h"
-#include "nimble.quanta.functional.cc"
 
 namespace nimble
 {
