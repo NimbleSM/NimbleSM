@@ -48,7 +48,9 @@ namespace nimble
 {
 struct ReductionInfoBase
 {
-  virtual std::vector<int> GetAllIndices() = 0;
+  virtual void GetAllIndices(std::vector<int>& indices,
+                             std::vector<int>& min_rank_containing_index) = 0;
+
   virtual void PerformReduction(double* data, int field_size) = 0;
 };
 }   // namespace nimble

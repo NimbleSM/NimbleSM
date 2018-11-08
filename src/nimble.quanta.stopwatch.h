@@ -49,10 +49,7 @@
 #include <iomanip>
 #include <sstream>
 #include <thread>
-
-#ifndef NIMBLE_HAVE_DARMA
 #include <string>
-#endif
 
 namespace nimble
 {
@@ -158,4 +155,5 @@ struct stopwatch
 };
 }   // namespace quanta
 }   // namespace nimble
-#endif   // NIMBLE_LIGHTWEIGHT_STOPWATCH_H
+
+#endif // NIMBLE_LIGHTWEIGHT_STOPWATCH_H

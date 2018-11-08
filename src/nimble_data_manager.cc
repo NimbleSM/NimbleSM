@@ -402,7 +402,7 @@ namespace nimble {
       component_data[i] = data[i*num_components + component];
     }
   }
-  
+
   ModelData& DataManager::GetMacroScaleData() {
     return macroscale_data_;
   }

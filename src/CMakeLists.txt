@@ -15,6 +15,9 @@ set(NIMBLE_SOURCES
   nimble_expression_parser.cc
   nimble_linear_solver.cc
   nimble_contact.cc
+  nimble.quanta.cc
+  nimble.mpi.reduction_utils.cc
+  nimble.mpi.reduction.v6.cc
 )
 
 IF(NOT NIMBLE_HAVE_KOKKOS)

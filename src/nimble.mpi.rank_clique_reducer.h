@@ -13,9 +13,7 @@
 #include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction_utils.h"
 #include "nimble.quanta.arrayview.h"
-#include "nimble.quanta.cc"
-#include "nimble.quanta.functional.cc"
-#include "nimble_id_pair.h"
+#include "nimble.quanta.h"
 namespace nimble
 {
 struct ReductionClique_t

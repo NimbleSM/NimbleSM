@@ -220,11 +220,6 @@ int main(int argc, char *argv[]) {
   else if (time_integration_scheme == "quasistatic") {
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
-  #ifdef NIMBLE_HAVE_MPI
-  if (parser.WriteTimingDataFile()) {
-    nimble::PrintReductionTimingInfo();
-  }
-  #endif
 
   MPI_Finalize();
 

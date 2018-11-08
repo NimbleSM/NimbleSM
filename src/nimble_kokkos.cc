@@ -43,6 +43,7 @@
 
 #include "nimble_version.h"
 #include "nimble_parser.h"
+#include "nimble_exodus_output.h"
 #include "nimble_exodus_output_manager.h"
 #include "nimble_boundary_condition_manager.h"
 #include "nimble.mpi.utils.h"
@@ -343,9 +344,8 @@ void main_routine(int argc, char *argv[]) {
     mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-    std::vector<int> mpi_boundary_node_local_ids = mpi_container.GetPartitionBoundaryNodeLocalIds();
     contact_manager.CreateContactEntities(mesh,
-                                          mpi_boundary_node_local_ids,
+                                          mpi_container,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
   }

@@ -255,9 +255,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-    std::vector<int> partition_boundary_node_ids; // empty for serial execution
     contact_manager.CreateContactEntities(mesh,
-                                          partition_boundary_node_ids,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (visualize_output) {

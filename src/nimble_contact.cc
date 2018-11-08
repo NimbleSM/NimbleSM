@@ -145,12 +145,10 @@ namespace nimble {
 
   std::vector< std::vector<int> >
   ContactManager::SkinBlocks(GenesisMesh const & mesh,
-                             std::vector<int> const & partition_boundary_node_ids,
                              std::vector<int> const & block_ids) {
 
     std::map< std::vector<int>, std::vector<int> > faces;
     std::map< std::vector<int>, std::vector<int> >::iterator face_it;
-    std::set<int> partition_boundary_node_ids_set(partition_boundary_node_ids.begin(), partition_boundary_node_ids.end());
 
     for (auto & block_id : block_ids) {
 
@@ -255,17 +253,11 @@ namespace nimble {
     for (auto face : faces) {
       if (face.second[0] == 1) {
         std::vector<int> skin_face;
-        bool boundary_face = true;
         for (int i=0 ; i<face.second.size()-1 ; i++) {
           int id = face.second.at(i+1);
           skin_face.push_back(id);
-          if (boundary_face && (partition_boundary_node_ids_set.find(id) == partition_boundary_node_ids_set.end())) {
-            boundary_face = false;
-          }
         }
-        if (!boundary_face) {
-          skin_faces.push_back(skin_face);
-        }
+        skin_faces.push_back(skin_face);
       }
       else if (face.second[0] != 2) {
         throw std::logic_error("Error in mesh skinning routine, face found more than two times!\n");
@@ -277,7 +269,7 @@ namespace nimble {
 
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
-                                        std::vector<int> const & partition_boundary_node_ids,
+                                        nimble::MPIContainer & mpi_container,
                                         std::vector<int> const & master_block_ids,
                                         std::vector<int> const & slave_block_ids) {
     contact_enabled_ = true;
@@ -286,9 +278,36 @@ namespace nimble {
     const double* coord_y = mesh.GetCoordinatesY();
     const double* coord_z = mesh.GetCoordinatesZ();
 
+    std::vector<int> partition_boundary_node_ids, min_mpi_rank_containing_bounary_node;
+    mpi_container.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_ids, min_mpi_rank_containing_bounary_node);
+
     // find all the element faces on the master and slave contact blocks
-    std::vector< std::vector<int> > master_skin_faces = SkinBlocks(mesh, partition_boundary_node_ids, master_block_ids);
-    std::vector< std::vector<int> > slave_skin_faces = SkinBlocks(mesh, partition_boundary_node_ids, slave_block_ids);
+    std::vector< std::vector<int> > master_skin_faces = SkinBlocks(mesh, master_block_ids);
+    std::vector< std::vector<int> > slave_skin_faces = SkinBlocks(mesh, slave_block_ids);
+
+
+
+    std::vector<int> all_faces_mpi_buffer;
+    all_faces_mpi_buffer.reserve(4*master_skin_faces.size() + 4*slave_skin_faces.size());
+    for (auto& face : master_skin_faces) {
+      int num_nodes = face.size();
+      all_faces_mpi_buffer.push_back(num_nodes);
+      for (int i=0 ; i<num_nodes ; i++) {
+        all_faces_mpi_buffer.push_back(face[i]);
+      }
+    }
+    for (auto& face : slave_skin_faces) {
+      int num_nodes = face.size();
+      all_faces_mpi_buffer.push_back(num_nodes);
+      for (int i=0 ; i<num_nodes ; i++) {
+        all_faces_mpi_buffer.push_back(face[i]);
+      }
+    }
+
+
+
+
+
 
     // construct containers for the subset of the model that is involved with contact
     std::set<int> node_ids_set;
@@ -335,6 +354,25 @@ namespace nimble {
       model_coord_[3*i_node+2] = coord_[3*i_node+2] = coord_z[node_ids_[i_node]];
     }
 
+    // Contact nodes may appear on more than one processor
+    // In this case, use the one on the processor with the smallest mpi rank and discard the others
+    int mpi_rank = 0;
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+    std::set<int> partition_boundary_nodes_to_ignore;
+    for (unsigned int i=0 ; i<partition_boundary_node_ids.size() ; ++i) {
+      if (min_mpi_rank_containing_bounary_node[i] != mpi_rank) {
+        int genesis_node_id = partition_boundary_node_ids[i];
+        std::map<int, int>::const_iterator it = genesis_mesh_node_id_to_contact_vector_id.find(genesis_node_id);
+        if (it != genesis_mesh_node_id_to_contact_vector_id.end()) {
+          partition_boundary_nodes_to_ignore.insert(it->second);
+        }
+      }
+    }
+
+    if (mpi_rank == 0) std::cout << "DEBUGGING partition_boundary_nodes_to_ignore.size() " << partition_boundary_nodes_to_ignore.size() << std::endl;
+
     // Store nodes in slave faces
     // Create a list of nodes and their characteristic lengths
     std::vector<int> slave_node_ids;
@@ -362,16 +400,17 @@ namespace nimble {
       double characteristic_length = max_edge_length;
 
       for (auto const & node_id : face) {
-        std::vector<int>::iterator it = std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id);
-        if (it == slave_node_ids.end()) {
-          slave_node_ids.push_back(node_id);
-          slave_node_char_lens[node_id] = characteristic_length;
-        }
-        else {
-          // always use the maximum characteristic length
-          // this requires a parallel sync
-          if (slave_node_char_lens[node_id] < characteristic_length) {
+        if (partition_boundary_nodes_to_ignore.find(node_id) == partition_boundary_nodes_to_ignore.end()) {
+          if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
+            slave_node_ids.push_back(node_id);
             slave_node_char_lens[node_id] = characteristic_length;
+          }
+          else {
+            // always use the maximum characteristic length
+            // this requires a parallel sync
+            if (slave_node_char_lens[node_id] < characteristic_length) {
+              slave_node_char_lens[node_id] = characteristic_length;
+            }
           }
         }
       }
@@ -415,12 +454,9 @@ namespace nimble {
     Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
 #endif
 
-    int mpi_rank = 0;
     int num_contact_faces = contact_faces_.size();
     int num_contact_nodes = contact_nodes_.size();
-
 #ifdef NIMBLE_HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     std::vector<int> input(2);
     std::vector<int> output(2);
     input[0] = num_contact_faces;
@@ -429,12 +465,13 @@ namespace nimble {
     num_contact_faces = output[0];
     num_contact_nodes = output[1];
 #endif
-
     if (mpi_rank == 0) {
       std::cout << "Contact initialization:" << std::endl;
       std::cout << "  number of triangular contact facets (master blocks): " << num_contact_faces << std::endl;
       std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
     }
+
+    WriteContactEntitiesToVTKFile(mpi_rank);
   }
 
   template <typename ArgT>

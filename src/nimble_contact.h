@@ -50,6 +50,7 @@
 #include <cmath>
 #include "nimble_genesis_mesh.h"
 #include "nimble_kokkos_defs.h"
+#include "nimble.mpi.utils.h"
 
 #ifdef NIMBLE_HAVE_EXTRAS
   #include "nimble_extras_contact_includes.h"
@@ -444,7 +445,6 @@ namespace nimble {
     bool ContactEnabled() { return contact_enabled_; }
 
     std::vector< std::vector<int> > SkinBlocks(GenesisMesh const & mesh,
-                                               std::vector<int> const & partition_boundary_node_ids,
                                                std::vector<int> const & block_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
@@ -452,7 +452,15 @@ namespace nimble {
     }
 
     void CreateContactEntities(GenesisMesh const & mesh,
-                               std::vector<int> const & partition_boundary_node_ids,
+                               std::vector<int> const & master_block_ids,
+                               std::vector<int> const & slave_block_ids) {
+      nimble::MPIContainer mpi_container;
+      CreateContactEntities(mesh, mpi_container, master_block_ids, slave_block_ids);
+    }
+
+
+    void CreateContactEntities(GenesisMesh const & mesh,
+                               nimble::MPIContainer & mpi_container,
                                std::vector<int> const & master_block_ids,
                                std::vector<int> const & slave_block_ids);
 
@@ -616,12 +624,12 @@ namespace bvh
     {
       return _entity.kdop();
     }
-    
+
     static decltype(auto) get_global_id( const nimble::ContactEntity &_entity )
     {
       return _entity.contact_entity_global_id();
     }
-    
+
     static decltype(auto) get_centroid( const nimble::ContactEntity &_entity )
     {
       return _entity.centroid();

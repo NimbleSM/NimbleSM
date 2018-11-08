@@ -40,7 +40,10 @@
 // ************************************************************************
 //@HEADER
 */
-#pragma once
+
+#ifndef NIMBLE_QUANTA_ARRAYVIEW_H
+#define NIMBLE_QUANTA_ARRAYVIEW_H
+
 #include <iterator>
 #include <memory>
 #include <numeric>
@@ -219,3 +222,5 @@ class spanarray
 };
 }   // namespace quanta
 }   // namespace nimble
+
+#endif // NIMBLE_QUANTA_ARRAYVIEW_H
