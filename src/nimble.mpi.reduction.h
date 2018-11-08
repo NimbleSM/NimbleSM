@@ -60,7 +60,6 @@
 #include <unordered_set>
 
 #include "nimble.mpi.rank_clique_reducer.h"
-#include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction_utils.h"
 #include "nimble.quanta.h"
 #include "nimble.quanta.functional.cc"
@@ -69,7 +68,7 @@ namespace nimble
 {
 namespace reduction
 {
-struct ReductionInfo : public ReductionInfoBase
+struct ReductionInfo
 {
   template<class... Args>
   using vector = std::vector<Args...>;
@@ -262,8 +261,8 @@ auto fill_clique_lookup(list_of_lists_t& ids_by_rank, F&& clique_lookup) ->
   return generate_clique_id.get_count();
 }
 
-ReductionInfoBase* GenerateReductionInfo(const std::vector<int>& raw_global_ids,
-                                         const mpicontext& context);
+ReductionInfo* GenerateReductionInfo(const std::vector<int>& raw_global_ids,
+                                     const mpicontext& context);
 
 }   // namespace reduction
 }   // namespace nimble

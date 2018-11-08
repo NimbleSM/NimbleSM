@@ -10,7 +10,6 @@
 #include <stdexcept>
 
 #include "nimble.mpi.mpicontext.h"
-#include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction_utils.h"
 #include "nimble_arrayview.h"
 

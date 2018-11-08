@@ -43,8 +43,8 @@
 
 #include "nimble.mpi.reduction.h"
 
-nimble::ReductionInfoBase* nimble::reduction::GenerateReductionInfo(const std::vector<int>& raw_global_ids,
-                                                               const mpicontext& context)
+nimble::reduction::ReductionInfo* nimble::reduction::GenerateReductionInfo(const std::vector<int>& raw_global_ids,
+                                                                           const mpicontext& context)
 {
   using std::vector;
   int rank           = context.get_rank();

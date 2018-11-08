@@ -55,7 +55,6 @@
 #include <tuple>
 #include <vector>
 
-#include "nimble.mpi.reduction.reduction_base.h"
 #include "nimble.mpi.reduction.h"
 
 namespace nimble
@@ -63,7 +62,7 @@ namespace nimble
 
 class MPIContainer
 {
-  std::unique_ptr<ReductionInfoBase> MeshReductionInfo;
+  std::unique_ptr<reduction::ReductionInfo> MeshReductionInfo;
 
  public:
   MPIContainer() {}
@@ -78,8 +77,8 @@ class MPIContainer
     MPI_Comm duplicate_of_world;
     MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
     mpicontext context{duplicate_of_world};
-    ReductionInfoBase* reduction_method = reduction::GenerateReductionInfo(global_node_ids, context);
-    MeshReductionInfo.reset(reduction_method);
+    reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
+    MeshReductionInfo.reset(reduction_info);
   }
   void GetPartitionBoundaryNodeLocalIds(std::vector<int>& node_local_ids,
                                         std::vector<int>& min_rank_containing_node)
@@ -93,8 +92,7 @@ class MPIContainer
   template<class Lookup>
   void VectorReduction(int data_dimension, Lookup&& lookup)
   {
-    auto& reduction_info = (reduction::ReductionInfo&)*MeshReductionInfo.get();
-    reduction_info.PerformReduction(lookup, data_dimension);
+    MeshReductionInfo->PerformReduction(lookup, data_dimension);
   }
 };
 }   // namespace nimble
