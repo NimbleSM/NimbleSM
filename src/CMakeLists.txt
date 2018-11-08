@@ -17,7 +17,7 @@ set(NIMBLE_SOURCES
   nimble_contact.cc
   nimble.quanta.cc
   nimble.mpi.reduction_utils.cc
-  nimble.mpi.reduction.v6.cc
+  nimble.mpi.reduction.cc
 )
 
 IF(NOT NIMBLE_HAVE_KOKKOS)

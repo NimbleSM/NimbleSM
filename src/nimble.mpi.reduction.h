@@ -67,7 +67,7 @@
 
 namespace nimble
 {
-namespace reduction_v6
+namespace reduction
 {
 struct ReductionInfo : public ReductionInfoBase
 {
@@ -265,7 +265,7 @@ auto fill_clique_lookup(list_of_lists_t& ids_by_rank, F&& clique_lookup) ->
 ReductionInfoBase* GenerateReductionInfo(const std::vector<int>& raw_global_ids,
                                          const mpicontext& context);
 
-}   // namespace reduction_v6
+}   // namespace reduction
 }   // namespace nimble
 #endif
 

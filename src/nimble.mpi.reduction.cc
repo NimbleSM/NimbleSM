@@ -41,9 +41,9 @@
 //@HEADER
 */
 
-#include "nimble.mpi.reduction.v6.h"
+#include "nimble.mpi.reduction.h"
 
-nimble::ReductionInfoBase* nimble::reduction_v6::GenerateReductionInfo(const std::vector<int>& raw_global_ids,
+nimble::ReductionInfoBase* nimble::reduction::GenerateReductionInfo(const std::vector<int>& raw_global_ids,
                                                                const mpicontext& context)
 {
   using std::vector;
