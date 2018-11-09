@@ -116,67 +116,8 @@ void shuffle_together(size_t count, gen_t&& gen, Iterator_t... lists)
   std::shuffle(groups.begin(), groups.end(), gen);
 }
 
-template<int shift, int radix_bits>
-void radixsort_partial(uint32_t* list,
-                       uint32_t* buffer,
-                       uint32_t* counts,
-                       uint32_t** scan,
-                       uint32_t n_items)
-{
-  constexpr uint32_t radix_size = 1 << radix_bits;
-  constexpr uint32_t mask       = radix_size - 1;
-  {
-    uint32_t* accumulator = buffer;
-    for (uint32_t i = 0; i < radix_size; ++i)
-    {
-      scan[i] = accumulator;
-      accumulator += counts[i];
-    }
-  }
-  {
-    for (uint32_t i = 0; i < n_items; ++i)
-    {
-      uint32_t list_elem  = list[i];
-      uint32_t*& location = scan[(list_elem >> shift) & mask];
-      *location           = list_elem;
-      ++location;
-    }
-  }
-}
 
-// Uses radix sort with base of 256
-void radixsort256(uint32_t* array, uint32_t* buffer, uint32_t count);
-
-template<int shift, int radix_bits>
-void radix_order_partial(uint32_t* list,
-                         uint32_t* ordering,
-                         uint32_t* buffer,
-                         uint32_t* counts,
-                         uint32_t** scan,
-                         uint32_t n_items)
-{
-  constexpr uint32_t radix_size = 1 << radix_bits;
-  constexpr uint32_t mask       = radix_size - 1;
-  {
-    uint32_t* accumulator = buffer;
-    for (uint32_t i = 0; i < radix_size; ++i)
-    {
-      scan[i] = accumulator;
-      accumulator += counts[i];
-    }
-  }
-  {
-    for (uint32_t i = 0; i < n_items; ++i)
-    {
-      uint32_t index      = ordering[i];
-      uint32_t*& location = scan[(list[index] >> shift) & mask];
-      *location           = index;
-      ++location;
-    }
-  }
-}
-
-void radix_order256(uint32_t* array, uint32_t* ordering, uint32_t* buffer, uint32_t count);
+//void radix_order256(uint32_t* array, uint32_t* ordering, uint32_t* buffer, uint32_t count);
 
 // Takes a list of ids and remaps it in-place so that they're all consecutive
 // Does so based on an ordering
@@ -218,7 +159,7 @@ void remap_ids_with_ordering(id_array_t& array, const order_t& order)
   }
 }
 
-void PackIDs(std::vector<int>& id_array);
+//void PackIDs(std::vector<int>& id_array);
 
 // Checks that listA[i] == listA[j] iff listB[i] == listB[j]
 template<class list1_t, class list2_t>
@@ -387,43 +328,7 @@ void remap(list_t& list, F&& func)
 
 namespace tests
 {
-template<class gen_t>
-bool test_zoomsort(size_t count, gen_t&& gen)
-{
-  std::vector<uint32_t> values_with_stdsort(count);
-  std::vector<uint32_t> values_with_zoomzoom_sort(count);
-  std::vector<uint32_t> buffer(count);
-  for (size_t i = 0; i < count; ++i)
-  {
-    uint32_t val                 = gen();
-    values_with_stdsort[i]       = val;
-    values_with_zoomzoom_sort[i] = val;
-  }
-  std::sort(values_with_stdsort.begin(), values_with_stdsort.end());
-  radixsort256(values_with_zoomzoom_sort.data(), buffer.data(), count);
-  return values_with_stdsort == values_with_zoomzoom_sort;
-}
-template<class gen_t>
-bool test_zoomorder(size_t count, gen_t&& gen)
-{
-  std::vector<uint32_t> values_with_stdsort(count), values_unordered(count), values_ordered(count),
-      order(count), buffer(count);
 
-  for (size_t i = 0; i < count; ++i)
-  {
-    uint32_t val           = gen();
-    values_with_stdsort[i] = val;
-    values_unordered[i]    = val;
-  }
-  std::sort(values_with_stdsort.begin(), values_with_stdsort.end());
-  radix_order256(values_unordered.data(), order.data(), buffer.data(), count);
-
-  for (size_t i = 0; i < count; ++i)
-  {
-    values_ordered[i] = values_unordered[order[i]];
-  }
-  return values_ordered == values_with_stdsort;
-}
 // If test_shuffle_together worked, then A and B will be shuffled identically
 // And they'll have actually been shuffled, so they should be distinct from C
 template<class gen_t>
@@ -489,31 +394,13 @@ bool test_is_bijected(size_t count, gen_t&& gen)
   bool test_negative_case = !is_bijected(A, B) && !is_bijected(B, A);
   return test_positive_case && test_negative_case;
 }
-template<class gen_t>
-bool test_remap_ids_with_ordering(size_t count, gen_t&& gen, size_t num_ids)
-{
-  std::vector<uint32_t> id_selection(num_ids);
-  for (auto& id : id_selection)
-    id = gen();
-  std::vector<uint32_t> initial_id_list(count), buffer(count), ordering(count);
-  std::uniform_int_distribution<int> selection_index_dist(0, num_ids - 1);
-  for (auto& id : initial_id_list)
-    id = id_selection[selection_index_dist(gen)];
-  std::vector<uint32_t> remapped_id_list(initial_id_list.begin(), initial_id_list.end());
-  radix_order256(remapped_id_list.data(), ordering.data(), buffer.data(), count);
-  remap_ids_with_ordering(remapped_id_list, ordering);
-  return is_bijected(initial_id_list, remapped_id_list);
-}
+
 void test_all()
 {
-  std::random_device gen{};
-  TESTPRINT(tests::test_zoomsort(1000000, gen))
-  TESTPRINT(tests::test_zoomorder(1000000, gen))
-  TESTPRINT(tests::test_shuffle_together(1000000, gen));
-  TESTPRINT(tests::test_is_bijected(1000000, gen));
-  TESTPRINT(tests::test_remap_ids_with_ordering(1000000, gen, 1000));
-  TESTPRINT(tests::test_remap_ids_with_ordering(1000000, gen, 1000000));
-}
+   std::random_device gen{};
+   TESTPRINT(tests::test_shuffle_together(1000000, gen));
+   TESTPRINT(tests::test_is_bijected(1000000, gen));
+ }
 }   // namespace tests
 
 auto now = []() { return std::chrono::high_resolution_clock::now(); };
