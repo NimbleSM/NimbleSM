@@ -74,7 +74,7 @@ nimble::reduction::ReductionInfo* nimble::reduction::GenerateReductionInfo(const
     // See: https://www.open-mpi.org/doc/v2.1/man3/MPI_Gatherv.3.php
     context.gatherv_recieve(raw_global_ids, all_global_ids, IDCounts, displacements);
 
-    auto ids_by_rank = partition_into_arrayviews(all_global_ids, IDCounts);
+    auto ids_by_rank = quanta::partition_into_arrayviews(all_global_ids, IDCounts);
 
     auto find_cliques_with_unordered_map = [&] {
       std::unordered_map<int, int> clique_lookup;

@@ -44,13 +44,14 @@
 #ifndef NIMBLE_ARRAYVIEW_H
 #define NIMBLE_ARRAYVIEW_H
 
-#include <iterator>
 #include <memory>
 #include <numeric>
 #include <utility>
 #include <vector>
 
 namespace nimble
+{
+namespace quanta
 {
 template<class T>
 class arrayview_t
@@ -219,5 +220,5 @@ class spanarray
   }
 };
 }   // namespace nimble
-
+}   // namespace quanta
 #endif // NIMBLE_ARRAYVIEW_H

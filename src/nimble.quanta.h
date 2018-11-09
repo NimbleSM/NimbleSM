@@ -44,19 +44,6 @@
 #ifndef NIMBLE_QUANTA_H
 #define NIMBLE_QUANTA_H
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <iostream>
-#include <iterator>
-#include <random>
-#include <tuple>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#define TESTPRINT(x) \
-  std::cout << "Running " #x " ... " << ((x) ? "(success)" : "(faliure)") << std::endl;
 namespace nimble
 {
 namespace quanta
@@ -84,176 +71,10 @@ using return_t = decltype(declref<F>()(declval_exact<Args>()...));
 template<class F, class... list_t>
 using transformed_iterated_t = return_t<F, iterated_t<list_t>...>;
 
-template<class F, class... list_t>
-using transformed_elem_t = return_t<F, elem_t<list_t>...>;
-
 template<class T>
 auto len(T&& obj) -> decltype(obj.size())
 {
   return obj.size();
-}
-
-// Does nothing with the inputs it's given
-// Used in place of C++17 fold expression with comma operator
-template<class... In>
-void devour(In&&...)
-{
-}
-
-// Shuffles the input lists as a group
-// So if A[i] moves to A[j], then B[i] also moves to B[j]
-template<class gen_t, class... Iterator_t>
-void shuffle_together(size_t count, gen_t&& gen, Iterator_t... lists)
-{
-  typedef std::tuple<decltype(*lists)...> tuple_t;
-  std::vector<tuple_t> groups;
-  groups.reserve(count);
-  for (size_t i = 0; i < count; ++i)
-  {
-    groups.emplace_back(*lists...);
-    devour(++lists...);
-  }
-  std::shuffle(groups.begin(), groups.end(), gen);
-}
-
-
-//void radix_order256(uint32_t* array, uint32_t* ordering, uint32_t* buffer, uint32_t count);
-
-// Takes a list of ids and remaps it in-place so that they're all consecutive
-// Does so based on an ordering
-/*Example:
-                   0  1  2  3  4  5  6   7
-  Suppose array = {1, 3, 2, 9, 3, 9, 10, 2}
-  Then the order will be {0, 2, 7, 1, 4, 3, 5, 6}
-  After calling this function,
-  array becomes   {0, 2, 1, 3, 2, 3, 4, 1}
-*/
-
-template<class id_array_t, class order_t>
-void remap_ids_with_ordering(id_array_t& array, const order_t& order)
-{
-  typedef elem_t<id_array_t> id_t;
-
-  auto scan = std::begin(order);
-  auto end  = std::end(order);
-  if (scan == end)
-    return;
-
-  id_t reference = array[*scan];
-  id_t counter   = 0;
-  array[*scan]   = counter;
-  ++scan;
-  while (scan != end)
-  {
-    id_t& id = array[*scan];
-    ++scan;
-    if (id == reference)
-    {
-      id = counter;
-    }
-    else
-    {
-      reference = id;
-      id        = ++counter;
-    }
-  }
-}
-
-//void PackIDs(std::vector<int>& id_array);
-
-// Checks that listA[i] == listA[j] iff listB[i] == listB[j]
-template<class list1_t, class list2_t>
-bool is_bijected(const list1_t& listA, const list2_t& listB)
-{
-  std::unordered_map<elem_t<list1_t>, elem_t<list2_t>> A_to_B;
-  std::unordered_map<elem_t<list2_t>, elem_t<list1_t>> B_to_A;
-  auto itA    = std::begin(listA);
-  auto itB    = std::begin(listB);
-  auto endOfA = std::end(listA);
-  auto endOfB = std::end(listB);
-  while (itA != endOfA && itB != endOfB)
-  {
-    auto& a        = *itA;
-    auto& b        = *itB;
-    auto A2B_index = A_to_B.find(a);
-    auto B2A_index = B_to_A.find(b);
-    bool a_foundQ  = A2B_index != A_to_B.end();
-    bool b_foundQ  = B2A_index != B_to_A.end();
-    // If one was found but the other wasn't, there's a mismatch and it's not
-    // bijective
-    if (a_foundQ != b_foundQ)
-      return false;
-
-    if (a_foundQ && b_foundQ)
-    {
-      // If both were found, A_to_B[a] must map to b, and B_to_A[b] must map to
-      // a.
-
-      // This dereferences the iterators to check that
-      if (A2B_index->second != b || B2A_index->second != a)
-        return false;
-    }
-    else
-    {
-      // If neither of them were found, record the new mapping from both sides
-      // So that a maps to b and vice versa
-      A_to_B[a] = b;
-      B_to_A[b] = a;
-    }
-    ++itA;
-    ++itB;
-  }
-  if (itA != endOfA || itB != endOfB)
-    return false;
-  return true;
-}
-template<class id_array_t>
-auto remap_ids_with_map(const id_array_t& ids) -> std::vector<elem_t<id_array_t>>
-{
-  typedef elem_t<id_array_t> int_t;
-  std::vector<int_t> new_ids;
-  new_ids.reserve(ids.size());
-  int_t num_ids = 0;
-  std::unordered_map<elem_t<id_array_t>, int_t> mapping;
-  for (auto& elem : ids)
-  {
-    auto position_in_map = mapping.find(elem);
-    int_t id_to_add;
-    if (position_in_map == mapping.end())
-    {
-      mapping[elem] = num_ids;
-      new_ids.push_back(num_ids);
-      ++num_ids;
-    }
-    else
-    {
-      new_ids.push_back(position_in_map->second);
-    }
-  }
-  return new_ids;
-}
-template<class id_array_t>
-id_array_t& remap_ids_with_map_in_place(id_array_t& ids)
-{
-  typedef elem_t<id_array_t> int_t;
-  int_t num_ids = 0;
-  std::unordered_map<int_t, int_t> mapping;
-  mapping.reserve(ids.size());
-  for (auto& elem : ids)
-  {
-    auto position_in_map = mapping.find(elem);
-    if (position_in_map == mapping.end())
-    {
-      mapping[elem] = num_ids;
-      elem          = num_ids;
-      ++num_ids;
-    }
-    else
-    {
-      elem = position_in_map->second;
-    }
-  }
-  return ids;
 }
 
 template<class list_t>
@@ -268,6 +89,7 @@ struct indexer_t
     return list[index];
   }
 };
+
 template<class T>
 struct indexer_t<T*>
 {
@@ -280,11 +102,13 @@ struct indexer_t<T*>
     return ptr[index];
   }
 };
+
 template<class T>
 indexer_t<T> make_indexer(T& list)
 {
   return indexer_t<T>(list);
 }
+
 template<class T>
 indexer_t<T*> make_indexer(T* ptr)
 {
@@ -322,119 +146,6 @@ void remap(list_t& list, F&& func)
     elem = func(elem);
   }
 }
-
-#ifdef TEST_QUANTA
-#include <chrono>
-
-namespace tests
-{
-
-// If test_shuffle_together worked, then A and B will be shuffled identically
-// And they'll have actually been shuffled, so they should be distinct from C
-template<class gen_t>
-bool test_shuffle_together(size_t count, gen_t&& gen)
-{
-  if (count < 20)
-  {
-    std::cerr << "test_shuffle_together(" << count
-              << ", [gen]):\n"
-                 "  Possible test faliure due to small input size.\n"
-                 "  Test assumes that lists are changed after being shuffled,\n"
-                 "  Although there is a small probability that the shuffle routine\n"
-                 "  Worked correctly but didn't make any changes to the lists. This\n"
-                 "  Probability is inversely proportional to the factorial of "
-                 "count,\n"
-                 "  Which is why it's recommended to use an input size greater than "
-                 "20.";
-  }
-  // Initializes all the lists so that they'll be {0, 1, 2, 3, ...}
-  std::vector<size_t> A(count), B(count), C(count);
-  for (size_t i = 0; i < count; ++i)
-  {
-    A[i] = i;
-    B[i] = i;
-    C[i] = i;
-  }
-  // Shuffles A and B together
-  shuffle_together(count, gen, A.begin(), B.begin());
-  // End result should be that A == B but A != C
-  // Since A and B should have been shuffled identically,
-  // But C wasn't shuffled
-  // For vectors, the == operator does an element-wise comparison
-  return A == B && A != C;
-}
-
-template<class gen_t>
-bool test_is_bijected(size_t count, gen_t&& gen)
-{
-  std::vector<size_t> A(count), B(count);
-  // Ensures at least 1 collision
-  std::uniform_int_distribution<size_t> dist(1, count - 1);
-  // mask cannot be 0
-  size_t mask = dist(gen);
-  for (size_t i = 0; i < count; ++i)
-  {
-    size_t val = dist(gen);
-    A[i]       = val;
-    B[i]       = val ^ mask;
-  }
-  // test_positive checks that A and B are confirmed to be bijective
-  bool test_positive_case = is_bijected(A, B) && is_bijected(B, A);
-
-  size_t index_to_change = 0;
-  while (index_to_change == 0)
-  {
-    index_to_change = dist(gen);
-  }
-  // Breaks the bijection so that B[0] == B[index_to_change] but A[0] !=
-  // A[index_to_change]
-  B[0] = B[index_to_change];
-  A[0] = A[index_to_change] ^ mask;
-  // test_negative checks that A and B are confirmed NOT to be bijective
-  bool test_negative_case = !is_bijected(A, B) && !is_bijected(B, A);
-  return test_positive_case && test_negative_case;
-}
-
-void test_all()
-{
-   std::random_device gen{};
-   TESTPRINT(tests::test_shuffle_together(1000000, gen));
-   TESTPRINT(tests::test_is_bijected(1000000, gen));
- }
-}   // namespace tests
-
-auto now = []() { return std::chrono::high_resolution_clock::now(); };
-int main(int argc, char** argv)
-{
-  std::vector<int> vect(200000000);
-  for (uint64_t i = 0, seed = 0; i < vect.size(); ++i)
-  {
-    seed = seed * 2039809803534549 + 809380980345342;
-    seed >>= 16;
-    vect[i] = seed;
-  }
-  std::cout << vect.back() << std::endl;
-  auto t0 = now();
-  if (argc == 1)
-  {
-    std::cout << "PackIDs()" << std::endl;
-    nimble::quanta::PackIDs(vect);
-  }
-  else if (argc == 2)
-  {
-    std::cout << "RemapIDs()" << std::endl;
-    vect = nimble::quanta::remap_ids_with_map(vect);
-  }
-  else
-  {
-    std::cout << "RemapInPlace()" << std::endl;
-    nimble::quanta::remap_ids_with_map_in_place(vect);
-  }
-  auto t1 = now();
-  std::cout << (t1 - t0).count() * 1e-9 << std::endl;
-  std::cout << vect.back() << std::endl;
-}
-#endif
 
 }   // namespace quanta
 }   // namespace nimble

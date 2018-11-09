@@ -45,11 +45,6 @@
 #define NIMBLE_LIGHTWEIGHT_STOPWATCH_H
 
 #include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
-#include <thread>
-#include <string>
 
 namespace nimble
 {
