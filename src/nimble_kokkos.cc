@@ -86,7 +86,7 @@ void main_routine(int argc, char *argv[]) {
     kokkos_enable_cuda_uvm = "true";
 #endif
 
-    std::cout << "\n--NimbleSM_Kokkos" << std::endl;
+    std::cout << "\n-- NimbleSM_Kokkos" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
     if (argc != 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_Kokkos <input_deck.in>\n" << std::endl;
@@ -679,6 +679,7 @@ void main_routine(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   Kokkos::initialize(argc, argv);
+  //Kokkos::print_configuration(std::cout);
   main_routine(argc, argv);
   Kokkos::finalize();
   MPI_Finalize();

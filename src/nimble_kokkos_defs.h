@@ -54,33 +54,35 @@
 namespace nimble_kokkos {
 
 // Define HOST execution space, memory space, and device
-using kokkos_host_execution_space = Kokkos::Serial::execution_space;
-#ifdef KOKKOS_ENABLE_CUDA_UVM
+#ifdef KOKKOS_ENABLE_QTHREADS
+  using kokkos_host_execution_space = Kokkos::Qthreads::execution_space;
+  using kokkos_host_mirror_memory_space = Kokkos::Qthreads::memory_space;
+#elif KOKKOS_ENABLE_CUDA_UVM
+  using kokkos_host_execution_space = Kokkos::Serial::execution_space;
   using kokkos_host_mirror_memory_space = Kokkos::CudaUVMSpace::memory_space;
 #else
+  using kokkos_host_execution_space = Kokkos::Serial::execution_space;
   using kokkos_host_mirror_memory_space = Kokkos::Serial::memory_space;
 #endif
 using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_mirror_memory_space>;
 
 // Define DEVICE execution space, memory space, and device
-#ifdef KOKKOS_ENABLE_CUDA_UVM
+#ifdef KOKKOS_ENABLE_QTHREADS
+  using kokkos_device_execution_space = Kokkos::Qthreads::execution_space;
+  using kokkos_device_memory_space = Kokkos::Qthreads::memory_space;
+#elif KOKKOS_ENABLE_CUDA_UVM
   using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
   using kokkos_device_memory_space = Kokkos::CudaUVMSpace::memory_space;
+#elif KOKKOS_ENABLE_CUDA
+  using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
+  using kokkos_device_memory_space = Kokkos::Cuda::memory_space;
 #else
-  #ifdef KOKKOS_ENABLE_CUDA
-    using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
-    using kokkos_device_memory_space = Kokkos::Cuda::memory_space;
-  #else
-    using kokkos_device_execution_space = Kokkos::Serial::execution_space;
-    using kokkos_device_memory_space = Kokkos::Serial::memory_space;
-  #endif
+  using kokkos_device_execution_space = Kokkos::Serial::execution_space;
+  using kokkos_device_memory_space = Kokkos::Serial::memory_space;
 #endif
 using kokkos_device = Kokkos::Device<kokkos_device_execution_space, kokkos_device_memory_space>;
 
 using kokkos_layout = kokkos_device_execution_space::array_layout;
-
-// Layout should not be specified unless you're using teams (and maybe not even if you are)
-//using Layout = kokkos_device_memory_space::execution_space::array_layout;
 
 enum class FieldType : int
 {

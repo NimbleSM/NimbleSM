@@ -640,6 +640,7 @@ namespace nimble_kokkos {
     return;
   }
 
+#ifndef KOKKOS_ENABLE_QTHREADS
   void ModelData::ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                               int num_elements,
                                                               int num_nodes_per_element,
@@ -660,6 +661,7 @@ namespace nimble_kokkos {
     Kokkos::Experimental::contribute(data, scatter_view);
     return;
   }
+#endif
 
   ModelData& DataManager::GetMacroScaleData() {
     return macroscale_data_;

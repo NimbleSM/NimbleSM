@@ -153,11 +153,13 @@ class ModelData
                              DeviceElementConnectivityView elem_conn_d,
                              DeviceVectorNodeGatheredView gathered_view_d);
 
+#ifndef KOKKOS_ENABLE_QTHREADS
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                    int num_elements,
                                                    int num_nodes_per_element,
                                                    DeviceElementConnectivityView elem_conn_d,
                                                    DeviceScalarNodeGatheredView gathered_view_d);
+#endif
 
  protected:
 
