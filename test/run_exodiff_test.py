@@ -26,6 +26,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
     if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name:
         command.append("mpirun")
         command.append("-np")
+        command.append("--allow-run-as-root")
         if num_ranks:
             command.append(str(num_ranks))
             epu_required = True
