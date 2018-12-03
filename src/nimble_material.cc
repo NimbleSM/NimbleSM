@@ -178,21 +178,21 @@ namespace nimble {
     double two_mu = 2.0 * shear_modulus_;
     double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
 
-    strain[K_S_XX] = def_grad[K_F_XX] - 1.0;
-    strain[K_S_YY] = def_grad[K_F_YY] - 1.0;
-    strain[K_S_ZZ] = def_grad[K_F_ZZ] - 1.0;
-    strain[K_S_XY] = 0.5*(def_grad[K_F_XY] + def_grad[K_F_YX]);
-    strain[K_S_YZ] = 0.5*(def_grad[K_F_YZ] + def_grad[K_F_ZY]);
-    strain[K_S_ZX] = 0.5*(def_grad[K_F_ZX] + def_grad[K_F_XZ]);
+    strain[K_S_XX_] = def_grad[K_F_XX_] - 1.0;
+    strain[K_S_YY_] = def_grad[K_F_YY_] - 1.0;
+    strain[K_S_ZZ_] = def_grad[K_F_ZZ_] - 1.0;
+    strain[K_S_XY_] = 0.5*(def_grad[K_F_XY_] + def_grad[K_F_YX_]);
+    strain[K_S_YZ_] = 0.5*(def_grad[K_F_YZ_] + def_grad[K_F_ZY_]);
+    strain[K_S_ZX_] = 0.5*(def_grad[K_F_ZX_] + def_grad[K_F_XZ_]);
 
     trace_strain = strain[K_S_XX] + strain[K_S_YY] + strain[K_S_ZZ];
 
-    stress[K_S_XX] = two_mu * strain[K_S_XX] + lambda * trace_strain;
-    stress[K_S_YY] = two_mu * strain[K_S_YY] + lambda * trace_strain;
-    stress[K_S_ZZ] = two_mu * strain[K_S_ZZ] + lambda * trace_strain;
-    stress[K_S_XY] = two_mu * strain[K_S_XY];
-    stress[K_S_YZ] = two_mu * strain[K_S_YZ];
-    stress[K_S_ZX] = two_mu * strain[K_S_ZX];
+    stress[K_S_XX_] = two_mu * strain[K_S_XX_] + lambda * trace_strain;
+    stress[K_S_YY_] = two_mu * strain[K_S_YY_] + lambda * trace_strain;
+    stress[K_S_ZZ_] = two_mu * strain[K_S_ZZ_] + lambda * trace_strain;
+    stress[K_S_XY_] = two_mu * strain[K_S_XY_];
+    stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
+    stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
   }
 #endif
 
