@@ -120,7 +120,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         os.remove(log_file_name)
     logfile = open(log_file_name, 'w')
 
-    logfile.write("\nrun_exodiff_test.py command: " + str(command) + "\n")
+    logfile.write("\nrun_exodiff_test.py command: " + string.join(command) + "\n")
     logfile.flush()
 
     # remove old output files, if any (this will miss some files in parallel runs)
