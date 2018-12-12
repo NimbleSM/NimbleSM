@@ -105,6 +105,15 @@ namespace nimble {
                            std::vector<std::string> & slave_block_names,
                            double & penalty_parameter);
 
+  typedef struct FaceIdentifierStruct {
+    FaceIdentifierStruct() : global_elem_id(-1), face_ordinal(-1), triangle_ordinal(-1) {}
+    FaceIdentifierStruct(const FaceIdentifierStruct &f)
+      : global_elem_id(f.global_elem_id), face_ordinal(f.face_ordinal), triangle_ordinal(f.triangle_ordinal) {}
+    int global_elem_id;
+    int face_ordinal;
+    int triangle_ordinal;
+  } FaceIdentifier;
+
   class ContactEntity {
 
   public:
@@ -138,10 +147,12 @@ namespace nimble {
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
-                  int node_ids_for_fictitious_node[4] = 0)
+                  int node_ids_for_fictitious_node[4] = 0,
+                  FaceIdentifier face_identifier = FaceIdentifier())
       : entity_type_(entity_type),
         contact_entity_global_id_(contact_entity_global_id),
-        char_len_(characteristic_length) {
+        char_len_(characteristic_length),
+        face_identifier_(face_identifier){
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
@@ -421,6 +432,9 @@ namespace nimble {
     int node_id_2_for_fictitious_node_ = -1;
     int node_id_3_for_fictitious_node_ = -1;
     int node_id_4_for_fictitious_node_ = -1;
+
+    // for faces, store a unique identifier that can be used as a comparision tiebreaker
+    FaceIdentifier face_identifier_;
   };
 
   class ContactManager {
@@ -444,8 +458,10 @@ namespace nimble {
 
     bool ContactEnabled() { return contact_enabled_; }
 
-    std::vector< std::vector<int> > SkinBlocks(GenesisMesh const & mesh,
-                                               std::vector<int> const & block_ids);
+    void SkinBlocks(GenesisMesh const & mesh,
+                    std::vector<int> const & block_ids,
+                    std::vector< std::vector<int> > & skin_faces,
+                    std::vector<FaceIdentifier> & face_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
@@ -466,6 +482,7 @@ namespace nimble {
 
     template <typename ArgT>
     void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
+                                    std::vector<FaceIdentifier> const & master_skin_face_ids,
                                     std::vector<int> const & slave_node_ids,
                                     std::map<int, double> const & slave_node_char_lens,
                                     ArgT& contact_nodes,
