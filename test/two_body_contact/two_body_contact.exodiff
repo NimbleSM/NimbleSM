@@ -28,12 +28,12 @@ TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:        
 # No GLOBAL VARIABLES
 
 NODAL VARIABLES relative 1.e-6 floor 0.0
-	displacement_x   absolute 1.479104000000e-08    # min:               0 @ t1,n18	max:      0.01479104 @ t22,n17
-	displacement_y   absolute 3.646970400000e-10    # min:               0 @ t1,n18	max:   0.00036469704 @ t22,n706
-	displacement_z   absolute 5.123030500000e-09    # min:               0 @ t1,n18	max:    0.0051230305 @ t22,n676
-	contact_force_x  absolute 3.013862400000e-02    # min:               0 @ t1,n18	max:       30138.624 @ t6,n676
-	contact_force_y  absolute 3.526010500000e-03    # min:               0 @ t1,n18	max:       3526.0105 @ t6,n240
-	contact_force_z  absolute 5.768328100000e-03    # min:               0 @ t1,n18	max:       5768.3281 @ t6,n676
+	displacement_x   absolute 0.001
+	displacement_y   absolute 0.001
+	displacement_z   absolute 0.001
+	contact_force_x  absolute 1000.0
+	contact_force_y  absolute 10.0
+	contact_force_z  absolute 10.0
 
 # No ELEMENT VARIABLES
 
