@@ -1130,79 +1130,20 @@ namespace nimble {
           throw std::logic_error("\nError in ComputeContactForce(), bad node index.\n");
         }
 
-        double closest_pt_value[3], proj_vector[3];
-        //closest_points.getPointValue(collision_index, closest_pt_value);
-#ifdef NIMBLE_NVIDIA_BUILD
-        closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-        closest_pt_value[1] = closest_points.m_hostData(collision_index, 2);
-        closest_pt_value[2] = closest_points.m_hostData(collision_index, 3);
-#else
-        closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
-        closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
-        closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
-#endif
-
-        for (int i=0 ; i<3 ; i++) {
-          proj_vector[i] = closest_pt_value[i] - pt_value[i];
-        }
-
-        double tri_node_1[3], tri_node_2[3], tri_node_3[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-        //triangles.getVertexValue(collision_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(collision_index, 0, 0);
-        tri_node_1[1] = triangles.m_hostData(collision_index, 0, 1);
-        tri_node_1[2] = triangles.m_hostData(collision_index, 0, 2);
-        //triangles.getVertexValue(collision_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(collision_index, 1, 0);
-        tri_node_2[1] = triangles.m_hostData(collision_index, 1, 1);
-        tri_node_2[2] = triangles.m_hostData(collision_index, 1, 2);
-        //triangles.getVertexValue(collision_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(collision_index, 2, 0);
-        tri_node_3[1] = triangles.m_hostData(collision_index, 2, 1);
-        tri_node_3[2] = triangles.m_hostData(collision_index, 2, 2);
-#else
-        //triangles.getVertexValue(collision_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(collision_index).GetNode(0)[0];
-        tri_node_1[1] = triangles.m_hostData(collision_index).GetNode(0)[1];
-        tri_node_1[2] = triangles.m_hostData(collision_index).GetNode(0)[2];
-        //triangles.getVertexValue(collision_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(collision_index).GetNode(1)[0];
-        tri_node_2[1] = triangles.m_hostData(collision_index).GetNode(1)[1];
-        tri_node_2[2] = triangles.m_hostData(collision_index).GetNode(1)[2];
-        //triangles.getVertexValue(collision_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(collision_index).GetNode(2)[0];
-        tri_node_3[1] = triangles.m_hostData(collision_index).GetNode(2)[1];
-        tri_node_3[2] = triangles.m_hostData(collision_index).GetNode(2)[2];
-#endif
-        double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
-        for (int i=0 ; i<3 ; i++) {
-          tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
-          tri_edge_2[i] = tri_node_3[i] - tri_node_2[i];
-        }
-        tri_normal[0] = tri_edge_1[1]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[1];
-        tri_normal[1] = tri_edge_1[0]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[0];
-        tri_normal[2] = tri_edge_1[0]*tri_edge_2[1] - tri_edge_1[1]*tri_edge_2[0];
-
-        double dot = proj_vector[0]*tri_normal[0] + proj_vector[1]*tri_normal[1] + proj_vector[2]*tri_normal[2];
-
-        bool penetration = (dot >= 0.0);
-
-        if (penetration) {
-          gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_h[collision_index]);
-          switch (type) {
-          case gtk::NODE_PROJECTION:
-            node_and_edge_projections.push_back(collision_index);
-            break;
-          case gtk::EDGE_PROJECTION:
-            node_and_edge_projections.push_back(collision_index);
-            break;
-          case gtk::FACE_PROJECTION:
-            face_projections.push_back(collision_index);
-            break;
-          default:
-            throw std::logic_error("\nError in ComputeContactForce(), unrecognized ProjectionType.\n");
-            break;
-          }
+        gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_h[collision_index]);
+        switch (type) {
+        case gtk::NODE_PROJECTION:
+          node_and_edge_projections.push_back(collision_index);
+          break;
+        case gtk::EDGE_PROJECTION:
+          node_and_edge_projections.push_back(collision_index);
+          break;
+        case gtk::FACE_PROJECTION:
+          face_projections.push_back(collision_index);
+          break;
+        default:
+          throw std::logic_error("\nError in ComputeContactForce(), unrecognized ProjectionType.\n");
+          break;
         }
       }
 
@@ -1228,35 +1169,16 @@ namespace nimble {
           for (int i=0 ; i<3 ; i++) {
             proj_vector[i] = closest_pt_value[i] - pt_value[i];
           }
-          distance = std::sqrt(proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2]);
+          distance = proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2];
+          if (distance > 0.0)
+            distance = std::sqrt(distance);
           if (distance < min_distance) {
             contact_index = collision_index;
             min_distance = distance;
           }
         }
       }
-      else if (face_projections.size() == 1) {
-        // if there is exactly one face projection, then it is a contact interaction
-        has_contact = true;
-        contact_index = face_projections[0];
-
-        double closest_pt_value[3], proj_vector[3], distance;
-        //closest_points.getPointValue(face_projections[0], closest_pt_value);
-#ifdef NIMBLE_NVIDIA_BUILD
-        closest_pt_value[0] = closest_points.m_hostData(face_projections[0], 0);
-        closest_pt_value[1] = closest_points.m_hostData(face_projections[0], 1);
-        closest_pt_value[2] = closest_points.m_hostData(face_projections[0], 2);
-#else
-        closest_pt_value[0] = closest_points.m_hostData(face_projections[0]).X();
-        closest_pt_value[1] = closest_points.m_hostData(face_projections[0]).Y();
-        closest_pt_value[2] = closest_points.m_hostData(face_projections[0]).Z();
-#endif
-        for (int i=0 ; i<3 ; i++) {
-          proj_vector[i] = closest_pt_value[i] - pt_value[i];
-        }
-        distance = std::sqrt(proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2]);
-      }
-      else if (face_projections.size() > 1) {
+      else if (face_projections.size() > 0) {
         // if there are multiple face projections, use the one with the minimum projection distance
         has_contact = true;
         double min_distance(std::numeric_limits<double>::max());
@@ -1365,24 +1287,27 @@ namespace nimble {
           (pt_value[1] - closest_pt_value[1])*tri_normal[1] +
           (pt_value[2] - closest_pt_value[2])*tri_normal[2] ;
 
-        double tri_normal_magnitude = std::sqrt(tri_normal[0]*tri_normal[0] + tri_normal[1]*tri_normal[1] + tri_normal[2]*tri_normal[2]);
+        if (gap < 0.0) {
 
-        double contact_force[3];
-        for (int i=0 ; i<3 ; ++i) {
-          contact_force[i] = -1.0 * penalty_parameter_ * gap * tri_normal[i] / tri_normal_magnitude;
+          double tri_normal_magnitude = std::sqrt(tri_normal[0]*tri_normal[0] + tri_normal[1]*tri_normal[1] + tri_normal[2]*tri_normal[2]);
+
+          double contact_force[3];
+          for (int i=0 ; i<3 ; ++i) {
+            contact_force[i] = penalty_parameter_ * gap * tri_normal[i] / tri_normal_magnitude;
+          }
+
+          face.ComputeNodalContactForces(contact_force,
+                                         closest_pt_value);
+
+          for (int i=0 ; i<3 ; ++i) {
+            contact_force[i] *= -1.0;
+          }
+          node.ComputeNodalContactForces(contact_force,
+                                         closest_pt_value);
+
+          node.GetForces(force_.data());
+          face.GetForces(force_.data());
         }
-
-        node.ComputeNodalContactForces(contact_force,
-                                       closest_pt_value);
-
-        for (int i=0 ; i<3 ; ++i) {
-          contact_force[i] *= -1.0;
-        }
-        face.ComputeNodalContactForces(contact_force,
-                                       closest_pt_value);
-
-        node.GetForces(force_.data());
-        face.GetForces(force_.data());
     }
 
     nimble_kokkos::HostScalarNodeView force_h("contact force_h", force_d_.extent(0));

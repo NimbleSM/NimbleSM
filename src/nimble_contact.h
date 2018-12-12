@@ -212,7 +212,7 @@ namespace nimble {
         force[n]   += force_2_x_;
         force[n+1] += force_2_y_;
         force[n+2] += force_2_z_;
-        int n = 3*node_id_1_for_fictitious_node_;
+        n = 3*node_id_1_for_fictitious_node_;
         force[n]   += force_3_x_ / 4.0;
         force[n+1] += force_3_y_ / 4.0;
         force[n+2] += force_3_z_ / 4.0;
@@ -367,12 +367,12 @@ namespace nimble {
       force_1_y_ = N[0] * contact_force[1];
       force_1_z_ = N[0] * contact_force[2];
       if (entity_type_ == TRIANGLE) {
-        force_2_x_ = N[1] * contact_force[3];
-        force_2_y_ = N[1] * contact_force[4];
-        force_2_z_ = N[1] * contact_force[5];
-        force_3_x_ = N[2] * contact_force[6];
-        force_3_y_ = N[2] * contact_force[7];
-        force_3_z_ = N[2] * contact_force[8];
+        force_2_x_ = N[1] * contact_force[0];
+        force_2_y_ = N[1] * contact_force[1];
+        force_2_z_ = N[1] * contact_force[2];
+        force_3_x_ = N[2] * contact_force[0];
+        force_3_y_ = N[2] * contact_force[1];
+        force_3_z_ = N[2] * contact_force[2];
       }
     }
 
