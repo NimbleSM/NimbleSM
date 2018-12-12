@@ -32,8 +32,8 @@ NODAL VARIABLES relative 1.e-6 floor 0.0
 	displacement_y   absolute 0.001
 	displacement_z   absolute 0.001
 	contact_force_x  absolute 1000.0
-	contact_force_y  absolute 10.0
-	contact_force_z  absolute 10.0
+	contact_force_y  absolute 2000.0
+	contact_force_z  absolute 2000.0
 
 # No ELEMENT VARIABLES
 
