@@ -995,24 +995,19 @@ namespace nimble {
     gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest_points", num_collisions);
 
-    // TODO fill points and triangles on device
-    collision_list.sync_from_device();
-    Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
-    Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
-    for (int i_collision=0 ; i_collision<num_collisions ; i_collision++) {
-      int contact_node_index = collision_list.hm_data(i_collision,0);
-      int contact_face_index = collision_list.hm_data(i_collision,1);
-      ContactEntity const & node = contact_nodes_h_[contact_node_index];
-      ContactEntity const & face = contact_faces_h_[contact_face_index];
-      points.setHostPointValue(i_collision, node.coord_1_x_, node.coord_1_y_, node.coord_1_z_);
-      triangles.setHostVertexValues(i_collision,
-                                    mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
-                                    mtk::Vec3<double>(face.coord_2_x_, face.coord_2_y_, face.coord_2_z_),
-                                    mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
-    }
-    points.inhaleHostData();
-    triangles.inhaleHostData();
-    // END TODO
+    Kokkos::parallel_for("Load contact points and triangles",
+                         num_collisions,
+                         KOKKOS_LAMBDA(const int i_collision) {
+      int contact_node_index = collision_list.m_data(i_collision,0);
+      int contact_face_index = collision_list.m_data(i_collision,1);
+      ContactEntity const & node = contact_nodes_d(contact_node_index);
+      ContactEntity const & face = contact_faces_d(contact_face_index);
+      points.setPointValue(i_collision, node.coord_1_x_, node.coord_1_y_, node.coord_1_z_);
+      triangles.setVertexValues(i_collision,
+                                mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
+                                mtk::Vec3<double>(face.coord_2_x_, face.coord_2_y_, face.coord_2_z_),
+                                mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
+    });
 
     constexpr bool save_projection_types_computed = true;
     Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space> proj_types_returned_d;
