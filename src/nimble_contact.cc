@@ -450,7 +450,7 @@ namespace nimble {
       std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
     }
 
-    WriteContactEntitiesToVTKFile(mpi_rank);
+    //WriteContactEntitiesToVTKFile(mpi_rank);
   }
 
   template <typename ArgT>
