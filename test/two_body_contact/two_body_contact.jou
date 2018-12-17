@@ -11,3 +11,9 @@ volume 1 size 0.005
 volume 2 size 0.003
 mesh volume all
 export genesis 'two_body_contact.g' overwrite
+
+delete mesh
+volume 1 size {0.005/3.0}
+volume 2 size {0.003/3.0}
+mesh volume all
+export genesis 'two_body_contact.r2.g' overwrite
