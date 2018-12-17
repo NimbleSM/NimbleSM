@@ -1,0 +1,27 @@
+
+reset
+
+create cylinder radius 1.0 height 2.0
+create cylinder radius 0.9 height 2.0
+subtract volume 2 from volume 1
+volume 1 scheme sweep source surface 7 target surface 1 sweep transform least squares
+volume 1 size 0.1
+mesh volume 1
+
+create sphere radius 0.8
+create sphere radius 0.7
+subtract volume 4 from volume 3
+webcut volume 5 xplane
+volume 5 scheme sweep source surface 14 target surface 15 sweep transform least squares
+delete volume 6
+volume 5 size 0.1
+mesh volume 5
+volume 5 copy rotate 180 about z
+merge surface 13 19
+
+block 1 volume 1
+block 2 volume 5 7
+nodeset 1 volume 1
+nodeset 2 volume 5 7
+
+export genesis 'ball_in_cup_contact.g' overwrite

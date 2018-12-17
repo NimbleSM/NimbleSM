@@ -1118,7 +1118,7 @@ namespace nimble {
           tri_edge_2[i] = tri_node_3[i] - tri_node_2[i];
         }
         tri_normal[0] = tri_edge_1[1]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[1];
-        tri_normal[1] = tri_edge_1[0]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[0];
+        tri_normal[1] = tri_edge_1[2]*tri_edge_2[0] - tri_edge_1[0]*tri_edge_2[2];
         tri_normal[2] = tri_edge_1[0]*tri_edge_2[1] - tri_edge_1[1]*tri_edge_2[0];
 
         double gap =

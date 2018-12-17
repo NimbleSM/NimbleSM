@@ -3,7 +3,7 @@
 #             EXODIFF	(Version: 2.92) Modified: 2018-06-27
 #             Authors:  Richard Drake, rrdrake@sandia.gov           
 #                       Greg Sjaardema, gdsjaar@sandia.gov          
-#             Run on    2018/12/17   10:51:27 MST
+#             Run on    2018/12/17   16:12:38 MST
 #  *****************************************************************
 
 #  FILE 1: /Users/djlittl/ATDM/NimbleSM/test/two_body_contact/two_body_contact.gold.e
@@ -28,12 +28,12 @@ TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:        
 # No GLOBAL VARIABLES
 
 NODAL VARIABLES relative 1.e-6 floor 0.0
-	displacement_x   absolute 1.231133600000e-08    # min:               0 @ t1,n18	max:     0.012311336 @ t22,n63
-	displacement_y   absolute 8.873007600000e-10    # min:               0 @ t1,n18	max:   0.00088730076 @ t22,n676
-	displacement_z   absolute 2.842796400000e-11    # min:               0 @ t1,n18	max:   2.8427964e-05 @ t6,n418
-	contact_force_x  absolute 6.251415200000e-02    # min:               0 @ t1,n18	max:       62514.152 @ t6,n227
-	contact_force_y  absolute 7.746372900000e-04    # min:               0 @ t1,n18	max:       774.63729 @ t7,n676
-	contact_force_z  absolute 1.179287800000e-03    # min:               0 @ t1,n18	max:       1179.2878 @ t6,n227
+	displacement_x   absolute 1.227407300000e-08    # min:               0 @ t1,n18	max:     0.012274073 @ t22,n63
+	displacement_y   absolute 9.009753500000e-11    # min:               0 @ t1,n18	max:   9.0097535e-05 @ t22,n676
+	displacement_z   absolute 1.937842500000e-10    # min:               0 @ t1,n18	max:   0.00019378425 @ t22,n676
+	contact_force_x  absolute 6.251010100000e-02    # min:               0 @ t1,n18	max:       62510.101 @ t6,n227
+	contact_force_y  absolute 5.821288800000e-04    # min:               0 @ t1,n18	max:       582.12888 @ t6,n227
+	contact_force_z  absolute 1.179324300000e-03    # min:               0 @ t1,n18	max:       1179.3243 @ t6,n227
 
 # No ELEMENT VARIABLES
 

@@ -75,7 +75,7 @@ namespace nimble {
     b[1] = pt_3_y - pt_1_y;
     b[2] = pt_3_z - pt_1_z;
     cross[0] = b[1]*a[2] - b[2]*a[1];
-    cross[1] = b[0]*a[2] - b[2]*a[0];
+    cross[1] = b[2]*a[0] - b[0]*a[2];
     cross[2] = b[0]*a[1] - b[1]*a[0];
     area = 0.5 * sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
     return area;
