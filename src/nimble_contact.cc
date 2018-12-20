@@ -143,9 +143,11 @@ namespace nimble {
     ss >> penalty_parameter;
   }
 
-  std::vector< std::vector<int> >
+  void
   ContactManager::SkinBlocks(GenesisMesh const & mesh,
-                             std::vector<int> const & block_ids) {
+                             std::vector<int> const & block_ids,
+                             std::vector< std::vector<int> > & skin_faces,
+                             std::vector<int> & face_ids) {
 
     std::map< std::vector<int>, std::vector<int> > faces;
     std::map< std::vector<int>, std::vector<int> >::iterator face_it;
@@ -155,15 +157,18 @@ namespace nimble {
       int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
       int num_node_per_elem = mesh.GetNumNodesPerElement(block_id);
       const int * const conn = mesh.GetConnectivity(block_id);
+      std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
       int conn_index = 0;
 
       // key is sorted node list for a face
       int num_node_per_face = 4;
       std::vector<int> key(num_node_per_face);
-      // value is count and unsorted node list for a face
-      std::vector<int> value(num_node_per_face + 1);
+      // value is count, unsorted node list, exodus element id, and face ordinal
+      std::vector<int> value(num_node_per_face + 3);
 
       for (int i_elem = 0 ; i_elem < num_elem_in_block ; i_elem++) {
+
+        int elem_global_id = elem_global_ids[i_elem];
 
         // Examine each face, following the Exodus node-ordering convention
 
@@ -173,6 +178,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 1];
         key[2] = value[3] = conn[conn_index + 5];
         key[3] = value[4] = conn[conn_index + 4];
+        value[5] = elem_global_id;
+        value[6] = 0;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -186,6 +193,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 2];
         key[2] = value[3] = conn[conn_index + 6];
         key[3] = value[4] = conn[conn_index + 5];
+        value[5] = elem_global_id;
+        value[6] = 1;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -199,6 +208,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 3];
         key[2] = value[3] = conn[conn_index + 7];
         key[3] = value[4] = conn[conn_index + 6];
+        value[5] = elem_global_id;
+        value[6] = 2;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -212,6 +223,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 4];
         key[2] = value[3] = conn[conn_index + 7];
         key[3] = value[4] = conn[conn_index + 3];
+        value[5] = elem_global_id;
+        value[6] = 3;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -225,6 +238,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 3];
         key[2] = value[3] = conn[conn_index + 2];
         key[3] = value[4] = conn[conn_index + 1];
+        value[5] = elem_global_id;
+        value[6] = 4;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -238,6 +253,8 @@ namespace nimble {
         key[1] = value[2] = conn[conn_index + 5];
         key[2] = value[3] = conn[conn_index + 6];
         key[3] = value[4] = conn[conn_index + 7];
+        value[5] = elem_global_id;
+        value[6] = 5;
         std::sort(key.begin(), key.end());
         face_it = faces.find(key);
         if (face_it == faces.end())
@@ -249,22 +266,27 @@ namespace nimble {
       }
     }
 
-    std::vector< std::vector<int> > skin_faces;
+    skin_faces.clear();
+    face_ids.clear();
     for (auto face : faces) {
       if (face.second[0] == 1) {
         std::vector<int> skin_face;
-        for (int i=0 ; i<face.second.size()-1 ; i++) {
+        for (int i=0 ; i<face.second.size()-3 ; i++) {
           int id = face.second.at(i+1);
           skin_face.push_back(id);
         }
         skin_faces.push_back(skin_face);
+        int face_id = face.second[5] << 5;  // 59 bits for the genesis element id
+        face_id |= face.second[6] << 2;     // 3 bits for the face ordinal
+        face_id |= 0;                       // 2 bits for triangle ordinal (unknown until face is subdivided downstream)
+        face_ids.push_back(face_id);
       }
       else if (face.second[0] != 2) {
         throw std::logic_error("Error in mesh skinning routine, face found more than two times!\n");
       }
     }
 
-    return skin_faces;
+    return;
   }
 
   void
@@ -272,44 +294,26 @@ namespace nimble {
                                         nimble::MPIContainer & mpi_container,
                                         std::vector<int> const & master_block_ids,
                                         std::vector<int> const & slave_block_ids) {
+
+    int mpi_rank = 0;
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
     contact_enabled_ = true;
 
     const double* coord_x = mesh.GetCoordinatesX();
     const double* coord_y = mesh.GetCoordinatesY();
     const double* coord_z = mesh.GetCoordinatesZ();
 
-    std::vector<int> partition_boundary_node_ids, min_mpi_rank_containing_bounary_node;
-    mpi_container.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_ids, min_mpi_rank_containing_bounary_node);
-
     // find all the element faces on the master and slave contact blocks
-    std::vector< std::vector<int> > master_skin_faces = SkinBlocks(mesh, master_block_ids);
-    std::vector< std::vector<int> > slave_skin_faces = SkinBlocks(mesh, slave_block_ids);
-
-
-
-    std::vector<int> all_faces_mpi_buffer;
-    all_faces_mpi_buffer.reserve(4*master_skin_faces.size() + 4*slave_skin_faces.size());
-    for (auto& face : master_skin_faces) {
-      int num_nodes = face.size();
-      all_faces_mpi_buffer.push_back(num_nodes);
-      for (int i=0 ; i<num_nodes ; i++) {
-        all_faces_mpi_buffer.push_back(face[i]);
-      }
-    }
-    for (auto& face : slave_skin_faces) {
-      int num_nodes = face.size();
-      all_faces_mpi_buffer.push_back(num_nodes);
-      for (int i=0 ; i<num_nodes ; i++) {
-        all_faces_mpi_buffer.push_back(face[i]);
-      }
-    }
-
-
-
-
-
+    std::vector< std::vector<int> > master_skin_faces, slave_skin_faces;
+    std::vector<int> master_skin_face_ids, slave_skin_face_ids;
+    SkinBlocks(mesh, master_block_ids, master_skin_faces, master_skin_face_ids);
+    SkinBlocks(mesh, slave_block_ids, slave_skin_faces, slave_skin_face_ids);
 
     // construct containers for the subset of the model that is involved with contact
+    // this constitutes a submodel that is stored in the ContactManager
     std::set<int> node_ids_set;
     for (auto const & face : master_skin_faces) {
       for (auto const & id : face) {
@@ -323,9 +327,9 @@ namespace nimble {
     }
     node_ids_ = std::vector<int>(node_ids_set.begin(), node_ids_set.end());
 
-    std::map<int, int> genesis_mesh_node_id_to_contact_vector_id;
+    std::map<int, int> genesis_mesh_node_id_to_contact_submodel_id;
     for (unsigned int i_node=0 ; i_node<node_ids_.size() ; ++i_node) {
-      genesis_mesh_node_id_to_contact_vector_id[node_ids_[i_node]] = i_node;
+      genesis_mesh_node_id_to_contact_submodel_id[node_ids_[i_node]] = i_node;
     }
 
     // replace the node ids that correspond to the genesis mesh
@@ -333,13 +337,13 @@ namespace nimble {
     for (unsigned int i_face=0 ; i_face<master_skin_faces.size() ; ++i_face) {
       for (unsigned int i_node=0 ; i_node<master_skin_faces[i_face].size() ; ++i_node) {
         int genesis_mesh_node_id = master_skin_faces[i_face][i_node];
-        master_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_vector_id.at(genesis_mesh_node_id);
+        master_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
     for (unsigned int i_face=0 ; i_face<slave_skin_faces.size() ; ++i_face) {
       for (unsigned int i_node=0 ; i_node<slave_skin_faces[i_face].size() ; ++i_node) {
         int genesis_mesh_node_id = slave_skin_faces[i_face][i_node];
-        slave_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_vector_id.at(genesis_mesh_node_id);
+        slave_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
 
@@ -354,33 +358,12 @@ namespace nimble {
       model_coord_[3*i_node+2] = coord_[3*i_node+2] = coord_z[node_ids_[i_node]];
     }
 
-    // Contact nodes may appear on more than one processor
-    // In this case, use the one on the processor with the smallest mpi rank and discard the others
-    int mpi_rank = 0;
-#ifdef NIMBLE_HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-#endif
-    std::set<int> partition_boundary_nodes_to_ignore;
-    for (unsigned int i=0 ; i<partition_boundary_node_ids.size() ; ++i) {
-      if (min_mpi_rank_containing_bounary_node[i] != mpi_rank) {
-        int genesis_node_id = partition_boundary_node_ids[i];
-        std::map<int, int>::const_iterator it = genesis_mesh_node_id_to_contact_vector_id.find(genesis_node_id);
-        if (it != genesis_mesh_node_id_to_contact_vector_id.end()) {
-          partition_boundary_nodes_to_ignore.insert(it->second);
-        }
-      }
-    }
-
-    if (mpi_rank == 0) std::cout << "DEBUGGING partition_boundary_nodes_to_ignore.size() " << partition_boundary_nodes_to_ignore.size() << std::endl;
-
     // Store nodes in slave faces
     // Create a list of nodes and their characteristic lengths
     std::vector<int> slave_node_ids;
     std::map<int, double> slave_node_char_lens;
     for (auto const & face : slave_skin_faces) {
-
       int num_nodes_in_face = static_cast<int>(face.size());
-
       // determine a characteristic length based on max edge length
       double max_edge_length = std::numeric_limits<double>::lowest();
       for (int i=0 ; i<num_nodes_in_face ; ++i) {
@@ -396,21 +379,17 @@ namespace nimble {
           max_edge_length = edge_length;
         }
       }
-
       double characteristic_length = max_edge_length;
-
       for (auto const & node_id : face) {
-        if (partition_boundary_nodes_to_ignore.find(node_id) == partition_boundary_nodes_to_ignore.end()) {
-          if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
-            slave_node_ids.push_back(node_id);
+        if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
+          slave_node_ids.push_back(node_id);
+          slave_node_char_lens[node_id] = characteristic_length;
+        }
+        else {
+          // always use the maximum characteristic length
+          // this requires a parallel sync
+          if (slave_node_char_lens[node_id] < characteristic_length) {
             slave_node_char_lens[node_id] = characteristic_length;
-          }
-          else {
-            // always use the maximum characteristic length
-            // this requires a parallel sync
-            if (slave_node_char_lens[node_id] < characteristic_length) {
-              slave_node_char_lens[node_id] = characteristic_length;
-            }
           }
         }
       }
@@ -418,7 +397,7 @@ namespace nimble {
 
     contact_nodes_.resize(slave_node_ids.size());
     contact_faces_.resize(4*master_skin_faces.size());
-    CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_, contact_faces_);
+    CreateContactNodesAndFaces(master_skin_faces, master_skin_face_ids, slave_node_ids, slave_node_char_lens, contact_nodes_, contact_faces_);
 
 #ifdef NIMBLE_HAVE_KOKKOS
 
@@ -446,7 +425,7 @@ namespace nimble {
 
     Kokkos::resize(contact_nodes_h_, slave_node_ids.size());
     Kokkos::resize(contact_faces_h_, 4*master_skin_faces.size());
-    CreateContactNodesAndFaces(master_skin_faces, slave_node_ids, slave_node_char_lens, contact_nodes_h_, contact_faces_h_);
+    CreateContactNodesAndFaces(master_skin_faces, master_skin_face_ids, slave_node_ids, slave_node_char_lens, contact_nodes_h_, contact_faces_h_);
 
     Kokkos::resize(contact_nodes_d_, slave_node_ids.size());
     Kokkos::resize(contact_faces_d_, 4*master_skin_faces.size());
@@ -471,11 +450,12 @@ namespace nimble {
       std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
     }
 
-    WriteContactEntitiesToVTKFile(mpi_rank);
+    //WriteContactEntitiesToVTKFile(mpi_rank);
   }
 
   template <typename ArgT>
   void ContactManager::CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
+                                                  std::vector<int> const & master_skin_face_ids,
                                                   std::vector<int> const & slave_node_ids,
                                                   std::map<int, double> const & slave_node_char_lens,
                                                   ArgT& contact_nodes,
@@ -485,7 +465,9 @@ namespace nimble {
     int index = 0;
 
     // convert master faces to trangular facets
-    for (auto face : master_skin_faces) {
+    for (unsigned int i_face=0 ; i_face < master_skin_faces.size() ; i_face++) {
+
+      auto face = master_skin_faces[i_face];
 
       int num_nodes_in_face = static_cast<int>(face.size());
       if (num_nodes_in_face != 4) {
@@ -531,7 +513,7 @@ namespace nimble {
       }
 
       double model_coord[9];
-      int node_id_1, node_id_2;
+      int node_id_1, node_id_2, face_id;
 
       // triangle node_0, node_1, fictitious_node
       node_id_1 = face[0];
@@ -543,13 +525,16 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
+      face_id = master_skin_face_ids[i_face];
+      face_id |= 0; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              contact_entity_id++,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
-                                             node_ids_for_fictitious_node);
+                                             node_ids_for_fictitious_node,
+                                             face_id);
 
       // triangle node_1, node_2, fictitious_node
       node_id_1 = face[1];
@@ -561,13 +546,16 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
+      face_id = master_skin_face_ids[i_face];
+      face_id |= 1; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              contact_entity_id++,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
-                                             node_ids_for_fictitious_node);
+                                             node_ids_for_fictitious_node,
+                                             face_id);
 
       // triangle node_2, node_3, fictitious_node
       node_id_1 = face[2];
@@ -579,13 +567,16 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
+      face_id = master_skin_face_ids[i_face];
+      face_id |= 2; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              contact_entity_id++,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
-                                             node_ids_for_fictitious_node);
+                                             node_ids_for_fictitious_node,
+                                             face_id);
 
       // triangle node_3, node_0, fictitious_node
       node_id_1 = face[3];
@@ -597,13 +588,16 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
+      face_id = master_skin_face_ids[i_face];
+      face_id |= 3; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              contact_entity_id++,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
-                                             node_ids_for_fictitious_node);
+                                             node_ids_for_fictitious_node,
+                                             face_id);
     }
 
     // Slave node entities
@@ -957,33 +951,37 @@ namespace nimble {
     contact_nodes_tree_loader(contact_nodes_search_tree_, contact_nodes_.size());
 
     int num_contact_nodes = contact_nodes_.size();
-    DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+    int num_contact_faces = contact_faces_.size();
+
+    // create local variables to avoid lambda snafu
+    DeviceContactEntityArrayView contact_nodes_d = contact_nodes_d_;
+    DeviceContactEntityArrayView contact_faces_d = contact_faces_d_;
+    nimble_kokkos::DeviceScalarNodeView contact_manager_force_d = force_d_;
+
     Kokkos::parallel_for("Load contact nodes search tree",
                          num_contact_nodes,
                          KOKKOS_LAMBDA(const int i_contact_node) {
-      double min_x = contact_nodes(i_contact_node).get_x_min();
-      double max_x = contact_nodes(i_contact_node).get_x_max();
-      double min_y = contact_nodes(i_contact_node).get_y_min();
-      double max_y = contact_nodes(i_contact_node).get_y_max();
-      double min_z = contact_nodes(i_contact_node).get_z_min();
-      double max_z = contact_nodes(i_contact_node).get_z_max();
+      double min_x = contact_nodes_d(i_contact_node).get_x_min();
+      double max_x = contact_nodes_d(i_contact_node).get_x_max();
+      double min_y = contact_nodes_d(i_contact_node).get_y_min();
+      double max_y = contact_nodes_d(i_contact_node).get_y_max();
+      double min_z = contact_nodes_d(i_contact_node).get_z_min();
+      double max_z = contact_nodes_d(i_contact_node).get_z_max();
       contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x, min_y, max_y, min_z, max_z);
     });
 
     stk::search::mas_aabb_tree_loader<double, nimble_kokkos::kokkos_device_execution_space>
     contact_faces_tree_loader(contact_faces_search_tree_, contact_faces_.size());
 
-    int num_contact_faces = contact_faces_.size();
-    DeviceContactEntityArrayView contact_faces = contact_faces_d_;
     Kokkos::parallel_for("Load contact faces search tree",
                          num_contact_faces,
                          KOKKOS_LAMBDA(const int i_contact_face) {
-      double min_x = contact_faces(i_contact_face).get_x_min();
-      double max_x = contact_faces(i_contact_face).get_x_max();
-      double min_y = contact_faces(i_contact_face).get_y_min();
-      double max_y = contact_faces(i_contact_face).get_y_max();
-      double min_z = contact_faces(i_contact_face).get_z_min();
-      double max_z = contact_faces(i_contact_face).get_z_max();
+      double min_x = contact_faces_d(i_contact_face).get_x_min();
+      double max_x = contact_faces_d(i_contact_face).get_x_max();
+      double min_y = contact_faces_d(i_contact_face).get_y_min();
+      double max_y = contact_faces_d(i_contact_face).get_y_max();
+      double min_z = contact_faces_d(i_contact_face).get_z_min();
+      double max_z = contact_faces_d(i_contact_face).get_z_max();
       contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x, min_y, max_y, min_z, max_z);
     });
 
@@ -997,34 +995,19 @@ namespace nimble {
     gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
     gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest_points", num_collisions);
 
-    // TODO CARRY OUT ENFORCEMENT ON THE DEVICE
-    // For now, copy everything to the host (ugh)
-    collision_list.sync_from_device();
-    Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
-    Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
-
-    std::map<int, std::vector<int> > collision_indices_for_each_contact_node;
-    for (int i=0 ; i<num_collisions ; i++) {
-      int node_index = collision_list.hm_data(i,0);
-      collision_indices_for_each_contact_node[node_index] = std::vector<int>();
-    }
-
-    for (int i_collision=0 ; i_collision<num_collisions ; i_collision++) {
-      int contact_node_index = collision_list.hm_data(i_collision,0);
-      int contact_face_index = collision_list.hm_data(i_collision,1);
-      ContactEntity const & node = contact_nodes_h_[contact_node_index];
-      ContactEntity const & face = contact_faces_h_[contact_face_index];
-      points.setHostPointValue(i_collision, node.coord_1_x_, node.coord_1_y_, node.coord_1_z_);
-      triangles.setHostVertexValues(i_collision,
-                                    mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
-                                    mtk::Vec3<double>(face.coord_2_x_, face.coord_2_y_, face.coord_2_z_),
-                                    mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
-      collision_indices_for_each_contact_node[contact_node_index].push_back(i_collision);
-    }
-
-    // TEMP COPY TO DEVICE
-    points.inhaleHostData();
-    triangles.inhaleHostData();
+    Kokkos::parallel_for("Load contact points and triangles",
+                         num_collisions,
+                         KOKKOS_LAMBDA(const int i_collision) {
+      int contact_node_index = collision_list.m_data(i_collision,0);
+      int contact_face_index = collision_list.m_data(i_collision,1);
+      ContactEntity const & node = contact_nodes_d(contact_node_index);
+      ContactEntity const & face = contact_faces_d(contact_face_index);
+      points.setPointValue(i_collision, node.coord_1_x_, node.coord_1_y_, node.coord_1_z_);
+      triangles.setVertexValues(i_collision,
+                                mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
+                                mtk::Vec3<double>(face.coord_2_x_, face.coord_2_y_, face.coord_2_z_),
+                                mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
+    });
 
     constexpr bool save_projection_types_computed = true;
     Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space> proj_types_returned_d;
@@ -1038,141 +1021,96 @@ namespace nimble {
                                                                                                                      closest_points,
                                                                                                                      proj_types_returned_d);
 
+    nimble_kokkos::DeviceScalarNodeView interaction_distance_d("interaction_distance_d", num_collisions);
+    nimble_kokkos::DeviceScalarNodeView min_distance_for_each_node_d("min_distance_for_each_node", num_contact_nodes); // THIS IS TOO LONG, MANY ZEROS
+    Kokkos::deep_copy(min_distance_for_each_node_d, std::numeric_limits<double>::max());
 
-    // DEBUGGING
-    // std::vector<ContactEntity> temp_nodes(num_collisions);
-    // std::vector<ContactEntity> temp_triangles(num_collisions);
-    // std::vector<ContactEntity::vertex> test_closest_points(num_collisions);
-    // std::vector<ContactManager::PROJECTION_TYPE> test_projection_types(num_collisions);
-    // for (int i_collision=0 ; i_collision<num_collisions ; i_collision++) {
-    //   int contact_node_index = collision_list.hm_data(i_collision,0);
-    //   int contact_face_index = collision_list.hm_data(i_collision,1);
-    //   ContactEntity const & node = contact_nodes_h_[contact_node_index];
-    //   ContactEntity const & face = contact_faces_h_[contact_face_index];
-    //   temp_nodes[i_collision] = node;
-    //   temp_triangles[i_collision] = face;
-    // }
-    // ClosestPointProjection(temp_nodes, temp_triangles, test_closest_points, test_projection_types);
-
-    // for (int i=0 ; i<num_collisions ; i++) {
-    //   std::string test_type_str;
-    //   if (test_projection_types[i] == NODE_OR_EDGE) test_type_str = "NODE_OR_EDGE";
-    //   else if(test_projection_types[i] == FACE) test_type_str = "FACE";
-
-
-    //   gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_d[i]);
-    //   std::string type_str;
-    //   if (type == gtk::NODE_PROJECTION) type_str = "NODE";
-    //   else if(type == gtk::EDGE_PROJECTION) type_str = "EDGE";
-    //   else if(type == gtk::FACE_PROJECTION) type_str = "FACE";
-
-    //   if ((type == gtk::NODE_PROJECTION || type == gtk::EDGE_PROJECTION) && test_projection_types[i] != NODE_OR_EDGE) {
-    //     std::cout << "\nDISAGREEMENT ON NODE_OR_EDGE" << std::endl;
-    //     std::cout << "(" << test_closest_points[i].coords_[0] << ", " << test_closest_points[i].coords_[1] << ", " << test_closest_points[i].coords_[2] << ") " << test_type_str << std::endl;
-    //     std::cout << "(" << closest_points.m_hostData(i).X() <<  ", " << closest_points.m_hostData(i).Y() << ", " << closest_points.m_hostData(i).Z() << ") " << type_str << std::endl;
-    //   }
-    //   else if(type == gtk::FACE_PROJECTION && test_projection_types[i] != FACE) {
-    //     std::cout << "DISAGREEMENT ON FACE" << std::endl;
-    //   }
-
-    //   double junk = (test_closest_points[i].coords_[0] - closest_points.m_hostData(i).X())*(test_closest_points[i].coords_[0] - closest_points.m_hostData(i).X()) +
-    //     (test_closest_points[i].coords_[1] - closest_points.m_hostData(i).Y())*(test_closest_points[i].coords_[1] - closest_points.m_hostData(i).Y()) +
-    //     (test_closest_points[i].coords_[2] - closest_points.m_hostData(i).Z())*(test_closest_points[i].coords_[2] - closest_points.m_hostData(i).Z());
-    //   if (junk > 1.0e-12) {
-    //     std::cout << "\nDISAGREEMENT ON DISTANCE " << type_str << std::endl;
-    //     double dist1 = std::sqrt((test_closest_points[i].coords_[0] - contact_nodes_h_[i].coord_1_x_)*(test_closest_points[i].coords_[0] - contact_nodes_h_[i].coord_1_x_) +
-    //                              (test_closest_points[i].coords_[1] - contact_nodes_h_[i].coord_1_y_)*(test_closest_points[i].coords_[1] - contact_nodes_h_[i].coord_1_y_) +
-    //                              (test_closest_points[i].coords_[2] - contact_nodes_h_[i].coord_1_z_)*(test_closest_points[i].coords_[2] - contact_nodes_h_[i].coord_1_z_));
-    //     double dist2 = std::sqrt((closest_points.m_hostData(i).X() - contact_nodes_h_[i].coord_1_x_)*(closest_points.m_hostData(i).X() - contact_nodes_h_[i].coord_1_x_) +
-    //                              (closest_points.m_hostData(i).Y() - contact_nodes_h_[i].coord_1_y_)*(closest_points.m_hostData(i).Y() - contact_nodes_h_[i].coord_1_y_) +
-    //                              (closest_points.m_hostData(i).Z() - contact_nodes_h_[i].coord_1_z_)*(closest_points.m_hostData(i).Z() - contact_nodes_h_[i].coord_1_z_));
-    //     std::cout << "(" << test_closest_points[i].coords_[0] << ", " << test_closest_points[i].coords_[1] << ", " << test_closest_points[i].coords_[2] << ") " << test_type_str << ", " << dist1 << std::endl;
-    //     std::cout << "(" << closest_points.m_hostData(i).X() <<  ", " << closest_points.m_hostData(i).Y() << ", " << closest_points.m_hostData(i).Z() << ") " << type_str << ", " << dist2 << std::endl;
-    //   }
-    // }
-    // END DEBUGGING
-
-    // TEMP COPY TO HOST
-    Kokkos::deep_copy(closest_points.m_hostData, closest_points.m_data);
-
-    Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space>::HostMirror proj_types_returned_h;
-    Kokkos::resize(proj_types_returned_h, proj_types_returned_d.extent(0));
-    Kokkos::deep_copy(proj_types_returned_h, proj_types_returned_d);
-
-    std::vector<int> contact_collisions;
-
-    for (auto const & entry : collision_indices_for_each_contact_node) {
-
-      std::vector<int> const & collision_indices = entry.second;
-      int first_collision_index = collision_indices[0];
-      double pt_value[3];
-      //points.getPointValue(first_collision_index, pt_value);
+    Kokkos::parallel_for("Minimum Projection Distance",
+                         num_collisions,
+                         KOKKOS_LAMBDA(const int i_collision) {
+      double proj_vector[3];
 #ifdef NIMBLE_NVIDIA_BUILD
-      pt_value[0] = points.m_hostData(first_collision_index, 0);
-      pt_value[1] = points.m_hostData(first_collision_index, 1);
-      pt_value[2] = points.m_hostData(first_collision_index, 2);
+      proj_vector[0] = closest_points.m_data(i_collision, 0) - points.m_data(i_collision, 0);
+      proj_vector[1] = closest_points.m_data(i_collision, 1) - points.m_data(i_collision, 1);
+      proj_vector[2] = closest_points.m_data(i_collision, 2) - points.m_data(i_collision, 2);
 #else
-      pt_value[0] = points.m_hostData(first_collision_index).X();
-      pt_value[1] = points.m_hostData(first_collision_index).Y();
-      pt_value[2] = points.m_hostData(first_collision_index).Z();
+      proj_vector[0] = closest_points.m_data(i_collision).X() - points.m_data(i_collision).X();
+      proj_vector[1] = closest_points.m_data(i_collision).Y() - points.m_data(i_collision).Y();
+      proj_vector[2] = closest_points.m_data(i_collision).Z() - points.m_data(i_collision).Z();
 #endif
+      double distance = proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2];
+      if (distance > 0.0) {
+        distance = std::sqrt(distance);
+      }
+      interaction_distance_d(i_collision) = distance;
+      int contact_node_index = collision_list.m_data(i_collision, 0);
+      double min_distance = Kokkos::atomic_min_fetch(&min_distance_for_each_node_d(contact_node_index), distance);
+    });
 
-      int contact_node_index = collision_list.hm_data(first_collision_index,0);
+    nimble_kokkos::DeviceIntegerArrayView min_triangle_id_for_each_node_d("min_triangle_id_for_each_node", num_contact_nodes);
+    Kokkos::deep_copy(min_triangle_id_for_each_node_d, std::numeric_limits<int>::max());
 
-      std::vector<int> face_projections;
-      std::vector<int> node_and_edge_projections;
+    Kokkos::parallel_for("Identify Interactions for Enforcement",
+                         num_collisions,
+                         KOKKOS_LAMBDA(const int i_collision) {
+      double distance = interaction_distance_d(i_collision);
+      int contact_node_index = collision_list.m_data(i_collision, 0);
+      int contact_face_index = collision_list.m_data(i_collision, 1);
+      double min_distance = min_distance_for_each_node_d(contact_node_index);
+      if (distance == min_distance) {
+        int triangle_id = contact_faces_d(contact_face_index).face_id_;
+        double min_triangle_id = Kokkos::atomic_min_fetch(&min_triangle_id_for_each_node_d(contact_node_index), triangle_id);
+      }
+    });
 
-      for (auto const & collision_index : collision_indices) {
-
-        int contact_node_index_check = collision_list.hm_data(collision_index,0);
-        int contact_face_index = collision_list.hm_data(collision_index,1);
-        if (contact_node_index_check != contact_node_index) {
-          throw std::logic_error("\nError in ComputeContactForce(), bad node index.\n");
-        }
-
-        double closest_pt_value[3], proj_vector[3];
-        //closest_points.getPointValue(collision_index, closest_pt_value);
+    double penalty_parameter = penalty_parameter_;
+    Kokkos::deep_copy(contact_manager_force_d, 0.0);
+    Kokkos::parallel_for("Contact Force",
+                         num_collisions,
+                         KOKKOS_LAMBDA(const int i_collision) {
+      // contact will be enforced if:
+      //   this interaction matches the minimum node-face distance for the given node, and
+      //   the triangle face id matches the minimum face id for this interaction
+      double distance = interaction_distance_d(i_collision);
+      int contact_node_index = collision_list.m_data(i_collision, 0);
+      int contact_face_index = collision_list.m_data(i_collision, 1);
+      double min_distance = min_distance_for_each_node_d(contact_node_index);
+      int triangle_id = contact_faces_d(contact_face_index).face_id_;
+      double min_triangle_id = min_triangle_id_for_each_node_d(contact_node_index);
+      if (distance == min_distance && triangle_id == min_triangle_id) {
+        double point[3], closest_pt[3], tri_node_1[3], tri_node_2[3], tri_node_3[3];
 #ifdef NIMBLE_NVIDIA_BUILD
-        closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-        closest_pt_value[1] = closest_points.m_hostData(collision_index, 2);
-        closest_pt_value[2] = closest_points.m_hostData(collision_index, 3);
+        point[0] = points.m_data(i_collision, 0);
+        point[1] = points.m_data(i_collision, 1);
+        point[2] = points.m_data(i_collision, 2);
+        tri_node_1[0] = triangles.m_data(i_collision, 0, 0);
+        tri_node_1[1] = triangles.m_data(i_collision, 0, 1);
+        tri_node_1[2] = triangles.m_data(i_collision, 0, 2);
+        tri_node_2[0] = triangles.m_data(i_collision, 1, 0);
+        tri_node_2[1] = triangles.m_data(i_collision, 1, 1);
+        tri_node_2[2] = triangles.m_data(i_collision, 1, 2);
+        tri_node_3[0] = triangles.m_data(i_collision, 2, 0);
+        tri_node_3[1] = triangles.m_data(i_collision, 2, 1);
+        tri_node_3[2] = triangles.m_data(i_collision, 2, 2);
+        closest_pt[0] = closest_points.m_data(i_collision, 0);
+        closest_pt[1] = closest_points.m_data(i_collision, 1);
+        closest_pt[2] = closest_points.m_data(i_collision, 2);
 #else
-        closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
-        closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
-        closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
-#endif
-
-        for (int i=0 ; i<3 ; i++) {
-          proj_vector[i] = closest_pt_value[i] - pt_value[i];
-        }
-
-        double tri_node_1[3], tri_node_2[3], tri_node_3[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-        //triangles.getVertexValue(collision_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(collision_index, 0, 0);
-        tri_node_1[1] = triangles.m_hostData(collision_index, 0, 1);
-        tri_node_1[2] = triangles.m_hostData(collision_index, 0, 2);
-        //triangles.getVertexValue(collision_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(collision_index, 1, 0);
-        tri_node_2[1] = triangles.m_hostData(collision_index, 1, 1);
-        tri_node_2[2] = triangles.m_hostData(collision_index, 1, 2);
-        //triangles.getVertexValue(collision_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(collision_index, 2, 0);
-        tri_node_3[1] = triangles.m_hostData(collision_index, 2, 1);
-        tri_node_3[2] = triangles.m_hostData(collision_index, 2, 2);
-#else
-        //triangles.getVertexValue(collision_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(collision_index).GetNode(0)[0];
-        tri_node_1[1] = triangles.m_hostData(collision_index).GetNode(0)[1];
-        tri_node_1[2] = triangles.m_hostData(collision_index).GetNode(0)[2];
-        //triangles.getVertexValue(collision_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(collision_index).GetNode(1)[0];
-        tri_node_2[1] = triangles.m_hostData(collision_index).GetNode(1)[1];
-        tri_node_2[2] = triangles.m_hostData(collision_index).GetNode(1)[2];
-        //triangles.getVertexValue(collision_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(collision_index).GetNode(2)[0];
-        tri_node_3[1] = triangles.m_hostData(collision_index).GetNode(2)[1];
-        tri_node_3[2] = triangles.m_hostData(collision_index).GetNode(2)[2];
+        point[0] = points.m_data(i_collision).X();
+        point[1] = points.m_data(i_collision).Y();
+        point[2] = points.m_data(i_collision).Z();
+        tri_node_1[0] = triangles.m_data(i_collision).GetNode(0)[0];
+        tri_node_1[1] = triangles.m_data(i_collision).GetNode(0)[1];
+        tri_node_1[2] = triangles.m_data(i_collision).GetNode(0)[2];
+        tri_node_2[0] = triangles.m_data(i_collision).GetNode(1)[0];
+        tri_node_2[1] = triangles.m_data(i_collision).GetNode(1)[1];
+        tri_node_2[2] = triangles.m_data(i_collision).GetNode(1)[2];
+        tri_node_3[0] = triangles.m_data(i_collision).GetNode(2)[0];
+        tri_node_3[1] = triangles.m_data(i_collision).GetNode(2)[1];
+        tri_node_3[2] = triangles.m_data(i_collision).GetNode(2)[2];
+        closest_pt[0] = closest_points.m_data(i_collision).X();
+        closest_pt[1] = closest_points.m_data(i_collision).Y();
+        closest_pt[2] = closest_points.m_data(i_collision).Z();
 #endif
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
@@ -1180,217 +1118,39 @@ namespace nimble {
           tri_edge_2[i] = tri_node_3[i] - tri_node_2[i];
         }
         tri_normal[0] = tri_edge_1[1]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[1];
-        tri_normal[1] = tri_edge_1[0]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[0];
-        tri_normal[2] = tri_edge_1[0]*tri_edge_2[1] - tri_edge_1[1]*tri_edge_2[0];
-
-        double dot = proj_vector[0]*tri_normal[0] + proj_vector[1]*tri_normal[1] + proj_vector[2]*tri_normal[2];
-
-        bool penetration = (dot >= 0.0);
-
-        if (penetration) {
-          gtk::ProjectionType type = static_cast<gtk::ProjectionType>(proj_types_returned_h[collision_index]);
-          switch (type) {
-          case gtk::NODE_PROJECTION:
-            node_and_edge_projections.push_back(collision_index);
-            break;
-          case gtk::EDGE_PROJECTION:
-            node_and_edge_projections.push_back(collision_index);
-            break;
-          case gtk::FACE_PROJECTION:
-            face_projections.push_back(collision_index);
-            break;
-          default:
-            throw std::logic_error("\nError in ComputeContactForce(), unrecognized ProjectionType.\n");
-            break;
-          }
-        }
-      }
-
-      bool has_contact = false;
-      int contact_index(-1);
-
-      if (face_projections.size() == 0 && node_and_edge_projections.size() > 0) {
-        // if there are no face projections, use the edge or node projection with the shortest projection distance
-        has_contact = true;
-        double min_distance(std::numeric_limits<double>::max());
-        double closest_pt_value[3], proj_vector[3], distance;
-        for (auto & collision_index : node_and_edge_projections) {
-          //closest_points.getPointValue(collision_index, closest_pt_value);
-#ifdef NIMBLE_NVIDIA_BUILD
-          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
-#else
-          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
-          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
-          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
-#endif
-          for (int i=0 ; i<3 ; i++) {
-            proj_vector[i] = closest_pt_value[i] - pt_value[i];
-          }
-          distance = std::sqrt(proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2]);
-          if (distance < min_distance) {
-            contact_index = collision_index;
-            min_distance = distance;
-          }
-        }
-      }
-      else if (face_projections.size() == 1) {
-        // if there is exactly one face projection, then it is a contact interaction
-        has_contact = true;
-        contact_index = face_projections[0];
-
-        double closest_pt_value[3], proj_vector[3], distance;
-        //closest_points.getPointValue(face_projections[0], closest_pt_value);
-#ifdef NIMBLE_NVIDIA_BUILD
-        closest_pt_value[0] = closest_points.m_hostData(face_projections[0], 0);
-        closest_pt_value[1] = closest_points.m_hostData(face_projections[0], 1);
-        closest_pt_value[2] = closest_points.m_hostData(face_projections[0], 2);
-#else
-        closest_pt_value[0] = closest_points.m_hostData(face_projections[0]).X();
-        closest_pt_value[1] = closest_points.m_hostData(face_projections[0]).Y();
-        closest_pt_value[2] = closest_points.m_hostData(face_projections[0]).Z();
-#endif
-        for (int i=0 ; i<3 ; i++) {
-          proj_vector[i] = closest_pt_value[i] - pt_value[i];
-        }
-        distance = std::sqrt(proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2]);
-      }
-      else if (face_projections.size() > 1) {
-        // if there are multiple face projections, use the one with the minimum projection distance
-        has_contact = true;
-        double min_distance(std::numeric_limits<double>::max());
-        double closest_pt_value[3], proj_vector[3], distance;
-        for (auto & collision_index : face_projections) {
-          //closest_points.getPointValue(collision_index, closest_pt_value);
-#ifdef NIMBLE_NVIDIA_BUILD
-          closest_pt_value[0] = closest_points.m_hostData(collision_index, 0);
-          closest_pt_value[1] = closest_points.m_hostData(collision_index, 1);
-          closest_pt_value[2] = closest_points.m_hostData(collision_index, 2);
-#else
-          closest_pt_value[0] = closest_points.m_hostData(collision_index).X();
-          closest_pt_value[1] = closest_points.m_hostData(collision_index).Y();
-          closest_pt_value[2] = closest_points.m_hostData(collision_index).Z();
-#endif
-          for (int i=0 ; i<3 ; i++) {
-            proj_vector[i] = closest_pt_value[i] - pt_value[i];
-          }
-          distance = std::sqrt(proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2]);
-          if (distance < min_distance) {
-            contact_index = collision_index;
-            min_distance = distance;
-          }
-        }
-      }
-
-      if (has_contact) {
-        if (contact_index == -1) {
-          throw std::logic_error("\nError in ComputeContactForce(), contact_index == -1.\n");
-        }
-        contact_collisions.push_back(contact_index);
-      }
-    }
-
-    // compute penalty contact force
-    for (unsigned int i=0 ; i<force_.size() ; ++i) {
-      force_[i] = 0.0;
-    }
-    for (auto const & contact_index : contact_collisions) {
-        int contact_node_index = collision_list.hm_data(contact_index,0);
-        int contact_face_index = collision_list.hm_data(contact_index,1);
-        ContactEntity & node = contact_nodes_h_[contact_node_index];
-        ContactEntity & face = contact_faces_h_[contact_face_index];
-
-        double pt_value[3], closest_pt_value[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-        //points.getPointValue(contact_index, pt_value);
-        pt_value[0] = points.m_hostData(contact_index, 0);
-        pt_value[1] = points.m_hostData(contact_index, 1);
-        pt_value[2] = points.m_hostData(contact_index, 2);
-        //closest_points.getPointValue(contact_index, closest_pt_value);
-        closest_pt_value[0] = closest_points.m_hostData(contact_index, 0);
-        closest_pt_value[1] = closest_points.m_hostData(contact_index, 1);
-        closest_pt_value[2] = closest_points.m_hostData(contact_index, 2);
-#else
-        //points.getPointValue(contact_index, pt_value);
-        pt_value[0] = points.m_hostData(contact_index).X();
-        pt_value[1] = points.m_hostData(contact_index).Y();
-        pt_value[2] = points.m_hostData(contact_index).Z();
-        //closest_points.getPointValue(contact_index, closest_pt_value);
-        closest_pt_value[0] = closest_points.m_hostData(contact_index).X();
-        closest_pt_value[1] = closest_points.m_hostData(contact_index).Y();
-        closest_pt_value[2] = closest_points.m_hostData(contact_index).Z();
-#endif
-
-        double tri_node_1[3], tri_node_2[3], tri_node_3[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-        //triangles.getVertexValue(contact_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(contact_index, 0, 0);
-        tri_node_1[1] = triangles.m_hostData(contact_index, 0, 1);
-        tri_node_1[2] = triangles.m_hostData(contact_index, 0, 2);
-        //triangles.getVertexValue(contact_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(contact_index, 1, 0);
-        tri_node_2[1] = triangles.m_hostData(contact_index, 1, 1);
-        tri_node_2[2] = triangles.m_hostData(contact_index, 1, 2);
-        //triangles.getVertexValue(contact_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(contact_index, 2, 0);
-        tri_node_3[1] = triangles.m_hostData(contact_index, 2, 1);
-        tri_node_3[2] = triangles.m_hostData(contact_index, 2, 2);
-#else
-        //triangles.getVertexValue(contact_index, 0, tri_node_1);
-        tri_node_1[0] = triangles.m_hostData(contact_index).GetNode(0)[0];
-        tri_node_1[1] = triangles.m_hostData(contact_index).GetNode(0)[1];
-        tri_node_1[2] = triangles.m_hostData(contact_index).GetNode(0)[2];
-        //triangles.getVertexValue(contact_index, 1, tri_node_2);
-        tri_node_2[0] = triangles.m_hostData(contact_index).GetNode(1)[0];
-        tri_node_2[1] = triangles.m_hostData(contact_index).GetNode(1)[1];
-        tri_node_2[2] = triangles.m_hostData(contact_index).GetNode(1)[2];
-        //triangles.getVertexValue(contact_index, 2, tri_node_3);
-        tri_node_3[0] = triangles.m_hostData(contact_index).GetNode(2)[0];
-        tri_node_3[1] = triangles.m_hostData(contact_index).GetNode(2)[1];
-        tri_node_3[2] = triangles.m_hostData(contact_index).GetNode(2)[2];
-#endif
-
-        double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
-        for (int i=0 ; i<3 ; i++) {
-          tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
-          tri_edge_2[i] = tri_node_3[i] - tri_node_2[i];
-        }
-        tri_normal[0] = tri_edge_1[1]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[1];
-        tri_normal[1] = tri_edge_1[0]*tri_edge_2[2] - tri_edge_1[2]*tri_edge_2[0];
+        tri_normal[1] = tri_edge_1[2]*tri_edge_2[0] - tri_edge_1[0]*tri_edge_2[2];
         tri_normal[2] = tri_edge_1[0]*tri_edge_2[1] - tri_edge_1[1]*tri_edge_2[0];
 
         double gap =
-          (pt_value[0] - closest_pt_value[0])*tri_normal[0] +
-          (pt_value[1] - closest_pt_value[1])*tri_normal[1] +
-          (pt_value[2] - closest_pt_value[2])*tri_normal[2] ;
+          (point[0] - closest_pt[0])*tri_normal[0] +
+          (point[1] - closest_pt[1])*tri_normal[1] +
+          (point[2] - closest_pt[2])*tri_normal[2] ;
 
-        double tri_normal_magnitude = std::sqrt(tri_normal[0]*tri_normal[0] + tri_normal[1]*tri_normal[1] + tri_normal[2]*tri_normal[2]);
+        if (gap < 0.0) {
 
-        double contact_force[3];
-        for (int i=0 ; i<3 ; ++i) {
-          contact_force[i] = -1.0 * penalty_parameter_ * gap * tri_normal[i] / tri_normal_magnitude;
+          double tri_normal_magnitude = std::sqrt(tri_normal[0]*tri_normal[0] + tri_normal[1]*tri_normal[1] + tri_normal[2]*tri_normal[2]);
+
+          double contact_force[3];
+          for (int i=0 ; i<3 ; ++i) {
+            contact_force[i] = penalty_parameter * gap * tri_normal[i] / tri_normal_magnitude;
+          }
+
+          // TODO grab a reference to avoid repeated view derefereces
+          contact_faces_d(contact_face_index).ComputeNodalContactForces(contact_force, closest_pt);
+
+          for (int i=0 ; i<3 ; ++i) {
+            contact_force[i] *= -1.0;
+          }
+          contact_nodes_d(contact_node_index).ComputeNodalContactForces(contact_force, closest_pt);
+
+          contact_nodes_d(contact_node_index).ScatterForceToContactManagerForceVector(contact_manager_force_d);
+          contact_faces_d(contact_face_index).ScatterForceToContactManagerForceVector(contact_manager_force_d);
         }
+      }
+    });
 
-        node.ComputeNodalContactForces(contact_force,
-                                       closest_pt_value);
-
-        for (int i=0 ; i<3 ; ++i) {
-          contact_force[i] *= -1.0;
-        }
-        face.ComputeNodalContactForces(contact_force,
-                                       closest_pt_value);
-
-        node.GetForces(force_.data());
-        face.GetForces(force_.data());
-    }
-
-    nimble_kokkos::HostScalarNodeView force_h("contact force_h", force_d_.extent(0));
-    for (int i=0 ; i<force_.size() ; i++) {
-      force_h(i) = force_[i];
-    }
-    Kokkos::deep_copy(force_d_, force_h);
 #endif
+
   }
 
 }

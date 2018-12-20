@@ -25,7 +25,6 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         command.append(executable_name)
     if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name:
         command.append("mpirun")
-        command.append("--allow-run-as-root")
         command.append("-np")
         if num_ranks:
             command.append(str(num_ranks))
@@ -120,7 +119,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         os.remove(log_file_name)
     logfile = open(log_file_name, 'w')
 
-    logfile.write("\nrun_exodiff_test.py command: " + str(command) + "\n")
+    logfile.write("\nrun_exodiff_test.py command: " + string.join(command) + "\n")
     logfile.flush()
 
     # remove old output files, if any (this will miss some files in parallel runs)

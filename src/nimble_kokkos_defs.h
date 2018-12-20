@@ -54,10 +54,10 @@
 namespace nimble_kokkos {
 
 // Define HOST execution space, memory space, and device
-#ifdef KOKKOS_ENABLE_QTHREADS
+#if defined(KOKKOS_ENABLE_QTHREADS)
   using kokkos_host_execution_space = Kokkos::Qthreads::execution_space;
   using kokkos_host_mirror_memory_space = Kokkos::Qthreads::memory_space;
-#elif KOKKOS_ENABLE_CUDA_UVM
+#elif defined(KOKKOS_ENABLE_CUDA_UVM)
   using kokkos_host_execution_space = Kokkos::Serial::execution_space;
   using kokkos_host_mirror_memory_space = Kokkos::CudaUVMSpace::memory_space;
 #else
@@ -67,15 +67,18 @@ namespace nimble_kokkos {
 using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_mirror_memory_space>;
 
 // Define DEVICE execution space, memory space, and device
-#ifdef KOKKOS_ENABLE_QTHREADS
+#if defined(KOKKOS_ENABLE_QTHREADS)
   using kokkos_device_execution_space = Kokkos::Qthreads::execution_space;
   using kokkos_device_memory_space = Kokkos::Qthreads::memory_space;
-#elif KOKKOS_ENABLE_CUDA_UVM
+#elif defined(KOKKOS_ENABLE_CUDA_UVM)
   using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
   using kokkos_device_memory_space = Kokkos::CudaUVMSpace::memory_space;
-#elif KOKKOS_ENABLE_CUDA
+#elif defined(KOKKOS_ENABLE_CUDA)
   using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
   using kokkos_device_memory_space = Kokkos::Cuda::memory_space;
+#elif defined(KOKKOS_ENABLE_OPENMP)
+  using kokkos_device_execution_space = Kokkos::OpenMP::execution_space;
+  using kokkos_device_memory_space = Kokkos::OpenMP::memory_space;
 #else
   using kokkos_device_execution_space = Kokkos::Serial::execution_space;
   using kokkos_device_memory_space = Kokkos::Serial::memory_space;

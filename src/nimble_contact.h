@@ -75,9 +75,9 @@ namespace nimble {
     b[1] = pt_3_y - pt_1_y;
     b[2] = pt_3_z - pt_1_z;
     cross[0] = b[1]*a[2] - b[2]*a[1];
-    cross[1] = b[0]*a[2] - b[2]*a[0];
+    cross[1] = b[2]*a[0] - b[0]*a[2];
     cross[2] = b[0]*a[1] - b[1]*a[0];
-    area = 0.5 * std::sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
+    area = 0.5 * sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
     return area;
   }
 
@@ -116,32 +116,37 @@ namespace nimble {
     } CONTACT_ENTITY_TYPE;
 
     struct vertex {
+      NIMBLE_INLINE_FUNCTION
       vertex() {
         coords_[0] = coords_[1] = coords_[2] = 0.0;
       }
+      NIMBLE_INLINE_FUNCTION
       double& operator[](int i) {
         return coords_[i];
       }
+      NIMBLE_INLINE_FUNCTION
       double operator[](int i) const {
         return coords_[i];
       }
       double coords_[3];
     };
 
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     ContactEntity() {}
 
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contact_entity_global_id,
                   double const coord[],
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
-                  int node_ids_for_fictitious_node[4] = 0)
+                  int node_ids_for_fictitious_node[4] = 0,
+                  int face_id = -1)
       : entity_type_(entity_type),
         contact_entity_global_id_(contact_entity_global_id),
-        char_len_(characteristic_length) {
+        char_len_(characteristic_length),
+        face_id_(face_id){
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
@@ -174,7 +179,7 @@ namespace nimble {
           SetBoundingBox();
         }
 
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     ~ContactEntity() {}
 
     template <typename ArgT>
@@ -202,7 +207,7 @@ namespace nimble {
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
-    void GetForces(ArgT force) {
+    void ScatterForceToContactManagerForceVector(ArgT force) {
       int n = 3*node_id_for_node_1_;
       force[n]   += force_1_x_;
       force[n+1] += force_1_y_;
@@ -212,7 +217,7 @@ namespace nimble {
         force[n]   += force_2_x_;
         force[n+1] += force_2_y_;
         force[n+2] += force_2_z_;
-        int n = 3*node_id_1_for_fictitious_node_;
+        n = 3*node_id_1_for_fictitious_node_;
         force[n]   += force_3_x_ / 4.0;
         force[n+1] += force_3_y_ / 4.0;
         force[n+2] += force_3_z_ / 4.0;
@@ -246,8 +251,10 @@ namespace nimble {
     double get_z_max() const { return bounding_box_z_max_; }
 
     // Functions for bvh contact search
+    NIMBLE_INLINE_FUNCTION
     int contact_entity_global_id() const { return contact_entity_global_id_; }
 
+    NIMBLE_INLINE_FUNCTION
     vertex centroid() const {
       return centroid_;
     }
@@ -367,12 +374,12 @@ namespace nimble {
       force_1_y_ = N[0] * contact_force[1];
       force_1_z_ = N[0] * contact_force[2];
       if (entity_type_ == TRIANGLE) {
-        force_2_x_ = N[1] * contact_force[3];
-        force_2_y_ = N[1] * contact_force[4];
-        force_2_z_ = N[1] * contact_force[5];
-        force_3_x_ = N[2] * contact_force[6];
-        force_3_y_ = N[2] * contact_force[7];
-        force_3_z_ = N[2] * contact_force[8];
+        force_2_x_ = N[1] * contact_force[0];
+        force_2_y_ = N[1] * contact_force[1];
+        force_2_z_ = N[1] * contact_force[2];
+        force_3_x_ = N[2] * contact_force[0];
+        force_3_y_ = N[2] * contact_force[1];
+        force_3_z_ = N[2] * contact_force[2];
       }
     }
 
@@ -421,6 +428,13 @@ namespace nimble {
     int node_id_2_for_fictitious_node_ = -1;
     int node_id_3_for_fictitious_node_ = -1;
     int node_id_4_for_fictitious_node_ = -1;
+
+    // for faces, store a unique identifier that can be used as a comparision tiebreaker
+    // store the global element id, face ordinal, and triangle ordinal as a single int
+    // first 2 bits are the triangle ordinal (range is 1-4)
+    // next 3 bits are the face ordinal (range is 1-6)
+    // remaining bits are the genesis element id
+    int face_id_;
   };
 
   class ContactManager {
@@ -444,8 +458,10 @@ namespace nimble {
 
     bool ContactEnabled() { return contact_enabled_; }
 
-    std::vector< std::vector<int> > SkinBlocks(GenesisMesh const & mesh,
-                                               std::vector<int> const & block_ids);
+    void SkinBlocks(GenesisMesh const & mesh,
+                    std::vector<int> const & block_ids,
+                    std::vector< std::vector<int> > & skin_faces,
+                    std::vector<int> & face_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
@@ -466,6 +482,7 @@ namespace nimble {
 
     template <typename ArgT>
     void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
+                                    std::vector<int> const & master_skin_face_ids,
                                     std::vector<int> const & slave_node_ids,
                                     std::map<int, double> const & slave_node_char_lens,
                                     ArgT& contact_nodes,

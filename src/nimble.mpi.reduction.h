@@ -131,12 +131,6 @@ struct ReductionInfo
         return global_ids[a] < global_ids[b];
       });
       this->cliques.emplace_back(std::move(index_list), index_list.size() * 3, comm);
-
-      // DEBUGGING
-      int my_mpi_comm_world_rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_comm_world_rank);
-      std::cout << "DEBUGGING rank " << my_mpi_comm_world_rank << " is adding a clique with index_list.size() " << index_list.size() << std::endl;
-      // DEBUGGING
     }
   }
 

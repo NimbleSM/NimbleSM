@@ -9,5 +9,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/two_body_contact.exodiff
                ${CMAKE_CURRENT_BINARY_DIR}/two_body_contact.exodiff COPYONLY)
 
 if(NIMBLE_HAVE_EXTRAS)
-  add_test(two_body_contact_serial python ../run_exodiff_test.py --executable "${NimbleSM_Serial}" --input-deck two_body_contact.in)
+  add_test(two_body_contact_kokkos python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck two_body_contact.in)
 endif()

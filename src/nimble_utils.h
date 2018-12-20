@@ -298,7 +298,7 @@ NIMBLE_INLINE_FUNCTION
 void CrossProduct(const ScalarT* const u, const ScalarT* const v, ScalarT* const result)
 {
   result[0] = u[1]*v[2] - u[2]*v[1];
-  result[1] = u[0]*v[2] - u[2]*v[0];
+  result[1] = u[2]*v[0] - u[0]*v[2];
   result[2] = u[0]*v[1] - u[1]*v[0];
 }
 
