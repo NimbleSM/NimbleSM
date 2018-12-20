@@ -1,6 +1,6 @@
 all: tests
-lib: src/*.hpp
-	echo "Made lib"
+lib: src/*.h
+	cd src && for header in *.h; do mpic++ -c -O3 $$header; done
 tests: lib ./tests/*.cc
 	cd tests &&                    \
 	for f in *.cc;	               \

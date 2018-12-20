@@ -1,5 +1,5 @@
-#include "HashFunction.hpp"
-#include "GridHash.hpp"
+#include "HashFunction.h"
+#include "GridHash.h"
 
 
 int main(){

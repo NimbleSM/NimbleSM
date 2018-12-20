@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "HashFunction.hpp"
+#include "HashFunction.h"
 
 /**
  * @brief Represents a hash function that will hash a coordinate (x, y, z)

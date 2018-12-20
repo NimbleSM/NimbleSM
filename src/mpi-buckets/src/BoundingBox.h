@@ -1,5 +1,5 @@
 #pragma once
-#include "GridHash.hpp"
+#include "GridHash.h"
 #include "defines.h"
 
 struct BoundingBox {
