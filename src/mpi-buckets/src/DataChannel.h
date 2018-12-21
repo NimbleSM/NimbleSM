@@ -1,7 +1,7 @@
 #pragma once 
 #include <mpi.h>
 
-struct ActionGroup {
+struct DataChannel {
     constexpr static auto any_source = MPI_ANY_SOURCE;
 
     MPI_Comm              comm;

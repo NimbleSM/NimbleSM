@@ -39,15 +39,15 @@ class GridHash {
     }
 
     /**
-     * @brief The scale is the inverse of the cell size
-     *
-     */
-    double scale = 1.0;
-    /**
      * @brief Used to compute a complete hash
      *
      */
     HashFunction hashCellBounds;
+    /**
+     * @brief The scale is the inverse of the cell size
+     *
+     */
+    double scale = 1.0;
 
     GridHash()                = default;
     GridHash(GridHash const&) = default;
@@ -86,12 +86,12 @@ class GridHash {
     /**
      * @brief Returns the cell coordinate of the spacial coordinate
      * Equivilant to ifloor(coordinate / getCellSize())
-     * 
+     *
      * @param coordinate coordinate to find the index of
      * @return constexpr int64_t cell coordinate
      */
     constexpr int64_t index(double coordinate) const noexcept {
-        return ifloor(coordinate * scale); 
+        return ifloor(coordinate * scale);
     }
 
     /**
