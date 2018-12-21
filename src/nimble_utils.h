@@ -293,6 +293,59 @@ void Mult_Full33_Sym33_ReturnT(const ScalarT* const full, const ScalarT* const s
   result[K_F_ZZ] = full[K_F_ZX] * sym[K_S_XZ] + full[K_F_ZY] * sym[K_S_YZ] + full[K_F_ZZ] * sym[K_S_ZZ];
 }
 
+//!  Rotate a symetric tensor, result = R^T S R
+template <typename ScalarT>
+NIMBLE_INLINE_FUNCTION
+void Rotate_Sym33_Using_Rtranspose_S_R(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
+{
+  assert(s != result);
+  assert(r != result);
+
+  ScalarT temp_xx = s[K_S_XX]*r[K_F_XX] + s[K_S_XY]*r[K_F_YX] + s[K_S_XZ]*r[K_F_ZX];
+  ScalarT temp_yx = s[K_S_YX]*r[K_F_XX] + s[K_S_YY]*r[K_F_YX] + s[K_S_YZ]*r[K_F_ZX];
+  ScalarT temp_zx = s[K_S_ZX]*r[K_F_XX] + s[K_S_ZY]*r[K_F_YX] + s[K_S_ZZ]*r[K_F_ZX];
+  ScalarT temp_xy = s[K_S_XX]*r[K_F_XY] + s[K_S_XY]*r[K_F_YY] + s[K_S_XZ]*r[K_F_ZY];
+  ScalarT temp_yy = s[K_S_YX]*r[K_F_XY] + s[K_S_YY]*r[K_F_YY] + s[K_S_YZ]*r[K_F_ZY];
+  ScalarT temp_zy = s[K_S_ZX]*r[K_F_XY] + s[K_S_ZY]*r[K_F_YY] + s[K_S_ZZ]*r[K_F_ZY];
+  ScalarT temp_xz = s[K_S_XX]*r[K_F_XZ] + s[K_S_XY]*r[K_F_YZ] + s[K_S_XZ]*r[K_F_ZZ];
+  ScalarT temp_yz = s[K_S_YX]*r[K_F_XZ] + s[K_S_YY]*r[K_F_YZ] + s[K_S_YZ]*r[K_F_ZZ];
+  ScalarT temp_zz = s[K_S_ZX]*r[K_F_XZ] + s[K_S_ZY]*r[K_F_YZ] + s[K_S_ZZ]*r[K_F_ZZ];
+
+  result[K_S_XX] = r[K_F_XX]*temp_xx + r[K_F_YX]*temp_yx + r[K_F_ZX]*temp_zx;
+  result[K_S_YY] = r[K_F_XY]*temp_xy + r[K_F_YY]*temp_yy + r[K_F_ZY]*temp_zy;
+  result[K_S_ZZ] = r[K_F_XZ]*temp_xz + r[K_F_YZ]*temp_yz + r[K_F_ZZ]*temp_zz;
+  result[K_S_XY] = r[K_F_XX]*temp_xy + r[K_F_YX]*temp_yy + r[K_F_ZX]*temp_zy;
+  result[K_S_YZ] = r[K_F_XY]*temp_xz + r[K_F_YY]*temp_yz + r[K_F_ZY]*temp_zz;
+  result[K_S_ZX] = r[K_F_XZ]*temp_xx + r[K_F_YZ]*temp_yx + r[K_F_ZZ]*temp_zx;
+}
+
+
+//!  Unrotate a symetric tensor, result = R S R^T
+template <typename ScalarT>
+NIMBLE_INLINE_FUNCTION
+void Unrotate_Sym33_Using_R_S_Rtranspose(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
+{
+  assert(s != result);
+  assert(r != result);
+
+  ScalarT temp_xx = s[K_S_XX]*r[K_F_XX] + s[K_S_XY]*r[K_F_XY] + s[K_S_XZ]*r[K_F_XZ];
+  ScalarT temp_yx = s[K_S_YX]*r[K_F_XX] + s[K_S_YY]*r[K_F_XY] + s[K_S_YZ]*r[K_F_XZ];
+  ScalarT temp_zx = s[K_S_ZX]*r[K_F_XX] + s[K_S_ZY]*r[K_F_XY] + s[K_S_ZZ]*r[K_F_XZ];
+  ScalarT temp_xy = s[K_S_XX]*r[K_F_YX] + s[K_S_XY]*r[K_F_YY] + s[K_S_XZ]*r[K_F_YZ];
+  ScalarT temp_yy = s[K_S_YX]*r[K_F_YX] + s[K_S_YY]*r[K_F_YY] + s[K_S_YZ]*r[K_F_YZ];
+  ScalarT temp_zy = s[K_S_ZX]*r[K_F_YX] + s[K_S_ZY]*r[K_F_YY] + s[K_S_ZZ]*r[K_F_YZ];
+  ScalarT temp_xz = s[K_S_XX]*r[K_F_ZX] + s[K_S_XY]*r[K_F_ZY] + s[K_S_XZ]*r[K_F_ZZ];
+  ScalarT temp_yz = s[K_S_YX]*r[K_F_ZX] + s[K_S_YY]*r[K_F_ZY] + s[K_S_YZ]*r[K_F_ZZ];
+  ScalarT temp_zz = s[K_S_ZX]*r[K_F_ZX] + s[K_S_ZY]*r[K_F_ZY] + s[K_S_ZZ]*r[K_F_ZZ];
+
+  result[K_S_XX] = r[K_F_XX]*temp_xx + r[K_F_XY]*temp_yx + r[K_F_XZ]*temp_zx;
+  result[K_S_YY] = r[K_F_YX]*temp_xy + r[K_F_YY]*temp_yy + r[K_F_YZ]*temp_zy;
+  result[K_S_ZZ] = r[K_F_ZX]*temp_xz + r[K_F_ZY]*temp_yz + r[K_F_ZZ]*temp_zz;
+  result[K_S_XY] = r[K_F_XX]*temp_xy + r[K_F_XY]*temp_yy + r[K_F_XZ]*temp_zy;
+  result[K_S_YZ] = r[K_F_YX]*temp_xz + r[K_F_YY]*temp_yz + r[K_F_YZ]*temp_zz;
+  result[K_S_ZX] = r[K_F_ZX]*temp_xx + r[K_F_ZY]*temp_yx + r[K_F_ZZ]*temp_zx;
+}
+
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION
 void CrossProduct(const ScalarT* const u, const ScalarT* const v, ScalarT* const result)

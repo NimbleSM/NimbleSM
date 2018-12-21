@@ -305,15 +305,15 @@ namespace nimble {
                       double time_current,
                       const double * const deformation_gradient_n,
                       const double * const deformation_gradient_np1,
-                      const double * const unrotated_stress_n,
-                      double* unrotated_stress_np1,
+                      const double * const stress_n,
+                      double* stress_np1,
                       const double * const state_data_n,
                       double* state_data_np1,
                       DataManager& data_manager,
                       bool is_output_step) {
 
     // Cauchy stress
-    double* sig = unrotated_stress_np1;
+    double* sig = stress_np1;
     double const * def_grad = deformation_gradient_np1;
 
     int dim = rve_mesh_.GetDim();
