@@ -488,6 +488,15 @@ namespace nimble {
                                     ArgT& contact_nodes,
                                     ArgT& contact_faces) const ;
 
+    void BoundingBox(double& x_min,
+                     double& x_max,
+                     double& y_min,
+                     double& y_max,
+                     double& z_min,
+                     double& z_max) const ;
+
+    double BoundingBoxAverageCharacteristicLengthOverAllRanks() const ;
+
     void ApplyDisplacements(const double * const displacement) {
       for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
         int node_id = node_ids_[i_node];
@@ -584,6 +593,10 @@ namespace nimble {
                                        const std::vector<ContactEntity> &nodes,
                                        const std::string &prefix,
                                        int step);
+
+    void WriteContactBoundingBoxToVTKFile(const std::string &prefix,
+                                          int mpi_rank,
+                                          int step);
 
 #ifdef NIMBLE_HAVE_BVH
     void VisualizeCollisionInfo(const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,

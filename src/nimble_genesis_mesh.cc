@@ -492,14 +492,6 @@ namespace nimble {
       if (z > z_max)
         z_max = z;
     }
-
-    // std::cout << "Bounding box:" << std::endl;
-    // std::cout << "  x min: " << x_min << std::endl;
-    // std::cout << "  x max: " << x_max << std::endl;
-    // std::cout << "  y min: " << y_min << std::endl;
-    // std::cout << "  y max: " << y_max << std::endl;
-    // std::cout << "  z min: " << z_min << std::endl;
-    // std::cout << "  z max: " << z_max << "\n" << std::endl;
   }
 
   std::vector<double> GenesisMesh::BoundingBoxCenter() const {

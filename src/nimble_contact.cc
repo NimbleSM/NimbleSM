@@ -471,7 +471,7 @@ namespace nimble {
 
       int num_nodes_in_face = static_cast<int>(face.size());
       if (num_nodes_in_face != 4) {
-        throw std::logic_error("\nError in ContactManager::CreateContactEntities(), invalid number of face nodes.\n");
+        throw std::logic_error("\nError in ContactManager::CreateContactNodesAndFaces(), invalid number of face nodes.\n");
       }
 
       // determine a characteristic length based on max edge length
@@ -617,6 +617,100 @@ namespace nimble {
   }
 
   void
+  ContactManager::BoundingBox(double& x_min,
+                              double& x_max,
+                              double& y_min,
+                              double& y_max,
+                              double& z_min,
+                              double& z_max) const {
+
+    double big = std::numeric_limits<double>::max();
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    nimble_kokkos::DeviceScalarNodeView contact_bounding_box_d("contact_bounding_box_d", 6);
+    nimble_kokkos::HostScalarNodeView contact_bounding_box_h("contact_bounding_box_h", 6);
+    contact_bounding_box_h(0) = big;       // x_min
+    contact_bounding_box_h(1) = -1.0*big;  // x_max
+    contact_bounding_box_h(2) = big;       // y_min
+    contact_bounding_box_h(3) = -1.0*big;  // y_max
+    contact_bounding_box_h(4) = big;       // z_min
+    contact_bounding_box_h(5) = -1.0*big;  // z_max
+    Kokkos:deep_copy(contact_bounding_box_d, contact_bounding_box_h);
+
+    nimble_kokkos::DeviceScalarNodeView coord_d = coord_d_;
+    int contact_vector_size = coord_d.extent(0) / 3;
+
+    Kokkos::parallel_for("Contact Bounding Box",
+                         contact_vector_size,
+                         KOKKOS_LAMBDA(const int i) {
+      double x = coord_d(3*i);
+      double y = coord_d(3*i+1);
+      double z = coord_d(3*i+2);
+      Kokkos::atomic_min_fetch(&contact_bounding_box_d(0), x);
+      Kokkos::atomic_max_fetch(&contact_bounding_box_d(1), x);
+      Kokkos::atomic_min_fetch(&contact_bounding_box_d(2), y);
+      Kokkos::atomic_max_fetch(&contact_bounding_box_d(3), y);
+      Kokkos::atomic_min_fetch(&contact_bounding_box_d(4), z);
+      Kokkos::atomic_max_fetch(&contact_bounding_box_d(5), z);
+    });
+
+    Kokkos::deep_copy(contact_bounding_box_h, contact_bounding_box_d);
+    x_min = contact_bounding_box_h(0);
+    x_max = contact_bounding_box_h(1);
+    y_min = contact_bounding_box_h(2);
+    y_max = contact_bounding_box_h(3);
+    z_min = contact_bounding_box_h(4);
+    z_max = contact_bounding_box_h(5);
+#else
+    x_min = big;
+    x_max = -1.0 * big;
+    y_min = big;
+    y_max = -1.0 * big;
+    z_min = big;
+    z_max = -1.0 * big;
+    for (unsigned int i=0 ; i<coord_.size()/3 ; i++) {
+      double x = coord_[i*3];
+      double y = coord_[i*3+1];
+      double z = coord_[i*3+2];
+      if (x < x_min)
+        x_min = x;
+      if (x > x_max)
+        x_max = x;
+      if (y < y_min)
+        y_min = y;
+      if (y > y_max)
+        y_max = y;
+      if (z < z_min)
+        z_min = z;
+      if (z > z_max)
+        z_max = z;
+    }
+#endif
+  }
+
+  double
+  ContactManager::BoundingBoxAverageCharacteristicLengthOverAllRanks() const {
+    double x_min, x_max, y_min, y_max, z_min, z_max;
+    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
+    double longest_edge = x_max - x_min;
+    if ((y_max - y_min) > longest_edge) {
+      longest_edge = y_max - y_min;
+    }
+    if ((z_max - z_min) > longest_edge) {
+      longest_edge = z_max - z_min;
+    }
+    double ave_characteristic_length = longest_edge;
+    std::cout << "DEBUGGING " << ave_characteristic_length << std::endl;
+#ifdef NIMBLE_HAVE_MPI
+    int num_ranks;
+    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+    MPI_Allreduce(&longest_edge, &ave_characteristic_length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    ave_characteristic_length /= num_ranks;
+#endif
+    return ave_characteristic_length;
+  }
+
+  void
   ContactManager::WriteContactEntitiesToVTKFile(int step) {
     WriteContactEntitiesToVTKFile(contact_faces_, contact_nodes_, "contact_entities_", step);
   }
@@ -681,6 +775,52 @@ namespace nimble {
       // cell type 6 is VTK_TRIANGLE
       vis_file << 6 << std::endl;
     }
+
+    vis_file.close();
+  }
+
+  void
+  ContactManager::WriteContactBoundingBoxToVTKFile(const std::string &prefix,
+                                                   int mpi_rank,
+                                                   int step) {
+
+    double x_min, x_max, y_min, y_max, z_min, z_max;
+    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
+
+    std::stringstream file_name_ss;
+    file_name_ss << prefix << mpi_rank << "_" << step << ".vtk";
+    std::ofstream vis_file;
+    vis_file.open(file_name_ss.str().c_str());
+
+    // file version and identifier
+    vis_file << "# vtk DataFile Version 3.0" << std::endl;
+
+    // header
+    vis_file << "Contact bounding box visualization" << std::endl;
+
+    // file format ASCII | BINARY
+    vis_file << "ASCII" << std::endl;
+
+    // dataset structure STRUCTURED_POINTS | STRUCTURED_GRID | UNSTRUCTURED_GRID | POLYDATA | RECTILINEAR_GRID | FIELD
+    vis_file << "DATASET UNSTRUCTURED_GRID" << std::endl;
+
+    vis_file << "POINTS 8 float" << std::endl;
+
+    vis_file << x_max << " " << y_min << " " << z_max << std::endl;
+    vis_file << x_max << " " << y_max << " " << z_max << std::endl;
+    vis_file << x_min << " " << y_max << " " << z_max << std::endl;
+    vis_file << x_min << " " << y_min << " " << z_max << std::endl;
+    vis_file << x_max << " " << y_min << " " << z_min << std::endl;
+    vis_file << x_max << " " << y_max << " " << z_min << std::endl;
+    vis_file << x_min << " " << y_max << " " << z_min << std::endl;
+    vis_file << x_min << " " << y_min << " " << z_min << std::endl;
+
+    vis_file << "CELLS " << 1 << " " << 9 << std::endl;
+    vis_file << "8 0 1 2 3 4 5 6 7" << std::endl;
+
+    vis_file << "CELL_TYPES " << 1 << std::endl;
+    // cell type 12 is VTK_HEXAHEDRON
+    vis_file << 12 << std::endl;
 
     vis_file.close();
   }

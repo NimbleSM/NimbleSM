@@ -632,6 +632,13 @@ void main_routine(int argc, char *argv[]) {
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement_d);
+
+      double x_min, x_max, y_min, y_max, z_min, z_max;
+      contact_manager.BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
+      // if (is_output_step) {
+      //   contact_manager.WriteContactBoundingBoxToVTKFile("contact_bounding_box_", my_mpi_rank, step);
+      // }
+
       contact_manager.ComputeContactForce(step+1, false);
       contact_manager.GetForces(contact_force_d);
     }
