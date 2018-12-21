@@ -8,6 +8,30 @@
 #include "BoundingBox.h"
 #include <cstddef>
 #include <unordered_map>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+auto operator<<(std::ostream& out, GridIndex index) -> std::ostream& {
+    return out << index.xIndex << " " << index.yIndex << " " << index.zIndex;
+}
+template<class T>
+auto operator<<(std::ostream& out, NumericRange<T> range) -> std::ostream& {
+    return out << "[" << range.min << ", " << range.max << "]"; 
+}
+auto operator<<(std::ostream& out, BoundingBox const& box) -> std::ostream& {
+    return out << "(" << box.xBounds << " " << box.yBounds << " " << box.zBounds << ")"; 
+}
+void printIndexBoxMap(std::unordered_map<GridIndex, BoundingBox> const & boxmap) {
+    std::stringstream stream; 
+    for(auto & grid_box_pair : boxmap) {
+        auto index = grid_box_pair.first;
+        auto box = grid_box_pair.second;
+
+        stream << "Cell " << index << ": " << box << "\n"; 
+    }
+    std::cerr << stream.str();
+}
 
 
 
@@ -42,5 +66,7 @@ void processCollision(double* ptr, size_t count, double const cell_size) {
         }
         current_box->include(x, y, z); 
     }
+
+    printIndexBoxMap(boxes); 
     //We have a complete map containing all bounding boxes
 }
