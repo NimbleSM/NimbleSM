@@ -128,14 +128,14 @@ namespace nimble {
                                   double time_current,
                                   const double * const deformation_gradient_n,
                                   const double * const deformation_gradient_np1,
-                                  const double * const unrotated_stress_n,
-                                  double* unrotated_stress_np1,
+                                  const double * const stress_n,
+                                  double* stress_np1,
                                   const double * const state_data_n,
                                   double* state_data_np1,
                                   DataManager& data_manager,
                                   bool is_output_step) {
 
-    double* stress = unrotated_stress_np1;
+    double* stress = stress_np1;
     const double * def_grad = deformation_gradient_np1;
     double strain[6];
     double trace_strain;
@@ -160,6 +160,7 @@ namespace nimble {
       stress[K_S_YZ] = two_mu * strain[K_S_YZ];
       stress[K_S_ZX] = two_mu * strain[K_S_ZX];
     }
+    // TODO rotate stress?
   }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -167,11 +168,11 @@ namespace nimble {
                                   double time_current,
                                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                                   nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
-                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) {
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
 
     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = unrotated_stress_np1;
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = stress_np1;
     double strain[6];
     double trace_strain;
 
@@ -193,6 +194,8 @@ namespace nimble {
     stress[K_S_XY_] = two_mu * strain[K_S_XY_];
     stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
     stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
+
+    // TODO rotate stress?
   }
 #endif
 
@@ -258,8 +261,8 @@ namespace nimble {
                                      double time_current,
                                      const double * const deformation_gradient_n,
                                      const double * const deformation_gradient_np1,
-                                     const double * const unrotated_stress_n,
-                                     double* unrotated_stress_np1,
+                                     const double * const stress_n,
+                                     double* stress_np1,
                                      const double * const state_data_n,
                                      double* state_data_np1,
                                      DataManager& data_manager,
@@ -271,7 +274,7 @@ namespace nimble {
     // left stretch and rotation
     double v[6], r[9];
     // Cauchy stress
-    double* sig = unrotated_stress_np1;
+    double* sig = stress_np1;
 
     for (int pt = 0 ; pt < num_pts ; pt++){
 
@@ -336,23 +339,6 @@ namespace nimble {
       sig[K_S_YZ] =            shear_modulus_*byz/xj;
       sig[K_S_ZX] =            shear_modulus_*bzx/xj;
 
-      sxx = sig[K_S_XX]*r[K_F_XX] + sig[K_S_XY]*r[K_F_YX] + sig[K_S_XZ]*r[K_F_ZX];
-      syx = sig[K_S_YX]*r[K_F_XX] + sig[K_S_YY]*r[K_F_YX] + sig[K_S_YZ]*r[K_F_ZX];
-      szx = sig[K_S_ZX]*r[K_F_XX] + sig[K_S_ZY]*r[K_F_YX] + sig[K_S_ZZ]*r[K_F_ZX];
-      sxy = sig[K_S_XX]*r[K_F_XY] + sig[K_S_XY]*r[K_F_YY] + sig[K_S_XZ]*r[K_F_ZY];
-      syy = sig[K_S_YX]*r[K_F_XY] + sig[K_S_YY]*r[K_F_YY] + sig[K_S_YZ]*r[K_F_ZY];
-      szy = sig[K_S_ZX]*r[K_F_XY] + sig[K_S_ZY]*r[K_F_YY] + sig[K_S_ZZ]*r[K_F_ZY];
-      sxz = sig[K_S_XX]*r[K_F_XZ] + sig[K_S_XY]*r[K_F_YZ] + sig[K_S_XZ]*r[K_F_ZZ];
-      syz = sig[K_S_YX]*r[K_F_XZ] + sig[K_S_YY]*r[K_F_YZ] + sig[K_S_YZ]*r[K_F_ZZ];
-      szz = sig[K_S_ZX]*r[K_F_XZ] + sig[K_S_ZY]*r[K_F_YZ] + sig[K_S_ZZ]*r[K_F_ZZ];
-
-      sig[K_S_XX] = r[K_F_XX]*sxx + r[K_F_YX]*syx + r[K_F_ZX]*szx;
-      sig[K_S_YY] = r[K_F_XY]*sxy + r[K_F_YY]*syy + r[K_F_ZY]*szy;
-      sig[K_S_ZZ] = r[K_F_XZ]*sxz + r[K_F_YZ]*syz + r[K_F_ZZ]*szz;
-      sig[K_S_XY] = r[K_F_XX]*sxy + r[K_F_YX]*syy + r[K_F_ZX]*szy;
-      sig[K_S_YZ] = r[K_F_XY]*sxz + r[K_F_YY]*syz + r[K_F_ZY]*szz;
-      sig[K_S_ZX] = r[K_F_XZ]*sxx + r[K_F_YZ]*syx + r[K_F_ZZ]*szx;
-
       sig += 6;
     }
   }
@@ -362,8 +348,8 @@ namespace nimble {
                                      double time_current,
                                      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                                      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_n,
-                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView unrotated_stress_np1) {
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
 
     double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
     double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
@@ -372,11 +358,6 @@ namespace nimble {
     double def_grad[9], v[6], r[9];
     for (int i=0 ; i<9 ; i++) {
       def_grad[i] = deformation_gradient_np1[i];
-    }
-    // Cauchy stress
-    double sig[6];
-    for (int i=0 ; i<6 ; i++) {
-      sig[i] = unrotated_stress_np1[i];
     }
 
     Polar_Decomp(def_grad, v, r);
@@ -433,29 +414,12 @@ namespace nimble {
     byy = byy - trace/3.0;
     bzz = bzz - trace/3.0;
 
-    sig[K_S_XX_] = pressure + shear_modulus_*bxx/xj;
-    sig[K_S_YY_] = pressure + shear_modulus_*byy/xj;
-    sig[K_S_ZZ_] = pressure + shear_modulus_*bzz/xj;
-    sig[K_S_XY_] =            shear_modulus_*bxy/xj;
-    sig[K_S_YZ_] =            shear_modulus_*byz/xj;
-    sig[K_S_ZX_] =            shear_modulus_*bzx/xj;
-
-    sxx = sig[K_S_XX_]*r[K_F_XX_] + sig[K_S_XY_]*r[K_F_YX_] + sig[K_S_XZ_]*r[K_F_ZX_];
-    syx = sig[K_S_YX_]*r[K_F_XX_] + sig[K_S_YY_]*r[K_F_YX_] + sig[K_S_YZ_]*r[K_F_ZX_];
-    szx = sig[K_S_ZX_]*r[K_F_XX_] + sig[K_S_ZY_]*r[K_F_YX_] + sig[K_S_ZZ_]*r[K_F_ZX_];
-    sxy = sig[K_S_XX_]*r[K_F_XY_] + sig[K_S_XY_]*r[K_F_YY_] + sig[K_S_XZ_]*r[K_F_ZY_];
-    syy = sig[K_S_YX_]*r[K_F_XY_] + sig[K_S_YY_]*r[K_F_YY_] + sig[K_S_YZ_]*r[K_F_ZY_];
-    szy = sig[K_S_ZX_]*r[K_F_XY_] + sig[K_S_ZY_]*r[K_F_YY_] + sig[K_S_ZZ_]*r[K_F_ZY_];
-    sxz = sig[K_S_XX_]*r[K_F_XZ_] + sig[K_S_XY_]*r[K_F_YZ_] + sig[K_S_XZ_]*r[K_F_ZZ_];
-    syz = sig[K_S_YX_]*r[K_F_XZ_] + sig[K_S_YY_]*r[K_F_YZ_] + sig[K_S_YZ_]*r[K_F_ZZ_];
-    szz = sig[K_S_ZX_]*r[K_F_XZ_] + sig[K_S_ZY_]*r[K_F_YZ_] + sig[K_S_ZZ_]*r[K_F_ZZ_];
-
-    unrotated_stress_np1(K_S_XX_) = r[K_F_XX_]*sxx + r[K_F_YX_]*syx + r[K_F_ZX_]*szx;
-    unrotated_stress_np1(K_S_YY_) = r[K_F_XY_]*sxy + r[K_F_YY_]*syy + r[K_F_ZY_]*szy;
-    unrotated_stress_np1(K_S_ZZ_) = r[K_F_XZ_]*sxz + r[K_F_YZ_]*syz + r[K_F_ZZ_]*szz;
-    unrotated_stress_np1(K_S_XY_) = r[K_F_XX_]*sxy + r[K_F_YX_]*syy + r[K_F_ZX_]*szy;
-    unrotated_stress_np1(K_S_YZ_) = r[K_F_XY_]*sxz + r[K_F_YY_]*syz + r[K_F_ZY_]*szz;
-    unrotated_stress_np1(K_S_ZX_) = r[K_F_XZ_]*sxx + r[K_F_YZ_]*syx + r[K_F_ZZ_]*szx;
+    stress_np1(K_S_XX_) = pressure + shear_modulus_*bxx/xj;
+    stress_np1(K_S_YY_) = pressure + shear_modulus_*byy/xj;
+    stress_np1(K_S_ZZ_) = pressure + shear_modulus_*bzz/xj;
+    stress_np1(K_S_XY_) =            shear_modulus_*bxy/xj;
+    stress_np1(K_S_YZ_) =            shear_modulus_*byz/xj;
+    stress_np1(K_S_ZX_) =            shear_modulus_*bzx/xj;
   }
 #endif
 

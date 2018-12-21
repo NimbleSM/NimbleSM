@@ -113,8 +113,8 @@ namespace nimble {
                    double time_current,
                    const double * const deformation_gradient_n,
                    const double * const deformation_gradient_np1,
-                   const double * const unrotated_stress_n,
-                   double* unrotated_stress_np1,
+                   const double * const stress_n,
+                   double* stress_np1,
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
@@ -126,8 +126,8 @@ namespace nimble {
                    double time_current,
                    nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
                    nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-                   nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_n,
-                   nimble_kokkos::DeviceSymTensorSingleEntryView unrotated_stress_np1) {}
+                   nimble_kokkos::DeviceSymTensorSingleEntryView stress_n,
+                   nimble_kokkos::DeviceSymTensorSingleEntryView stress_np1) {}
 #endif
 
     NIMBLE_FUNCTION
