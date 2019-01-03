@@ -371,6 +371,32 @@ namespace nimble {
     }
   }
 
+  void
+  GenesisMesh::Initialize(std::string const & file_name,
+                          std::vector<int> const & node_global_id,
+                          std::vector<double> const & node_x,
+                          std::vector<double> const & node_y,
+                          std::vector<double> const & node_z,
+                          std::vector<int> const & elem_global_id,
+                          std::vector<int> const & block_ids,
+                          std::map<int, std::string> const & block_names,
+                          std::map<int, std::vector<int> > const & block_elem_global_ids,
+                          std::map<int, int> const & block_num_nodes_per_elem,
+                          std::map<int, std::vector<int> > const & block_elem_connectivity) {
+    file_name_ = file_name;
+    dim_ = 3;
+    node_global_id_ = node_global_id;
+    node_x_ = node_x;
+    node_y_ = node_y;
+    node_z_ = node_z;
+    elem_global_id_ = elem_global_id;
+    block_ids_ = block_ids;
+    block_names_ = block_names;
+    block_elem_global_ids_ = block_elem_global_ids;
+    block_num_nodes_per_elem_ = block_num_nodes_per_elem;
+    block_elem_connectivity_ = block_elem_connectivity;
+  }
+
   int GenesisMesh::GetNumElementsInBlock(int block_id) const {
     unsigned int conn_size = block_elem_connectivity_.at(block_id).size();
     int num_nodes_per_elem = block_num_nodes_per_elem_.at(block_id);
@@ -410,6 +436,12 @@ namespace nimble {
     }
     else if (dim == 3) {
       switch (num_node_per_elem) {
+      case 1:
+        elem_type = "SPHERE";
+        break;
+      case 3:
+        elem_type = "TRIANGLE";
+        break;
       case 4:
         elem_type = "TETRA";
         break;

@@ -49,6 +49,7 @@
 #include <float.h>
 #include <cmath>
 #include "nimble_genesis_mesh.h"
+#include "nimble_exodus_output.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble.mpi.utils.h"
 
@@ -587,6 +588,10 @@ namespace nimble {
 
     void ComputeContactForce(int step, bool debug_output);
 
+    void InitializeContactVisualization();
+
+    void ContactVisualizationWriteStep(double time_current);
+
     void WriteContactEntitiesToVTKFile(int step);
 
     void WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
@@ -615,6 +620,9 @@ namespace nimble {
     std::vector<double> force_;
     std::vector<ContactEntity> contact_faces_;
     std::vector<ContactEntity> contact_nodes_;
+
+    nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
+    nimble::ExodusOutput exodus_output_for_contact_visualization_;
 
 #ifdef NIMBLE_HAVE_KOKKOS
     nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);

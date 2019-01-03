@@ -331,6 +331,7 @@ void main_routine(int argc, char *argv[]) {
 
   nimble::ContactManager contact_manager;
   bool contact_enabled = parser.HasContact();
+  bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
@@ -348,6 +349,9 @@ void main_routine(int argc, char *argv[]) {
                                           mpi_container,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
+    if (contact_visualization) {
+      contact_manager.InitializeContactVisualization();
+    }
   }
 
   // MPI vector reduction on lumped mass
@@ -384,6 +388,9 @@ void main_routine(int argc, char *argv[]) {
                           elem_data_for_output,
                           derived_elem_data_labels,
                           derived_elem_data);
+  if (contact_visualization) {
+    contact_manager.ContactVisualizationWriteStep(time_current);
+  }
 
   for (int step=0 ; step<num_load_steps ; step++) {
 
@@ -675,6 +682,9 @@ void main_routine(int argc, char *argv[]) {
                               elem_data_for_output,
                               derived_elem_data_labels,
                               derived_elem_data);
+      if (contact_visualization) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
+      }
     }
   }
 

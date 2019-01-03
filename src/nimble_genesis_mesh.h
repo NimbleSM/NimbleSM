@@ -160,6 +160,19 @@ namespace nimble {
 
     void ReadTextFile(std::string file_name);
 
+    //! Create a genesis mesh object using existing data (intended for contact visualization).
+    void Initialize(std::string const & file_name,
+                    std::vector<int> const & node_global_id,
+                    std::vector<double> const & node_x,
+                    std::vector<double> const & node_y,
+                    std::vector<double> const & node_z,
+                    std::vector<int> const & elem_global_id,
+                    std::vector<int> const & block_ids,
+                    std::map<int, std::string> const & block_names,
+                    std::map<int, std::vector<int> > const & block_elem_global_ids,
+                    std::map<int, int> const & block_num_nodes_per_elem,
+                    std::map<int, std::vector<int> > const & block_elem_connectivity);
+
   protected:
 
     void ReportExodusError(int error_code, const char *method_name, const char *exodus_method_name) const;

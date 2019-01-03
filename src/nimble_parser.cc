@@ -179,7 +179,7 @@ namespace nimble {
   }
 
   Parser::Parser() : file_name_("none"), genesis_file_name_("none"),  use_two_level_mesh_decomposition_(false), write_timing_data_file_(false), rve_genesis_file_name_("none"), exodus_file_name_("none"),
-                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), microscale_boundary_condition_strategy_("periodic bc") {
+                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), contact_visualization_(false), microscale_boundary_condition_strategy_("periodic bc") {
     material_strings_["rve"] = "none";
   }
 
@@ -285,6 +285,18 @@ namespace nimble {
         }
         else if (key == "contact") {
           contact_string_ = value;
+        }
+        else if (key == "contact visualization") {
+          if (value == "on") {
+            contact_visualization_ = true;
+          }
+          else if (value == "off") {
+            contact_visualization_ = false;
+          }
+          else {
+            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"contact visualization\": " + value + ", allowable values are \"on\" and \"off\".\n";
+            throw std::logic_error(msg);
+          }
         }
         else if (key == "microscale output element ids") {
           std::stringstream ss(value);
