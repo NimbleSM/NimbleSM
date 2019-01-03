@@ -350,7 +350,9 @@ void main_routine(int argc, char *argv[]) {
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
-      contact_manager.InitializeContactVisualization();
+      tag += ".contact_entities";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
 
@@ -642,9 +644,6 @@ void main_routine(int argc, char *argv[]) {
 
       double x_min, x_max, y_min, y_max, z_min, z_max;
       contact_manager.BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-      // if (is_output_step) {
-      //   contact_manager.WriteContactBoundingBoxToVTKFile("contact_bounding_box_", my_mpi_rank, step);
-      // }
 
       contact_manager.ComputeContactForce(step+1, false);
       contact_manager.GetForces(contact_force_d);

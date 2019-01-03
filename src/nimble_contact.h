@@ -588,20 +588,9 @@ namespace nimble {
 
     void ComputeContactForce(int step, bool debug_output);
 
-    void InitializeContactVisualization();
+    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
     void ContactVisualizationWriteStep(double time_current);
-
-    void WriteContactEntitiesToVTKFile(int step);
-
-    void WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
-                                       const std::vector<ContactEntity> &nodes,
-                                       const std::string &prefix,
-                                       int step);
-
-    void WriteContactBoundingBoxToVTKFile(const std::string &prefix,
-                                          int mpi_rank,
-                                          int step);
 
 #ifdef NIMBLE_HAVE_BVH
     void VisualizeCollisionInfo(const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,
@@ -621,6 +610,7 @@ namespace nimble {
     std::vector<ContactEntity> contact_faces_;
     std::vector<ContactEntity> contact_nodes_;
 
+    double contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
     nimble::ExodusOutput exodus_output_for_contact_visualization_;
 

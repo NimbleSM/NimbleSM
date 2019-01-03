@@ -242,6 +242,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
   nimble::ContactManager contact_manager;
   bool contact_enabled = parser.HasContact();
+  bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
@@ -258,8 +259,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     contact_manager.CreateContactEntities(mesh,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
-    if (visualize_output) {
-      contact_manager.WriteContactEntitiesToVTKFile(0);
+    if (contact_visualization) {
+      std::string tag = "serial.contact_entities";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
 
@@ -364,6 +367,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                           elem_data_for_output,
                           derived_elem_data_labels,
                           derived_elem_data);
+  if (contact_visualization) {
+    contact_manager.ContactVisualizationWriteStep(time_current);
+  }
 
   double user_specified_time_step = final_time/num_load_steps;
 
@@ -443,9 +449,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       contact_manager.ApplyDisplacements(displacement);
       contact_manager.ComputeContactForce(step+1, visualize_output && is_output_step);
       contact_manager.GetForces(contact_force);
-      if (visualize_output && is_output_step) {
-        contact_manager.WriteContactEntitiesToVTKFile(step+1);
-      }
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
@@ -488,6 +491,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                               elem_data_for_output,
                               derived_elem_data_labels,
                               derived_elem_data);
+      if (contact_visualization) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
+      }
     }
 
     macroscale_data.SwapStates();

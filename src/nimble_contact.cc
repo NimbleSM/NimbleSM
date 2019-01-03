@@ -452,8 +452,6 @@ namespace nimble {
       std::cout << "  number of triangular contact facets (master blocks): " << num_contact_faces << std::endl;
       std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
     }
-
-    //WriteContactEntitiesToVTKFile(mpi_rank);
   }
 
   template <typename ArgT>
@@ -713,7 +711,7 @@ namespace nimble {
   }
 
   void
-  ContactManager::InitializeContactVisualization(){
+  ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
 #ifndef NIMBLE_HAVE_KOKKOS
     throw std::logic_error("\nError in ContactManager::InitializeContactVisualization(), contact visualization currently available only for NimbleSM_Kokkos,\n");
 #else
@@ -781,6 +779,51 @@ namespace nimble {
       elem_index += 1;
     }
 
+    // third block is the bounding box for this mpi rank
+    block_id = 3;
+    block_ids.push_back(block_id);
+    block_names[block_id] = "contact_mpi_rank_bounding_box";
+    block_elem_global_ids[block_id] = std::vector<int>();
+    block_num_nodes_per_elem[block_id] = 8;
+    block_elem_connectivity[block_id] = std::vector<int>();
+
+    double x_min, x_max, y_min, y_max, z_min, z_max;
+    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_max);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_max);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_min);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_min);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_max);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_max);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_min);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    node_global_id.push_back(node_index + 1);
+    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_min);
+    block_elem_connectivity[block_id].push_back(node_index++);
+    elem_global_id.push_back(elem_index + 1);
+    elem_index += 1;
+
+    // store the model coordinate bounding box
+    contact_visualization_model_coord_bounding_box_[0] = x_min;
+    contact_visualization_model_coord_bounding_box_[1] = x_max;
+    contact_visualization_model_coord_bounding_box_[2] = y_min;
+    contact_visualization_model_coord_bounding_box_[3] = y_max;
+    contact_visualization_model_coord_bounding_box_[4] = z_min;
+    contact_visualization_model_coord_bounding_box_[5] = z_max;
+
     genesis_mesh_for_contact_visualization_.Initialize("contact_visualization",
                                                        node_global_id,
                                                        node_x,
@@ -793,7 +836,7 @@ namespace nimble {
                                                        block_num_nodes_per_elem,
                                                        block_elem_connectivity);
 
-    exodus_output_for_contact_visualization_.Initialize("contact_visualization.e",
+    exodus_output_for_contact_visualization_.Initialize(contact_visualization_exodus_file_name,
                                                         genesis_mesh_for_contact_visualization_);
 
     std::vector<std::string> global_data_labels;
@@ -869,6 +912,54 @@ namespace nimble {
       node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
       node_index += 1;
     }
+    double x_min_model_coord = contact_visualization_model_coord_bounding_box_[0];
+    double x_max_model_coord = contact_visualization_model_coord_bounding_box_[1];
+    double y_min_model_coord = contact_visualization_model_coord_bounding_box_[2];
+    double y_max_model_coord = contact_visualization_model_coord_bounding_box_[3];
+    double z_min_model_coord = contact_visualization_model_coord_bounding_box_[4];
+    double z_max_model_coord = contact_visualization_model_coord_bounding_box_[5];
+    double x_min, x_max, y_min, y_max, z_min, z_max;
+    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
+    // node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_max);
+    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
+    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
+    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_max);
+    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
+    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
+    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_min);
+    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
+    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
+    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_min);
+    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
+    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
+    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_max);
+    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
+    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
+    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_max);
+    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
+    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
+    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_min);
+    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
+    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
+    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
+    node_index += 1;
+    // node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_min);
+    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
+    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
+    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
+    node_index += 1;
 
     exodus_output_for_contact_visualization_.WriteStep(time_current,
                                                        global_data,
@@ -878,121 +969,6 @@ namespace nimble {
                                                        derived_elem_data_labels,
                                                        derived_elem_data);
 #endif
-  }
-
-  void
-  ContactManager::WriteContactEntitiesToVTKFile(int step) {
-    WriteContactEntitiesToVTKFile(contact_faces_, contact_nodes_, "contact_entities_", step);
-  }
-
-  void
-  ContactManager::WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
-                                                const std::vector<ContactEntity> &nodes,
-                                                const std::string &prefix,
-                                                int step) {
-
-    std::stringstream file_name_ss;
-    file_name_ss << prefix << step << ".vtk";
-    std::ofstream vis_file;
-    vis_file.open(file_name_ss.str().c_str());
-
-    // file version and identifier
-    vis_file << "# vtk DataFile Version 3.0" << std::endl;
-
-    // header
-    vis_file << "Contact entity visualization" << std::endl;
-
-    // file format ASCII | BINARY
-    vis_file << "ASCII" << std::endl;
-
-    // dataset structure STRUCTURED_POINTS | STRUCTURED_GRID | UNSTRUCTURED_GRID | POLYDATA | RECTILINEAR_GRID | FIELD
-    vis_file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-
-    std::vector<int> vtk_vertices(nodes.size());
-    std::vector< std::vector<int> > vtk_triangles(faces.size());
-
-    vis_file << "POINTS " << nodes.size() + 3*faces.size() << " float" << std::endl;
-
-    for (int i=0 ; i<nodes.size() ; i++) {
-      vis_file << nodes[i].coord_1_x_ << " " << nodes[i].coord_1_y_ << " " << nodes[i].coord_1_z_ << std::endl;
-      vtk_vertices[i] = i;
-    }
-    int offset = static_cast<int>(vtk_vertices.size());
-    for (int i=0 ; i<faces.size() ; i++) {
-      ContactEntity const & face = faces[i];
-      vis_file << face.coord_1_x_ << " " << face.coord_1_y_ << " " << face.coord_1_z_ << std::endl;
-      vis_file << face.coord_2_x_ << " " << face.coord_2_y_ << " " << face.coord_2_z_ << std::endl;
-      vis_file << face.coord_3_x_ << " " << face.coord_3_y_ << " " << face.coord_3_z_ << std::endl;
-      vtk_triangles[i].push_back(offset + 3*i);
-      vtk_triangles[i].push_back(offset + 3*i + 1);
-      vtk_triangles[i].push_back(offset + 3*i + 2);
-    }
-
-    vis_file << "CELLS " << vtk_vertices.size() + vtk_triangles.size() << " " << 2*vtk_vertices.size() + 4*vtk_triangles.size() << std::endl;
-    for(const auto & vtk_vertex : vtk_vertices) {
-      vis_file << "1 " << vtk_vertex << std::endl;
-    }
-    for(const auto & vtk_triangle : vtk_triangles) {
-      vis_file << "3 " << vtk_triangle[0] << " " << vtk_triangle[1] << " " << vtk_triangle[2] << std::endl;
-    }
-
-    vis_file << "CELL_TYPES " << nodes.size() + faces.size() << std::endl;
-    for(unsigned int i=0 ; i<vtk_vertices.size() ; ++i) {
-      // cell type 1 is VTK_VERTEX
-      vis_file << 1 << std::endl;
-    }
-    for(unsigned int i=0 ; i<vtk_triangles.size() ; ++i) {
-      // cell type 6 is VTK_TRIANGLE
-      vis_file << 6 << std::endl;
-    }
-
-    vis_file.close();
-  }
-
-  void
-  ContactManager::WriteContactBoundingBoxToVTKFile(const std::string &prefix,
-                                                   int mpi_rank,
-                                                   int step) {
-
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-
-    std::stringstream file_name_ss;
-    file_name_ss << prefix << mpi_rank << "_" << step << ".vtk";
-    std::ofstream vis_file;
-    vis_file.open(file_name_ss.str().c_str());
-
-    // file version and identifier
-    vis_file << "# vtk DataFile Version 3.0" << std::endl;
-
-    // header
-    vis_file << "Contact bounding box visualization" << std::endl;
-
-    // file format ASCII | BINARY
-    vis_file << "ASCII" << std::endl;
-
-    // dataset structure STRUCTURED_POINTS | STRUCTURED_GRID | UNSTRUCTURED_GRID | POLYDATA | RECTILINEAR_GRID | FIELD
-    vis_file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-
-    vis_file << "POINTS 8 float" << std::endl;
-
-    vis_file << x_max << " " << y_min << " " << z_max << std::endl;
-    vis_file << x_max << " " << y_max << " " << z_max << std::endl;
-    vis_file << x_min << " " << y_max << " " << z_max << std::endl;
-    vis_file << x_min << " " << y_min << " " << z_max << std::endl;
-    vis_file << x_max << " " << y_min << " " << z_min << std::endl;
-    vis_file << x_max << " " << y_max << " " << z_min << std::endl;
-    vis_file << x_min << " " << y_max << " " << z_min << std::endl;
-    vis_file << x_min << " " << y_min << " " << z_min << std::endl;
-
-    vis_file << "CELLS " << 1 << " " << 9 << std::endl;
-    vis_file << "8 0 1 2 3 4 5 6 7" << std::endl;
-
-    vis_file << "CELL_TYPES " << 1 << std::endl;
-    // cell type 12 is VTK_HEXAHEDRON
-    vis_file << 12 << std::endl;
-
-    vis_file.close();
   }
 
 #ifdef NIMBLE_HAVE_BVH
@@ -1026,9 +1002,6 @@ namespace nimble {
         noncolliding_nodes.push_back(node);
       }
     }
-
-    WriteContactEntitiesToVTKFile(colliding_faces, colliding_nodes, "contact_entities_colliding_", step);
-    WriteContactEntitiesToVTKFile(noncolliding_faces, noncolliding_nodes, "contact_entities_noncolliding_", step);
 
 #ifdef BVH_USE_VTK
     // Visualize bvh trees

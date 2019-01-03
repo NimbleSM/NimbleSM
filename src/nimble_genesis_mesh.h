@@ -53,7 +53,6 @@
 
 #include <string>
 
-
 namespace nimble {
 
   class GenesisMesh {
@@ -77,6 +76,8 @@ namespace nimble {
       }
       return true;
     }
+
+    std::string FileName() const { return file_name_; }
 
     unsigned int GetNumNodes() const { return node_x_.size(); }
 
