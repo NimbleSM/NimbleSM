@@ -161,6 +161,7 @@ void main_routine(int argc, char *argv[]) {
   int contact_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
   nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(contact_force_field_id);
   nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(contact_force_field_id);
+  Kokkos::deep_copy(contact_force_h, (double)(0.0));
 
   int deformation_gradient_field_id(-1);
   int stress_field_id(-1);
@@ -435,7 +436,9 @@ void main_routine(int argc, char *argv[]) {
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
-    Kokkos::deep_copy(contact_force_d, (double)(0.0));
+    if (contact_enabled) {
+      Kokkos::deep_copy(contact_force_d, (double)(0.0));
+    }
 
     // Compute element-level kinematics
     for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
@@ -647,8 +650,8 @@ void main_routine(int argc, char *argv[]) {
 
       contact_manager.ComputeContactForce(step+1, false);
       contact_manager.GetForces(contact_force_d);
+      Kokkos::deep_copy(contact_force_h, contact_force_d);
     }
-    Kokkos::deep_copy(contact_force_h, contact_force_d);
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_nodes ; ++i) {
