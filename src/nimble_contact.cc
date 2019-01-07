@@ -1315,16 +1315,21 @@ namespace nimble {
     Kokkos::parallel_for("Minimum Projection Distance",
                          num_collisions,
                          KOKKOS_LAMBDA(const int i_collision) {
-      double proj_vector[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-      proj_vector[0] = closest_points.m_data(i_collision, 0) - points.m_data(i_collision, 0);
-      proj_vector[1] = closest_points.m_data(i_collision, 1) - points.m_data(i_collision, 1);
-      proj_vector[2] = closest_points.m_data(i_collision, 2) - points.m_data(i_collision, 2);
-#else
-      proj_vector[0] = closest_points.m_data(i_collision).X() - points.m_data(i_collision).X();
-      proj_vector[1] = closest_points.m_data(i_collision).Y() - points.m_data(i_collision).Y();
-      proj_vector[2] = closest_points.m_data(i_collision).Z() - points.m_data(i_collision).Z();
-#endif
+      double pt[3], closest_pt[3], proj_vector[3];
+      points.getPointValue(i_collision, pt);
+      closest_points.getPointValue(i_collision, closest_pt);
+      for (int i=0; i<3 ; i++) {
+        proj_vector[i] = closest_pt[i] - pt[i];
+      }
+// #ifdef NIMBLE_NVIDIA_BUILD
+//       proj_vector[0] = closest_points.m_data(i_collision, 0) - points.m_data(i_collision, 0);
+//       proj_vector[1] = closest_points.m_data(i_collision, 1) - points.m_data(i_collision, 1);
+//       proj_vector[2] = closest_points.m_data(i_collision, 2) - points.m_data(i_collision, 2);
+// #else
+//       proj_vector[0] = closest_points.m_data(i_collision).X() - points.m_data(i_collision).X();
+//       proj_vector[1] = closest_points.m_data(i_collision).Y() - points.m_data(i_collision).Y();
+//       proj_vector[2] = closest_points.m_data(i_collision).Z() - points.m_data(i_collision).Z();
+// #endif
       double distance = proj_vector[0]*proj_vector[0] + proj_vector[1]*proj_vector[1] + proj_vector[2]*proj_vector[2];
       if (distance > 0.0) {
         distance = std::sqrt(distance);
@@ -1364,41 +1369,47 @@ namespace nimble {
       double min_distance = min_distance_for_each_node_d(contact_node_index);
       int triangle_id = contact_faces_d(contact_face_index).face_id_;
       double min_triangle_id = min_triangle_id_for_each_node_d(contact_node_index);
-      if (distance == min_distance && triangle_id == min_triangle_id) {
+      if (distance == min_distance && triangle_id == min_triangle_id) { // TODO ADD TOLERANCE
         double point[3], closest_pt[3], tri_node_1[3], tri_node_2[3], tri_node_3[3];
-#ifdef NIMBLE_NVIDIA_BUILD
-        point[0] = points.m_data(i_collision, 0);
-        point[1] = points.m_data(i_collision, 1);
-        point[2] = points.m_data(i_collision, 2);
-        tri_node_1[0] = triangles.m_data(i_collision, 0, 0);
-        tri_node_1[1] = triangles.m_data(i_collision, 0, 1);
-        tri_node_1[2] = triangles.m_data(i_collision, 0, 2);
-        tri_node_2[0] = triangles.m_data(i_collision, 1, 0);
-        tri_node_2[1] = triangles.m_data(i_collision, 1, 1);
-        tri_node_2[2] = triangles.m_data(i_collision, 1, 2);
-        tri_node_3[0] = triangles.m_data(i_collision, 2, 0);
-        tri_node_3[1] = triangles.m_data(i_collision, 2, 1);
-        tri_node_3[2] = triangles.m_data(i_collision, 2, 2);
-        closest_pt[0] = closest_points.m_data(i_collision, 0);
-        closest_pt[1] = closest_points.m_data(i_collision, 1);
-        closest_pt[2] = closest_points.m_data(i_collision, 2);
-#else
-        point[0] = points.m_data(i_collision).X();
-        point[1] = points.m_data(i_collision).Y();
-        point[2] = points.m_data(i_collision).Z();
-        tri_node_1[0] = triangles.m_data(i_collision).GetNode(0)[0];
-        tri_node_1[1] = triangles.m_data(i_collision).GetNode(0)[1];
-        tri_node_1[2] = triangles.m_data(i_collision).GetNode(0)[2];
-        tri_node_2[0] = triangles.m_data(i_collision).GetNode(1)[0];
-        tri_node_2[1] = triangles.m_data(i_collision).GetNode(1)[1];
-        tri_node_2[2] = triangles.m_data(i_collision).GetNode(1)[2];
-        tri_node_3[0] = triangles.m_data(i_collision).GetNode(2)[0];
-        tri_node_3[1] = triangles.m_data(i_collision).GetNode(2)[1];
-        tri_node_3[2] = triangles.m_data(i_collision).GetNode(2)[2];
-        closest_pt[0] = closest_points.m_data(i_collision).X();
-        closest_pt[1] = closest_points.m_data(i_collision).Y();
-        closest_pt[2] = closest_points.m_data(i_collision).Z();
-#endif
+        points.getPointValue(i_collision, point);
+        closest_points.getPointValue(i_collision, closest_pt);
+        triangles.getVertexValue(i_collision, 0, tri_node_1);
+        triangles.getVertexValue(i_collision, 1, tri_node_2);
+        triangles.getVertexValue(i_collision, 2, tri_node_3);
+        // TODO SWITCH TO PROPER ACCESSORS AND GET RID OF THESE #ifdefs
+// #ifdef NIMBLE_NVIDIA_BUILD
+//         point[0] = points.m_data(i_collision, 0);
+//         point[1] = points.m_data(i_collision, 1);
+//         point[2] = points.m_data(i_collision, 2);
+//         tri_node_1[0] = triangles.m_data(i_collision, 0, 0);
+//         tri_node_1[1] = triangles.m_data(i_collision, 0, 1);
+//         tri_node_1[2] = triangles.m_data(i_collision, 0, 2);
+//         tri_node_2[0] = triangles.m_data(i_collision, 1, 0);
+//         tri_node_2[1] = triangles.m_data(i_collision, 1, 1);
+//         tri_node_2[2] = triangles.m_data(i_collision, 1, 2);
+//         tri_node_3[0] = triangles.m_data(i_collision, 2, 0);
+//         tri_node_3[1] = triangles.m_data(i_collision, 2, 1);
+//         tri_node_3[2] = triangles.m_data(i_collision, 2, 2);
+//         closest_pt[0] = closest_points.m_data(i_collision, 0);
+//         closest_pt[1] = closest_points.m_data(i_collision, 1);
+//         closest_pt[2] = closest_points.m_data(i_collision, 2);
+// #else
+//         point[0] = points.m_data(i_collision).X();
+//         point[1] = points.m_data(i_collision).Y();
+//         point[2] = points.m_data(i_collision).Z();
+//         tri_node_1[0] = triangles.m_data(i_collision).GetNode(0)[0];
+//         tri_node_1[1] = triangles.m_data(i_collision).GetNode(0)[1];
+//         tri_node_1[2] = triangles.m_data(i_collision).GetNode(0)[2];
+//         tri_node_2[0] = triangles.m_data(i_collision).GetNode(1)[0];
+//         tri_node_2[1] = triangles.m_data(i_collision).GetNode(1)[1];
+//         tri_node_2[2] = triangles.m_data(i_collision).GetNode(1)[2];
+//         tri_node_3[0] = triangles.m_data(i_collision).GetNode(2)[0];
+//         tri_node_3[1] = triangles.m_data(i_collision).GetNode(2)[1];
+//         tri_node_3[2] = triangles.m_data(i_collision).GetNode(2)[2];
+//         closest_pt[0] = closest_points.m_data(i_collision).X();
+//         closest_pt[1] = closest_points.m_data(i_collision).Y();
+//         closest_pt[2] = closest_points.m_data(i_collision).Z();
+// #endif
         double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
         for (int i=0 ; i<3 ; i++) {
           tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];

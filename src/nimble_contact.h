@@ -438,6 +438,80 @@ namespace nimble {
     int face_id_;
   };
 
+  template <typename ArgT>
+  void SerializeContactFaces(int num_entities,
+                             ArgT contact_entities,
+                             std::vector<char>& buffer) {
+    constexpr size_t size_int = sizeof(int);
+    constexpr size_t size_double = sizeof(double);
+    size_t entity_size = 10*sizeof(double) + 8*sizeof(int);
+    buffer.resize(entity_size*num_entities);
+    char *scan = &buffer[0];
+    for (int i=0 ; i<num_entities ; i++) {
+      memcpy(scan, &contact_entities[i].coord_1_x_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_1_y_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_1_z_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_2_x_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_2_y_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_2_z_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_3_x_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_3_y_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].coord_3_z_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].char_len_, size_double); scan += size_double;
+      memcpy(scan, &contact_entities[i].contact_entity_global_id_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_for_node_1_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_for_node_2_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_1_for_fictitious_node_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_2_for_fictitious_node_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_3_for_fictitious_node_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].node_id_4_for_fictitious_node_, size_int); scan += size_int;
+      memcpy(scan, &contact_entities[i].face_id_, size_int); scan += size_int;
+    }
+  }
+
+  template <typename ArgT>
+  void UnserializeContactFaces(int num_entities,
+                               ArgT contact_entities,
+                               std::vector<char>& buffer) {
+    constexpr size_t size_int = sizeof(int);
+    constexpr size_t size_double = sizeof(double);
+    ContactEntity entity;
+    entity.entity_type_ = ContactEntity::TRIANGLE;
+    entity.num_nodes_ = 3;
+    entity.force_1_x_ = 0.0;
+    entity.force_1_y_ = 0.0;
+    entity.force_1_z_ = 0.0;
+    entity.force_2_x_ = 0.0;
+    entity.force_2_y_ = 0.0;
+    entity.force_2_z_ = 0.0;
+    entity.force_3_x_ = 0.0;
+    entity.force_3_y_ = 0.0;
+    entity.force_3_z_ = 0.0;
+    char *scan = &buffer[0];
+    for (int i=0 ; i<num_entities ; i++) {
+      memcpy(&entity.coord_1_x_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_1_y_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_1_z_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_2_x_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_2_y_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_2_z_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_3_x_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_3_y_, scan, size_double); scan += size_double;
+      memcpy(&entity.coord_3_z_, scan, size_double); scan += size_double;
+      memcpy(&entity.char_len_, scan, size_double); scan += size_double;
+      memcpy(&entity.contact_entity_global_id_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_for_node_1_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_for_node_2_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_1_for_fictitious_node_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_2_for_fictitious_node_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_3_for_fictitious_node_, scan, size_int); scan += size_int;
+      memcpy(&entity.node_id_4_for_fictitious_node_, scan, size_int); scan += size_int;
+      memcpy(&entity.face_id_, scan, size_int); scan += size_int;
+      entity.SetBoundingBox();
+      contact_entities[i] = entity;
+    }
+  }
+
   class ContactManager {
 
   public:
