@@ -53,7 +53,7 @@ class GridCellBounds {
         return std::move(shiftTo(x, y, z)); 
     }
 
-    auto operator=(GridIndex index) noexcept -> GridCellBounds& {
+    auto moveTo(GridIndex index) noexcept -> GridCellBounds& {
         lowerX = index.xIndex * cell_size;
         lowerY = index.yIndex * cell_size;
         lowerZ = index.zIndex * cell_size;

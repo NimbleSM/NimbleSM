@@ -32,6 +32,14 @@ struct NumericRange
     auto include(Number val) && noexcept -> NumericRange&& {
         return std::move(include(val)); 
     }
+    auto include(NumericRange const& range) & noexcept -> NumericRange& {
+        if(range.min < min) min = range.min;
+        if(range.max > max) max = range.max; 
+        return *this;
+    }
+    auto include(NumericRange const& range) && noexcept -> NumericRange&& {
+        return std::move(include(range)); 
+    }
     constexpr auto contains(Number val) const noexcept -> bool {
         return min <= val && val <= max;
     }
