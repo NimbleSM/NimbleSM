@@ -27,6 +27,15 @@ struct DataChannel
     auto Iawait(int sender) const -> MPI_Request {
         return Irecv(NullOf<int>(), 0, sender); 
     }
+    /**
+     * @brief Fulfill a pending await on another rank
+     * 
+     * @param reciever 
+     * @return void
+     */
+    auto notify(int reciever) const -> void {
+        MPI_Send(NullOf<int>(), 0, MPI_INT, reciever, tag, comm); 
+    }
     template <class T>
     auto Irecv(T* dataBuffer, size_t count, int source) const -> MPI_Request
     {
@@ -41,6 +50,10 @@ struct DataChannel
     auto Irecv(std::vector<T>& message, int source) const -> MPI_Request
     {
         return Irecv(message.data(), message.size(), source);
+    }
+    template <class T> 
+    auto recv(T* dataBuffer, size_t count, int source) const -> void {
+        MPI_Recv(dataBuffer, count * sizeof(T), MPI_BYTE, source, tag, comm, nullptr); 
     }
 
     template <class T>
@@ -79,5 +92,22 @@ struct DataChannel
     auto IrecvAny(std::vector<T>& message) const -> MPI_Request
     {
         return IrecvAny(message.data(), message.size());
+    }
+    template <class F> 
+    auto onChildRanks(F&& func) {
+        const int num_ranks = commSize(); 
+        const long long my_rank = commRank(); 
+        const auto child_0 = (my_rank + 1) * 2 - 1; 
+        const auto child_1 = (my_rank + 1) * 2; 
+        if(child_0 < num_ranks) func((int)child_0);
+        if(child_1 < num_ranks) func((int)child_1); 
+    }
+    template <class F>
+    auto onParentRanks(F&& func) {
+        const int my_rank = commRank(); 
+        if(my_rank != 0) {
+            const int parent = (my_rank - 1) / 2; 
+            func(parent); 
+        }
     }
 };
