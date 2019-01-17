@@ -93,21 +93,21 @@ struct DataChannel
     {
         return IrecvAny(message.data(), message.size());
     }
-    template <class F> 
-    auto onChildRanks(F&& func) {
+    template <class F, class... ExtraArgs> 
+    auto onChildRanks(F&& func, ExtraArgs&&... args) const -> void {
         const int num_ranks = commSize(); 
         const long long my_rank = commRank(); 
         const auto child_0 = (my_rank + 1) * 2 - 1; 
         const auto child_1 = (my_rank + 1) * 2; 
-        if(child_0 < num_ranks) func((int)child_0);
-        if(child_1 < num_ranks) func((int)child_1); 
+        if(child_0 < num_ranks) func(args..., *this, (int)child_0);
+        if(child_1 < num_ranks) func(args..., *this, (int)child_1); 
     }
-    template <class F>
-    auto onParentRanks(F&& func) {
+    template <class F, class... ExtraArgs>
+    auto onParentRanks(F&& func, ExtraArgs&&... args) const -> void {
         const int my_rank = commRank(); 
         if(my_rank != 0) {
             const int parent = (my_rank - 1) / 2; 
-            func(parent); 
+            func(args..., *this, parent); 
         }
     }
 };

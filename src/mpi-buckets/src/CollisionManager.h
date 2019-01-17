@@ -101,39 +101,73 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
 template <class RankMap>
 void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
 {
-    RequestQueue requests;
+    using namespace std;
+    RequestQueue              requests;
+    vector<size_t>            outgoing_request_sizes;
+    vector<pair<int, size_t>> incoming_requests;
+    outgoing_request_sizes.reserve(rank_data_map.size());
+
     for (auto&& rank_data_pair : rank_data_map)
     {
         auto  destRank = rank_data_pair.first;
         auto& message  = rank_data_pair.second;
 
-        requests.push(channel.Isend(message, destRank));
+        outgoing_request_sizes.push_back(message.size());
+        requests.push(channel.Isend(&outgoing_request_sizes.back(), 1, destRank));
+    }
+    size_t active_outgoing_count = outgoing_request_sizes.size();
+
+    int const   my_rank   = channel.commRank();
+    int const   num_ranks = channel.commSize();
+    vector<int> child_ranks;
+    if (my_rank * 2 < num_ranks)
+    {
+        child_ranks.push_back(my_rank << 1);
+        if (my_rank * 2 + 1 < num_ranks)
+        {
+            child_ranks.push_back(my_rank * 2 + 1);
+        }
     }
 
-    int const my_rank = channel.commRank();
-
-    DataChannel on_completion_channel{channel.comm, channel.tag + 1};
+    auto on_completion_channel = DataChannel{channel.comm, channel.tag + 1};
 
     // We expect the rank above us to tell us when to stop waiting for recieves
     // from the main channel The rank above us is basically floor(my_rank /  2),
     // that is, my_rank >> 1
-    if (my_rank != 0)
+    constexpr auto push_await_request = [](RequestQueue& queue, DataChannel const& channel, int rank) {
+        queue.push(channel.Iawait(rank));
+    };
+    on_completion_channel.onChildRanks(push_await_request, requests);
+    on_completion_channel.onParentRanks(push_await_request, requests);
+
+    size_t incoming_size;
+    auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+    requests.push(active_recv_request);
+    do
     {
-        requests.push(on_completion_channel.Iawait(my_rank >> 1));
-    }
+        auto reply = requests.pop();
+        if (reply.request == active_recv_request)
+        {
+            incoming_requests.emplace_back(reply.status.MPI_SOURCE, incoming_size);
 
-    do {
-        
-        auto reply = requests.pop(); 
-        if(reply.status.MPI_TAG == channel.tag) {
-
+            active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+            requests.push(active_recv_request);
         }
-    } while(requests.has());
+        else if (reply.status.MPI_TAG == channel.tag)
+        {
+            active_outgoing_count--;
+            if (active_outgoing_count == 0) {}
+        }
+        else if (reply.status.MPI_TAG == on_completion_channel.tag)
+        {
+        }
+    } while (requests.has());
 }
 
 template <class View>
 void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
 {
+    using namespace std;
     HashFunction hash;
     int const    n_ranks = channel.commSize();
 
