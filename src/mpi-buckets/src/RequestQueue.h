@@ -1,11 +1,13 @@
 #pragma once
-#include "WaitAnyResult.h"
 #include <vector>
+#include "WaitAnyResult.h"
 
-class RequestQueue {
+class RequestQueue
+{
     std::vector<MPI_Request> requests;
 
-    auto clearAt(int index) -> MPI_Request {
+    auto clearAt(int index) -> MPI_Request
+    {
         MPI_Request request = requests[index];
         requests[index]     = requests.back();
         requests.pop_back();
@@ -17,14 +19,18 @@ class RequestQueue {
      * Adds an uninitialized request to the request queue
      * and returns a reference to that request
      */
-    auto push() -> MPI_Request& {
+    auto push() -> MPI_Request&
+    {
         requests.emplace_back(MPI_Request{});
         return requests.back();
     }
-    auto push(MPI_Request const& request) -> MPI_Request& {
-        requests.emplace_back(request); 
-        return requests.back(); 
+    auto push(MPI_Request const& request) -> MPI_Request&
+    {
+        requests.emplace_back(request);
+        return requests.back();
     }
+
+    auto New() -> MPI_Request* { return &push(); }
     /*
      * Returns true if there are no active requests
      */
@@ -38,7 +44,8 @@ class RequestQueue {
      * returns the request and the status and removes the request
      * from the queue of active requests
      */
-    auto pop() -> WaitAnyResult {
+    auto pop() -> WaitAnyResult
+    {
         auto result = WaitAnyResult{};
         int  index;
         MPI_Waitany(requests.size(), requests.data(), &index, &result.status);

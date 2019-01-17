@@ -1,44 +1,55 @@
 #pragma once
-#include "HashFunction.h"
 #include "GridHash.h"
+#include "HashFunction.h"
+#include "point.h"
 
-struct GridIndex {
-    int64_t xIndex, yIndex, zIndex; 
+struct GridIndex : public Point3<int64_t>
+{
+    using Base = Point3<int64_t>;
 
-    constexpr GridIndex(double x, double y, double z, double scale) noexcept
-        : GridIndex(x * scale, y * scale, z * scale) {}
-    constexpr GridIndex(double x, double y, double z) noexcept
-        : GridIndex(GridHash::ifloor(x), GridHash::ifloor(y), GridHash::ifloor(z)) {}
-    constexpr GridIndex(int64_t xIndex, int64_t yIndex, int64_t zIndex) noexcept
-        : xIndex(xIndex)
-        , yIndex(yIndex)
-        , zIndex(zIndex) {}
-
-    //constexpr GridIndex(GridIndex const&) = default;
-    //constexpr GridIndex(GridIndex &&) = default; 
-    auto operator==(GridIndex index) const noexcept -> bool {
-        return xIndex == index.xIndex && yIndex == index.yIndex && zIndex == index.zIndex; 
+    constexpr GridIndex(Point3<double> point, double scale) noexcept
+      : Base({GridHash::ifloor(point.x * scale),
+              GridHash::ifloor(point.y * scale),
+              GridHash::ifloor(point.z * scale)})
+    {
     }
-    auto operator!=(GridIndex index) const noexcept -> bool {
-        return xIndex != index.xIndex || yIndex != index.yIndex || zIndex != index.zIndex; 
+    constexpr GridIndex(Point3<double> point) noexcept
+      : Base({GridHash::ifloor(point.x),
+              GridHash::ifloor(point.y),
+              GridHash::ifloor(point.z)})
+    {
+    }
+
+    // constexpr GridIndex(GridIndex const&) = default;
+    // constexpr GridIndex(GridIndex &&) = default;
+    auto operator==(GridIndex index) const noexcept -> bool
+    {
+        return x == index.x && y == index.y && z == index.z;
+    }
+    auto operator!=(GridIndex index) const noexcept -> bool
+    {
+        return x != index.x || y != index.y || z != index.z;
     }
 };
 
-
-template<>
-struct std::hash<GridIndex> {
-    using argument_type = GridIndex; 
-    using result_type = uint64_t; 
+template <>
+struct std::hash<GridIndex>
+{
+    using argument_type = GridIndex;
+    using result_type   = uint64_t;
 
     HashFunction applyHash;
     constexpr hash() = default;
     constexpr hash(uint64_t a, uint64_t b) noexcept : applyHash(a, b) {}
-    constexpr hash(HashFunction const& hashFunc) noexcept : applyHash(hashFunc) {}
+    constexpr hash(HashFunction const& hashFunc) noexcept : applyHash(hashFunc)
+    {
+    }
 
     constexpr hash(hash const&) = default;
-    constexpr hash(hash &&) = default;
+    constexpr hash(hash&&)      = default;
 
-    constexpr auto operator()(GridIndex const& g) const noexcept -> uint64_t {
-        return applyHash(g.xIndex, g.yIndex, g.zIndex); 
+    constexpr auto operator()(GridIndex const& g) const noexcept -> uint64_t
+    {
+        return applyHash(g.x, g.y, g.z);
     }
 };

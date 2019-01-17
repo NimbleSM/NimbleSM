@@ -1,73 +1,96 @@
 #pragma once
-#include "GridHash.h"
-#include "defines.h"
-#include "NumericRange.h"
 #include <utility>
+#include "GridHash.h"
+#include "NumericRange.h"
+#include "defines.h"
+#include "point.h"
 
-struct BoundingBox {
+struct BoundingBox
+{
     using Range = NumericRange<double>;
-    static void fitBounds(double val, double& lower, double& upper) noexcept {
-        if(val < lower) lower = val;
-        else if(val > upper) upper = val; 
+    static void fitBounds(double val, double& lower, double& upper) noexcept
+    {
+        if (val < lower)
+            lower = val;
+        else if (val > upper)
+            upper = val;
     }
-    Range xBounds, yBounds, zBounds; 
-    constexpr BoundingBox(double x, double y, double z) noexcept
-        : xBounds(x)
-        , yBounds(y)
-        , zBounds(z) {}
+    Range xBounds, yBounds, zBounds;
+    constexpr BoundingBox(Point3<double> point) noexcept
+      : xBounds(point.x) /* xBounds = [x, x] */
+      , yBounds(point.y) /* yBounds = [y, y] */
+      , zBounds(point.z) /* zBounds = [z, z] */
+    {
+    }
     constexpr BoundingBox(Range xBounds, Range yBounds, Range zBounds) noexcept
-        : xBounds(xBounds)
-        , yBounds(yBounds)
-        , zBounds(zBounds) {}
-    
-    constexpr BoundingBox() = default;
-    constexpr BoundingBox(BoundingBox const&) = default;
-    constexpr BoundingBox(BoundingBox &&) = default;
-    auto operator=(BoundingBox const&) noexcept -> BoundingBox& = default;
-    auto operator=(BoundingBox &&) noexcept -> BoundingBox& = default;
+      : xBounds(xBounds) /* Invokes copy constructor; it's cheap */
+      , yBounds(yBounds)
+      , zBounds(zBounds)
+    {
+    }
 
-    auto centerAt(double x, double y, double z) & noexcept -> BoundingBox& {
-        xBounds.centerAt(x);
-        yBounds.centerAt(y);
-        zBounds.centerAt(z);
+    constexpr BoundingBox()                   = default;
+    constexpr BoundingBox(BoundingBox const&) = default;
+    constexpr BoundingBox(BoundingBox&&)      = default;
+
+    auto operator=(BoundingBox const&) noexcept -> BoundingBox& = default;
+    auto operator=(BoundingBox&&) noexcept -> BoundingBox& = default;
+
+    auto centerAt(Point3<double> point) & noexcept -> BoundingBox&
+    {
+        xBounds.centerAt(point.x);
+        yBounds.centerAt(point.y);
+        zBounds.centerAt(point.z);
         return *this;
     }
-    auto centerAt(double x, double y, double z) && noexcept -> BoundingBox&& {
-        return std::move(centerAt(x, y, z)); 
+    auto centerAt(Point3<double> point) && noexcept -> BoundingBox&&
+    {
+        return std::move(centerAt(point));
     }
-    auto include(double x, double y, double z) & noexcept -> BoundingBox& {
-        xBounds.include(x); 
-        yBounds.include(y); 
-        zBounds.include(z);
-        return *this; 
+    auto include(Point3<double> point) & noexcept -> BoundingBox&
+    {
+        xBounds.include(point.x);
+        yBounds.include(point.y);
+        zBounds.include(point.z);
+        return *this;
     }
-    auto include(double x, double y, double z) && noexcept -> BoundingBox&& {
-        return std::move(include(x, y, z));
+    auto include(Point3<double> point) && noexcept -> BoundingBox&&
+    {
+        return std::move(include(point));
     }
-    auto include(double x, double y, double z) const & noexcept -> BoundingBox {
+    auto include(Point3<double> point) const & noexcept -> BoundingBox
+    {
         BoundingBox box(*this);
-        box.include(x, y, z);
+        box.include(point);
         return box;
     }
-    auto include(BoundingBox const& box) & noexcept -> BoundingBox& {
+    auto include(BoundingBox const& box) & noexcept -> BoundingBox&
+    {
         xBounds.include(box.xBounds);
         yBounds.include(box.yBounds);
         zBounds.include(box.zBounds);
         return *this;
     }
-    auto include(BoundingBox && box) && noexcept -> BoundingBox&& {
-        return std::move(include(box)); 
+    auto include(BoundingBox&& box) && noexcept -> BoundingBox&&
+    {
+        return std::move(include(box));
     }
-    template<class Key, class Map>
-    auto includeInMap(Map&& m, Key&& key) const -> void {
-        auto iter = m.find(key); 
-        if(iter == m.end()) {
+    template <class Key, class Map>
+    constexpr auto includeInMap(Map&& m, Key&& key) const -> void
+    {
+        auto iter = m.find(key);
+        if (iter == m.end())
+        {
             m[key] = *this;
-        } else {
+        }
+        else
+        {
             iter->second.include(*this);
         }
     }
-    auto contains(double x, double y, double z) const noexcept -> bool {
-        return xBounds.contains(x) && yBounds.contains(y) && zBounds.contains(z); 
+    constexpr auto contains(Point3<double> point) const noexcept -> bool
+    {
+        return xBounds.contains(point.x) && yBounds.contains(point.y)
+               && zBounds.contains(point.z);
     }
 };

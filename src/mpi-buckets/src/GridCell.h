@@ -1,62 +1,57 @@
-#pragma once 
+#pragma once
+#include <utility>
 #include "GridHash.h"
 #include "GridIndex.h"
-#include <utility>
+#include "point.h"
 
-class GridCellBounds {
-   private:
-    //This one is private because scale should always be the inverse of cell_size
-    //Calling the GridCellBounds(x, y, z, cell_size) constructor 
-    //Invokes this one with scale=1.0/cell_size
-    constexpr GridCellBounds(double x, double y, double z, double cell_size, double scale) noexcept
-        : lowerX(GridHash::ifloor(x * scale) * cell_size)
-        , lowerY(GridHash::ifloor(y * scale) * cell_size)
-        , lowerZ(GridHash::ifloor(y * scale) * cell_size) 
-        , cell_size(cell_size) {}
+class GridCellBounds : Point3<double>
+{
    public:
-    double lowerX, lowerY, lowerZ;
-    const double cell_size;
+    struct FloorAndScale
+    {
+        double         cell_size;
+        double         scale;
+        constexpr auto operator()(double val) const noexcept -> double
+        {
+            return GridHash::ifloor(val * scale) * cell_size;
+        }
+    };
 
-    constexpr GridCellBounds(GridIndex index, double cell_size) noexcept 
-        : lowerX(index.xIndex * cell_size)
-        , lowerY(index.yIndex * cell_size)
-        , lowerZ(index.zIndex * cell_size)
-        , cell_size(cell_size) {}
-    constexpr GridCellBounds(double x, double y, double z, double cell_size) noexcept
-        : GridCellBounds(x, y, z, cell_size, 1.0 / cell_size) {}
-    constexpr auto contains(double x, double y, double z) const noexcept -> bool {
-        return (lowerX <= x) && (x < lowerX + cell_size) 
-            && (lowerY <= y) && (y < lowerY + cell_size)
-            && (lowerZ <= z) && (z < lowerZ + cell_size); 
-    }
-    constexpr auto contains(double const* points) const noexcept -> bool {
-        return contains(points[0], points[1], points[2]); 
-    }
-
-    auto shiftTo(GridIndex index) & noexcept -> GridCellBounds & {
-        lowerX = index.xIndex * cell_size;
-        lowerY = index.yIndex * cell_size;
-        lowerZ = index.zIndex * cell_size;
-        return *this;
-    } 
-    auto shiftTo(GridIndex index) && noexcept -> GridCellBounds && {
-        return std::move(*this);
-    }
-    auto shiftTo(double x, double y, double z) & noexcept -> GridCellBounds& {
-        double scale = 1.0 / cell_size; 
-        lowerX = GridHash::ifloor(x * scale) * cell_size;
-        lowerY = GridHash::ifloor(y * scale) * cell_size;
-        lowerZ = GridHash::ifloor(z * scale) * cell_size; 
-        return *this; 
-    }
-    auto shiftTo(double x, double y, double z) && noexcept -> GridCellBounds&& {
-        return std::move(shiftTo(x, y, z)); 
+   private:
+    using Base = Point3<double>;
+    // This one is private because scale should always be the inverse of
+    // cell_size Calling the GridCellBounds(x, y, z, cell_size) constructor
+    // Invokes this one with scale=1.0/cell_size
+    constexpr GridCellBounds(Point3d const point,
+                             double const  cell_size,
+                             double const  scale) noexcept
+      : Base{GridHash::ifloor(point.x * scale) * cell_size,
+             GridHash::ifloor(point.y * scale) * cell_size,
+             GridHash::ifloor(point.z * scale) * cell_size}
+    {
     }
 
-    auto moveTo(GridIndex index) noexcept -> GridCellBounds& {
-        lowerX = index.xIndex * cell_size;
-        lowerY = index.yIndex * cell_size;
-        lowerZ = index.zIndex * cell_size;
+   public:
+    constexpr GridCellBounds(GridIndex index, double cell_size) noexcept
+      : Base{index.x * cell_size, index.y * cell_size, index.z * cell_size}
+    {
+    }
+    constexpr GridCellBounds(Base base, double cell_size) noexcept
+      : GridCellBounds(base, cell_size, 1.0 / cell_size)
+    {
+    }
+    constexpr auto contains(Base point, double cell_size) const noexcept -> bool
+    {
+        return ((x <= point.x) && (point.x < x + cell_size))
+               && ((y <= point.y) && (point.y < y + cell_size))
+               && ((z <= point.z) && (point.z < z + cell_size));
+    }
+
+    auto moveTo(GridIndex index, double cell_size) noexcept -> GridCellBounds&
+    {
+        x = index.x * cell_size;
+        x = index.y * cell_size;
+        x = index.z * cell_size;
         return *this;
     }
 };
