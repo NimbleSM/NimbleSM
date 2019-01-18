@@ -3,3 +3,5 @@ docs/doxygen/xml
 docs/doxygen/latex
 docs/doxygen/html
 docs/sphinx/build
+.vscode
+*.gch
