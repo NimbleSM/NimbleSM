@@ -117,9 +117,6 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
     }
     size_t active_outgoing_count = outgoing_request_sizes.size();
 
-    int const   my_rank   = channel.commRank();
-    int const   num_ranks = channel.commSize();
-    vector<int> child_ranks;
     if (my_rank * 2 < num_ranks)
     {
         child_ranks.push_back(my_rank << 1);
@@ -134,11 +131,14 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
     // We expect the rank above us to tell us when to stop waiting for recieves
     // from the main channel The rank above us is basically floor(my_rank /  2),
     // that is, my_rank >> 1
-    constexpr auto push_await_request = [](RequestQueue& queue, DataChannel const& channel, int rank) {
-        queue.push(channel.Iawait(rank));
-    };
+    constexpr auto push_await_request
+        = [](RequestQueue& queue, DataChannel const& channel, int rank) {
+              queue.push(channel.Iawait(rank));
+          };
+
     on_completion_channel.onChildRanks(push_await_request, requests);
     on_completion_channel.onParentRanks(push_await_request, requests);
+    int unfinished_children = on_completion_channel.countChildren();
 
     size_t incoming_size;
     auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
@@ -156,10 +156,29 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
         else if (reply.status.MPI_TAG == channel.tag)
         {
             active_outgoing_count--;
-            if (active_outgoing_count == 0) {}
         }
         else if (reply.status.MPI_TAG == on_completion_channel.tag)
         {
+            if (on_completion_channel.isFromChild(reply.status))
+            {
+                --unfinished_children;
+            }
+            else if (on_completion_channel.isFromParent(reply.status))
+            {
+                on_completion_channel.onChildRanks(DataChannel::Notify);
+                requests.cancel_remaining();
+            }
+        }
+        if (active_outgoing_count == 0 && unfinished_children == 0)
+        {
+            if (on_completion_channel.isRoot())
+            {
+                on_completion_channel.onChildRanks(DataChannel::Notify);
+            }
+            else
+            {
+                on_completion_channel.onParentRanks(DataChannel::Notify);
+            }
         }
     } while (requests.has());
 }
