@@ -102,6 +102,13 @@ template <class RankMap>
 void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
 {
     using namespace std;
+    constexpr auto NotifyRank
+        = [](DataChannel const& channel, int rank) { channel.notify(rank); };
+    constexpr auto EnqueueAwait
+        = [](RequestQueue& queue, DataChannel const& channel, int rank) {
+              queue.push(channel.Iawait(rank));
+          };
+
     RequestQueue              requests;
     vector<size_t>            outgoing_request_sizes;
     vector<pair<int, size_t>> incoming_requests;
@@ -117,27 +124,10 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
     }
     size_t active_outgoing_count = outgoing_request_sizes.size();
 
-    if (my_rank * 2 < num_ranks)
-    {
-        child_ranks.push_back(my_rank << 1);
-        if (my_rank * 2 + 1 < num_ranks)
-        {
-            child_ranks.push_back(my_rank * 2 + 1);
-        }
-    }
-
     auto on_completion_channel = DataChannel{channel.comm, channel.tag + 1};
 
-    // We expect the rank above us to tell us when to stop waiting for recieves
-    // from the main channel The rank above us is basically floor(my_rank /  2),
-    // that is, my_rank >> 1
-    constexpr auto push_await_request
-        = [](RequestQueue& queue, DataChannel const& channel, int rank) {
-              queue.push(channel.Iawait(rank));
-          };
-
-    on_completion_channel.onChildRanks(push_await_request, requests);
-    on_completion_channel.onParentRanks(push_await_request, requests);
+    on_completion_channel.onChildRanks(EnqueueAwait, requests);
+    on_completion_channel.onParentRanks(EnqueueAwait, requests);
     int unfinished_children = on_completion_channel.countChildren();
 
     size_t incoming_size;
@@ -165,7 +155,7 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
             }
             else if (on_completion_channel.isFromParent(reply.status))
             {
-                on_completion_channel.onChildRanks(DataChannel::Notify);
+                on_completion_channel.onChildRanks(NotifyRank);
                 requests.cancel_remaining();
             }
         }
@@ -173,11 +163,11 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
         {
             if (on_completion_channel.isRoot())
             {
-                on_completion_channel.onChildRanks(DataChannel::Notify);
+                on_completion_channel.onChildRanks(NotifyRank);
             }
             else
             {
-                on_completion_channel.onParentRanks(DataChannel::Notify);
+                on_completion_channel.onParentRanks(NotifyRank);
             }
         }
     } while (requests.has());

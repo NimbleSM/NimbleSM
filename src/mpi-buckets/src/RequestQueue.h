@@ -52,4 +52,10 @@ class RequestQueue
         result.request = clearAt(index);
         return result;
     }
+    auto hasMoreThan(size_t min) const -> bool { return requests.size() > min; }
+
+    auto cancel_remaining() -> void
+    {
+        // TO-DO
+    }
 };

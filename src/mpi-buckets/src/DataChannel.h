@@ -6,9 +6,6 @@
 
 struct DataChannel
 {
-    constexpr static auto Notify
-        = [](DataChannel const& channel, int rank) { channel.notify(rank); };
-
     constexpr static auto any_source = MPI_ANY_SOURCE;
 
     MPI_Comm comm;
@@ -142,9 +139,7 @@ struct DataChannel
     {
         return (sender - 1) / 2 == commRank();
     }
-    auto isRoot() const -> bool {
-        return commRank() == 0; 
-    }
+    auto isRoot() const -> bool { return commRank() == 0; }
     auto countChildren() const -> int
     {
         int count = 0;
