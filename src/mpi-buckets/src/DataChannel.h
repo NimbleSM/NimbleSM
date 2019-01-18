@@ -142,6 +142,9 @@ struct DataChannel
     {
         return (sender - 1) / 2 == commRank();
     }
+    auto isRoot() const -> bool {
+        return commRank() == 0; 
+    }
     auto countChildren() const -> int
     {
         int count = 0;
