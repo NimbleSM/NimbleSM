@@ -56,6 +56,13 @@ class RequestQueue
 
     auto cancel_remaining() -> void
     {
+        for(auto& request : requests) {
+            MPI_Request_free(&request); 
+        }
         // TO-DO
+    }
+
+    ~RequestQueue() {
+        cancel_remaining(); 
     }
 };

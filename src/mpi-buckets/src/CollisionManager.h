@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "BarrierTree.h"
 #include "BoundingBox.h"
 #include "DataChannel.h"
 #include "GridCell.h"
@@ -97,16 +98,16 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
 
     return std::forward<decltype(dest)>(dest);
 }
-template <class MessageList>
-void SyncSendMessageSizes(MessageList&& messages,
+template <class PacketList>
+void SyncSendMessageSizes(PacketList&& packets,
                           DataChannel   channel,
                           RequestQueue& queue,
                           size_t*       sizeStorage)
 {
-    for (auto&& message : messages)
+    for (auto&& packet : packets)
     {
-        auto  destination = message.first;
-        auto& message     = message.second;
+        auto  destination = packet.first;
+        auto& message     = packet.second;
 
         *sizeStorage = message.size();
         queue.push(channel.Issend(sizeStorage, 1, destination));
@@ -114,36 +115,21 @@ void SyncSendMessageSizes(MessageList&& messages,
     }
 }
 template <class RankMap>
-void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel dataChannel)
+void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
 {
     using namespace std;
-    constexpr auto EnqueueAwait
-        = [](DataChannel const& channel, int rank, RequestQueue& queue) {
-              queue.push(channel.Iawait(rank));
-          };
-    
 
     auto queue                 = RequestQueue();
-    auto notifyQueue           = RequestQueue();
     auto messageCounts         = vector<size_t>(rank_data_map.size());
     auto active_outgoing_count = size_t(messageCounts.size());
-    auto barrierChannel = DataChannel{dataChannel.comm, dataChannel.tag + 1};
-
-    auto NotifyRank = [&](DataChannel const& dataChannel, int rank) {
-        notifyQueue.push(dataChannel.notify(rank));
-    };
-
-    SyncSendMessageSizes(rank_data_map, dataChannel, queue, messageCounts.data());
-
-    barrierChannel.onChildRanks(EnqueueAwait, queue);
-    barrierChannel.onParentRanks(EnqueueAwait, queue);
-    int unfinished_children = barrierChannel.countChildren();
+    auto barrier               = BarrierTree(channel.comm, channel.tag + 1);
+    SyncSendMessageSizes(rank_data_map, channel, queue, messageCounts.data());
+    barrier.enqueueBarrier(queue);
 
     vector<pair<int, size_t>> sources;
 
-    size_t incoming_size;
-    auto   active_recv_request
-        = dataChannel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+    auto incoming_size       = size_t();
+    auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
     queue.push(active_recv_request);
 
     do
@@ -153,37 +139,30 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel dataChannel)
         {
             sources.emplace_back(reply.status.MPI_SOURCE, incoming_size);
 
-            active_recv_request
-                = dataChannel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+            active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
             queue.push(active_recv_request);
         }
-        else if (reply.status.MPI_TAG == dataChannel.tag)
+        else if (reply.status.MPI_TAG == channel.tag)
         {
             active_outgoing_count--;
-            
+            if (active_outgoing_count == 0)
+            {
+                barrier.markComplete();
+            }
         }
-        else if (reply.status.MPI_TAG == barrierChannel.tag)
+        else if (reply.status.MPI_TAG == barrier.tag())
         {
-            if (barrierChannel.isFromChild(reply.status))
-            {
-                --unfinished_children;
-            }
-            else if (barrierChannel.isFromParent(reply.status))
-            {
-                barrierChannel.onChildRanks(NotifyRank);
-                queue.cancel_remaining();
-            }
+            barrier.processStatus(reply.status);
         }
-
-    } while (queue.has());
+    } while (!barrier.test());
 }
 
 template <class View>
-void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel dataChannel)
+void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
 {
     using namespace std;
     HashFunction hash;
-    int const    n_ranks = dataChannel.commSize();
+    int const    n_ranks = channel.commSize();
 
     using rank_data_type = ElemType<View>;
     // clang-format off
@@ -199,7 +178,7 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel da
                 return hash(index.x, index.y, index.z) % n_ranks;
             }
         ),
-        dataChannel
+        channel
     );
     // clang-format on
 }
