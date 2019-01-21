@@ -25,7 +25,7 @@ struct DataChannel
     }
     auto Iawait(int sender) const -> MPI_Request
     {
-        return Irecv(NullOf<int>(), 0, sender);
+        return Issend(NullOf<int>(), 0, sender);
     }
     /**
      * @brief Fulfill a pending await on another rank
@@ -33,9 +33,11 @@ struct DataChannel
      * @param reciever
      * @return void
      */
-    auto notify(int reciever) const -> void
+    auto notify(int reciever) const -> MPI_Request
     {
-        MPI_Send(NullOf<int>(), 0, MPI_INT, reciever, tag, comm);
+        MPI_Request request; 
+        MPI_Irecv(NullOf<int>(), 0, MPI_INT, reciever, tag, comm, &request);
+        return request; 
     }
     template <class T>
     auto Irecv(T* dataBuffer, size_t count, int source) const -> MPI_Request
@@ -77,6 +79,23 @@ struct DataChannel
     }
 
     template <class T>
+    auto Issend(T* dataBuffer, size_t count, int dest) const -> MPI_Request
+    {
+        static_assert(std::is_trivially_copyable<T>::value,
+                      "Data type must be trivially copyable");
+        MPI_Request request;
+        MPI_Issend(
+            (void*)dataBuffer, count * sizeof(T), MPI_BYTE, dest, tag, comm, &request);
+        return request;
+    }
+
+    template <class T>
+    auto Issend(std::vector<T> const& message, int dest) const -> MPI_Request
+    {
+        return Issend(message.data(), message.size(), dest);
+    }
+
+    template <class T>
     auto IrecvAny(T* dataBuffer, size_t count) const -> MPI_Request
     {
         static_assert(std::is_trivially_copyable<T>::value,
@@ -105,11 +124,11 @@ struct DataChannel
         auto const      child_1   = (my_rank + 1) * 2;
         if (child_0 < num_ranks)
         {
-            func(args..., *this, (int)child_0);
+            func(*this, (int)child_0, args...);
         }
         if (child_1 < num_ranks)
         {
-            func(args..., *this, (int)child_1);
+            func(*this, (int)child_1, args...);
         }
     }
     template <class F, class... ExtraArgs>
@@ -119,7 +138,7 @@ struct DataChannel
         if (my_rank != 0)
         {
             const int parent = (my_rank - 1) / 2;
-            func(args..., *this, parent);
+            func(*this, parent, args...);
         }
     }
     auto isFromParent(MPI_Status const& status) const -> bool

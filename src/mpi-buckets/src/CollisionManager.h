@@ -97,88 +97,93 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
 
     return std::forward<decltype(dest)>(dest);
 }
+template <class MessageList>
+void SyncSendMessageSizes(MessageList&& messages,
+                          DataChannel   channel,
+                          RequestQueue& queue,
+                          size_t*       sizeStorage)
+{
+    for (auto&& message : messages)
+    {
+        auto  destination = message.first;
+        auto& message     = message.second;
 
+        *sizeStorage = message.size();
+        queue.push(channel.Issend(sizeStorage, 1, destination));
+        sizeStorage += 1;
+    }
+}
 template <class RankMap>
-void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
+void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel dataChannel)
 {
     using namespace std;
-    constexpr auto NotifyRank
-        = [](DataChannel const& channel, int rank) { channel.notify(rank); };
     constexpr auto EnqueueAwait
-        = [](RequestQueue& queue, DataChannel const& channel, int rank) {
+        = [](DataChannel const& channel, int rank, RequestQueue& queue) {
               queue.push(channel.Iawait(rank));
           };
+    
 
-    RequestQueue              requests;
-    vector<size_t>            outgoing_request_sizes;
-    vector<pair<int, size_t>> incoming_requests;
-    outgoing_request_sizes.reserve(rank_data_map.size());
+    auto queue                 = RequestQueue();
+    auto notifyQueue           = RequestQueue();
+    auto messageCounts         = vector<size_t>(rank_data_map.size());
+    auto active_outgoing_count = size_t(messageCounts.size());
+    auto barrierChannel = DataChannel{dataChannel.comm, dataChannel.tag + 1};
 
-    for (auto&& rank_data_pair : rank_data_map)
-    {
-        auto  destRank = rank_data_pair.first;
-        auto& message  = rank_data_pair.second;
+    auto NotifyRank = [&](DataChannel const& dataChannel, int rank) {
+        notifyQueue.push(dataChannel.notify(rank));
+    };
 
-        outgoing_request_sizes.push_back(message.size());
-        requests.push(channel.Isend(&outgoing_request_sizes.back(), 1, destRank));
-    }
-    size_t active_outgoing_count = outgoing_request_sizes.size();
+    SyncSendMessageSizes(rank_data_map, dataChannel, queue, messageCounts.data());
 
-    auto on_completion_channel = DataChannel{channel.comm, channel.tag + 1};
+    barrierChannel.onChildRanks(EnqueueAwait, queue);
+    barrierChannel.onParentRanks(EnqueueAwait, queue);
+    int unfinished_children = barrierChannel.countChildren();
 
-    on_completion_channel.onChildRanks(EnqueueAwait, requests);
-    on_completion_channel.onParentRanks(EnqueueAwait, requests);
-    int unfinished_children = on_completion_channel.countChildren();
+    vector<pair<int, size_t>> sources;
 
     size_t incoming_size;
-    auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
-    requests.push(active_recv_request);
+    auto   active_recv_request
+        = dataChannel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+    queue.push(active_recv_request);
+
     do
     {
-        auto reply = requests.pop();
+        auto reply = queue.pop();
         if (reply.request == active_recv_request)
         {
-            incoming_requests.emplace_back(reply.status.MPI_SOURCE, incoming_size);
+            sources.emplace_back(reply.status.MPI_SOURCE, incoming_size);
 
-            active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
-            requests.push(active_recv_request);
+            active_recv_request
+                = dataChannel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+            queue.push(active_recv_request);
         }
-        else if (reply.status.MPI_TAG == channel.tag)
+        else if (reply.status.MPI_TAG == dataChannel.tag)
         {
             active_outgoing_count--;
+            
         }
-        else if (reply.status.MPI_TAG == on_completion_channel.tag)
+        else if (reply.status.MPI_TAG == barrierChannel.tag)
         {
-            if (on_completion_channel.isFromChild(reply.status))
+            if (barrierChannel.isFromChild(reply.status))
             {
                 --unfinished_children;
             }
-            else if (on_completion_channel.isFromParent(reply.status))
+            else if (barrierChannel.isFromParent(reply.status))
             {
-                on_completion_channel.onChildRanks(NotifyRank);
-                requests.cancel_remaining();
+                barrierChannel.onChildRanks(NotifyRank);
+                queue.cancel_remaining();
             }
         }
-        if (active_outgoing_count == 0 && unfinished_children == 0)
-        {
-            if (on_completion_channel.isRoot())
-            {
-                on_completion_channel.onChildRanks(NotifyRank);
-            }
-            else
-            {
-                on_completion_channel.onParentRanks(NotifyRank);
-            }
-        }
-    } while (requests.has());
+
+    } while (queue.has());
 }
 
 template <class View>
-void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
+void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel dataChannel)
 {
     using namespace std;
     HashFunction hash;
-    int const    n_ranks = channel.commSize();
+    int const    n_ranks = dataChannel.commSize();
 
     using rank_data_type = ElemType<View>;
     // clang-format off
@@ -194,7 +199,7 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel ch
                 return hash(index.x, index.y, index.z) % n_ranks;
             }
         ),
-        channel
+        dataChannel
     );
     // clang-format on
 }
