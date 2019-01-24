@@ -98,8 +98,8 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
 
     return std::forward<decltype(dest)>(dest);
 }
-template <class PacketList>
-void SyncSendMessageSizes(PacketList&&  packets,
+template <class PacketMap>
+void SyncSendMessageSizes(PacketMap&&  packets,
                           DataChannel   channel,
                           RequestQueue& queue,
                           size_t*       sizeStorage)
@@ -115,12 +115,14 @@ void SyncSendMessageSizes(PacketList&&  packets,
     }
 }
 
-template <class PacketList, class SourceIdentifiedCallback, class AllSourcesIdentifiedCallback>
-auto IdentifySources(PacketList&&                 packets,
+template <class PacketMap, 
+          class SourceIdentifiedCallback,
+          class SendProcessedCallback>
+auto IdentifySources(PacketMap&&                 packets,
                      DataChannel                  channel,
                      DataChannel                  barrierChannel,
                      SourceIdentifiedCallback     notifySourceIdentified,
-                     AllSourcesIdentifiedCallback notifyAllSourcesIdentified)
+                     SendProcessedCallback  notifySendProcessed)
     -> void
 {
     using namespace std;
@@ -148,6 +150,8 @@ auto IdentifySources(PacketList&&                 packets,
         }
         else if (reply.status.MPI_TAG == channel.tag)
         {
+            notifySendProcessed(reply.status.MPI_SOURCE); 
+
             active_outgoing_count--;
             if (active_outgoing_count == 0)
             {
@@ -159,8 +163,38 @@ auto IdentifySources(PacketList&&                 packets,
             barrier.processStatus(reply.status);
         }
     } while (!barrier.test());
+}
 
-    notifyAllSourcesIdentified();
+template <class PacketMap>
+auto SendBoundingBoxData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int tag3)
+    -> void
+{
+    using namespace std; 
+    using MessageDataType = ElemType<decltype(begin(packets)->second)>; 
+    
+    auto incomingData = vector<pair<int, vector<MessageDataType>>>(); 
+    incomingData.reserve(1000);  
+
+    auto messageChannel = DataChannel({comm, tag3}); 
+    RequestQueue queue; 
+    IdentifySources(
+        packets, 
+        DataChannel({comm, tag1}), 
+        DataChannel({comm, tag2}), 
+        [&](int source, size_t incoming_size) {
+            incomingData.emplace_back(); 
+            auto& back = incomingData.back(); 
+            back.first = source; 
+            auto& buffer = back.second; 
+            buffer.resize(incoming_size); 
+            queue.push(messageChannel.Irecv(buffer.data(), incoming_size, source)); 
+        },
+        [&](int dest) {
+            auto& message = packets[dest]; 
+            queue.push(messageChannel.Isend(message, dest)); 
+        }
+    );
+    
 }
 
 template <class View>
@@ -184,7 +218,10 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel ch
                 return hash(index.x, index.y, index.z) % n_ranks;
             }
         ),
-        channel
+        channel.comm,
+        channel.tag, 
+        channel.tag + 1,
+        channel.tag + 2
     );
     // clang-format on
 }
