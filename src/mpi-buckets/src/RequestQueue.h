@@ -15,6 +15,12 @@ class RequestQueue
     }
 
    public:
+    RequestQueue()                    = default;
+    RequestQueue(RequestQueue const&) = delete;
+    RequestQueue(RequestQueue&& queue) : requests(std::move(queue.requests)) {
+        queue.requests.clear(); 
+    }
+
     /*
      * Adds an uninitialized request to the request queue
      * and returns a reference to that request
@@ -56,13 +62,12 @@ class RequestQueue
 
     auto cancel_remaining() -> void
     {
-        for(auto& request : requests) {
-            MPI_Request_free(&request); 
+        for (auto& request : requests)
+        {
+            MPI_Request_free(&request);
         }
         // TO-DO
     }
 
-    ~RequestQueue() {
-        cancel_remaining(); 
-    }
+    ~RequestQueue() { cancel_remaining(); }
 };
