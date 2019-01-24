@@ -99,7 +99,7 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
     return std::forward<decltype(dest)>(dest);
 }
 template <class PacketList>
-void SyncSendMessageSizes(PacketList&& packets,
+void SyncSendMessageSizes(PacketList&&  packets,
                           DataChannel   channel,
                           RequestQueue& queue,
                           size_t*       sizeStorage)
@@ -115,20 +115,22 @@ void SyncSendMessageSizes(PacketList&& packets,
     }
 }
 
-template <class PacketList>
-auto IdentifySources(PacketList&& packets, DataChannel channel, DataChannel barrierChannel)
-    -> std::vector<std::pair<int, size_t>>
+template <class PacketList, class SourceIdentifiedCallback, class AllSourcesIdentifiedCallback>
+auto IdentifySources(PacketList&&                 packets,
+                     DataChannel                  channel,
+                     DataChannel                  barrierChannel,
+                     SourceIdentifiedCallback     notifySourceIdentified,
+                     AllSourcesIdentifiedCallback notifyAllSourcesIdentified)
+    -> void
 {
     using namespace std;
 
     auto queue                 = RequestQueue();
     auto messageCounts         = vector<size_t>(packets.size());
     auto active_outgoing_count = size_t(messageCounts.size());
-    auto barrier               = BarrierTree(barrierChannel.comm, barrierChannel.tag);
+    auto barrier               = BarrierTree(barrierChannel);
     SyncSendMessageSizes(packets, channel, queue, messageCounts.data());
     barrier.enqueueBarrier(queue);
-
-    vector<pair<int, size_t>> sources;
 
     auto incoming_size       = size_t();
     auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
@@ -139,7 +141,7 @@ auto IdentifySources(PacketList&& packets, DataChannel channel, DataChannel barr
         auto reply = queue.pop();
         if (reply.request == active_recv_request)
         {
-            sources.emplace_back(reply.status.MPI_SOURCE, incoming_size);
+            notifySourceIdentified(reply.status.MPI_SOURCE, incoming_size);
 
             active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
             queue.push(active_recv_request);
@@ -158,10 +160,8 @@ auto IdentifySources(PacketList&& packets, DataChannel channel, DataChannel barr
         }
     } while (!barrier.test());
 
-    return sources; 
+    notifyAllSourcesIdentified();
 }
-
-
 
 template <class View>
 void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
