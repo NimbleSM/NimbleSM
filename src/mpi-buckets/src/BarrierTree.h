@@ -19,7 +19,6 @@ class BarrierTree
               };
         onParentRanks(NotifyRank, notifyQueue);
     }
-    void markComplete() { markChildComplete(); }
     void notifyChildren()
     {
         auto NotifyRank
@@ -92,10 +91,11 @@ class BarrierTree
         onChildRanks([&](DataChannel const&, int) { ++count; });
         return count;
     }
-    auto tag() const -> int { return channel.tag; }
-    auto test() const -> bool { return finishedFlag; }
 
    public:
+
+    auto tag() const -> int { return channel.tag; }
+    auto test() const -> bool { return finishedFlag; }
     BarrierTree(MPI_Comm comm, int tag)
       : channel({comm, tag})
       , notifyQueue()
@@ -126,4 +126,6 @@ class BarrierTree
         onParentRanks(EnqueueAwait, queue);
         onParentRanks(EnqueueAwait, queue);
     }
+
+    void markComplete() { markChildComplete(); }
 };
