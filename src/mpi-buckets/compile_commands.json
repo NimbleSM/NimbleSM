@@ -1,0 +1,7 @@
+[
+    {
+        "directory": ".",
+        "command": "c++ -I/usr/include/mpich src/test.cc -o test",
+        "file": "src/test.cc"
+    }
+]
