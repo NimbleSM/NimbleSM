@@ -28,7 +28,7 @@ class BarrierTree
         finishedFlag = true;
         onChildRanks(NotifyRank, notifyQueue);
     }
-    
+
     void markChildComplete()
     {
         unfinished_children -= 1;
@@ -93,7 +93,6 @@ class BarrierTree
     }
 
    public:
-
     auto tag() const -> int { return channel.tag; }
     auto test() const -> bool { return finishedFlag; }
     BarrierTree(MPI_Comm comm, int tag)
@@ -104,8 +103,9 @@ class BarrierTree
       // Here, we count ourselves as an unfinished child
       , unfinished_children(countChildren() + 1)
     {
-    }    
-    
+    }
+    BarrierTree(DataChannel channel) : BarrierTree(channel.comm, channel.tag) {}
+
     void processStatus(MPI_Status const& status)
     {
         if (isFromChild(status.MPI_SOURCE))

@@ -114,16 +114,18 @@ void SyncSendMessageSizes(PacketList&& packets,
         sizeStorage += 1;
     }
 }
-template <class RankMap>
-void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
+
+template <class PacketList>
+auto IdentifySources(PacketList&& packets, DataChannel channel, DataChannel barrierChannel)
+    -> std::vector<std::pair<int, size_t>>
 {
     using namespace std;
 
     auto queue                 = RequestQueue();
-    auto messageCounts         = vector<size_t>(rank_data_map.size());
+    auto messageCounts         = vector<size_t>(packets.size());
     auto active_outgoing_count = size_t(messageCounts.size());
-    auto barrier               = BarrierTree(channel.comm, channel.tag + 1);
-    SyncSendMessageSizes(rank_data_map, channel, queue, messageCounts.data());
+    auto barrier               = BarrierTree(barrierChannel.comm, barrierChannel.tag);
+    SyncSendMessageSizes(packets, channel, queue, messageCounts.data());
     barrier.enqueueBarrier(queue);
 
     vector<pair<int, size_t>> sources;
@@ -155,7 +157,11 @@ void SendBoundingBoxData(RankMap&& rank_data_map, DataChannel channel)
             barrier.processStatus(reply.status);
         }
     } while (!barrier.test());
+
+    return sources; 
 }
+
+
 
 template <class View>
 void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
