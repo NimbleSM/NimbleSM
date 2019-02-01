@@ -1257,7 +1257,7 @@ namespace nimble {
     int numTris = contact_faces_d.extent(0);
     gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", numTris);
     Kokkos::parallel_for("Load contact_faces_d into TrianglesView",
-      numTris, KOKKOS_LAMBDA(const int i_face) 
+      numTris, KOKKOS_LAMBDA(const int i_face)
     {
       const ContactEntity& face = contact_faces_d(i_face);
       triangles.setVertexValues(i_face, mtk::Vec3<double>(face.coord_1_x_, face.coord_1_y_, face.coord_1_z_),
@@ -1332,8 +1332,8 @@ namespace nimble {
       Kokkos::resize(proj_types_returned_d, num_collisions);
     }
     Kokkos::Impl::Timer timer;
-    gtk::ComputeProjections<nimble_kokkos::kokkos_device_execution_space, 
-      save_projection_types_computed> 
+    gtk::ComputeProjections<nimble_kokkos::kokkos_device_execution_space,
+      save_projection_types_computed>
         projection(points, triangles, closest_points, proj_types_returned_d);
     nimble_kokkos::DeviceScalarNodeView interaction_distance_d("interaction_distance_d", num_collisions);
     nimble_kokkos::DeviceScalarNodeView min_distance_for_each_node_d("min_distance_for_each_node", num_contact_nodes); // THIS IS TOO LONG, MANY ZEROS
@@ -1397,11 +1397,11 @@ namespace nimble {
         tri_normal[0] = tri_edge_1[1] * tri_edge_2[2] - tri_edge_1[2] * tri_edge_2[1];
         tri_normal[1] = tri_edge_1[2] * tri_edge_2[0] - tri_edge_1[0] * tri_edge_2[2];
         tri_normal[2] = tri_edge_1[0] * tri_edge_2[1] - tri_edge_1[1] * tri_edge_2[0];
-        double gap = (point[0] - closest_pt[0]) * tri_normal[0] + 
-          (point[1] - closest_pt[1]) * tri_normal[1] + 
+        double gap = (point[0] - closest_pt[0]) * tri_normal[0] +
+          (point[1] - closest_pt[1]) * tri_normal[1] +
           (point[2] - closest_pt[2]) * tri_normal[2];
-        double tri_normal_magnitude = std::sqrt(tri_normal[0] * tri_normal[0] + 
-          tri_normal[1] * tri_normal[1] + 
+        double tri_normal_magnitude = std::sqrt(tri_normal[0] * tri_normal[0] +
+          tri_normal[1] * tri_normal[1] +
           tri_normal[2] * tri_normal[2]);
         double scale = penalty_parameter * gap / tri_normal_magnitude;
 
@@ -1458,7 +1458,7 @@ namespace nimble {
     nimble_kokkos::DeviceScalarNodeView contact_manager_force_d = force_d_;
 
     Kokkos::parallel_for("Load contact nodes search tree", num_contact_nodes,
-      KOKKOS_LAMBDA(const int i_contact_node) 
+      KOKKOS_LAMBDA(const int i_contact_node)
     {
       double min_x = contact_nodes_d(i_contact_node).get_x_min();
       double max_x = contact_nodes_d(i_contact_node).get_x_max();
@@ -1466,7 +1466,7 @@ namespace nimble {
       double max_y = contact_nodes_d(i_contact_node).get_y_max();
       double min_z = contact_nodes_d(i_contact_node).get_z_min();
       double max_z = contact_nodes_d(i_contact_node).get_z_max();
-      contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x, 
+      contact_nodes_tree_loader.set_box(i_contact_node, min_x, max_x,
         min_y, max_y, min_z, max_z);
     });
 
@@ -1482,7 +1482,7 @@ namespace nimble {
       double max_y = contact_faces_d(i_contact_face).get_y_max();
       double min_z = contact_faces_d(i_contact_face).get_z_min();
       double max_z = contact_faces_d(i_contact_face).get_z_max();
-      contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x, 
+      contact_faces_tree_loader.set_box(i_contact_face, min_x, max_x,
         min_y, max_y, min_z, max_z);
     });
 
@@ -1491,13 +1491,13 @@ namespace nimble {
 
 #if 1
     // san's averaging algorithm
-    compute_and_scatter_contact_force(contact_nodes_d, contact_faces_d, 
+    compute_and_scatter_contact_force(contact_nodes_d, contact_faces_d,
       collision_list, contact_manager_force_d);
 #else
     // original nimble
-    compute_and_scatter_contact_force_OLD(collision_list, contact_nodes_d, 
+    compute_and_scatter_contact_force_OLD(collision_list, contact_nodes_d,
       contact_faces_d, num_contact_nodes, contact_manager_force_d);
-#endif 
+#endif
 #endif
   }
 }
