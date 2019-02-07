@@ -52,6 +52,7 @@
 #include "nimble_kokkos_data_manager.h"
 #include "nimble_kokkos_block.h"
 #include "nimble_contact.h"
+#include "nimble_utils.h"
 
 #include <iostream>
 
@@ -166,6 +167,9 @@ void main_routine(int argc, char *argv[]) {
   int deformation_gradient_field_id(-1);
   int stress_field_id(-1);
 
+  bool store_unrotated_stress(true);
+  int unrotated_stress_field_id(-1);
+
   // Blocks
   // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble_kokkos::Block> blocks;
@@ -200,6 +204,12 @@ void main_routine(int argc, char *argv[]) {
                                                               nimble::SYMMETRIC_TENSOR,
                                                               "stress",
                                                               num_elements_in_block);
+    if(store_unrotated_stress) {
+      unrotated_stress_field_id = model_data.AllocateIntegrationPointData(block_id,
+                                                                          nimble::SYMMETRIC_TENSOR,
+                                                                          "stress",
+                                                                          num_elements_in_block);
+    }
 
     // volume-averaged quantities for I/O are stored as element data
     model_data.AllocateElementData(block_id,
@@ -487,13 +497,13 @@ void main_routine(int argc, char *argv[]) {
       int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
       int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
 
-      nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
-                                                                                                                                    deformation_gradient_field_id,
-                                                                                                                                    nimble::STEP_NP1);
-
       nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
                                                                                                                                   deformation_gradient_field_id,
                                                                                                                                   nimble::STEP_N);
+
+      nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
+                                                                                                                                    deformation_gradient_field_id,
+                                                                                                                                    nimble::STEP_NP1);
 
       nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                   stress_field_id,
@@ -523,16 +533,23 @@ void main_routine(int argc, char *argv[]) {
       }
       else {
 #ifdef NIMBLE_HAVE_EXTRAS
+
+        nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                                                                              unrotated_stress_field_id,
+                                                                                                                              nimble::STEP_N);
+
+        nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                                                                                unrotated_stress_field_id,
+                                                                                                                                nimble::STEP_NP1);
+
         nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
-        nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-                                                                                                                    stress_field_id,
-                                                                                                                    nimble::STEP_N);
+
         typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
         MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
         Kokkos::parallel_for("NGP LAME Kinematics", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
             nimble_kokkos::DeviceFullTensorIntPtSingleEntryView element_deformation_gradient_step_n_d = Kokkos::subview(deformation_gradient_step_n_d, i_elem, i_ipt, Kokkos::ALL);
             nimble_kokkos::DeviceFullTensorIntPtSingleEntryView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
-            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_stress_step_n_d = Kokkos::subview(stress_step_n_d, i_elem, i_ipt, Kokkos::ALL);
+            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_unrotated_stress_step_n_d = Kokkos::subview(unrotated_stress_step_n_d, i_elem, i_ipt, Kokkos::ALL);
             double disp_grad_step_n[9], disp_grad_step_np1[9];
             for (int i=0 ; i<9 ; i++) {
               disp_grad_step_n[i] = element_deformation_gradient_step_n_d(i);
@@ -548,7 +565,7 @@ void main_routine(int argc, char *argv[]) {
               ngp_lame_data.velo_grad_(i_mat_pt, i) = (disp_grad_step_np1[i] - disp_grad_step_n[i]) / delta_time;
             }
             for (int i=0 ; i<6 ; i++) {
-              ngp_lame_data.stress_old_(i_mat_pt, i) = element_stress_step_n_d(i);
+              ngp_lame_data.stress_old_(i_mat_pt, i) = element_unrotated_stress_step_n_d(i);
             }
             // TODO handle state variables
           });
@@ -582,16 +599,47 @@ void main_routine(int argc, char *argv[]) {
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
         nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
+
+        nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                                                                                unrotated_stress_field_id,
+                                                                                                                                nimble::STEP_NP1);
         nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                       stress_field_id,
                                                                                                                       nimble::STEP_NP1);
+
         typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
         MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
         Kokkos::parallel_for("NGP LAME Stress Copy", mdpolicy_2d, KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
+            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_unrotated_stress_step_np1_d = Kokkos::subview(unrotated_stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
             nimble_kokkos::DeviceSymTensorIntPtSingleEntryView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL);
+            double unrotated_stress[6], def_grad[9], left_stretch[6], rotation[9], rotation_transpose[9], temp_full_tensor_1[9], temp_full_tensor_2[9];
             int i_mat_pt = i_elem*num_integration_points_per_element + i_ipt;
             for (int i=0 ; i<6 ; i++) {
-              element_stress_step_np1_d(i) = ngp_lame_data.stress_new_(i_mat_pt, i);
+              unrotated_stress[i] = ngp_lame_data.stress_new_(i_mat_pt, i);
+            }
+            // Convert LAME unrotated stress to stress
+            // TODO Figure out a way to reuse rotation calculation in the NGP LAME material model, if available
+            for (int i=0 ; i<9 ; i++) {
+              def_grad[i] = ngp_lame_data.disp_grad_(i_mat_pt, i);
+              if (i<3) {
+                def_grad[i] += 1.0;
+              }
+            }
+            Polar_Decomp(def_grad, left_stretch, rotation);
+            rotation_transpose[K_F_XX] = rotation[K_F_XX];
+            rotation_transpose[K_F_XY] = rotation[K_F_YX];
+            rotation_transpose[K_F_XZ] = rotation[K_F_ZX];
+            rotation_transpose[K_F_YX] = rotation[K_F_XY];
+            rotation_transpose[K_F_YY] = rotation[K_F_YY];
+            rotation_transpose[K_F_YZ] = rotation[K_F_ZY];
+            rotation_transpose[K_F_ZX] = rotation[K_F_XZ];
+            rotation_transpose[K_F_ZY] = rotation[K_F_YZ];
+            rotation_transpose[K_F_ZZ] = rotation[K_F_ZZ];
+            Mult_Sym33_Full33(unrotated_stress, rotation_transpose, temp_full_tensor_1);
+            Mult_Full33_Full33(rotation, temp_full_tensor_1, temp_full_tensor_2);
+            for (int i=0 ; i<6 ; i++) {
+              element_unrotated_stress_step_np1_d(i) = unrotated_stress[i];
+              element_stress_step_np1_d(i) = temp_full_tensor_2[i];
             }
             // TODO handle state variables
         });
@@ -640,7 +688,6 @@ void main_routine(int argc, char *argv[]) {
     // Perform a reduction to obtain correct values on MPI boundaries
     mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
 
-
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement_d);
@@ -688,7 +735,31 @@ void main_routine(int argc, char *argv[]) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
     }
-  }
+
+    // TODO Copy STEP_NP1 data to STEP_N
+    // for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+    //   int block_id = block_it->first;
+    //   nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
+    //                                                                                                                               deformation_gradient_field_id,
+    //                                                                                                                               nimble::STEP_N);
+    //   nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+    //                                                                                                                         unrotated_stress_field_id,
+    //                                                                                                                         nimble::STEP_N);
+    //   nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+    //                                                                                                               stress_field_id,
+    //                                                                                                               nimble::STEP_N);
+    //   nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
+    //                                                                                                                                 deformation_gradient_field_id,
+    //                                                                                                                                 nimble::STEP_NP1);
+    //   nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+    //                                                                                                                           unrotated_stress_field_id,
+    //                                                                                                                           nimble::STEP_NP1);
+    //   nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+    //                                                                                                                 stress_field_id,
+    //                                                                                                                 nimble::STEP_NP1);
+    // }
+
+  } // loop over time steps
 
   if (my_mpi_rank == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
