@@ -76,7 +76,7 @@ struct BoundingBox
         return std::move(include(box));
     }
     template <class Key, class Map>
-    constexpr auto includeInMap(Map&& m, Key&& key) const -> void
+    auto includeInMap(Map&& m, Key&& key) const -> void
     {
         auto iter = m.find(key);
         if (iter == m.end())
@@ -90,7 +90,14 @@ struct BoundingBox
     }
     constexpr auto contains(Point3<double> point) const noexcept -> bool
     {
-        return xBounds.contains(point.x) && yBounds.contains(point.y)
-               && zBounds.contains(point.z);
+        return xBounds.contains(point.x)   // checks along x axis
+            && yBounds.contains(point.y)   // checks along y axis
+            && zBounds.contains(point.z);  // checks along z axis
+    }
+    auto intersects(BoundingBox const& other) const noexcept -> bool
+    {
+        return xBounds.intersects(other.xBounds)   // checks along x axis
+            && yBounds.intersects(other.yBounds)   // checks along y axis
+            && zBounds.intersects(other.zBounds);  // checks along z axis
     }
 };

@@ -99,7 +99,7 @@ auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
     return std::forward<decltype(dest)>(dest);
 }
 template <class PacketMap>
-void SyncSendMessageSizes(PacketMap&&  packets,
+void SyncSendMessageSizes(PacketMap&&   packets,
                           DataChannel   channel,
                           RequestQueue& queue,
                           size_t*       sizeStorage)
@@ -115,15 +115,12 @@ void SyncSendMessageSizes(PacketMap&&  packets,
     }
 }
 
-template <class PacketMap, 
-          class SourceIdentifiedCallback,
-          class SendProcessedCallback>
-auto IdentifySources(PacketMap&&                 packets,
-                     DataChannel                  channel,
-                     DataChannel                  barrierChannel,
-                     SourceIdentifiedCallback     notifySourceIdentified,
-                     SendProcessedCallback  notifySendProcessed)
-    -> void
+template <class PacketMap, class SourceIdentifiedCallback, class SendProcessedCallback>
+auto IdentifySources(PacketMap&&              packets,
+                     DataChannel              channel,
+                     DataChannel              barrierChannel,
+                     SourceIdentifiedCallback notifySourceIdentified,
+                     SendProcessedCallback    notifySendProcessed) -> void
 {
     using namespace std;
 
@@ -150,7 +147,7 @@ auto IdentifySources(PacketMap&&                 packets,
         }
         else if (reply.status.MPI_TAG == channel.tag)
         {
-            notifySendProcessed(reply.status.MPI_SOURCE); 
+            notifySendProcessed(reply.status.MPI_SOURCE);
 
             active_outgoing_count--;
             if (active_outgoing_count == 0)
@@ -165,38 +162,104 @@ auto IdentifySources(PacketMap&&                 packets,
     } while (!barrier.test());
 }
 
-template <class PacketMap>
-auto SendBoundingBoxData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int tag3)
-    -> void
+template <class PacketMap,
+          class DataT = ElemType<decltype(std::begin(iof<PacketMap&>())->second)>>
+auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int tag3)
+    -> std::vector<std::pair<int, std::vector<DataT>>>
 {
-    using namespace std; 
-    using MessageDataType = ElemType<decltype(begin(packets)->second)>; 
-    
-    auto incomingData = vector<pair<int, vector<MessageDataType>>>(); 
-    incomingData.reserve(1000);  
+    using namespace std;
 
-    auto messageChannel = DataChannel({comm, tag3}); 
-    RequestQueue queue; 
+    auto incomingData = vector<pair<int, vector<DataT>>>();
+    incomingData.reserve(10);
+
+    auto         messageChannel = DataChannel({comm, tag3});
+    RequestQueue queue;
+
+    // clang-format off
     IdentifySources(
-        packets, 
-        DataChannel({comm, tag1}), 
-        DataChannel({comm, tag2}), 
+        packets,
+        DataChannel({comm, tag1}),
+        DataChannel({comm, tag2}),
         [&](int source, size_t incoming_size) {
-            incomingData.emplace_back(); 
-            auto& back = incomingData.back(); 
-            back.first = source; 
-            auto& buffer = back.second; 
-            buffer.resize(incoming_size); 
-            queue.push(messageChannel.Irecv(buffer.data(), incoming_size, source)); 
+            incomingData.emplace_back();
+            auto& back   = incomingData.back();
+            back.first   = source;
+            auto& buffer = back.second;
+            buffer.resize(incoming_size);
+            queue.push(messageChannel.Irecv(buffer.data(), incoming_size, source));
         },
         [&](int dest) {
-            auto& message = packets[dest]; 
-            queue.push(messageChannel.Isend(message, dest)); 
+            auto& message = packets[dest];
+            queue.push(messageChannel.Isend(message, dest));
         }
     );
-    
+    // clang-format on
+    queue.wait_all();
+
+    return incomingData;
 }
 
+auto anyIntersect(std::vector<BoundingBox> const& boxes1,
+                  std::vector<BoundingBox> const& boxes2) -> bool
+{
+    for (auto b1 : boxes1)
+    {
+        for (auto const& b2 : boxes2)
+        {
+            if (b1.intersects(b2))
+                return true;
+        }
+    }
+    return false;
+}
+
+using BBPacket     = std::pair<int, std::vector<BoundingBox>>;
+using BBPacketList = std::vector<BBPacket>;
+void notifyRanksOfIntersection(BBPacketList const& rankBoxInfo,
+                               DataChannel         dataChannel,
+                               DataChannel         sizeChannel,
+                               std::vector<int> const& sourceRanks)
+{
+    using namespace std;
+    RequestQueue recvQueue;
+    std::vector<size_t> incomingSizes(sourceRanks.size()); 
+    
+    // Prepare to recieve incoming messages
+    {
+        size_t index = 0; 
+        for(int rank : sourceRanks) {
+            recvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank)); 
+            ++index; 
+        }
+    }
+    
+    RequestQueue sendQueue;
+    auto   sizes             = vector<size_t>(rankBoxInfo.size());
+    auto   intersectingRanks = vector<vector<int>>(rankBoxInfo.size());
+
+    {
+        size_t index             = 0;
+        for (auto& destInfo : rankBoxInfo)
+        {
+            int   destRank    = destInfo.first;
+            auto& listOfRanks = intersectingRanks[index];
+
+            for (auto& otherInfo : rankBoxInfo)
+            {
+                if (&destInfo == &otherInfo)
+                    continue;
+                if (anyIntersect(destInfo.second, otherInfo.second))
+                    listOfRanks.push_back(otherInfo.first);
+            }
+
+            sendQueue.push(sizeChannel.Isend(&sizes[index], 1, destRank));
+            sendQueue.push(dataChannel.Isend(listOfRanks, destRank));
+            index++; 
+        }
+    }
+    
+    
+}
 template <class View>
 void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
 {
@@ -204,24 +267,26 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel ch
     HashFunction hash;
     int const    n_ranks = channel.commSize();
 
-    using rank_data_type = ElemType<View>;
     // clang-format off
-    SendBoundingBoxData(
-        GatherBy(
-            addPointsToBoundingBoxMap(
-                kokkos_view, 
-                cell_size, 
-                BoundingBoxMap()
-            ),
-            [=](rank_data_type const& message) {
-                auto index = message.first;
-                return hash(index.x, index.y, index.z) % n_ranks;
-            }
+    auto packets = GatherBy(
+        addPointsToBoundingBoxMap(
+            kokkos_view, 
+            cell_size, 
+            BoundingBoxMap()
         ),
-        channel.comm,
-        channel.tag, 
-        channel.tag + 1,
-        channel.tag + 2
+        [=](pair<const GridIndex, BoundingBox> const& message) {
+            auto index = message.first;
+            return hash(index.x, index.y, index.z) % n_ranks;
+        }
+    ); 
+    auto rankBoxInfo = std::vector<std::pair<int, std::vector<BoundingBox>>>(
+        ExchangeData(
+            packets,
+            channel.comm,
+            channel.tag, 
+            channel.tag + 1,
+            channel.tag + 2
+        )
     );
     // clang-format on
 }
