@@ -215,30 +215,31 @@ auto anyIntersect(std::vector<BoundingBox> const& boxes1,
 
 using BBPacket     = std::pair<int, std::vector<BoundingBox>>;
 using BBPacketList = std::vector<BBPacket>;
-void notifyRanksOfIntersection(BBPacketList const& rankBoxInfo,
-                               DataChannel         dataChannel,
-                               DataChannel         sizeChannel,
+void notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
+                               DataChannel             dataChannel,
+                               DataChannel             sizeChannel,
                                std::vector<int> const& sourceRanks)
 {
     using namespace std;
-    RequestQueue recvQueue;
-    std::vector<size_t> incomingSizes(sourceRanks.size()); 
-    
+    RequestQueue        recvQueue;
+    std::vector<size_t> incomingSizes(sourceRanks.size());
+
     // Prepare to recieve incoming messages
     {
-        size_t index = 0; 
-        for(int rank : sourceRanks) {
-            recvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank)); 
-            ++index; 
+        size_t index = 0;
+        for (int rank : sourceRanks)
+        {
+            recvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank));
+            ++index;
         }
     }
-    
+
     RequestQueue sendQueue;
-    auto   sizes             = vector<size_t>(rankBoxInfo.size());
-    auto   intersectingRanks = vector<vector<int>>(rankBoxInfo.size());
+    auto         sizes             = vector<size_t>(rankBoxInfo.size());
+    auto         intersectingRanks = vector<vector<int>>(rankBoxInfo.size());
 
     {
-        size_t index             = 0;
+        size_t index = 0;
         for (auto& destInfo : rankBoxInfo)
         {
             int   destRank    = destInfo.first;
@@ -254,11 +255,9 @@ void notifyRanksOfIntersection(BBPacketList const& rankBoxInfo,
 
             sendQueue.push(sizeChannel.Isend(&sizes[index], 1, destRank));
             sendQueue.push(dataChannel.Isend(listOfRanks, destRank));
-            index++; 
+            index++;
         }
     }
-    
-    
 }
 template <class View>
 void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
