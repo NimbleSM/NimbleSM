@@ -1237,6 +1237,7 @@ namespace nimble {
       contact_nodes_d(contact_node_index).ComputeNodalContactForces(contact_force, closest_pt);
       contact_nodes_d(contact_node_index).ScatterForceToContactManagerForceVector(contact_manager_force_d);
       contact_faces_d(contact_face_index).ScatterForceToContactManagerForceVector(contact_manager_force_d);
+
     }
   }
 
@@ -1274,37 +1275,34 @@ namespace nimble {
     auto closestPoints = interactionLists.closestPoints;
 
     Kokkos::parallel_for("compute_something", numPoints, KOKKOS_LAMBDA(const int i_node) {
-      int dataIdx =  interactionLists.interactionListsMap.offsets[i_node];
-      if (dataIdx == interactionLists.interactionListsMap.offsets[i_node + 1]) {
-        return;
-      }
-      ThrowRequire(dataIdx < closestPoints.extent(0));
+
       double gap = gaps(i_node);
 
-      double closest_pt[3] = {   closestPoints(dataIdx, 0), closestPoints(dataIdx, 1), closestPoints(dataIdx, 2)};
-      double direction[3] = {   pushbackDirs(i_node, 0), pushbackDirs(i_node, 1), pushbackDirs(i_node, 2)};
-      int contact_face_index = interactionLists.nodeIdxFaceIdxInteractionPairs(dataIdx, 1);
-      const double scale = penalty_parameter * gap;
+      interactionLists.for_each_face_interaction_of_node(i_node, [=](int nodeIdx, int contact_face_index, int dataIdx) {
+        double closest_pt[3] = {   closestPoints(dataIdx, 0), closestPoints(dataIdx, 1), closestPoints(dataIdx, 2)};
+        double direction[3] = {   pushbackDirs(i_node, 0), pushbackDirs(i_node, 1), pushbackDirs(i_node, 2)};
+        const double scale = penalty_parameter * gap / interactionLists.interactionListsMap.list_size(i_node);
 
 #if 0
-      if (gap < 0 || true) {
-        mtk::Vec3<double> pt = points.getPoint(i_node);
-        mtk::Vec3<double> pb_dir(direction[0], direction[1], direction[2]);
-        std::cout << "  node " << i_node << "(" << pt << "):  dataIdx = " << dataIdx << "  gap = " << gap
+        if (gap < 0) {
+          mtk::Vec3<double> pt = points.getPoint(i_node);
+          mtk::Vec3<double> pb_dir(direction[0], direction[1], direction[2]);
+          std::cout << "  node " << i_node << "(" << pt << "):  dataIdx = " << dataIdx << "  gap = " << gap
                   << " pushback dir = " << pb_dir << "  scale = " << scale << std::endl;
-        int listBegin = interactionLists.interactionListsMap.offsets[i_node];
-        int listEnd   = interactionLists.interactionListsMap.offsets[i_node + 1];
-        std::cout << " triangles: ";
-        for (int di = listBegin; di < listEnd; ++di) {
-          std::cout <<  interactionLists.nodeIdxFaceIdxInteractionPairs(di, 1) << " ";
+          int listBegin = interactionLists.interactionListsMap.offsets[i_node];
+          int listEnd   = interactionLists.interactionListsMap.offsets[i_node + 1];
+          std::cout << " triangles: ";
+          for (int di = listBegin; di < listEnd; ++di) {
+            std::cout <<  interactionLists.nodeIdxFaceIdxInteractionPairs(di, 1) << " ";
+          }
+          std::cout << std::endl;
         }
-        std::cout << std::endl;
-      }
 #endif
 
-      scatter_contact_forces(gap, scale, direction, contact_faces_d,
-        contact_face_index, closest_pt, contact_nodes_d,
-        i_node, contact_manager_force_d);
+        scatter_contact_forces(gap, scale, direction, contact_faces_d,
+                               contact_face_index, closest_pt, contact_nodes_d,
+                               i_node, contact_manager_force_d);
+      });
     });
   }
 
