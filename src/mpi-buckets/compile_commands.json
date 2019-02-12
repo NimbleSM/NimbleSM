@@ -1,7 +1,7 @@
 [
-    {
-        "directory": ".",
-        "command": "c++ -std=c++11 -I/usr/include/mpich src/test.cc -o test",
-        "file": "src/test.cc"
-    }
+{
+  "directory": "/home/sky/sandia/NimbleSM/src/mpi-buckets",
+  "command": "/usr/bin/c++   -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/home/sky/sandia/NimbleSM/src/mpi-buckets/src  -std=c++11 -O3   -o CMakeFiles/run_tests.dir/tests/main.cc.o -c /home/sky/sandia/NimbleSM/src/mpi-buckets/tests/main.cc",
+  "file": "/home/sky/sandia/NimbleSM/src/mpi-buckets/tests/main.cc"
+}
 ]
