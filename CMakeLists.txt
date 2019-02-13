@@ -74,6 +74,13 @@ ELSE()
 ENDIF()
 #]]
 
+# Optional dependency for pure MPI build (no Trilinos)
+IF(USE_PURE_MPI)
+  ADD_DEFINITIONS(-DNIMBLE_HAVE_MPI)
+  SET(NIMBLE_HAVE_MPI TRUE)
+  MESSAGE("-- Compiling with MPI (no Trilinos)")
+ENDIF()
+
 # Optional BVH dependency
 IF(HAVE_BVH)
   ADD_DEFINITIONS(-DNIMBLE_HAVE_BVH)
@@ -96,13 +103,6 @@ ELSE()
   MESSAGE("-- BVH is NOT enabled.")
   SET(NIMBLE_HAVE_BVH FALSE)
   set(bvh_LIBS)
-ENDIF()
-
-# Optional dependency for pure MPI build (no Trilinos)
-IF(USE_PURE_MPI)
-  ADD_DEFINITIONS(-DNIMBLE_HAVE_MPI)
-  SET(NIMBLE_HAVE_MPI TRUE)
-  MESSAGE("-- Compiling with MPI (no Trilinos)")
 ENDIF()
 
 # Optional Trilinos dependencies
