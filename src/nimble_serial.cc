@@ -443,7 +443,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement);
-      contact_manager.ComputeContactForce(step+1, is_output_step, contact_visualization);
+      contact_manager.ComputeContactForce(step+1, contact_visualization && is_output_step);
       contact_manager.GetForces(contact_force);
     }
 

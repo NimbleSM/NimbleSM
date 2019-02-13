@@ -46,7 +46,10 @@
 #include "nimble_utils.h"
 
 // DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"
+#ifdef NIMBLE_HAVE_EXTRAS
 #include "Geom_NGP_NodeFacePushback.h"
+#endif
+
 #ifdef NIMBLE_HAVE_MPI
   #include "mpi.h"
 #endif
@@ -306,10 +309,9 @@ namespace nimble {
       , contact_faces_search_tree_("contact faces search tree")
 #endif
 #if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-      , collision_world_(bvh::vt::context::current()->num_ranks() * dicing_factor),
-      face_patch_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
-      node_patch_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
-      test_collection_(bvh::vt::in_place_construct_t{}, bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor)))
+      , collision_world_(bvh::vt::context::current()->num_ranks() * dicing_factor, bvh::vt::context::current()->num_ranks() * dicing_factor),
+      face_patch_collection_(bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
+      node_patch_collection_(bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor)))
 #endif
   {
   
@@ -735,7 +737,10 @@ namespace nimble {
 
   void
   ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
-#ifndef NIMBLE_HAVE_KOKKOS
+#ifdef NIMBLE_HAVE_BVH
+    
+    
+#elif !defined(NIMBLE_HAVE_KOKKOS)
     throw std::logic_error("\nError in ContactManager::InitializeContactVisualization(), contact visualization currently available only for NimbleSM_Kokkos,\n");
 #else
     std::vector<int> node_global_id;
@@ -883,7 +888,9 @@ namespace nimble {
 
   void
   ContactManager::ContactVisualizationWriteStep(double time_current){
-#ifndef NIMBLE_HAVE_KOKKOS
+#ifdef NIMBLE_HAVE_BVH
+    
+#elif !defined(NIMBLE_HAVE_KOKKOS)
     throw std::logic_error("\nError in ContactManager::ContactVisualizationWriteStep(), contact visualization currently available only for NimbleSM_Kokkos,\n");
 #else
     // copy contact entities from host to device
@@ -995,6 +1002,73 @@ namespace nimble {
   }
 
 #ifdef NIMBLE_HAVE_BVH
+namespace
+{
+  void
+  WriteContactEntitiesToVTKFile(const std::vector<ContactEntity> &faces,
+                                const std::vector<ContactEntity> &nodes,
+                                const std::string &prefix,
+                                int step) {
+
+    std::stringstream file_name_ss;
+    file_name_ss << prefix << step << ".vtk";
+    std::ofstream vis_file;
+    vis_file.open(file_name_ss.str().c_str());
+
+    // file version and identifier
+    vis_file << "# vtk DataFile Version 3.0" << std::endl;
+
+    // header
+    vis_file << "Contact entity visualization" << std::endl;
+
+    // file format ASCII | BINARY
+    vis_file << "ASCII" << std::endl;
+
+    // dataset structure STRUCTURED_POINTS | STRUCTURED_GRID | UNSTRUCTURED_GRID | POLYDATA | RECTILINEAR_GRID | FIELD
+    vis_file << "DATASET UNSTRUCTURED_GRID" << std::endl;
+
+    std::vector<int> vtk_vertices(nodes.size());
+    std::vector< std::vector<int> > vtk_triangles(faces.size());
+
+    vis_file << "POINTS " << nodes.size() + 3*faces.size() << " float" << std::endl;
+
+    for (int i=0 ; i<nodes.size() ; i++) {
+      vis_file << nodes[i].coord_1_x_ << " " << nodes[i].coord_1_y_ << " " << nodes[i].coord_1_z_ << std::endl;
+      vtk_vertices[i] = i;
+    }
+    int offset = static_cast<int>(vtk_vertices.size());
+    for (int i=0 ; i<faces.size() ; i++) {
+      ContactEntity const & face = faces[i];
+      vis_file << face.coord_1_x_ << " " << face.coord_1_y_ << " " << face.coord_1_z_ << std::endl;
+      vis_file << face.coord_2_x_ << " " << face.coord_2_y_ << " " << face.coord_2_z_ << std::endl;
+      vis_file << face.coord_3_x_ << " " << face.coord_3_y_ << " " << face.coord_3_z_ << std::endl;
+      vtk_triangles[i].push_back(offset + 3*i);
+      vtk_triangles[i].push_back(offset + 3*i + 1);
+      vtk_triangles[i].push_back(offset + 3*i + 2);
+    }
+
+    vis_file << "CELLS " << vtk_vertices.size() + vtk_triangles.size() << " " << 2*vtk_vertices.size() + 4*vtk_triangles.size() << std::endl;
+    for(const auto & vtk_vertex : vtk_vertices) {
+      vis_file << "1 " << vtk_vertex << std::endl;
+    }
+    for(const auto & vtk_triangle : vtk_triangles) {
+      vis_file << "3 " << vtk_triangle[0] << " " << vtk_triangle[1] << " " << vtk_triangle[2] << std::endl;
+    }
+
+    vis_file << "CELL_TYPES " << nodes.size() + faces.size() << std::endl;
+    for(unsigned int i=0 ; i<vtk_vertices.size() ; ++i) {
+      // cell type 1 is VTK_VERTEX
+      vis_file << 1 << std::endl;
+    }
+    for(unsigned int i=0 ; i<vtk_triangles.size() ; ++i) {
+      // cell type 6 is VTK_TRIANGLE
+      vis_file << 6 << std::endl;
+    }
+
+    vis_file.close();
+  }
+}
+
   void
   ContactManager::VisualizeCollisionInfo( const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,
                                           const bvh::bvh_tree_26d::collision_query_result_type &collision_result,
@@ -1222,7 +1296,7 @@ namespace nimble {
       }
     }
   }
-
+#ifdef NIMBLE_HAVE_EXTRAS
   void ContactManager::load_contact_points_and_tris(const int num_collisions,
                                                     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
                                                     DeviceContactEntityArrayView contact_nodes_d,
@@ -1431,10 +1505,10 @@ namespace nimble {
           contact_node_index, contact_manager_force_d);
         }
     });
-}
+  }
+#endif
 
   void ContactManager::ComputeContactForce(int step, bool debug_output) {
-    using namespace gtk::exp_ngp_contact;
 
     if (penalty_parameter_ <= 0.0) {
       throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
@@ -1463,6 +1537,7 @@ namespace nimble {
 #endif
 
 #ifdef NIMBLE_HAVE_EXTRAS
+    using namespace gtk::exp_ngp_contact;
 
     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list("contact_collision_list");
     stk::search::MortonLBVHSearch_Timers timers;
@@ -1542,7 +1617,7 @@ namespace nimble {
       }
     }
     
-    void
+    auto
     build_patch(ContactManager::patch_collection &patch_collection,
                                std::vector<ContactEntity> &entities,
                                int od_factor) {
@@ -1559,13 +1634,10 @@ namespace nimble {
         patches_vec.emplace_back(i + rank * od_factor, span_for_decomp(i, od_factor, entities));
       }
       
-      bvh::vt::vt_collection_data(patches_vec, patch_collection);
+      return bvh::vt::vt_collection_data(patches_vec, patch_collection);
     }
   }
-#endif
-
-#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-
+  
   void
   ContactManager::ComputeParallelContactForce(int step, bool is_output_step, bool visualize) {
     
@@ -1574,24 +1646,35 @@ namespace nimble {
     }
     auto od_factor = static_cast<int>(dicing_factor_);
     
-    build_patch(face_patch_collection_, contact_faces_, od_factor);
-    build_patch(node_patch_collection_, contact_nodes_, od_factor);
+    auto face_patches_future = build_patch(face_patch_collection_, contact_faces_, od_factor);
+    auto node_patches_future = build_patch(node_patch_collection_, contact_nodes_, od_factor);
     
-    //face_patch_collection_.finish();
-    //node_patch_collection_.finish();
+    auto &world = collision_world_;
     
-    //face_patch_collection_.wait();
-    //node_patch_collection_.wait();
+    // As soon as the patches have been transferred to a VT collection, start using them to build the trees
+    auto trees_future = node_patches_future.then([&world](auto &&tree_nodes){
+      return world.build_trees(std::forward<decltype(tree_nodes)>(tree_nodes));
+    } );
     
-    collision_world_.build_trees( node_patch_collection_ );
-    auto results = collision_world_.find_collisions( face_patch_collection_, &bvh::narrowphase_patch< ContactEntity > );
+    // As soon as the trees have completed and the face patches are available, starting to collision
+    // tests between the trees and patches
+    auto bpr = bvh::vt::when_all(trees_future, face_patches_future).then([&world](auto &&tup) {
+      auto face_patches = std::get<1>(std::forward<decltype(tup)>(tup));
+      
+      return world.find_collisions(face_patches);
+    });
     
-#if 1
-    
+    // When collisions have been processed, transfer back to a standard vector per rank from a VT collection
+    auto collision_result_future = bpr.then([](auto &&results_collection){
+      return bvh::vt::vt_collection_to_mpi<std::vector<bvh::bvh_tree_26d::collision_query_result_type>>(results_collection);
+    });
+
     std::vector< bvh::bvh_tree_26d::collision_query_result_type > results_vec(dicing_factor_);
     bvh::vt::debug( "{}: ============begin get results\n", ::vt::theContext()->getNode() );
-    bvh::vt::vt_collection_to_mpi( results_vec, std::move( results ) );
+    results_vec = collision_result_future.get();
     bvh::vt::debug( "{}: ============end get results\n", ::vt::theContext()->getNode() );
+    
+#if 1
     
     bvh::bvh_tree_26d::collision_query_result_type collision_result;
     

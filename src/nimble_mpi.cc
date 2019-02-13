@@ -260,7 +260,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   nimble::ContactManager contact_manager;
   
   bool contact_enabled = parser.HasContact();
-  bool visualize_output = parser.VisualizeContact();
+  bool contact_visualization = parser.ContactVisualization();
   
   if (contact_enabled) {
     
@@ -272,19 +272,22 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                 penalty_parameter);
     
     std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToBlockIds(contact_master_block_names,
-                              contact_master_block_ids);
-    mesh.BlockNamesToBlockIds(contact_slave_block_names,
-                              contact_slave_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
+                                         contact_master_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
+                                         contact_slave_block_ids);
     
     contact_manager.SetPenaltyParameter(penalty_parameter);
     
     contact_manager.CreateContactEntities(mesh,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
-    
-    if ( visualize_output )
-      contact_manager.WriteContactEntitiesToVTKFile(0);
+
+    if (contact_visualization) {
+      std::string tag = "serial.contact_entities";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
+    }
   }
 
   std::vector<int> global_node_ids(num_nodes);
@@ -486,10 +489,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement);
-      contact_manager.ComputeParallelContactForce(step+1, is_output_step, visualize_output);
+      contact_manager.ComputeParallelContactForce(step+1, is_output_step, contact_visualization);
       contact_manager.GetForces(contact_force);
-      if (visualize_output && is_output_step) {
-        contact_manager.WriteContactEntitiesToVTKFile(step+1);
+      if (contact_visualization && is_output_step) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
       }
     }
 

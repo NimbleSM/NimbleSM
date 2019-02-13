@@ -663,7 +663,7 @@ namespace nimble {
     }
 #endif
     
-    void ComputeContactForce(int step, bool is_output_step, bool visualize = false);
+    void ComputeContactForce(int step, bool debug_output);
 
     void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
                                 std::vector<ContactEntity> const & triangles,
@@ -671,7 +671,7 @@ namespace nimble {
                                 std::vector<PROJECTION_TYPE>& projection_types);
     
 #if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-    using patch_collection = bvh::vt::future_collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
+    using patch_collection = bvh::vt::collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
     
     void ComputeParallelContactForce(int step, bool is_output_step, bool visualize = false);
 #endif
@@ -731,61 +731,11 @@ namespace nimble {
     
     patch_collection face_patch_collection_;
     patch_collection node_patch_collection_;
-    
-    struct bad : public bvh::perf::instrument< bad >
-    {
-      bad() : data( 1 )
-      {
-      }
-      
-      std::vector< unsigned char > data;
-
-      template< typename Serializer >
-      friend bvh::serializer_interface< Serializer > &
-      operator<<( bvh::serializer_interface< Serializer > &_serializer,
-                  const bad &_bad )
-      {
-        _serializer << _bad.data;
-
-        return _serializer;
-      }
-
-      template< typename Serializer >
-      friend bvh::serializer_interface< Serializer > &
-      operator>>( bvh::serializer_interface< Serializer > &_serializer,
-                  bad &_bad )
-      {
-        _serializer >> _bad.data;
-
-        return _serializer;
-      }
-      
-      friend rpc::byte_stream &
-      operator<<( rpc::byte_stream &_serializer,
-                  const bad &_bad )
-      {
-        bvh::serializer_interface< rpc::byte_stream > s( _serializer );
-        s << _bad;
-
-        return _serializer;
-      }
-      
-      friend rpc::byte_stream &
-      operator>>( rpc::byte_stream &_serializer,
-                  bad &_bad )
-      {
-        bvh::serializer_interface< rpc::byte_stream > s( _serializer );
-        s >> _bad;
-
-        return _serializer;
-      }
-    };
-
-    bvh::vt::future_collection< bad, bvh::vt::index_1d > test_collection_;
 #endif
 
 public:
 
+#ifdef NIMBLE_HAVE_EXTRAS
     void compute_and_scatter_contact_force(DeviceContactEntityArrayView contact_nodes_d,
                                            DeviceContactEntityArrayView contact_faces_d,
                                            stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
@@ -813,36 +763,8 @@ public:
                                                 DeviceContactEntityArrayView contact_nodes_d,
                                                 int contact_node_index,
                                                 nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
-
+#endif
 };
-
-
-#ifdef NIMBLE_HAVE_BVH
-namespace bvh
-{
-  /**
-   * Adapter for bvh to get contact entity collision info
-   */
-  template<>
-  struct get_entity_info< nimble::ContactEntity >
-  {
-    static decltype(auto) get_kdop( const nimble::ContactEntity &_entity )
-    {
-      return _entity.kdop();
-    }
-
-    static decltype(auto) get_global_id( const nimble::ContactEntity &_entity )
-    {
-      return _entity.contact_entity_global_id();
-    }
-
-    static decltype(auto) get_centroid( const nimble::ContactEntity &_entity )
-    {
-      return _entity.centroid();
-    }
-  };
-}
-#endif  // NIMBLE_HAVE_BVH
 } // namespace nimble
 
 #endif // NIMBLE_MATERIAL_H
