@@ -708,7 +708,38 @@ namespace nimble {
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
 #endif
-  };
+
+public:
+
+    void compute_and_scatter_contact_force(DeviceContactEntityArrayView contact_nodes_d,
+                                           DeviceContactEntityArrayView contact_faces_d,
+                                           stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
+                                           nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
+
+    void compute_and_scatter_contact_force_OLD(stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
+                                               DeviceContactEntityArrayView contact_nodes_d,
+                                               DeviceContactEntityArrayView contact_faces_d,
+                                               int num_contact_nodes,
+                                               nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
+
+    void load_contact_points_and_tris(const int num_collisions,
+                                      stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
+                                      DeviceContactEntityArrayView contact_nodes_d,
+                                      DeviceContactEntityArrayView contact_faces_d,
+                                      gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points,
+                                      gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles);
+
+    KOKKOS_FUNCTION void scatter_contact_forces(double gap,
+                                                double scale,
+                                                double tri_normal[3],
+                                                DeviceContactEntityArrayView contact_faces_d,
+                                                int contact_face_index,
+                                                const double* closest_pt,
+                                                DeviceContactEntityArrayView contact_nodes_d,
+                                                int contact_node_index,
+                                                nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
+
+};
 
 } // namespace nimble
 
