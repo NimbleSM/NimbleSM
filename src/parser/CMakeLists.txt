@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(mpi_buckets)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
+set(CMAKE_CXX_FLAGS "-flto -std=c++11 -Wall -Wextra -pedantic -O3")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # find_package(MPI REQUIRED)
 

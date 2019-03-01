@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "variant.hpp"
+#include "util/variant.hpp"
 
 class BinaryOperator;
 
@@ -19,6 +19,8 @@ class SyntaxNode;
 class BinaryOperator
 {
     enum Operation { Add, Sub, Mul, Div };
+
+   public:
     Operation                   op;
     std::unique_ptr<SyntaxNode> left;
     std::unique_ptr<SyntaxNode> right;
