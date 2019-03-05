@@ -268,27 +268,35 @@ namespace nimble {
     }
 
 #ifdef NIMBLE_HAVE_BVH
-    bvh::dop_26<double> kdop() const {
+    bvh::dop_26d kdop_;
+    
+    void RecomputeKdop()
+    {
       const double inflation_length = 0.15 * char_len_;
       if (entity_type_ == NODE) {
         vertex v;
         v[0] = coord_1_x_;
         v[1] = coord_1_y_;
         v[2] = coord_1_z_;
-        return bvh::dop_26< double >::from_vertices( &v, &v + 1, inflation_length );
+        kdop_ = bvh::dop_26d::from_vertices( &v, &v + 1, inflation_length );
+      } else {
+        // entity_type_ == TRIANGLE
+        vertex v[3];
+        v[0][0] = coord_1_x_;
+        v[0][1] = coord_1_y_;
+        v[0][2] = coord_1_z_;
+        v[1][0] = coord_2_x_;
+        v[1][1] = coord_2_y_;
+        v[1][2] = coord_2_z_;
+        v[2][0] = coord_3_x_;
+        v[2][1] = coord_3_y_;
+        v[2][2] = coord_3_z_;
+        kdop_ = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
       }
-      // entity_type_ == TRIANGLE
-      vertex v[3];
-      v[0][0] = coord_1_x_;
-      v[0][1] = coord_1_y_;
-      v[0][2] = coord_1_z_;
-      v[1][0] = coord_2_x_;
-      v[1][1] = coord_2_y_;
-      v[1][2] = coord_2_z_;
-      v[2][0] = coord_3_x_;
-      v[2][1] = coord_3_y_;
-      v[2][2] = coord_3_z_;
-      return bvh::dop_26< double >::from_vertices( v, v + 3, inflation_length );
+    }
+
+    bvh::dop_26<double> Kdop() const {
+      return kdop_;
     }
 #endif
 

@@ -1519,6 +1519,17 @@ namespace
     // DJL PARALLEL CONTACT  processCollision(coord_.data(), coord_.size(), background_grid_cell_size);
 
 #ifdef NIMBLE_HAVE_BVH
+
+    // Force kdop recomputation
+    for ( auto &&ent : contact_faces_ )
+    {
+      ent.RecomputeKdop();
+    }
+    for ( auto &&ent : contact_nodes_ )
+    {
+      ent.RecomputeKdop();
+    }
+    
     // Construct the BVH trees for narrowphase
     // Can also be done by bvh internally, but using thsese for visualization
     auto faces_tree = bvh::bvh_tree_26d{ contact_faces_.begin(), contact_faces_.end() };
@@ -1624,6 +1635,12 @@ namespace
       // Build patches (averages centroids and builds kdops)
       // od_factor is used for overdecomposition
       // TODO: Use tree splitting metric for splitting patches rather than indices
+      
+      // Force kdop recomputation
+      for ( auto &&ent : entities )
+      {
+        ent.RecomputeKdop();
+      }
 
       int rank = bvh::vt::context::current()->rank();
 
@@ -1739,7 +1756,7 @@ namespace
   // Free functions for accessing entity info for bvh
   bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity )
   {
-    return _entity.kdop();
+    return _entity.Kdop();
   }
   
   std::size_t get_entity_global_id( const ContactEntity &_entity )
