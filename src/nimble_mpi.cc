@@ -53,6 +53,10 @@
 #include "nimble.mpi.utils.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_view.h"
+#include "nimble_contact.h"
+#ifdef NIMBLE_HAVE_BVH
+  #include <bvh/vt/context.hpp>
+#endif
 
 #include <mpi.h>
 #include <iostream>
@@ -83,6 +87,10 @@ int main(int argc, char *argv[]) {
 
   MPI_Init(&argc, &argv);
 
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
+
   int mpi_err;
   int num_mpi_ranks;
   int my_mpi_rank;
@@ -95,6 +103,11 @@ int main(int argc, char *argv[]) {
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
   }
+
+#ifdef NIMBLE_HAVE_BVH
+  auto comm = MPI_COMM_WORLD;
+  bvh::vt::context vt_ctx{ argc, argv, &comm };
+#endif
 
   int status = 0;
 
@@ -145,6 +158,8 @@ int main(int argc, char *argv[]) {
   int acceleration_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
   int internal_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
   int external_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
+  int contact_force_field_id =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
+  int skin_node_field_id =  model_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
   // Blocks
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -221,6 +236,10 @@ int main(int argc, char *argv[]) {
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
 
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::finalize();
+#endif
+
   MPI_Finalize();
 
   return status;
@@ -237,6 +256,39 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
+  
+  nimble::ContactManager contact_manager;
+  
+  bool contact_enabled = parser.HasContact();
+  bool contact_visualization = parser.ContactVisualization();
+  
+  if (contact_enabled) {
+    
+    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    double penalty_parameter;
+    nimble::ParseContactCommand(parser.ContactString(),
+                                contact_master_block_names,
+                                contact_slave_block_names,
+                                penalty_parameter);
+    
+    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
+    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
+                                         contact_master_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
+                                         contact_slave_block_ids);
+    
+    contact_manager.SetPenaltyParameter(penalty_parameter);
+    
+    contact_manager.CreateContactEntities(mesh,
+                                          contact_master_block_ids,
+                                          contact_slave_block_ids);
+
+    if (contact_visualization) {
+      std::string tag = "serial.contact_entities";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
+    }
+  }
 
   std::vector<int> global_node_ids(num_nodes);
   int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
@@ -263,6 +315,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int acceleration_field_id =  model_data.GetFieldId("acceleration");
   int internal_force_field_id =  model_data.GetFieldId("internal_force");
   int external_force_field_id =  model_data.GetFieldId("external_force");
+  int contact_force_field_id =  model_data.GetFieldId("contact_force");
 
   int status = 0;
   // Set up the global vectors
@@ -274,6 +327,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* acceleration = model_data.GetNodeData(acceleration_field_id);
   double* internal_force = model_data.GetNodeData(internal_force_field_id);
   double* external_force = model_data.GetNodeData(external_force_field_id);
+  double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
@@ -432,6 +486,19 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  is_output_step);
     }
 
+    // Evaluate the contact force
+    // TODO: remove this ifdef when parallel contact is supported with other backends
+#ifdef NIMBLE_HAVE_BVH
+    if (contact_enabled) {
+      contact_manager.ApplyDisplacements(displacement);
+      contact_manager.ComputeParallelContactForce(step+1, is_output_step, contact_visualization);
+      contact_manager.GetForces(contact_force);
+      if (contact_visualization && is_output_step) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
+      }
+    }
+#endif
+
 	{
 	  nimble::quanta::stopwatch vector_reduction_timer;
 	  vector_reduction_timer.reset();
@@ -443,7 +510,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 	}
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_unknowns ; ++i) {
-      acceleration[i] = (1.0/lumped_mass[i/3]) * (internal_force[i] + external_force[i]);
+      acceleration[i] = (1.0/lumped_mass[i/3]) * (internal_force[i] + external_force[i] + contact_force[i]);
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}

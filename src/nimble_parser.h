@@ -93,7 +93,7 @@ namespace nimble {
   class Parser {
 
   public:
-
+    
     Parser();
 
     virtual ~Parser() {}
@@ -141,7 +141,7 @@ namespace nimble {
       else
         return true;
     }
-
+    
     bool ContactVisualization() const {
       return contact_visualization_;
     }
@@ -212,7 +212,6 @@ namespace nimble {
     std::vector<std::string> boundary_condition_strings_;
     std::string output_field_string_;
   };
-
 } // namespace nimble
 
 #endif // NIMBLE_PARSER_H

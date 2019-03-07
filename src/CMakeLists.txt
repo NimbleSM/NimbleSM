@@ -65,5 +65,5 @@ ENDIF()
 
 IF(NIMBLE_HAVE_KOKKOS)
   add_executable(NimbleSM_Kokkos nimble_kokkos.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES} ${NIMBLE_KOKKOS_SOURCES} )
-  target_link_libraries(NimbleSM_Kokkos ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Exodus_LIBS})
+  target_link_libraries(NimbleSM_Kokkos ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Exodus_LIBS} ${bvh_LIBS})
 ENDIF()
