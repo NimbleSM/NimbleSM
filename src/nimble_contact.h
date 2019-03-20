@@ -60,6 +60,13 @@
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
   #include <bvh/tree.hpp>
+  #include <bvh/patch.hpp>
+  #include <bvh/perf/instrument.hpp>
+#ifdef BVH_ENABLE_VT
+  #include <bvh/vt/collection.hpp>
+  #include <bvh/vt/helpers.hpp>
+  #include <bvh/vt/collision_world.hpp>
+#endif
 #endif
 
 namespace nimble {
@@ -261,27 +268,35 @@ namespace nimble {
     }
 
 #ifdef NIMBLE_HAVE_BVH
-    bvh::dop_26<double> kdop() const {
+    bvh::dop_26d kdop_;
+    
+    void RecomputeKdop()
+    {
       const double inflation_length = 0.15 * char_len_;
       if (entity_type_ == NODE) {
         vertex v;
         v[0] = coord_1_x_;
         v[1] = coord_1_y_;
         v[2] = coord_1_z_;
-        return bvh::dop_26< double >::from_vertices( &v, &v + 1, inflation_length );
+        kdop_ = bvh::dop_26d::from_vertices( &v, &v + 1, inflation_length );
+      } else {
+        // entity_type_ == TRIANGLE
+        vertex v[3];
+        v[0][0] = coord_1_x_;
+        v[0][1] = coord_1_y_;
+        v[0][2] = coord_1_z_;
+        v[1][0] = coord_2_x_;
+        v[1][1] = coord_2_y_;
+        v[1][2] = coord_2_z_;
+        v[2][0] = coord_3_x_;
+        v[2][1] = coord_3_y_;
+        v[2][2] = coord_3_z_;
+        kdop_ = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
       }
-      // entity_type_ == TRIANGLE
-      vertex v[3];
-      v[0][0] = coord_1_x_;
-      v[0][1] = coord_1_y_;
-      v[0][2] = coord_1_z_;
-      v[1][0] = coord_2_x_;
-      v[1][1] = coord_2_y_;
-      v[1][2] = coord_2_z_;
-      v[2][0] = coord_3_x_;
-      v[2][1] = coord_3_y_;
-      v[2][2] = coord_3_z_;
-      return bvh::dop_26< double >::from_vertices( v, v + 3, inflation_length );
+    }
+
+    bvh::dop_26<double> Kdop() const {
+      return kdop_;
     }
 #endif
 
@@ -511,6 +526,12 @@ namespace nimble {
       contact_entities[i] = entity;
     }
   }
+#ifdef NIMBLE_HAVE_BVH
+  // Free functions for accessing entity info for bvh
+  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity );
+  std::size_t get_entity_global_id( const ContactEntity &_entity );
+  tim::vec3d get_entity_centroid( const ContactEntity &_entity );
+#endif
 
   class ContactManager {
 
@@ -521,13 +542,8 @@ namespace nimble {
       NODE_OR_EDGE=1,
       FACE=2
     } PROJECTION_TYPE;
-
-    ContactManager() : penalty_parameter_(0.0)
-#ifdef NIMBLE_HAVE_EXTRAS
-      , contact_nodes_search_tree_("contact nodes search tree")
-      , contact_faces_search_tree_("contact faces search tree")
-#endif
-      {}
+    
+    explicit ContactManager( std::size_t dicing_factor = 1);
 
     virtual ~ContactManager() {}
 
@@ -654,13 +670,19 @@ namespace nimble {
       });
     }
 #endif
+    
+    void ComputeContactForce(int step, bool debug_output);
 
     void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
                                 std::vector<ContactEntity> const & triangles,
                                 std::vector<ContactEntity::vertex>& closest_points,
                                 std::vector<PROJECTION_TYPE>& projection_types);
-
-    void ComputeContactForce(int step, bool debug_output);
+    
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+    using patch_collection = bvh::vt::collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
+    
+    void ComputeParallelContactForce(int step, bool is_output_step, bool visualize = false);
+#endif
 
     void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
@@ -708,9 +730,20 @@ namespace nimble {
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
     stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
 #endif
+    
+    std::size_t dicing_factor_; ///< Patch dicing factor for overdecomposition
+
+#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
+    
+    bvh::vt::collision_world<bvh::patch<ContactEntity>, bvh::bvh_tree_26d>  collision_world_;
+    
+    patch_collection face_patch_collection_;
+    patch_collection node_patch_collection_;
+#endif
 
 public:
 
+#ifdef NIMBLE_HAVE_EXTRAS
     void compute_and_scatter_contact_force(DeviceContactEntityArrayView contact_nodes_d,
                                            DeviceContactEntityArrayView contact_faces_d,
                                            stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
@@ -738,37 +771,8 @@ public:
                                                 DeviceContactEntityArrayView contact_nodes_d,
                                                 int contact_node_index,
                                                 nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
-
+#endif
 };
-
 } // namespace nimble
-
-
-#ifdef NIMBLE_HAVE_BVH
-namespace bvh
-{
-  /**
-   * Adapter for bvh to get contact entity collision info
-   */
-  template<>
-  struct get_entity_info< nimble::ContactEntity >
-  {
-    static decltype(auto) get_kdop( const nimble::ContactEntity &_entity )
-    {
-      return _entity.kdop();
-    }
-
-    static decltype(auto) get_global_id( const nimble::ContactEntity &_entity )
-    {
-      return _entity.contact_entity_global_id();
-    }
-
-    static decltype(auto) get_centroid( const nimble::ContactEntity &_entity )
-    {
-      return _entity.centroid();
-    }
-  };
-}
-#endif  // NIMBLE_HAVE_BVH
 
 #endif // NIMBLE_MATERIAL_H

@@ -335,5 +335,4 @@ namespace nimble {
       }
     }
   }
-
 }

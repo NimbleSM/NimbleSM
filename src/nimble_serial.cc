@@ -85,10 +85,6 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step);
 
-// global for toggling visualization for collison
-// TODO: move to some sort of configuration or command line switch
-const bool visualize_output = false;
-
 int main(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -447,7 +443,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement);
-      contact_manager.ComputeContactForce(step+1, visualize_output && is_output_step);
+      contact_manager.ComputeContactForce(step+1, contact_visualization && is_output_step);
       contact_manager.GetForces(contact_force);
     }
 
