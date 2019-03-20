@@ -8,8 +8,8 @@ class RequestQueue
 
     auto clearAt(int index) -> MPI_Request
     {
-        MPI_Request request = pendingRequests[index];
-        pendingRequests[index]     = pendingRequests.back();
+        MPI_Request request    = pendingRequests[index];
+        pendingRequests[index] = pendingRequests.back();
         pendingRequests.pop_back();
         return request;
     }
@@ -17,7 +17,8 @@ class RequestQueue
    public:
     RequestQueue()                    = default;
     RequestQueue(RequestQueue const&) = delete;
-    RequestQueue(RequestQueue&& queue) : pendingRequests(std::move(queue.pendingRequests))
+    RequestQueue(RequestQueue&& queue)
+      : pendingRequests(std::move(queue.pendingRequests))
     {
         queue.pendingRequests.clear();
     }
@@ -55,11 +56,24 @@ class RequestQueue
     {
         auto result = WaitAnyResult{};
         int  index;
-        MPI_Waitany(pendingRequests.size(), pendingRequests.data(), &index, &result.status);
+        MPI_Waitany(
+            pendingRequests.size(), pendingRequests.data(), &index, &result.status);
         result.request = clearAt(index);
         return result;
     }
-    auto hasMoreThan(size_t min) const -> bool { return pendingRequests.size() > min; }
+    auto popWithIndex() -> std::pair<int, WaitAnyResult>
+    {
+        auto result = WaitAnyResult{};
+        int  index;
+        MPI_Waitany(
+            pendingRequests.size(), pendingRequests.data(), &index, &result.status);
+        result.request = clearAt(index);
+        return {index, result};
+    }
+    auto hasMoreThan(size_t min) const -> bool
+    {
+        return pendingRequests.size() > min;
+    }
 
     auto cancel_remaining() -> void
     {
@@ -74,12 +88,10 @@ class RequestQueue
     auto wait_all(MPI_Status* status_buffer) -> void
     {
         MPI_Waitall(pendingRequests.size(), pendingRequests.data(), status_buffer);
-        pendingRequests.clear(); 
+        pendingRequests.clear();
     }
 
-    auto size() const noexcept -> size_t {
-        return pendingRequests.size(); 
-    }    
+    auto size() const noexcept -> size_t { return pendingRequests.size(); }
 
     ~RequestQueue() { cancel_remaining(); }
 };

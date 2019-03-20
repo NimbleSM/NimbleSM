@@ -96,6 +96,8 @@ struct BoundingBox
     }
     auto intersects(BoundingBox const& other) const noexcept -> bool
     {
+        
+        
         return xBounds.intersects(other.xBounds)   // checks along x axis
             && yBounds.intersects(other.yBounds)   // checks along y axis
             && zBounds.intersects(other.zBounds);  // checks along z axis

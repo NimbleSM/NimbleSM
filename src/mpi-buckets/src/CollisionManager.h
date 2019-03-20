@@ -1,10 +1,4 @@
 #pragma once
-#include <cstddef>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <utility>
 #include "BarrierTree.h"
 #include "BoundingBox.h"
 #include "DataChannel.h"
@@ -15,32 +9,13 @@
 #include "WaitAnyResult.h"
 #include "meta.h"
 
-auto operator<<(std::ostream& out, GridIndex index) -> std::ostream&
-{
-    return out << index.x << " " << index.y << " " << index.z;
-}
-template <class T>
-auto operator<<(std::ostream& out, NumericRange<T> range) -> std::ostream&
-{
-    return out << "[" << range.min << ", " << range.max << "]";
-}
-auto operator<<(std::ostream& out, BoundingBox const& box) -> std::ostream&
-{
-    return out << "(" << box.xBounds << " " << box.yBounds << " " << box.zBounds
-               << ")";
-}
-void printIndexBoxMap(std::unordered_map<GridIndex, BoundingBox> const& boxmap)
-{
-    std::stringstream stream;
-    for (auto& grid_box_pair : boxmap)
-    {
-        auto index = grid_box_pair.first;
-        auto box   = grid_box_pair.second;
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
-        stream << "Cell " << index << ": " << box << "\n";
-    }
-    std::cerr << stream.str();
-}
+#include "text_conversion.h"
+
+
 
 using BoundingBoxMap = std::unordered_map<GridIndex, BoundingBox>;
 template <class Range, class Func, template <class...> class map = std::unordered_map>
@@ -215,21 +190,28 @@ auto anyIntersect(std::vector<BoundingBox> const& boxes1,
 
 using BBPacket     = std::pair<int, std::vector<BoundingBox>>;
 using BBPacketList = std::vector<BBPacket>;
-void notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
+/* returns a list of the ranks that this rank intersects with */
+auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
                                DataChannel             dataChannel,
                                DataChannel             sizeChannel,
                                std::vector<int> const& sourceRanks)
+    -> std::vector<int>
 {
     using namespace std;
-    RequestQueue        recvQueue;
-    std::vector<size_t> incomingSizes(sourceRanks.size());
+    RequestQueue                 sizeRecvQueue;
+    std::vector<size_t>          incomingSizes(sourceRanks.size());
+    std::unordered_map<int, int> inverseSourceRanks;
+    vector<vector<int>>          incomingRanks(sourceRanks.size());
+
+    inverseSourceRanks.reserve(sourceRanks.size());
 
     // Prepare to recieve incoming messages
     {
         size_t index = 0;
         for (int rank : sourceRanks)
         {
-            recvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank));
+            inverseSourceRanks[rank] = (int)index;
+            sizeRecvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank));
             ++index;
         }
     }
@@ -258,9 +240,38 @@ void notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
             index++;
         }
     }
+
+
+    RequestQueue rankRecvQueue;
+    size_t       total_incoming_ranks = 0;
+    while (sizeRecvQueue.has())
+    {
+        WaitAnyResult result = sizeRecvQueue.pop();
+        if (result.status.MPI_TAG == sizeChannel.tag)
+        {
+            int   source       = result.status.MPI_SOURCE;
+            int   source_index = inverseSourceRanks.at(source);
+            auto& vect         = incomingRanks[source_index];
+            vect.resize(incomingSizes[source_index]);
+            rankRecvQueue.push(dataChannel.Irecv(vect.data(), vect.size(), source));
+            total_incoming_ranks += vect.size();
+        }
+    }
+    rankRecvQueue.wait_all();
+
+
+    std::unordered_set<int> ranks;
+    ranks.reserve(total_incoming_ranks);
+    for (auto& rankList : incomingRanks)
+    {
+        ranks.insert(rankList.begin(), rankList.end());
+    }
+    return std::vector<int>(ranks.begin(), ranks.end());
 }
 template <class View>
-void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel channel)
+auto getExchangeMembers(View&&       kokkos_view,
+                        double const cell_size,
+                        DataChannel  channel) -> std::vector<int>
 {
     using namespace std;
     HashFunction hash;
@@ -278,6 +289,10 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel ch
             return hash(index.x, index.y, index.z) % n_ranks;
         }
     ); 
+    std::vector<int> source_ranks; 
+    for(auto& packet : packets) {
+        source_ranks.push_back(packet.first); 
+    }
     auto rankBoxInfo = std::vector<std::pair<int, std::vector<BoundingBox>>>(
         ExchangeData(
             packets,
@@ -288,4 +303,8 @@ void handleCollisions(View&& kokkos_view, double const cell_size, DataChannel ch
         )
     );
     // clang-format on
+    return notifyRanksOfIntersection(rankBoxInfo,
+                                     channel,
+                                     DataChannel{channel.comm, channel.tag + 1},
+                                     source_ranks);
 }

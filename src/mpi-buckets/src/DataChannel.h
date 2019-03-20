@@ -1,7 +1,9 @@
 #pragma once
 #include <mpi.h>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
+#include "RequestQueue.h"
 #include "meta.h"
 
 struct DataChannel
@@ -35,9 +37,9 @@ struct DataChannel
      */
     auto notify(int reciever) const -> MPI_Request
     {
-        MPI_Request request; 
+        MPI_Request request;
         MPI_Irecv(NullOf<int>(), 0, MPI_INT, reciever, tag, comm, &request);
-        return request; 
+        return request;
     }
     template <class T>
     auto Irecv(T* dataBuffer, size_t count, int source) const -> MPI_Request
@@ -93,6 +95,49 @@ struct DataChannel
     auto Issend(std::vector<T> const& message, int dest) const -> MPI_Request
     {
         return Issend(message.data(), message.size(), dest);
+    }
+
+    template <class T, class T2 = T>
+    auto exchange(std::vector<T> const& data, std::vector<int> const& ranks)
+        -> std::vector<std::vector<T2>>
+    {
+        size_t                        outgoing_size = data.size();
+        std::vector<size_t>           incoming_sizes(ranks.size());
+        std::unordered_map<int, int>  inverseSourceRanks;
+        std::vector<std::vector<int>> incomingRanks(ranks.size());
+        RequestQueue                  sizeRecvQueue;
+        RequestQueue                  send_queue;
+        RequestQueue                  dataRecvQueue;
+        inverseSourceRanks.reserve(ranks.size());
+
+
+        std::vector<std::vector<T2>> incoming(ranks.size());
+
+
+        {
+            size_t i = 0;
+            for (int rank : ranks)
+            {
+                inverseSourceRanks[rank] = (int)i;
+                sizeRecvQueue.push(Irecv(&incoming_sizes[i], 1, rank));
+                ++i;
+                send_queue.push(Isend(&outgoing_size, 1, rank));
+            }
+        }
+
+        while (sizeRecvQueue.has())
+        {
+            auto   request = sizeRecvQueue.pop();
+            int    index   = inverseSourceRanks.at(request.status.MPI_SOURCE);
+            size_t incoming_size = incoming_sizes[index];
+            incoming[index].resize(incoming_size);
+            dataRecvQueue.push(Irecv(
+                incoming[index].data(), incoming_size, request.status.MPI_SOURCE));
+        }
+        dataRecvQueue.wait_all();
+        send_queue.wait_all();
+
+        return incoming;
     }
 
     template <class T>
