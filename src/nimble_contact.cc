@@ -1694,22 +1694,22 @@ namespace
 #if 1
     
     bvh::bvh_tree_26d::collision_query_result_type collision_result;
-    
+
     for ( const auto &r : results_vec )
       collision_result.pairs.insert( collision_result.end(), r.begin(), r.end() );
 
     unsigned long long total_num_collisions = 0;
     for ( auto &&v : results_vec)
       total_num_collisions += v.size();
-    
+
     int rank = bvh::vt::context::current()->rank();
-    
+
     if ( is_output_step )
     {
       unsigned long long ncollisions = total_num_collisions;
       MPI_Reduce(&ncollisions, &total_num_collisions, 1, MPI_UNSIGNED_LONG_LONG,
           MPI_SUM, 0, MPI_COMM_WORLD );
-      
+
       if (rank == 0)
         bvh::vt::print( "num collisions: {}\n", total_num_collisions );
       //VisualizeCollisionInfo(faces_tree, nodes_tree, collision_results, step);
@@ -1738,37 +1738,17 @@ namespace
           noncolliding_nodes.push_back(node);
         }
       }
-      
+
       std::stringstream colliding_out_name;
       colliding_out_name << "contact_entities_colliding." << rank << '.';
 
       std::stringstream noncolliding_out_name;
       noncolliding_out_name << "contact_entities_noncolliding_." << rank << '.';
-      
+
       WriteContactEntitiesToVTKFile(colliding_faces, colliding_nodes, colliding_out_name.str(), step);
       WriteContactEntitiesToVTKFile(noncolliding_faces, noncolliding_nodes, noncolliding_out_name.str(), step);
     }
 #endif
-  }
-#endif
-
-#ifdef NIMBLE_HAVE_BVH
-  // Free functions for accessing entity info for bvh
-  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity )
-  {
-    return _entity.Kdop();
-  }
-  
-  std::size_t get_entity_global_id( const ContactEntity &_entity )
-  {
-    return static_cast< std::size_t >( _entity.contact_entity_global_id() );
-  }
-  
-  tim::vec3d get_entity_centroid( const ContactEntity &_entity )
-  {
-    const auto centroid = _entity.centroid();
-    
-    return tim::vec3d{ centroid[0], centroid[1], centroid[2] };
   }
 #endif
 
