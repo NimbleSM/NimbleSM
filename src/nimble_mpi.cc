@@ -53,7 +53,7 @@
 #include "nimble.mpi.utils.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_view.h"
-#include "nimble_contact.h"
+#include "nimble_contact_manager.h"
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/vt/context.hpp>
 #endif

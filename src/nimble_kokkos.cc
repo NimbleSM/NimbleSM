@@ -51,7 +51,7 @@
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_data_manager.h"
 #include "nimble_kokkos_block.h"
-#include "nimble_contact.h"
+#include "nimble_contact_manager.h"
 #include "nimble_utils.h"
 
 #include <iostream>

@@ -51,7 +51,7 @@
 #include "nimble_utils.h"
 #include "nimble_mesh_utils.h"
 #include "nimble_tpetra_utils.h"
-#include "nimble_contact.h"
+#include "nimble_contact_manager.h"
 #include "nimble_view.h"
 
 #include <iostream>

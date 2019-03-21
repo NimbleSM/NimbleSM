@@ -1,4 +1,3 @@
-
 /*
 //@HEADER
 // ************************************************************************
@@ -42,7 +41,7 @@
 //@HEADER
 */
 
-#include "nimble_contact.h"
+#include "nimble_contact_manager.h"
 #include "nimble_utils.h"
 
 // DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"

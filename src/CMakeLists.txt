@@ -15,7 +15,7 @@ set(NIMBLE_SOURCES
   nimble_expression_parser.cc
   nimble_linear_solver.cc
   nimble_contact_entity.cc
-  nimble_contact.cc
+  nimble_contact_manager.cc
   nimble.mpi.reduction_utils.cc
   nimble.mpi.reduction.cc
 )
