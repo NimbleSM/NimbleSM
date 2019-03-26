@@ -171,7 +171,7 @@ namespace nimble {
       retval = ex_get_set_param(exodus_file_id, EX_NODE_SET, id, &num_nodes_in_ns, &num_dist_factors_in_ns);
       if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
       node_sets_[id] = std::vector<int>();
-      if (num_nodes_in_ns > 0) {
+      if (num_nodes_in_ns > 0 && num_dist_factors_in_ns == num_nodes_in_ns) {
         node_sets_[id] = std::vector<int>(num_nodes_in_ns);
         retval = ex_get_set(exodus_file_id, EX_NODE_SET, id, &node_sets_[id][0], NULL);
         if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
