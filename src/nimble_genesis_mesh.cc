@@ -149,8 +149,8 @@ namespace nimble {
     // Read the node sets and side sets
     if (num_node_sets > 0) {
       node_set_ids_.resize(num_node_sets);
-      retval = ex_get_node_set_ids(exodus_file_id, &node_set_ids_[0]);
-      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_node_set_ids");
+      retval = ex_get_ids(exodus_file_id, EX_NODE_SET, &node_set_ids_[0]);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
     }
     for (int i=0 ; i<num_node_sets ; i++) {
       int id = node_set_ids_[i];
@@ -168,13 +168,13 @@ namespace nimble {
 
       int num_nodes_in_ns;
       int num_dist_factors_in_ns;
-      retval = ex_get_node_set_param(exodus_file_id, id, &num_nodes_in_ns, &num_dist_factors_in_ns);
-      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_node_set_param");
+      retval = ex_get_set_param(exodus_file_id, EX_NODE_SET, id, &num_nodes_in_ns, &num_dist_factors_in_ns);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
       node_sets_[id] = std::vector<int>();
       if (num_nodes_in_ns > 0) {
         node_sets_[id] = std::vector<int>(num_nodes_in_ns);
-        retval = ex_get_node_set(exodus_file_id, id, &node_sets_[id][0]);
-        if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_node_set");
+        retval = ex_get_set(exodus_file_id, EX_NODE_SET, id, &node_sets_[id][0], NULL);
+        if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
         // convert from 1-based indexing to 0-based indexing
         for (unsigned int j=0 ; j<node_sets_[id].size() ; j++) {
           node_sets_[id][j] -= 1;
@@ -183,22 +183,22 @@ namespace nimble {
       distribution_factors_[id] = std::vector<double>();
       if (num_nodes_in_ns > 0) {
         distribution_factors_[id] = std::vector<double>(num_dist_factors_in_ns);
-        retval = ex_get_node_set_dist_fact(exodus_file_id, id, &distribution_factors_[id][0]);
-        if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_node_set_dist_fact");
+        retval = ex_get_set_dist_fact(exodus_file_id, EX_NODE_SET, id, &distribution_factors_[id][0]);
+        if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_dist_fact");
       }
     }
 
     // Process the element blocks
     std::vector<int> all_block_ids(num_blocks);
-    retval = ex_get_elem_blk_ids(exodus_file_id, &all_block_ids[0]);
-    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_elem_blk_ids");
+    retval = ex_get_ids(exodus_file_id, EX_ELEM_BLOCK, &all_block_ids[0]);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
 
     // Load information only for blocks with elements on this partition
     for (auto block_id : all_block_ids) {
-      int num_elem_this_block(0), num_nodes_per_elem(0), num_attributes(0);
+      int num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0), num_faces_per_elem(0), num_attributes(0);
       char elem_type[MAX_STR_LENGTH+1];
-      retval = ex_get_elem_block(exodus_file_id, block_id, elem_type, &num_elem_this_block, &num_nodes_per_elem, &num_attributes);
-      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_elem_block");
+      retval = ex_get_block(exodus_file_id, EX_ELEM_BLOCK, block_id, elem_type, &num_elem_this_block, &num_nodes_per_elem, &num_edges_per_elem, &num_faces_per_elem, &num_attributes);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
       if (num_elem_this_block > 0) {
         block_ids_.push_back(block_id);
       }
@@ -225,10 +225,10 @@ namespace nimble {
       block_names_[block_id] = block_name;
 
       // Get the block parameters and the element connectivity
-      int num_elem_this_block(0), num_nodes_per_elem(0), num_attributes(0);
+      int num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0), num_faces_per_elem(0), num_attributes(0);
       char elem_type[MAX_STR_LENGTH+1];
-      retval = ex_get_elem_block(exodus_file_id, block_id, elem_type, &num_elem_this_block, &num_nodes_per_elem, &num_attributes);
-      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_elem_block");
+      retval = ex_get_block(exodus_file_id, EX_ELEM_BLOCK, block_id, elem_type, &num_elem_this_block, &num_nodes_per_elem, &num_edges_per_elem, &num_faces_per_elem, &num_attributes);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
       block_num_nodes_per_elem_[block_id] = num_nodes_per_elem;
 
       // global element ids for this block
@@ -239,8 +239,8 @@ namespace nimble {
 
       // element connectivity for this block
       block_elem_connectivity_[block_id] = std::vector<int>(num_elem_this_block*num_nodes_per_elem);
-      retval = ex_get_elem_conn(exodus_file_id, block_id, &block_elem_connectivity_.at(block_id)[0]);
-      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_elem_conn");
+      retval = ex_get_conn(exodus_file_id, EX_ELEM_BLOCK, block_id, &block_elem_connectivity_.at(block_id)[0], 0, 0);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_conn");
       // Switch from 1-based indexing to 0-based indexing
       for (unsigned int i=0 ; i<block_elem_connectivity_.at(block_id).size() ; i++) {
         block_elem_connectivity_.at(block_id).at(i) -= 1;

@@ -43,17 +43,6 @@
 */
 
 #include "nimble_contact_entity.h"
-//#include "nimble_utils.h"
-
-//#ifdef NIMBLE_HAVE_MPI
-//  #include "mpi.h"
-//#endif
-
-//#include <iostream>
-//#include <fstream>
-//#include <sstream>
-//#include <algorithm>
-//#include <set>
 
 namespace nimble {
 

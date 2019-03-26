@@ -45,6 +45,10 @@
 #define NIMBLE_CONTACTENTITY_H
 
 #include <vector>
+#include <cstring>
+#include <string>
+#include <cfloat>
+#include <math.h>
 #include "nimble_kokkos_defs.h"
 
 #ifdef NIMBLE_HAVE_EXTRAS
