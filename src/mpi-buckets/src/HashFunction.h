@@ -87,6 +87,7 @@ class HashFunction {
     uint64_t b = default_b;
 
     constexpr HashFunction()                    = default;
+    constexpr HashFunction(HashFunction& h) : a(h.a), b(h.b) {}
     constexpr HashFunction(HashFunction const&) = default;
     constexpr HashFunction(HashFunction&&)      = default;
 

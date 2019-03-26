@@ -28,12 +28,12 @@ auto addPointsToBoundingBoxMap(View&&       values,
                                Map&&        boundingBoxLookup = Map{})
     -> decltype(boundingBoxLookup)
 {
-    size_t const count = values.extent(0);
+    size_t const count = values.extent(0)/3;
     if (count > 0)
     {
         double const scale = 1.0 / cell_size;
 
-        Point3d point{values(0, 0), values(0, 1), values(0, 2)};
+        Point3d point{values(0), values(1), values(2)};
 
         auto current_index       = GridIndex(point, scale);
         auto current_cell_bounds = GridCellBounds(current_index, cell_size);
@@ -41,7 +41,7 @@ auto addPointsToBoundingBoxMap(View&&       values,
 
         for (size_t i = 1; i < count; i++)
         {
-            point = {values(i, 0), values(i, 1), values(i, 2)};
+            point = {values(3*i), values(3*i+1), values(3*i+2)};
 
             if (current_cell_bounds.contains(point, cell_size))
             {
@@ -287,7 +287,8 @@ auto getExchangeMembers(View&&       kokkos_view,
         [=](pair<const GridIndex, BoundingBox> const& message) {
             auto index = message.first;
             return hash(index.x, index.y, index.z) % n_ranks;
-        }
+        },
+        std::unordered_map<uint64_t, std::vector<pair<const GridIndex, BoundingBox>>>{}
     ); 
     std::vector<int> source_ranks; 
     for(auto& packet : packets) {

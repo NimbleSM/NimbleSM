@@ -43,6 +43,7 @@
 
 #include "nimble_contact_manager.h"
 #include "nimble_utils.h"
+#include "mpi-buckets/src/CollisionManager.h"
 
 // DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"
 #ifdef NIMBLE_HAVE_EXTRAS
@@ -1513,9 +1514,14 @@ namespace
       throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
     }
 
-    // DJL PARALLEL CONTACT  double background_grid_cell_size = BoundingBoxAverageCharacteristicLengthOverAllRanks();
-    // DJL PARALLEL CONTACT  std::cout << "DEBUGGING background_grid_cell_size " << background_grid_cell_size << std::endl;
+    double background_grid_cell_size = BoundingBoxAverageCharacteristicLengthOverAllRanks();
+    std::cout << "DEBUGGING background_grid_cell_size " << background_grid_cell_size << std::endl;
     // DJL PARALLEL CONTACT  processCollision(coord_.data(), coord_.size(), background_grid_cell_size);
+
+    // kokkos_view::extent(), accessor kokkos_view::(i, 0) x coordinte of ith entry in list
+
+    // ANTONIO, HERE IS THE COMMENTED OUT LINE
+    //std::vector<int> exchange_members = getExchangeMembers(coord_d_, background_grid_cell_size, {MPI_COMM_WORLD, 0});
 
 #ifdef NIMBLE_HAVE_BVH
 
@@ -1528,7 +1534,7 @@ namespace
     {
       ent.RecomputeKdop();
     }
-    
+
     // Construct the BVH trees for narrowphase
     // Can also be done by bvh internally, but using thsese for visualization
     auto faces_tree = bvh::bvh_tree_26d{ contact_faces_.begin(), contact_faces_.end() };
