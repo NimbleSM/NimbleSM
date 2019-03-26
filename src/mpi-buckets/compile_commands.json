@@ -1,7 +1,7 @@
 [
 {
-  "directory": "/home/sky/sandia/NimbleSM/src/mpi-buckets",
-  "command": "/usr/bin/c++   -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/home/sky/sandia/NimbleSM/src/mpi-buckets/src  -std=c++11 -O3   -o CMakeFiles/run_tests.dir/tests/main.cc.o -c /home/sky/sandia/NimbleSM/src/mpi-buckets/tests/main.cc",
-  "file": "/home/sky/sandia/NimbleSM/src/mpi-buckets/tests/main.cc"
+  "directory": "/home/sky/spring/NimbleSM/src/mpi-buckets",
+  "command": "/usr/bin/c++   -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/home/sky/spring/NimbleSM/src/mpi-buckets/src  -std=c++11 -O3   -o CMakeFiles/run_tests.dir/tests/main.cc.o -c /home/sky/spring/NimbleSM/src/mpi-buckets/tests/main.cc",
+  "file": "/home/sky/spring/NimbleSM/src/mpi-buckets/tests/main.cc"
 }
 ]

@@ -5,7 +5,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(MPI REQUIRED)
 
-include_directories(${MPI_INCLUDE_PATH} src)
+include_directories(${MPI_INCLUDE_PATH})
+include_directories(src)
 
 file(GLOB TESTS "tests/*.cc")
 

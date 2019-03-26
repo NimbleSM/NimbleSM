@@ -1,10 +1,13 @@
 #pragma once
+#include "RequestQueue.h"
+#include "meta.h"
+
 #include <mpi.h>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include "RequestQueue.h"
-#include "meta.h"
+
 
 struct DataChannel
 {
@@ -110,20 +113,20 @@ struct DataChannel
         RequestQueue                  dataRecvQueue;
         inverseSourceRanks.reserve(ranks.size());
 
+        auto dataChannel = DataChannel{comm, tag + 1};
+
 
         std::vector<std::vector<T2>> incoming(ranks.size());
 
-
+        for (int i = 0; i < ranks.size(); i++)
         {
-            size_t i = 0;
-            for (int rank : ranks)
-            {
-                inverseSourceRanks[rank] = (int)i;
-                sizeRecvQueue.push(Irecv(&incoming_sizes[i], 1, rank));
-                ++i;
-                send_queue.push(Isend(&outgoing_size, 1, rank));
-            }
+            int rank                 = ranks[i];
+            inverseSourceRanks[rank] = i;
+            sizeRecvQueue.push(Irecv(&incoming_sizes[i], 1, rank));
+            send_queue.push(Isend(&outgoing_size, 1, rank));
+            send_queue.push(dataChannel.Isend(data, rank));
         }
+
 
         while (sizeRecvQueue.has())
         {
@@ -131,7 +134,7 @@ struct DataChannel
             int    index   = inverseSourceRanks.at(request.status.MPI_SOURCE);
             size_t incoming_size = incoming_sizes[index];
             incoming[index].resize(incoming_size);
-            dataRecvQueue.push(Irecv(
+            dataRecvQueue.push(dataChannel.Irecv(
                 incoming[index].data(), incoming_size, request.status.MPI_SOURCE));
         }
         dataRecvQueue.wait_all();
