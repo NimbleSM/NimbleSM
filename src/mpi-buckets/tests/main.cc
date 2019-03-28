@@ -56,11 +56,10 @@ int main(int argc, char** argv)
     std::vector<int> exchange_members          = getExchangeMembers(
         coord_d_, background_grid_cell_size, MPI_COMM_WORLD, 0, 1, 2);
 
-    // Tests exchange without excluding self
-    test_exchange(channel, false);
-    MPI_Barrier(MPI_COMM_WORLD);
-    // Tests exchange with excluding self
-    test_exchange(channel, true);
+    for (int i = 0; i < exchange_members.size(); i++)
+    {
+        std::cout << i << std::endl;
+    }
 
     MPI_Finalize();
 }

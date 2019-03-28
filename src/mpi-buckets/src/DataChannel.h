@@ -30,7 +30,7 @@ struct DataChannel
     }
     auto Iawait(int sender) const -> MPI_Request
     {
-        return Issend(NullOf<int>(), 0, sender);
+        return Irecv(NullOf<int>(), 0, sender);
     }
     /**
      * @brief Fulfill a pending await on another rank
@@ -41,7 +41,8 @@ struct DataChannel
     auto notify(int reciever) const -> MPI_Request
     {
         MPI_Request request;
-        MPI_Irecv(NullOf<int>(), 0, MPI_INT, reciever, tag, comm, &request);
+        // MPI_Irecv(NullOf<int>(), 0, MPI_INT, reciever, tag, comm, &request);
+        MPI_Isend(NullOf<int>(), 0, MPI_INT, reciever, tag, comm, &request);
         return request;
     }
     template <class T>

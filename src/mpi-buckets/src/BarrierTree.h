@@ -1,5 +1,9 @@
 #include "DataChannel.h"
 #include "RequestQueue.h"
+#include "mpi_err.h"
+
+#include <iostream>
+#include <string>
 
 class BarrierTree
 {
@@ -43,6 +47,7 @@ class BarrierTree
                 notifyParents();
             }
         }
+        mpi_err("markChildComplete():finishedFlag = ", finishedFlag);
     }
     template <class F, class... ExtraArgs>
     auto onChildRanks(F&& func, ExtraArgs&&... args) const -> void
@@ -108,12 +113,15 @@ class BarrierTree
 
     void processStatus(MPI_Status const& status)
     {
+        mpi_err("processStatus(): status.MPI_SOURCE = ", status.MPI_SOURCE);
         if (isFromChild(status.MPI_SOURCE))
         {
+            mpi_err("processStatus(): calling markChildComplete()");
             markChildComplete();
         }
         else if (isFromParent(status.MPI_SOURCE))
         {
+            mpi_err("processStatus(): notifyChildren()");
             notifyChildren();
         }
     }
@@ -121,9 +129,10 @@ class BarrierTree
     {
         auto EnqueueAwait
             = [](DataChannel const& channel, int rank, RequestQueue& queue) {
+                  mpi_err("Awaiting ", rank);
                   queue.push(channel.Iawait(rank));
               };
-        onParentRanks(EnqueueAwait, queue);
+        onChildRanks(EnqueueAwait, queue);
         onParentRanks(EnqueueAwait, queue);
     }
 

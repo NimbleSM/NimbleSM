@@ -13,7 +13,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "text_conversion.h"
+#include "mpi_err.h"
 
 // Takes a list of points from a kokkos view and constructs a map of
 // grid indicies and the corresponding bounding box
@@ -78,13 +78,13 @@ void SyncSendMessageSizes(PacketMap&&   packets,
 template <class PacketMap, class SourceIdentifiedCallback, class SendProcessedCallback>
 auto IdentifySources(PacketMap&&              packets,
                      MPI_Comm                 comm,
-                     int                      tag1,
-                     int                      tag2,
+                     int                      dataTag,
+                     int                      barrierTag,
                      SourceIdentifiedCallback notifySourceIdentified,
                      SendProcessedCallback    notifySendProcessed) -> void
 {
-    DataChannel channel{comm, tag1};
-    DataChannel barrierChannel{comm, tag2};
+    DataChannel channel{comm, dataTag};
+    DataChannel barrierChannel{comm, barrierTag};
     using namespace std;
 
     auto queue                 = RequestQueue();
@@ -98,11 +98,20 @@ auto IdentifySources(PacketMap&&              packets,
     auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
     queue.push(active_recv_request);
 
-    do
+    if (active_outgoing_count == 0)
     {
+        barrier.markComplete();
+    }
+    mpi_err("Entering barrier loop; queue has ", queue.size(), " items");
+
+    while (not barrier.test())
+    {
+        mpi_err("queue.pop()");
         auto reply = queue.pop();
         if (reply.request == active_recv_request)
         {
+            mpi_err("~queue.pop() active_recv_request: reply from ",
+                    reply.status.MPI_TAG);
             notifySourceIdentified(reply.status.MPI_SOURCE, incoming_size);
 
             active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
@@ -110,8 +119,8 @@ auto IdentifySources(PacketMap&&              packets,
         }
         else if (reply.status.MPI_TAG == channel.tag)
         {
+            mpi_err("~queue.pop() send processed");
             notifySendProcessed(reply.status.MPI_SOURCE);
-
             active_outgoing_count--;
             if (active_outgoing_count == 0)
             {
@@ -120,9 +129,16 @@ auto IdentifySources(PacketMap&&              packets,
         }
         else if (reply.status.MPI_TAG == barrier.tag())
         {
+            mpi_err("~queue.pop(): barrier.processStatus");
             barrier.processStatus(reply.status);
         }
-    } while (!barrier.test());
+        else
+        {
+            mpi_err("~queue.pop(): unknown");
+        }
+    }
+
+    mpi_err("barrier complete");
 }
 
 template <class PacketMap,
@@ -157,6 +173,7 @@ auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int ta
             queue.push(messageChannel.Isend(message, dest));
         }
     );
+    mpi_err("Finished IdentifySources()");
     // clang-format on
     queue.wait_all();
 
@@ -307,6 +324,7 @@ auto getExchangeMembers(View&&       kokkos_view,
             tag2,
             tag3
         );
+
     // clang-format on
 
     // source_ranks will contain the ranks that my rank sent bounding box info
