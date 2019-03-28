@@ -301,6 +301,72 @@ namespace nimble {
     return;
   }
 
+  void
+  ContactManager::RemoveInternalSkinFaces(GenesisMesh const & mesh,
+                                          std::vector< std::vector<int> >& faces,
+                                          std::vector<int>& face_ids) {
+#ifdef NIMBLE_HAVE_MPI
+
+    using face_iterator_t = std::vector< std::vector<int> >::iterator;
+    using face_id_iterator_t = std::vector<int>::iterator;
+
+    int mpi_rank, num_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+
+    int num_nodes_in_face = 4;
+
+    const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
+    std::vector<int> face_global_ids;
+    for (auto& face : faces) {
+      for (int i=0 ; i<face.size() ; i++) {
+        face_global_ids.push_back(genesis_node_global_ids[face[i]]);
+      }
+    }
+
+    int max_buff_size = face_global_ids.size();
+    int global_max_buff_size = 0;
+    MPI_Allreduce(&max_buff_size, &global_max_buff_size, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    std::vector<int> mpi_buffer(global_max_buff_size);
+    int mpi_buffer_num_faces = global_max_buff_size/num_nodes_in_face;
+
+    for (int i_rank=0 ; i_rank<num_ranks ; i_rank++) {
+      std::fill(mpi_buffer.begin(), mpi_buffer.end(), 0);
+      if (mpi_rank == i_rank) {
+        for (int i=0 ; i<face_global_ids.size() ; i++) {
+          mpi_buffer[i] = face_global_ids[i];
+        }
+      }
+      // DJL MPI COMMUNICATION SHOULD BE DONE ONLY WITH NEIGHBORHING PARTITIONS
+      MPI_Bcast(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, i_rank, MPI_COMM_WORLD);
+      if (mpi_rank != i_rank) {
+        for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
+
+          for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
+            std::vector<int> face_global_ids = faces[i_face];
+            // DJL INEFFICIENT HANDLING OF GLOBAL IDS
+            for (int i=0; i<face_global_ids.size() ; i++) {
+              face_global_ids[i] = genesis_node_global_ids[face_global_ids[i]];
+            }
+            // DJL INCORRECTLY SEARCHING EMPTY ENTRIES AT THE END OF mpi_buffer
+            if (std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != face_global_ids.end() &&
+                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != face_global_ids.end() &&
+                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != face_global_ids.end() &&
+                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != face_global_ids.end()) {
+              face_iterator_t face_it = faces.begin() + i_face;
+              face_id_iterator_t face_id_it = face_ids.begin() + i_face;
+              faces.erase(face_it);
+              face_ids.erase(face_id_it);
+              continue;
+            }
+          }
+        }
+      }
+    }
+
+#endif
+  }
+
   ContactManager::ContactManager(size_t dicing_factor)
     : penalty_parameter_(0.0),
       dicing_factor_(dicing_factor)
@@ -314,9 +380,9 @@ namespace nimble {
       node_patch_collection_(bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor)))
 #endif
   {
-  
+
   }
-  
+
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
                                         nimble::MPIContainer & mpi_container,
@@ -339,6 +405,10 @@ namespace nimble {
     std::vector<int> master_skin_face_ids, slave_skin_face_ids;
     SkinBlocks(mesh, master_block_ids, master_skin_faces, master_skin_face_ids);
     SkinBlocks(mesh, slave_block_ids, slave_skin_faces, slave_skin_face_ids);
+
+    // remove faces that are along partition boundaries
+    RemoveInternalSkinFaces(mesh, master_skin_faces, master_skin_face_ids);
+    RemoveInternalSkinFaces(mesh, slave_skin_faces, slave_skin_face_ids);
 
     // construct containers for the subset of the model that is involved with contact
     // this constitutes a submodel that is stored in the ContactManager
@@ -738,8 +808,7 @@ namespace nimble {
   void
   ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
 #ifdef NIMBLE_HAVE_BVH
-    
-    
+
 #elif !defined(NIMBLE_HAVE_KOKKOS)
     throw std::logic_error("\nError in ContactManager::InitializeContactVisualization(), contact visualization currently available only for NimbleSM_Kokkos,\n");
 #else
@@ -1515,13 +1584,18 @@ namespace
     }
 
     double background_grid_cell_size = BoundingBoxAverageCharacteristicLengthOverAllRanks();
-    std::cout << "DEBUGGING background_grid_cell_size " << background_grid_cell_size << std::endl;
+    // std::cout << "DEBUGGING background_grid_cell_size " << background_grid_cell_size << std::endl;
     // DJL PARALLEL CONTACT  processCollision(coord_.data(), coord_.size(), background_grid_cell_size);
 
     // kokkos_view::extent(), accessor kokkos_view::(i, 0) x coordinte of ith entry in list
 
     // ANTONIO, HERE IS THE COMMENTED OUT LINE
-    //std::vector<int> exchange_members = getExchangeMembers(coord_d_, background_grid_cell_size, {MPI_COMM_WORLD, 0});
+    // std::vector<int> exchange_members = getExchangeMembers(coord_d_,
+    //                                                        background_grid_cell_size,
+    //                                                        MPI_COMM_WORLD,
+    //                                                        0,
+    //                                                        1,
+    //                                                        2);
 
 #ifdef NIMBLE_HAVE_BVH
 

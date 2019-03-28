@@ -93,6 +93,10 @@ namespace nimble {
                     std::vector< std::vector<int> > & skin_faces,
                     std::vector<int> & face_ids);
 
+    void RemoveInternalSkinFaces(GenesisMesh const & mesh,
+                                 std::vector< std::vector<int> >& faces,
+                                 std::vector<int>& face_ids);
+
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
     }
