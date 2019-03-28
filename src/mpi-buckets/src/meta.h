@@ -77,3 +77,15 @@ auto GatherTransformBy(Range&& range, Func func, Transform transform)
 
     return dest;
 }
+
+template <class T, class index_t = int>
+auto invert(std::vector<T> const& vals) -> std::unordered_map<T, index_t>
+{
+    std::unordered_map<T, index_t> map;
+    index_t                        i = 0;
+    for (auto const& val : vals)
+    {
+        map.emplace(val, i++);
+    }
+    return map;
+}
