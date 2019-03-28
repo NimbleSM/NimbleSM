@@ -57,6 +57,7 @@ auto gatherIntoBoundingBoxes(View&& values, double const cell_size) -> Map
     return boundingBoxLookup;
 }
 
+
 template <class PacketMap>
 void SyncSendMessageSizes(PacketMap&&   packets,
                           DataChannel   channel,
@@ -178,7 +179,14 @@ auto anyIntersect(std::vector<BoundingBox> const& boxes1,
 
 using BBPacket     = std::pair<int, std::vector<BoundingBox>>;
 using BBPacketList = std::vector<BBPacket>;
-// returns a list of the ranks that this rank intersects with
+
+/**
+ * rankBoxInfo: list of all the bounding boxes my rank is responsible for,
+ * as well as the ranks those bounding boxes came from
+ *
+ * sourceRanks: list of ranks from which my rank expects to recieve collision
+ * info back from in response
+ */
 auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
                                MPI_Comm                comm,
                                int                     tag1,
@@ -191,45 +199,38 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
     using namespace std;
     RequestQueue                 sizeRecvQueue;
     std::vector<size_t>          incomingSizes(sourceRanks.size());
-    std::unordered_map<int, int> inverseSourceRanks;
+    std::unordered_map<int, int> inverseSourceRanks = invert(sourceRanks);
     vector<vector<int>>          incomingRanks(sourceRanks.size());
 
     inverseSourceRanks.reserve(sourceRanks.size());
 
-    // Prepare to recieve incoming messages
+    // Get outgoingSizes of incoming messages
+    for (int i = 0; i < incomingSizes.size(); i++)
     {
-        size_t index = 0;
-        for (int rank : sourceRanks)
-        {
-            inverseSourceRanks[rank] = (int)index;
-            sizeRecvQueue.push(sizeChannel.Irecv(&incomingSizes[index], 1, rank));
-            ++index;
-        }
+        sizeRecvQueue.push(sizeChannel.Irecv(&incomingSizes[i], 1, sourceRanks[i]));
     }
 
     RequestQueue sendQueue;
-    auto         sizes             = vector<size_t>(rankBoxInfo.size());
+    auto         outgoingSizes     = vector<size_t>(rankBoxInfo.size());
     auto         intersectingRanks = vector<vector<int>>(rankBoxInfo.size());
 
+
+    for (int index = 0; index < rankBoxInfo.size(); index++)
     {
-        size_t index = 0;
-        for (auto& destInfo : rankBoxInfo)
+        auto& destInfo    = rankBoxInfo[index];
+        int   destRank    = destInfo.first;
+        auto& listOfRanks = intersectingRanks[index];
+
+        for (auto& otherInfo : rankBoxInfo)
         {
-            int   destRank    = destInfo.first;
-            auto& listOfRanks = intersectingRanks[index];
-
-            for (auto& otherInfo : rankBoxInfo)
-            {
-                if (&destInfo == &otherInfo)
-                    continue;
-                if (anyIntersect(destInfo.second, otherInfo.second))
-                    listOfRanks.push_back(otherInfo.first);
-            }
-
-            sendQueue.push(sizeChannel.Isend(&sizes[index], 1, destRank));
-            sendQueue.push(dataChannel.Isend(listOfRanks, destRank));
-            index++;
+            if (&destInfo == &otherInfo)
+                continue;
+            if (anyIntersect(destInfo.second, otherInfo.second))
+                listOfRanks.push_back(otherInfo.first);
         }
+
+        sendQueue.push(sizeChannel.Isend(&outgoingSizes[index], 1, destRank));
+        sendQueue.push(dataChannel.Isend(listOfRanks, destRank));
     }
 
 
@@ -269,6 +270,14 @@ auto getExchangeMembers(View&&       kokkos_view,
                         int          tag3) -> std::vector<int>
 {
     using namespace std;
+    // Steps:
+    // 1) Get distribution of points as bounding boxes within grid cells
+    // 2) Group bounding boxes based on which rank they should be sent to
+    // 3 outgoing) Distribute my bounding boxes to the corresponding ranks
+    // 3 incoming) Recieve incoming bounding boxes from other ranks
+    // 4 outgoing)
+    //   - For each bounding,
+
     HashFunction hash;
     DataChannel  channel = DataChannel{comm, tag1};
     int const    n_ranks = channel.commSize();
@@ -299,6 +308,10 @@ auto getExchangeMembers(View&&       kokkos_view,
             tag3
         );
     // clang-format on
+
+    // source_ranks will contain the ranks that my rank sent bounding box info
+    // to; my rank expects to recieve a response containing the list of ranks my
+    // rank intersects with
     std::vector<int> source_ranks;
     for (auto& packet : packets)
     {
