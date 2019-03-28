@@ -15,20 +15,13 @@
 
 #include "text_conversion.h"
 
-
-
-using BoundingBoxMap = std::unordered_map<GridIndex, BoundingBox>;
-template <class Range, class Func, template <class...> class map = std::unordered_map>
-using GatherByMap_t
-    = map<DecayedOutputType<Func, ElemType<Range>>, std::vector<ElemType<Range>>>;
-
-template <class View, class Map = BoundingBoxMap>
-auto addPointsToBoundingBoxMap(View&&       values,
-                               double const cell_size,
-                               Map&&        boundingBoxLookup = Map{})
-    -> decltype(boundingBoxLookup)
+// Takes a list of points from a kokkos view and constructs a map of
+// grid indicies and the corresponding bounding box
+template <class View, class Map = std::unordered_map<GridIndex, BoundingBox>>
+auto gatherIntoBoundingBoxes(View&& values, double const cell_size) -> Map
 {
-    size_t const count = values.extent(0)/3;
+    Map          boundingBoxLookup;
+    size_t const count = values.extent(0) / 3;
     if (count > 0)
     {
         double const scale = 1.0 / cell_size;
@@ -41,7 +34,7 @@ auto addPointsToBoundingBoxMap(View&&       values,
 
         for (size_t i = 1; i < count; i++)
         {
-            point = {values(3*i), values(3*i+1), values(3*i+2)};
+            point = {values(3 * i), values(3 * i + 1), values(3 * i + 2)};
 
             if (current_cell_bounds.contains(point, cell_size))
             {
@@ -61,18 +54,9 @@ auto addPointsToBoundingBoxMap(View&&       values,
         // the map
         current_box.includeInMap(boundingBoxLookup, current_index);
     }
-    return std::forward<decltype(boundingBoxLookup)>(boundingBoxLookup);
+    return boundingBoxLookup;
 }
 
-template <class Range, class Func, class Destination = GatherByMap_t<Range, Func>>
-auto GatherBy(Range&& range, Func func, Destination&& dest = Destination{})
-    -> decltype(dest)
-{
-    for (auto&& elem : range)
-        dest[func(elem)].push_back(elem);
-
-    return std::forward<decltype(dest)>(dest);
-}
 template <class PacketMap>
 void SyncSendMessageSizes(PacketMap&&   packets,
                           DataChannel   channel,
@@ -92,11 +76,14 @@ void SyncSendMessageSizes(PacketMap&&   packets,
 
 template <class PacketMap, class SourceIdentifiedCallback, class SendProcessedCallback>
 auto IdentifySources(PacketMap&&              packets,
-                     DataChannel              channel,
-                     DataChannel              barrierChannel,
+                     MPI_Comm                 comm,
+                     int                      tag1,
+                     int                      tag2,
                      SourceIdentifiedCallback notifySourceIdentified,
                      SendProcessedCallback    notifySendProcessed) -> void
 {
+    DataChannel channel{comm, tag1};
+    DataChannel barrierChannel{comm, tag2};
     using namespace std;
 
     auto queue                 = RequestQueue();
@@ -153,8 +140,9 @@ auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int ta
     // clang-format off
     IdentifySources(
         packets,
-        DataChannel({comm, tag1}),
-        DataChannel({comm, tag2}),
+        comm, 
+        tag1, 
+        tag2,
         [&](int source, size_t incoming_size) {
             incomingData.emplace_back();
             auto& back   = incomingData.back();
@@ -190,13 +178,16 @@ auto anyIntersect(std::vector<BoundingBox> const& boxes1,
 
 using BBPacket     = std::pair<int, std::vector<BoundingBox>>;
 using BBPacketList = std::vector<BBPacket>;
-/* returns a list of the ranks that this rank intersects with */
+// returns a list of the ranks that this rank intersects with
 auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
-                               DataChannel             dataChannel,
-                               DataChannel             sizeChannel,
+                               MPI_Comm                comm,
+                               int                     tag1,
+                               int                     tag2,
                                std::vector<int> const& sourceRanks)
     -> std::vector<int>
 {
+    auto dataChannel = DataChannel{comm, tag1};
+    auto sizeChannel = DataChannel{comm, tag2};
     using namespace std;
     RequestQueue                 sizeRecvQueue;
     std::vector<size_t>          incomingSizes(sourceRanks.size());
@@ -268,44 +259,50 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
     }
     return std::vector<int>(ranks.begin(), ranks.end());
 }
+
 template <class View>
 auto getExchangeMembers(View&&       kokkos_view,
                         double const cell_size,
-                        DataChannel  channel) -> std::vector<int>
+                        MPI_Comm     comm,
+                        int          tag1,
+                        int          tag2,
+                        int          tag3) -> std::vector<int>
 {
     using namespace std;
     HashFunction hash;
+    DataChannel  channel = DataChannel{comm, tag1};
     int const    n_ranks = channel.commSize();
 
     // clang-format off
-    auto packets = GatherBy(
-        addPointsToBoundingBoxMap(
+
+    // Creates a map from ranks to the bounding boxes that
+    // have to be sent to those ranks
+    auto packets = GatherTransformBy(
+        gatherIntoBoundingBoxes(
             kokkos_view, 
-            cell_size, 
-            BoundingBoxMap()
+            cell_size
         ),
         [=](pair<const GridIndex, BoundingBox> const& message) {
             auto index = message.first;
             return hash(index.x, index.y, index.z) % n_ranks;
         },
-        std::unordered_map<uint64_t, std::vector<pair<const GridIndex, BoundingBox>>>{}
+        [](pair<const GridIndex, BoundingBox> const& message) {
+            return message.second; 
+        }
     ); 
-    std::vector<int> source_ranks; 
-    for(auto& packet : packets) {
-        source_ranks.push_back(packet.first); 
-    }
-    auto rankBoxInfo = std::vector<std::pair<int, std::vector<BoundingBox>>>(
+    auto rankBoxInfo =
         ExchangeData(
             packets,
             channel.comm,
-            channel.tag, 
-            channel.tag + 1,
-            channel.tag + 2
-        )
-    );
+            tag1, 
+            tag2,
+            tag3
+        );
     // clang-format on
-    return notifyRanksOfIntersection(rankBoxInfo,
-                                     channel,
-                                     DataChannel{channel.comm, channel.tag + 1},
-                                     source_ranks);
+    std::vector<int> source_ranks;
+    for (auto& packet : packets)
+    {
+        source_ranks.push_back(packet.first);
+    }
+    return notifyRanksOfIntersection(rankBoxInfo, comm, tag1, tag2, source_ranks);
 }

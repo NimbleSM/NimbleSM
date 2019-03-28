@@ -1,4 +1,5 @@
 #include "CollisionManager.h"
+#include "kokkos_mock.hpp"
 
 #include <mpi.h>
 #include <iostream>
@@ -49,6 +50,11 @@ int main(int argc, char** argv)
     MPI_Init(&argc, &argv);
 
     auto channel = DataChannel{MPI_COMM_WORLD, 0};
+
+    KokkosMock       coord_d_;
+    double           background_grid_cell_size = 1.0;
+    std::vector<int> exchange_members          = getExchangeMembers(
+        coord_d_, background_grid_cell_size, MPI_COMM_WORLD, 0, 1, 2);
 
     // Tests exchange without excluding self
     test_exchange(channel, false);
