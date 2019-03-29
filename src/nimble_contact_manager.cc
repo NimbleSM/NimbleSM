@@ -410,6 +410,18 @@ namespace nimble {
     RemoveInternalSkinFaces(mesh, master_skin_faces, master_skin_face_ids);
     RemoveInternalSkinFaces(mesh, slave_skin_faces, slave_skin_face_ids);
 
+    // create a list of ghosted nodes (e.g., nodes that are owned by a different processor)
+    std::vector<int> partition_boundary_node_local_ids;
+    std::vector<int> min_rank_containing_partition_boundary_nodes;
+    mpi_container.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_local_ids,
+                                                   min_rank_containing_partition_boundary_nodes);
+    std::vector<int> ghosted_node_local_ids;
+    for (int i=0 ; i<partition_boundary_node_local_ids.size() ; i++) {
+      if (min_rank_containing_partition_boundary_nodes[i] != mpi_rank) {
+        ghosted_node_local_ids.push_back(partition_boundary_node_local_ids[i]);
+      }
+    }
+
     // construct containers for the subset of the model that is involved with contact
     // this constitutes a submodel that is stored in the ContactManager
     std::set<int> node_ids_set;
@@ -442,6 +454,15 @@ namespace nimble {
       for (unsigned int i_node=0 ; i_node<slave_skin_faces[i_face].size() ; ++i_node) {
         int genesis_mesh_node_id = slave_skin_faces[i_face][i_node];
         slave_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+      }
+    }
+
+    // create a list of node ids in the contact submodel that corresponding to ghosted nodes
+    std::vector<int> ghosted_contact_node_ids;
+    for (auto node_id : ghosted_node_local_ids) {
+      std::map<int, int>::iterator it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
+      if (it != genesis_mesh_node_id_to_contact_submodel_id.end()) {
+        ghosted_contact_node_ids.push_back(it->second);
       }
     }
 
@@ -479,15 +500,18 @@ namespace nimble {
       }
       double characteristic_length = max_edge_length;
       for (auto const & node_id : face) {
-        if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
-          slave_node_ids.push_back(node_id);
-          slave_node_char_lens[node_id] = characteristic_length;
-        }
-        else {
-          // always use the maximum characteristic length
-          // this requires a parallel sync
-          if (slave_node_char_lens[node_id] < characteristic_length) {
+        // omit ghosted nodes
+        if (std::find(ghosted_contact_node_ids.begin(), ghosted_contact_node_ids.end(), node_id) == ghosted_contact_node_ids.end()) {
+          if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
+            slave_node_ids.push_back(node_id);
             slave_node_char_lens[node_id] = characteristic_length;
+          }
+          else {
+            // always use the maximum characteristic length
+            // this requires a parallel sync
+            if (slave_node_char_lens[node_id] < characteristic_length) {
+              slave_node_char_lens[node_id] = characteristic_length;
+            }
           }
         }
       }
