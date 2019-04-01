@@ -361,8 +361,8 @@ void main_routine(int argc, char *argv[]) {
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
-      tag += ".contact_entities";
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+      std::string tag = "kokkos";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }

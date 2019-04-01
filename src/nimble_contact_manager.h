@@ -91,11 +91,11 @@ namespace nimble {
     void SkinBlocks(GenesisMesh const & mesh,
                     std::vector<int> const & block_ids,
                     std::vector< std::vector<int> > & skin_faces,
-                    std::vector<int> & face_ids);
+                    std::vector<int> & entity_ids);
 
     void RemoveInternalSkinFaces(GenesisMesh const & mesh,
                                  std::vector< std::vector<int> >& faces,
-                                 std::vector<int>& face_ids);
+                                 std::vector<int>& entity_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
@@ -116,8 +116,9 @@ namespace nimble {
 
     template <typename ArgT>
     void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
-                                    std::vector<int> const & master_skin_face_ids,
+                                    std::vector<int> const & master_skin_entity_ids,
                                     std::vector<int> const & slave_node_ids,
+                                    std::vector<int> const & slave_skin_entity_ids,
                                     std::map<int, double> const & slave_node_char_lens,
                                     ArgT& contact_nodes,
                                     ArgT& contact_faces) const ;

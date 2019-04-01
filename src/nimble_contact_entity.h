@@ -139,12 +139,10 @@ namespace nimble {
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
-                  int node_ids_for_fictitious_node[4] = 0,
-                  int face_id = -1)
+                  int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
-        contact_entity_global_id_(contact_entity_global_id),
         char_len_(characteristic_length),
-        face_id_(face_id){
+        contact_entity_global_id_(contact_entity_global_id){
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
@@ -389,8 +387,6 @@ namespace nimble {
       }
     }
 
-    int contact_entity_global_id_ = -1;
-
     // positions of nodes that define triangular contact patch
     CONTACT_ENTITY_TYPE entity_type_ = NONE;
     int num_nodes_ = 0;
@@ -435,12 +431,15 @@ namespace nimble {
     int node_id_3_for_fictitious_node_ = -1;
     int node_id_4_for_fictitious_node_ = -1;
 
-    // for faces, store a unique identifier that can be used as a comparision tiebreaker
-    // store the global element id, face ordinal, and triangle ordinal as a single int
-    // first 2 bits are the triangle ordinal (range is 1-4)
-    // next 3 bits are the face ordinal (range is 1-6)
-    // remaining bits are the genesis element id
-    int face_id_;
+    // store a unique global id
+    // NODE:
+    //   the contact_entity_global_id_ is the exodus global node id in the parent FEM mesh
+    // FACE:
+    //   the contact_entity_global_id_ is a bit-wise combination of the global element id, the face ordinal, and the triangle ordinal
+    //   first 2 bits are the triangle ordinal (range is 1-4)
+    //   next 3 bits are the face ordinal (range is 1-6)
+    //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
+    int contact_entity_global_id_ = -1;
   };
 
   template <typename ArgT>
@@ -470,7 +469,6 @@ namespace nimble {
       memcpy(scan, &contact_entities[i].node_id_2_for_fictitious_node_, size_int); scan += size_int;
       memcpy(scan, &contact_entities[i].node_id_3_for_fictitious_node_, size_int); scan += size_int;
       memcpy(scan, &contact_entities[i].node_id_4_for_fictitious_node_, size_int); scan += size_int;
-      memcpy(scan, &contact_entities[i].face_id_, size_int); scan += size_int;
     }
   }
 
@@ -511,7 +509,6 @@ namespace nimble {
       memcpy(&entity.node_id_2_for_fictitious_node_, scan, size_int); scan += size_int;
       memcpy(&entity.node_id_3_for_fictitious_node_, scan, size_int); scan += size_int;
       memcpy(&entity.node_id_4_for_fictitious_node_, scan, size_int); scan += size_int;
-      memcpy(&entity.face_id_, scan, size_int); scan += size_int;
       entity.SetBoundingBox();
       contact_entities[i] = entity;
     }

@@ -49,6 +49,8 @@
 #include <cstdlib>
 #include <algorithm>
 
+#include <iostream>
+
 namespace nimble {
 
   std::string IOFileName(std::string const & serial_name,
@@ -179,7 +181,7 @@ namespace nimble {
   }
 
   Parser::Parser() : file_name_("none"), genesis_file_name_("none"),  use_two_level_mesh_decomposition_(false), write_timing_data_file_(false), rve_genesis_file_name_("none"), exodus_file_name_("none"),
-                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), contact_visualization_(false), microscale_boundary_condition_strategy_("periodic bc") {
+                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), visualize_contact_entities_(false), visualize_contact_bounding_boxes_(false), contact_visualization_file_name_("none"), microscale_boundary_condition_strategy_("periodic bc") {
     material_strings_["rve"] = "none";
   }
 
@@ -287,16 +289,36 @@ namespace nimble {
           contact_string_ = value;
         }
         else if (key == "contact visualization") {
-          if (value == "on") {
-            contact_visualization_ = true;
+
+          std::stringstream ss(value);
+          std::string val;
+          std::vector<std::string> vals;
+          while (ss >> val) {
+            vals.push_back(val);
           }
-          else if (value == "off") {
-            contact_visualization_ = false;
-          }
-          else {
-            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"contact visualization\": " + value + ", allowable values are \"on\" and \"off\".\n";
+
+          if (vals.size() != 6 ||
+              vals[0] != "visualize_contact_entities" ||
+              (vals[1] != "on" && vals[1] != "off") ||
+              vals[2] != "visualize_bounding_boxes" ||
+              (vals[3] != "on" && vals[3] != "off") ||
+              vals[4] != "file_name") {
+            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"contact visualization\"\n";
+            msg += "**** Allowable syntax is \"visualize_contatct_entities <on/off> visualize_bounding_boxes <on/off> file_name <file_name.e>\"\n";
             throw std::logic_error(msg);
           }
+
+          visualize_contact_entities_ = false;
+          if (vals[1] == "on") {
+            visualize_contact_entities_ = true;
+          }
+
+          visualize_contact_bounding_boxes_ = false;
+          if (vals[3] == "on") {
+            visualize_contact_bounding_boxes_ = true;
+          }
+
+          contact_visualization_file_name_ = vals[5];
         }
         else if (key == "microscale output element ids") {
           std::stringstream ss(value);
