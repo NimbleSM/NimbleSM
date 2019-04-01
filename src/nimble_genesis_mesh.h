@@ -83,6 +83,16 @@ namespace nimble {
 
     const int * GetNodeGlobalIds() const { return &node_global_id_[0]; }
 
+    int GetMaxNodeGlobalId() const {
+      int max_id = -1;
+      for (auto id : node_global_id_) {
+        if (id > max_id) {
+          max_id = id;
+        }
+      }
+      return max_id;
+    }
+
     unsigned int GetNumElements() const { return elem_global_id_.size(); }
 
     const int * GetElementGlobalIds() const { return &elem_global_id_[0]; }

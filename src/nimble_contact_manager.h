@@ -90,6 +90,7 @@ namespace nimble {
 
     void SkinBlocks(GenesisMesh const & mesh,
                     std::vector<int> const & block_ids,
+                    int entity_id_offset,
                     std::vector< std::vector<int> > & skin_faces,
                     std::vector<int> & entity_ids);
 

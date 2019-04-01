@@ -158,6 +158,7 @@ namespace nimble {
   void
   ContactManager::SkinBlocks(GenesisMesh const & mesh,
                              std::vector<int> const & block_ids,
+                             int entity_id_offset,
                              std::vector< std::vector<int> > & skin_faces,
                              std::vector<int> & entity_ids) {
 
@@ -290,9 +291,9 @@ namespace nimble {
           skin_face.push_back(id);
         }
         skin_faces.push_back(skin_face);
-        int entity_id = face.second[5] << 5;  // 59 bits for the genesis element id
-        entity_id |= face.second[6] << 2;     // 3 bits for the face ordinal
-        entity_id |= 0;                       // 2 bits for triangle ordinal (unknown until face is subdivided downstream)
+        int entity_id = (face.second[5] + entity_id_offset) << 5;  // 59 bits for the genesis element id plus an offset value
+        entity_id |= face.second[6] << 2;                          // 3 bits for the face ordinal
+        entity_id |= 0;                                            // 2 bits for triangle ordinal (unknown until face is subdivided downstream)
         entity_ids.push_back(entity_id);
       }
       else if (face.second[0] != 2) {
@@ -392,8 +393,10 @@ namespace nimble {
                                         std::vector<int> const & slave_block_ids) {
 
     int mpi_rank = 0;
+    int num_ranks = 1;
 #ifdef NIMBLE_HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 #endif
 
     contact_enabled_ = true;
@@ -402,11 +405,21 @@ namespace nimble {
     const double* coord_y = mesh.GetCoordinatesY();
     const double* coord_z = mesh.GetCoordinatesZ();
 
+    int max_node_global_id = mesh.GetMaxNodeGlobalId();
+#ifdef NIMBLE_HAVE_MPI
+    int global_max_node_global_id = max_node_global_id;
+    MPI_Allreduce(&max_node_global_id, &global_max_node_global_id, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    max_node_global_id = global_max_node_global_id;
+#endif
+
     // find all the element faces on the master and slave contact blocks
+    // the entity ids created here will be used downstream for the contact faces
+    // the contact nodes will not use these entity ids, instead they will just use the exodus id of the node as the entity id
     std::vector< std::vector<int> > master_skin_faces, slave_skin_faces;
     std::vector<int> master_skin_entity_ids, slave_skin_entity_ids;
-    SkinBlocks(mesh, master_block_ids, master_skin_faces, master_skin_entity_ids);
-    SkinBlocks(mesh, slave_block_ids, slave_skin_faces, slave_skin_entity_ids);
+    int contact_entity_id_offset = max_node_global_id; // ensure that there are no duplicate entity ids between nodes and faces
+    SkinBlocks(mesh, master_block_ids, contact_entity_id_offset, master_skin_faces, master_skin_entity_ids);
+    SkinBlocks(mesh, slave_block_ids, contact_entity_id_offset, slave_skin_faces, slave_skin_entity_ids);
 
     // remove faces that are along partition boundaries
     RemoveInternalSkinFaces(mesh, master_skin_faces, master_skin_entity_ids);
