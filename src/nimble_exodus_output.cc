@@ -218,12 +218,12 @@ namespace nimble {
       retval = ex_put_var_param(exodus_file_id, "G", num_global_data);
       if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
       retval = ex_put_var_names (exodus_file_id, "G", num_global_data, global_var_names);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_names");
     }
 
     // Write node data info
     char **node_var_names = 0;
-    if (num_node_data > 0) {
+    if (num_node_data > 0 && num_nodes_ > 0) {
       node_var_names = new char*[num_node_data];
       for (int i=0 ; i<num_node_data ; i++) {
         node_var_names[i] = new char[MAX_STR_LENGTH+1];
@@ -339,10 +339,12 @@ namespace nimble {
     }
 
     // Write node data
-    for(unsigned int i=0 ; i<node_data.size() ; ++i) {
-      int variable_index = static_cast<int>(i+1);
-      retval = ex_put_nodal_var(exodus_file_id, exodus_write_count_, variable_index, num_nodes_, &node_data[i][0]);
-      if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_nodal_var");
+    if (num_nodes_ > 0) {
+      for(unsigned int i=0 ; i<node_data.size() ; ++i) {
+        int variable_index = static_cast<int>(i+1);
+        retval = ex_put_nodal_var(exodus_file_id, exodus_write_count_, variable_index, num_nodes_, &node_data[i][0]);
+        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_nodal_var");
+      }
     }
 
     // Write element data
