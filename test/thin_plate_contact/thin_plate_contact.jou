@@ -1,0 +1,16 @@
+
+reset
+
+#{LARGE_RADIUS=0.25}
+
+create cylinder radius {LARGE_RADIUS} height 0.05
+create cylinder radius {0.9*LARGE_RADIUS} height 0.05
+rotate volume all angle 90 about y
+volume 2 move x 0.052 y 0.0 z 0.0
+volume all size 0.025
+mesh volume all
+block 1 volume 1
+block 2 volume 2
+nodeset 1 volume 1
+nodeset 2 volume 2
+export genesis 'thin_plate_contact.g' overwrite
