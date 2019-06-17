@@ -1,8 +1,8 @@
 #pragma once
 #include <utility>
-#include "GridHash.h"
-#include "GridIndex.h"
-#include "point.h"
+#include "GridHash.hpp"
+#include "GridIndex.hpp"
+#include "point.hpp"
 
 class GridCellBounds : Point3<double>
 {

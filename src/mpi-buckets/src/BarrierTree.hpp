@@ -1,5 +1,6 @@
 #include "DataChannel.h"
 #include "RequestQueue.h"
+#include "TaggedRequestQueue.h"
 #include "mpi_err.h"
 
 #include <iostream>
@@ -132,6 +133,18 @@ class BarrierTree
                   mpi_err("Awaiting ", rank);
                   queue.push(channel.Iawait(rank));
               };
+        onChildRanks(EnqueueAwait, queue);
+        onParentRanks(EnqueueAwait, queue);
+    }
+    template <class Tag>
+    void enqueueBarrier(TaggedRequestQueue<Tag>& queue, Tag barrier_tag)
+    {
+        auto EnqueueAwait = [barrier_tag](DataChannel const&       channel,
+                                          int                      rank,
+                                          TaggedRequestQueue<Tag>& queue) {
+            mpi_err("Awaiting ", rank);
+            queue.push(channel.Iawait(rank), barrier_tag);
+        };
         onChildRanks(EnqueueAwait, queue);
         onParentRanks(EnqueueAwait, queue);
     }

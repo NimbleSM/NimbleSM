@@ -131,12 +131,12 @@ struct DataChannel
 
         while (sizeRecvQueue.has())
         {
-            auto   request = sizeRecvQueue.pop();
-            int    index   = inverseSourceRanks.at(request.status.MPI_SOURCE);
+            auto   request       = sizeRecvQueue.pop();
+            int    index         = inverseSourceRanks.at(request.MPI_SOURCE);
             size_t incoming_size = incoming_sizes[index];
             incoming[index].resize(incoming_size);
             dataRecvQueue.push(dataChannel.Irecv(
-                incoming[index].data(), incoming_size, request.status.MPI_SOURCE));
+                incoming[index].data(), incoming_size, request.MPI_SOURCE));
         }
         dataRecvQueue.wait_all();
         send_queue.wait_all();

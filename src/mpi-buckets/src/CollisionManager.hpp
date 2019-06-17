@@ -1,11 +1,10 @@
 #pragma once
 #include "BarrierTree.h"
-#include "BoundingBox.h"
-#include "DataChannel.h"
-#include "GridCell.h"
-#include "GridHash.h"
+#include "GatherIntoBoundingBoxes.hpp"
+
 #include "GridIndex.h"
 #include "RequestQueue.h"
+#include "TaggedRequestQueue.h"
 #include "WaitAnyResult.h"
 #include "meta.h"
 
@@ -15,54 +14,20 @@
 
 #include "mpi_err.h"
 
-// Takes a list of points from a kokkos view and constructs a map of
-// grid indicies and the corresponding bounding box
-template <class View, class Map = std::unordered_map<GridIndex, BoundingBox>>
-auto gatherIntoBoundingBoxes(View&& values, double const cell_size) -> Map
-{
-    Map          boundingBoxLookup;
-    size_t const count = values.extent(0) / 3;
-    if (count > 0)
-    {
-        double const scale = 1.0 / cell_size;
 
-        Point3d point{values(0), values(1), values(2)};
-
-        auto current_index       = GridIndex(point, scale);
-        auto current_cell_bounds = GridCellBounds(current_index, cell_size);
-        auto current_box         = BoundingBox(point);
-
-        for (size_t i = 1; i < count; i++)
-        {
-            point = {values(3 * i), values(3 * i + 1), values(3 * i + 2)};
-
-            if (current_cell_bounds.contains(point, cell_size))
-            {
-                current_box.include(point);
-            }
-            else
-            {
-                // We include the current bounding box in the map,
-                // then calculate a new bounding box, index, and cell
-                current_box.includeInMap(boundingBoxLookup, current_index);
-                current_box.centerAt(point);
-                current_index = GridIndex(point, scale);
-                current_cell_bounds.moveTo(current_index, cell_size);
-            }
-        }
-        // Ensure that the most recent version of the current box is included in
-        // the map
-        current_box.includeInMap(boundingBoxLookup, current_index);
-    }
-    return boundingBoxLookup;
-}
+enum class RequestType { Incoming, Outgoing, Barrier };
 
 
+
+/** Given a bunch of outgoing packets, SyncSendMessageSizes sends out the
+message sizes of the packets to the corresponding destination. It uses
+channel.Issend because the request is meant to delay until the reciever
+accepts the incoming size.*/
 template <class PacketMap>
-void SyncSendMessageSizes(PacketMap&&   packets,
-                          DataChannel   channel,
-                          RequestQueue& queue,
-                          size_t*       sizeStorage)
+void SyncSendMessageSizes(PacketMap&&                      packets,
+                          DataChannel                      channel,
+                          TaggedRequestQueue<RequestType>& queue,
+                          size_t*                          sizeStorage)
 {
     for (auto&& packet : packets)
     {
@@ -70,11 +35,15 @@ void SyncSendMessageSizes(PacketMap&&   packets,
         auto& message     = packet.second;
 
         *sizeStorage = message.size();
-        queue.push(channel.Issend(sizeStorage, 1, destination));
+        queue.push(channel.Issend(sizeStorage, 1, destination),
+                   RequestType::Outgoing);
         sizeStorage += 1;
     }
 }
 
+/**
+IdentifySources
+*/
 template <class PacketMap, class SourceIdentifiedCallback, class SendProcessedCallback>
 auto IdentifySources(PacketMap&&              packets,
                      MPI_Comm                 comm,
@@ -83,62 +52,73 @@ auto IdentifySources(PacketMap&&              packets,
                      SourceIdentifiedCallback notifySourceIdentified,
                      SendProcessedCallback    notifySendProcessed) -> void
 {
-    DataChannel channel{comm, dataTag};
-    DataChannel barrierChannel{comm, barrierTag};
     using namespace std;
 
-    auto queue                 = RequestQueue();
-    auto messageCounts         = vector<size_t>(packets.size());
-    auto active_outgoing_count = size_t(messageCounts.size());
-    auto barrier               = BarrierTree(barrierChannel);
-    SyncSendMessageSizes(packets, channel, queue, messageCounts.data());
-    barrier.enqueueBarrier(queue);
+    DataChannel                     channel{comm, dataTag};
+    BarrierTree                     barrier{DataChannel{comm, barrierTag}};
+    TaggedRequestQueue<RequestType> queue{};
+    vector<size_t>                  messageCounts(packets.size());
+    size_t active_outgoing_count = messageCounts.size();
 
-    auto incoming_size       = size_t();
-    auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
-    queue.push(active_recv_request);
-
+    barrier.enqueueBarrier(queue, RequestType::Barrier);
     if (active_outgoing_count == 0)
     {
         barrier.markComplete();
     }
-    mpi_err("Entering barrier loop; queue has ", queue.size(), " items");
+
+    SyncSendMessageSizes(packets, channel, queue, messageCounts.data());
+
+    size_t incoming_size     = 0;
+    auto active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
+    int  active_recieved     = 0;
 
     while (not barrier.test())
     {
-        mpi_err("queue.pop()");
-        auto reply = queue.pop();
-        if (reply.request == active_recv_request)
+        mpi_err(__FUNCTION__, ": items in queue: ", queue.pendingRequests);
+        bool active_request_fulfilled = false;
+        mpi_err("active request: ", active_recv_request);
+        auto reply = queue.popWithSpecial(
+            active_recv_request, RequestType::Incoming, active_request_fulfilled);
+        mpi_err("active request: ", active_recv_request);
+        if (active_request_fulfilled)
         {
             mpi_err("~queue.pop() active_recv_request: reply from ",
-                    reply.status.MPI_TAG);
-            notifySourceIdentified(reply.status.MPI_SOURCE, incoming_size);
+                    reply.first.MPI_TAG);
+            notifySourceIdentified(reply.first.MPI_SOURCE, incoming_size);
 
             active_recv_request = channel.Irecv(&incoming_size, 1, MPI_ANY_SOURCE);
-            queue.push(active_recv_request);
         }
-        else if (reply.status.MPI_TAG == channel.tag)
+        else if (reply.second == RequestType::Outgoing)
         {
-            mpi_err("~queue.pop() send processed");
-            notifySendProcessed(reply.status.MPI_SOURCE);
+            mpi_err("~queue.pop() send processed from ", reply.first.MPI_SOURCE);
+            notifySendProcessed(reply.first.MPI_SOURCE);
             active_outgoing_count--;
             if (active_outgoing_count == 0)
             {
                 barrier.markComplete();
             }
         }
-        else if (reply.status.MPI_TAG == barrier.tag())
+        else if (reply.second == RequestType::Barrier)
         {
             mpi_err("~queue.pop(): barrier.processStatus");
-            barrier.processStatus(reply.status);
+            barrier.processStatus(reply.first);
         }
         else
         {
             mpi_err("~queue.pop(): unknown");
         }
     }
-
     mpi_err("barrier complete");
+    {
+        MPI_Status reply{};
+        int        flag = 0;
+        MPI_Test(&active_recv_request, &flag, &reply);
+        if (flag)
+        {
+            mpi_err("~queue.pop() active_recv_request: reply from ", reply.MPI_TAG);
+            notifySourceIdentified(reply.MPI_SOURCE, incoming_size);
+        }
+    }
 }
 
 template <class PacketMap,
@@ -161,14 +141,17 @@ auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int ta
         tag1, 
         tag2,
         [&](int source, size_t incoming_size) {
+            
             incomingData.emplace_back();
             auto& back   = incomingData.back();
             back.first   = source;
             auto& buffer = back.second;
             buffer.resize(incoming_size);
+            mpi_err("ExchangeData recv from ", source); 
             queue.push(messageChannel.Irecv(buffer.data(), incoming_size, source));
         },
         [&](int dest) {
+            mpi_err("ExchangeData send to ", dest); 
             auto& message = packets[dest];
             queue.push(messageChannel.Isend(message, dest));
         }
@@ -176,6 +159,7 @@ auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int ta
     mpi_err("Finished IdentifySources()");
     // clang-format on
     queue.wait_all();
+    mpi_err("finished waiting on queue");
 
     return incomingData;
 }
@@ -214,7 +198,8 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
     auto dataChannel = DataChannel{comm, tag1};
     auto sizeChannel = DataChannel{comm, tag2};
     using namespace std;
-    RequestQueue                 sizeRecvQueue;
+    TaggedRequestQueue<RequestType> sizeRecvQueue;
+
     std::vector<size_t>          incomingSizes(sourceRanks.size());
     std::unordered_map<int, int> inverseSourceRanks = invert(sourceRanks);
     vector<vector<int>>          incomingRanks(sourceRanks.size());
@@ -222,9 +207,13 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
     inverseSourceRanks.reserve(sourceRanks.size());
 
     // Get outgoingSizes of incoming messages
+    mpi_err("notifyRanksOfIntersection(): sourceRanks: ", sourceRanks);
+    mpi_err("notifyRanksOfintersection(): rankBoxInfo.size(): ",
+            rankBoxInfo.size());
     for (int i = 0; i < incomingSizes.size(); i++)
     {
-        sizeRecvQueue.push(sizeChannel.Irecv(&incomingSizes[i], 1, sourceRanks[i]));
+        sizeRecvQueue.push(sizeChannel.Irecv(&incomingSizes[i], 1, sourceRanks[i]),
+                           RequestType::Incoming);
     }
 
     RequestQueue sendQueue;
@@ -246,6 +235,8 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
                 listOfRanks.push_back(otherInfo.first);
         }
 
+        outgoingSizes[index] = listOfRanks.size();
+        mpi_err("Sending stuff to ", destRank);
         sendQueue.push(sizeChannel.Isend(&outgoingSizes[index], 1, destRank));
         sendQueue.push(dataChannel.Isend(listOfRanks, destRank));
     }
@@ -253,12 +244,17 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
 
     RequestQueue rankRecvQueue;
     size_t       total_incoming_ranks = 0;
+    mpi_err("notifyRanksOfIntersection(): entering sizeRecvQueue loop");
     while (sizeRecvQueue.has())
     {
-        WaitAnyResult result = sizeRecvQueue.pop();
-        if (result.status.MPI_TAG == sizeChannel.tag)
+        mpi_err("sizeRecvQueue.pop()");
+        auto       tag_result_pair = sizeRecvQueue.pop();
+        MPI_Status result          = tag_result_pair.first;
+        auto       category        = tag_result_pair.second;
+        mpi_err("~sizeRecvQueue.pop()");
+        if (result.MPI_TAG == sizeChannel.tag)
         {
-            int   source       = result.status.MPI_SOURCE;
+            int   source       = result.MPI_SOURCE;
             int   source_index = inverseSourceRanks.at(source);
             auto& vect         = incomingRanks[source_index];
             vect.resize(incomingSizes[source_index]);
@@ -266,8 +262,9 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
             total_incoming_ranks += vect.size();
         }
     }
+    mpi_err("notifyRanksOfIntersection(): rankRecvQueue.wait_all()");
     rankRecvQueue.wait_all();
-
+    mpi_err("~rankRecvQueue.wait_all()");
 
     std::unordered_set<int> ranks;
     ranks.reserve(total_incoming_ranks);
@@ -316,6 +313,7 @@ auto getExchangeMembers(View&&       kokkos_view,
             return message.second; 
         }
     ); 
+    mpi_err("ExchangeData()"); 
     auto rankBoxInfo =
         ExchangeData(
             packets,
@@ -324,6 +322,8 @@ auto getExchangeMembers(View&&       kokkos_view,
             tag2,
             tag3
         );
+    
+    mpi_err("~ExchangeData()");
 
     // clang-format on
 

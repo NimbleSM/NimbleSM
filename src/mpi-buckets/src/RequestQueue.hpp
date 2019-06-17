@@ -1,17 +1,18 @@
 #pragma once
 #include <vector>
 #include "WaitAnyResult.h"
+#include "mpi_err.h"
 
 class RequestQueue
 {
+   public:
     std::vector<MPI_Request> pendingRequests;
 
-    auto clearAt(int index) -> MPI_Request
+   private:
+    void clearAt(int index)
     {
-        MPI_Request request    = pendingRequests[index];
         pendingRequests[index] = pendingRequests.back();
         pendingRequests.pop_back();
-        return request;
     }
 
    public:
@@ -52,23 +53,33 @@ class RequestQueue
      * returns the request and the status and removes the request
      * from the queue of active pendingRequests
      */
-    auto pop() -> WaitAnyResult
+    auto pop() -> MPI_Status
     {
-        auto result = WaitAnyResult{};
-        int  index;
+        MPI_Status status;
+        int        index;
         MPI_Waitany(
-            pendingRequests.size(), pendingRequests.data(), &index, &result.status);
-        result.request = clearAt(index);
-        return result;
+            pendingRequests.size(), pendingRequests.data(), &index, &status);
+        clearAt(index);
+        return status;
     }
-    auto popWithIndex() -> std::pair<int, WaitAnyResult>
+    auto popWithSpecial(MPI_Request special, bool& popped_special) -> MPI_Status
     {
-        auto result = WaitAnyResult{};
-        int  index;
+        MPI_Status status;
+        int        index;
+        pendingRequests.push_back(special);
+
+        mpi_err(__FUNCTION__, ": Before Waitany", pendingRequests);
         MPI_Waitany(
-            pendingRequests.size(), pendingRequests.data(), &index, &result.status);
-        result.request = clearAt(index);
-        return {index, result};
+            pendingRequests.size(), pendingRequests.data(), &index, &status);
+        mpi_err(__FUNCTION__, ": After Waitany: ", pendingRequests);
+        pendingRequests.pop_back();
+
+        popped_special = index == pendingRequests.size();
+        if (not popped_special)
+        {
+            clearAt(index);
+        }
+        return status;
     }
     auto hasMoreThan(size_t min) const -> bool
     {

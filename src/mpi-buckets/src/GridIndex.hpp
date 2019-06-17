@@ -1,7 +1,7 @@
 #pragma once
-#include "GridHash.h"
-#include "HashFunction.h"
-#include "point.h"
+#include "GridHash.hpp"
+#include "HashFunction.hpp"
+#include "point.hpp"
 
 struct GridIndex : public Point3<int64_t>
 {

@@ -1,9 +1,9 @@
 #pragma once
 #include <utility>
-#include "GridHash.h"
-#include "NumericRange.h"
-#include "defines.h"
-#include "point.h"
+#include "GridHash.hpp"
+#include "NumericRange.hpp"
+#include "defines.hpp"
+#include "point.hpp"
 
 struct BoundingBox
 {
