@@ -1,8 +1,8 @@
 #pragma once
 #include "BoundingBox.h"
 #include "GridCell.h"
-#include "GridIndex.h"
-#include "meta.h"
+#include "GridIndex.hpp"
+#include "meta.hpp"
 
 #include <iostream>
 #include <string>

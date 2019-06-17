@@ -1,6 +1,6 @@
 #pragma once
-#include "defines.h"
-#include "meta.h"
+#include "defines.hpp"
+#include "meta.hpp"
 
 template <class T>
 struct Point3

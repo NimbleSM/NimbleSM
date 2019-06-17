@@ -1,7 +1,7 @@
-#include "DataChannel.h"
-#include "RequestQueue.h"
-#include "TaggedRequestQueue.h"
-#include "mpi_err.h"
+#include "DataChannel.hpp"
+#include "RequestQueue.hpp"
+#include "TaggedRequestQueue.hpp"
+#include "mpi_err.hpp"
 
 #include <iostream>
 #include <string>

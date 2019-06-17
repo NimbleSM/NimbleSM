@@ -1,8 +1,8 @@
 #pragma once
 #include <iterator>
 #include <type_traits>
-#include "defines.h"
-#include "meta.h"
+#include "defines.hpp"
+#include "meta.hpp"
 
 
 template <class Iter>

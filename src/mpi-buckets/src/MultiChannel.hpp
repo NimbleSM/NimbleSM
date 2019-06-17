@@ -1,4 +1,4 @@
-#include "DataChannel.h"
+#include "DataChannel.hpp"
 #include <array>
 
 template<size_t n> 

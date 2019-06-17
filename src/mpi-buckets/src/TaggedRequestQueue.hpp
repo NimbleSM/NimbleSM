@@ -1,8 +1,8 @@
 #pragma once
 #include <tuple>
 #include <vector>
-#include "WaitAnyResult.h"
-#include "mpi_err.h"
+#include "WaitAnyResult.hpp"
+#include "mpi_err.hpp"
 
 template <class Tag>
 class TaggedRequestQueue

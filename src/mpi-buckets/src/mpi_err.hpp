@@ -3,21 +3,23 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 
-void str(std::string& s, void* ptr)
+void str(std::string& s, void const* ptr)
 {
     char buff[30];
     int  n = snprintf(buff, 30, "%p", ptr);
     s.append(buff, n);
 }
-void str(std::string& s, MPI_Request request) { str(s, (void*)request); }
+
 template <size_t N>
 void str(std::string& s, char const (&msg)[N])
 {
     s.append(msg, N);
 }
 void str(std::string& s, const char* msg) { s.append(msg); }
+void str(std::string& s, char* msg) { s.append(msg); }
 void str(std::string& s, short i) { s.append(std::to_string(i)); }
 void str(std::string& s, int i) { s.append(std::to_string(i)); }
 void str(std::string& s, long int i) { s.append(std::to_string(i)); }
@@ -66,7 +68,7 @@ int getMPIRank()
     return rank;
 }
 
-FILE* get_file() {
+FILE*         get_file() {
     static std::string filename = "rank" + std::to_string(getMPIRank()) + ".log"; 
     static int opened = puts("Opening file"); 
     static FILE* file = fopen(filename.data(), "w");  

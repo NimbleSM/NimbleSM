@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "WaitAnyResult.h"
-#include "mpi_err.h"
+#include "WaitAnyResult.hpp"
+#include "mpi_err.hpp"
 
 class RequestQueue
 {
