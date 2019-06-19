@@ -1,18 +1,13 @@
 #pragma once
-#include "BarrierTree.hpp"
+#include "mpi/BarrierTree.hpp"
 #include "GatherIntoBoundingBoxes.hpp"
 
-#include "GridIndex.hpp"
-#include "RequestQueue.hpp"
-#include "TaggedRequestQueue.hpp"
-#include "WaitAnyResult.hpp"
-#include "meta.hpp"
-
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-
-#include "mpi_err.hpp"
+#include "grid/GridIndex.hpp"
+#include "mpi/RequestQueue.hpp"
+#include "mpi/TaggedRequestQueue.hpp"
+#include "mpi/WaitAnyResult.hpp"
+#include "mpi/mpi_err.hpp"
+#include "meta/meta.hpp"
 
 
 enum class RequestType { Incoming, Outgoing, Barrier };

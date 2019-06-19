@@ -1,10 +1,9 @@
-#include "DataChannel.hpp"
-#include "RequestQueue.hpp"
-#include "TaggedRequestQueue.hpp"
-#include "mpi_err.hpp"
+#include "meta/ext-includes.hpp"
 
-#include <iostream>
-#include <string>
+#include "mpi/DataChannel.hpp"
+#include "mpi/RequestQueue.hpp"
+#include "mpi/TaggedRequestQueue.hpp"
+#include "mpi/mpi_err.hpp"
 
 class BarrierTree
 {

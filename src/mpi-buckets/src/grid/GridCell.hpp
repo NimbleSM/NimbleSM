@@ -1,8 +1,9 @@
 #pragma once
-#include <utility>
-#include "GridHash.hpp"
-#include "GridIndex.hpp"
-#include "point.hpp"
+#include "meta/ext-includes.hpp"
+
+#include "grid/GridHash.hpp"
+#include "grid/GridIndex.hpp"
+#include "grid/point.hpp"
 
 class GridCellBounds : Point3<double>
 {

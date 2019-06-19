@@ -1,4 +1,4 @@
-#include "DataChannel.hpp"
+#include "mpi/DataChannel.hpp"
 #include <array>
 
 template<size_t n> 

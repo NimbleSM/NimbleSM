@@ -1,9 +1,10 @@
 #pragma once
-#include <utility>
-#include "GridHash.hpp"
-#include "NumericRange.hpp"
-#include "defines.hpp"
-#include "point.hpp"
+#include "meta/ext-includes.hpp"
+#include "meta/defines.hpp"
+
+#include "grid/GridHash.hpp"
+#include "grid/NumericRange.hpp"
+#include "grid/point.hpp"
 
 struct BoundingBox
 {

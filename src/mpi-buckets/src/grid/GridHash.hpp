@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
-#include "HashFunction.hpp"
+#include "meta/ext-includes.hpp"
+
+#include "grid/HashFunction.hpp"
 
 /**
  * @brief Represents a hash function that will hash a coordinate (x, y, z)

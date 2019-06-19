@@ -1,6 +1,6 @@
 #pragma once
-#include "RequestQueue.hpp"
-#include "meta.hpp"
+#include "mpi/RequestQueue.hpp"
+#include "meta/meta.hpp"
 
 #include <mpi.h>
 #include <string>

@@ -1,6 +1,6 @@
-#include "BoundingBox.hpp"
-#include "GridCell.hpp"
-#include "GridIndex.hpp"
+#include "grid/BoundingBox.hpp"
+#include "grid/GridCell.hpp"
+#include "grid/GridIndex.hpp"
 
 #include <unordered_map>
 
