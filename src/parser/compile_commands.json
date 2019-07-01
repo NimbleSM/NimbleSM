@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/sky/spring/NimbleSM/src/parser",
-  "command": "/usr/bin/c++   -I/home/sky/spring/NimbleSM/src/parser/src  -std=c++11 -O3   -o CMakeFiles/run_tests.dir/tests/main.cc.o -c /home/sky/spring/NimbleSM/src/parser/tests/main.cc",
-  "file": "/home/sky/spring/NimbleSM/src/parser/tests/main.cc"
-}
-]

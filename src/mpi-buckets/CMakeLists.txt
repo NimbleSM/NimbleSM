@@ -9,7 +9,7 @@ include_directories(${MPI_INCLUDE_PATH})
 include_directories(src)
 include_directories(mock)
 
-file(GLOB TESTS "tests/*.cc")
+file(GLOB TESTS "tests/*.cpp")
 
 add_executable(run_tests ${TESTS})
 target_link_libraries(run_tests ${MPI_LIBRARIES})
