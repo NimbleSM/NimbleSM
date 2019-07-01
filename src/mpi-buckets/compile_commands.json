@@ -1,7 +1,7 @@
 [
 {
   "directory": "/home/me/NimbleSM/src/mpi-buckets",
-  "command": "/usr/bin/c++   -I/usr/include/x86_64-linux-gnu/mpich -I/home/me/NimbleSM/src/mpi-buckets/src -I/home/me/NimbleSM/src/mpi-buckets/mock  -std=c++11 -O3   -o CMakeFiles/run_tests.dir/tests/main.cc.o -c /home/me/NimbleSM/src/mpi-buckets/tests/main.cc",
-  "file": "/home/me/NimbleSM/src/mpi-buckets/tests/main.cc"
+  "command": "/usr/bin/c++   -I/usr/include/x86_64-linux-gnu/mpich -I/home/me/NimbleSM/src/mpi-buckets/src -I/home/me/NimbleSM/src/mpi-buckets/mock  -std=c++11 -O3   -o CMakeFiles/test.dir/tests/main2.cpp.o -c /home/me/NimbleSM/src/mpi-buckets/tests/main2.cpp",
+  "file": "/home/me/NimbleSM/src/mpi-buckets/tests/main2.cpp"
 }
 ]
