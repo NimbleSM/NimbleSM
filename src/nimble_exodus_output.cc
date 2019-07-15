@@ -107,8 +107,8 @@ namespace nimble {
       int num_elem_in_block = genesis_mesh.GetNumElementsInBlock(id);
       int num_nodes_per_elem = genesis_mesh.GetNumNodesPerElement(id);
       std::string elem_type = genesis_mesh.GetElementType(id);
-      retval = ex_put_elem_block(exodus_file_id, id, elem_type.c_str(), num_elem_in_block, num_nodes_per_elem, 0);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_elem_block");
+      retval = ex_put_block(exodus_file_id, EX_ELEM_BLOCK, id, elem_type.c_str(), num_elem_in_block, num_nodes_per_elem, 0, 0, 0);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_block");
     }
 
     // Write the block names
@@ -134,8 +134,8 @@ namespace nimble {
         for (int j=0 ; j<num_elem_in_block*num_node_in_elem ; j++) {
           exodus_conn[j] = conn[j] + 1;
         }
-        retval = ex_put_elem_conn(exodus_file_id, id, &exodus_conn[0]);
-        if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_elem_conn");
+        retval = ex_put_conn(exodus_file_id, EX_ELEM_BLOCK, id, &exodus_conn[0], 0, 0);
+        if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
       }
     }
 
@@ -146,8 +146,8 @@ namespace nimble {
     for (int i = 0 ; i < num_nodes_ ; ++i) {
       temp_node_global_ids[i] = node_global_ids[i] + 1;
     }
-    retval = ex_put_node_num_map(exodus_file_id, &temp_node_global_ids[0]);
-    if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_node_num_map");
+    retval = ex_put_id_map(exodus_file_id, EX_NODE_MAP, &temp_node_global_ids[0]);
+    if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
 
     // Write global element number map (global element IDs)
     const int* elem_global_ids = genesis_mesh.GetElementGlobalIds();
@@ -156,8 +156,8 @@ namespace nimble {
     for (int i = 0 ; i < num_elements_ ; ++i) {
       temp_elem_global_ids[i] = elem_global_ids[i] + 1;
     }
-    retval = ex_put_elem_num_map(exodus_file_id, &temp_elem_global_ids[0]);
-    if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_elem_num_map");
+    retval = ex_put_id_map(exodus_file_id, EX_ELEM_MAP, &temp_elem_global_ids[0]);
+    if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
 
     // Write node sets
     if(num_node_sets_ > 0) {
@@ -196,15 +196,19 @@ namespace nimble {
           node_sets_dist_fact[dist_index++] = distribution_factors[id][j];
         }
       }
-      retval = ex_put_concat_node_sets(exodus_file_id,
-                                       &node_set_ids[0],
-                                       &num_nodes_per_set[0],
-                                       &num_distribution_factors_per_set[0],
-                                       &node_sets_node_index[0],
-                                       &node_sets_dist_index[0],
-                                       &node_sets_node_list[0],
-                                       &node_sets_dist_fact[0]);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_concat_node_sets");
+
+
+      ex_set_specs set_specs;
+      set_specs.sets_ids = node_set_ids.data();
+      set_specs.num_entries_per_set = num_nodes_per_set.data();
+      set_specs.num_dist_per_set = num_distribution_factors_per_set.data();
+      set_specs.sets_entry_index = node_sets_node_index.data();
+      set_specs.sets_dist_index = node_sets_dist_index.data();
+      set_specs.sets_entry_list = node_sets_node_list.data();
+      set_specs.sets_extra_list = 0;
+      set_specs.sets_dist_fact = node_sets_dist_fact.data();
+      retval = ex_put_concat_sets(exodus_file_id, EX_NODE_SET, &set_specs);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_concat_sets");
     }
 
     // Write global data info
@@ -215,24 +219,24 @@ namespace nimble {
         global_var_names[i] = new char[MAX_STR_LENGTH+1];
         strcpy(global_var_names[i], global_data_names[i].c_str());
       }
-      retval = ex_put_var_param(exodus_file_id, "G", num_global_data);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
-      retval = ex_put_var_names (exodus_file_id, "G", num_global_data, global_var_names);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
+      retval = ex_put_variable_param(exodus_file_id, EX_GLOBAL, num_global_data);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+      retval = ex_put_variable_names(exodus_file_id, EX_GLOBAL, num_global_data, global_var_names);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
     }
 
     // Write node data info
     char **node_var_names = 0;
-    if (num_node_data > 0) {
+    if (num_node_data > 0 && num_nodes_ > 0) {
       node_var_names = new char*[num_node_data];
       for (int i=0 ; i<num_node_data ; i++) {
         node_var_names[i] = new char[MAX_STR_LENGTH+1];
         strcpy(node_var_names[i], node_data_names[i].c_str());
       }
-      retval = ex_put_var_param(exodus_file_id, "N", num_node_data);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
-     retval = ex_put_var_names(exodus_file_id, "N", num_node_data, node_var_names);
-     if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_names");
+      retval = ex_put_variable_param(exodus_file_id, EX_NODAL, num_node_data);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+      retval = ex_put_variable_names(exodus_file_id, EX_NODAL, num_node_data, node_var_names);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
     }
 
     // Write element data info
@@ -262,10 +266,10 @@ namespace nimble {
         element_var_names[i] = new char[MAX_STR_LENGTH+1];
         strcpy(element_var_names[i], elem_var_names[i].c_str());
       }
-      retval = ex_put_var_param(exodus_file_id, "E", num_element_vars);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_param");
-      retval = ex_put_var_names(exodus_file_id, "E", num_element_vars, element_var_names);
-      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_var_names");
+      retval = ex_put_variable_param(exodus_file_id, EX_ELEM_BLOCK, num_element_vars);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+      retval = ex_put_variable_names(exodus_file_id, EX_ELEM_BLOCK, num_element_vars, element_var_names);
+      if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
     }
 
     // Close exodus file
@@ -334,15 +338,17 @@ namespace nimble {
     // Write global data
     int num_global_vars = static_cast<int>(global_data.size());
     if (num_global_vars > 0) {
-      retval = ex_put_glob_vars(exodus_file_id, exodus_write_count_, num_global_vars, &global_data[0]);
-      if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_glob_vars");
+      retval = ex_put_var(exodus_file_id, exodus_write_count_, EX_GLOBAL, 1, 0, num_global_vars, &global_data[0]);
+      if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
     }
 
     // Write node data
-    for(unsigned int i=0 ; i<node_data.size() ; ++i) {
-      int variable_index = static_cast<int>(i+1);
-      retval = ex_put_nodal_var(exodus_file_id, exodus_write_count_, variable_index, num_nodes_, &node_data[i][0]);
-      if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_nodal_var");
+    if (num_nodes_ > 0) {
+      for(unsigned int i=0 ; i<node_data.size() ; ++i) {
+        int variable_index = static_cast<int>(i+1);
+        retval = ex_put_var(exodus_file_id, exodus_write_count_, EX_NODAL, variable_index, 1, num_nodes_, &node_data[i][0]);
+        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
+      }
     }
 
     // Write element data
@@ -353,16 +359,16 @@ namespace nimble {
         std::string data_name = elem_data_names.at(block_id).at(j);
         int variable_index = elem_data_index_.at(data_name);
         int block_num_elem = static_cast<int>(elem_data.at(block_id).at(j).size());
-        retval = ex_put_elem_var(exodus_file_id, exodus_write_count_, variable_index, block_id, block_num_elem, &elem_data.at(block_id).at(j)[0]);
-        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_elem_var");
+        retval = ex_put_var(exodus_file_id, exodus_write_count_, EX_ELEM_BLOCK, variable_index, block_id, block_num_elem, &elem_data.at(block_id).at(j)[0]);
+        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
       }
       int num_derived_elem_data = derived_elem_data_names.at(block_id).size();
       for(int j=0 ; j<num_derived_elem_data ; ++j) {
         std::string data_name = derived_elem_data_names.at(block_id).at(j);
         int variable_index = elem_data_index_.at(data_name);
         int block_num_elem = static_cast<int>(derived_elem_data.at(block_id).at(j).size());
-        retval = ex_put_elem_var(exodus_file_id, exodus_write_count_, variable_index, block_id, block_num_elem, &derived_elem_data.at(block_id).at(j)[0]);
-        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_elem_var");
+        retval = ex_put_var(exodus_file_id, exodus_write_count_, EX_ELEM_BLOCK, variable_index, block_id, block_num_elem, &derived_elem_data.at(block_id).at(j)[0]);
+        if (retval!= 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
       }
     }
 

@@ -101,7 +101,7 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_DARMA
     template< typename ArchiveType >
     void serialize(ArchiveType& ar) {
-      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_ | exodus_file_name_ | use_two_level_mesh_decomposition_ | write_timing_data_file_ | time_integration_scheme_ | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_ | contact_string_ | contact_visualization_ |  microscale_output_element_ids_ | material_strings_ | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_ | boundary_condition_strings_ | output_field_string_;
+      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_ | exodus_file_name_ | use_two_level_mesh_decomposition_ | write_timing_data_file_ | time_integration_scheme_ | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_ | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_ | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_ | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_ | boundary_condition_strings_ | output_field_string_;
     }
 #endif
 
@@ -141,9 +141,14 @@ namespace nimble {
       else
         return true;
     }
-    
+
     bool ContactVisualization() const {
-      return contact_visualization_;
+      bool visualize_contact = visualize_contact_entities_ || visualize_contact_bounding_boxes_;
+      return visualize_contact;
+    }
+
+    std::string ContactVisualizationFileName() const {
+      return contact_visualization_file_name_;
     }
 
     std::string ContactString() const { return contact_string_; }
@@ -203,7 +208,9 @@ namespace nimble {
     int num_load_steps_;
     int output_frequency_;
     std::string contact_string_;
-    bool contact_visualization_;
+    bool visualize_contact_entities_;
+    bool visualize_contact_bounding_boxes_;
+    std::string contact_visualization_file_name_;
     std::vector<int> microscale_output_element_ids_;
     std::map<std::string, std::string> material_strings_;
     std::map<int, BlockProperties> macroscale_blocks_;
