@@ -157,8 +157,8 @@ auto ExchangeData(PacketMap&& packets, MPI_Comm comm, int tag1, int tag2, int ta
     // clang-format off
     IdentifySources(
         packets,
-        comm, 
-        tag1, 
+        comm,
+        tag1,
         tag2,
         [&](int source, size_t incoming_size) {
             incomingData.emplace_back();
@@ -279,7 +279,37 @@ auto notifyRanksOfIntersection(BBPacketList const&     rankBoxInfo,
 }
 
 template <class View>
-auto getExchangeMembers(View&&       kokkos_view,
+auto getExchangeMembers_basic(View&&       kokkos_view,
+                        double const cell_size,
+                        MPI_Comm     comm,
+                        int          tag1,
+                        int          tag2,
+                        int          tag3) -> std::vector<int>
+{
+  DataChannel  channel = DataChannel{comm, tag1};
+  int const    n_ranks = channel.commSize();
+
+  std::vector<int> ranks(n_ranks);
+  for(int i = 0; i < n_ranks; i++) {
+    ranks[i] = i;
+  }
+
+  return ranks;
+}
+/*
+template <class View>
+auto getExchangeMembers_all_to_root(View&& kokkos_view,
+                              double const cell_size,
+                              MPI_Comm comm,
+                              int tag1,
+                              int tag2,
+                              int tag3) -> std::vector<int>
+{
+  return {};
+}
+*/
+template <class View>
+auto getExchangeMembers_fancy(View&&       kokkos_view,
                         double const cell_size,
                         MPI_Comm     comm,
                         int          tag1,
@@ -305,7 +335,7 @@ auto getExchangeMembers(View&&       kokkos_view,
     // have to be sent to those ranks
     auto packets = GatherTransformBy(
         gatherIntoBoundingBoxes(
-            kokkos_view, 
+            kokkos_view,
             cell_size
         ),
         [=](pair<const GridIndex, BoundingBox> const& message) {
@@ -313,14 +343,14 @@ auto getExchangeMembers(View&&       kokkos_view,
             return hash(index.x, index.y, index.z) % n_ranks;
         },
         [](pair<const GridIndex, BoundingBox> const& message) {
-            return message.second; 
+            return message.second;
         }
-    ); 
+    );
     auto rankBoxInfo =
         ExchangeData(
             packets,
             channel.comm,
-            tag1, 
+            tag1,
             tag2,
             tag3
         );

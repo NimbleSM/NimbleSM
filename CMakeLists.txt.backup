@@ -76,10 +76,6 @@ ENDIF()
 
 # Optional dependency for pure MPI build (no Trilinos)
 IF(USE_PURE_MPI)
-  find_package(MPI REQUIRED)
-  include_directories(${MPI_INCLUDE_PATH})
-  link_libraries(${MPI_LIBRARIES})
-
   ADD_DEFINITIONS(-DNIMBLE_HAVE_MPI)
   SET(NIMBLE_HAVE_MPI TRUE)
   MESSAGE("-- Compiling with MPI (no Trilinos)")
@@ -228,3 +224,4 @@ ENDIF()
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(examples)
+
