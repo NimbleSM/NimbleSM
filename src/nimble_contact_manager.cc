@@ -1506,9 +1506,9 @@ namespace
   }
 
   void ContactManager::compute_and_scatter_contact_force(DeviceContactEntityArrayView contact_nodes_d,
-    DeviceContactEntityArrayView contact_faces_d,
-    stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
-    nimble_kokkos::DeviceScalarNodeView contact_manager_force_d)
+                                                         DeviceContactEntityArrayView contact_faces_d,
+                                                         stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
+                                                         nimble_kokkos::DeviceScalarNodeView contact_manager_force_d)
   {
     using namespace gtk::exp_ngp_contact;
 
@@ -1534,9 +1534,9 @@ namespace
     PushbackDirectionsAndGaps pushbackAndGaps = face_avg_pushback(interactionLists, points, triangles);
     double penalty_parameter = penalty_parameter_;
     Kokkos::deep_copy(contact_manager_force_d, 0.0);
-    auto pushbackDirs = pushbackAndGaps.pushbackDirections;
+    auto pushbackDirs = pushbackAndGaps.directions;
     auto gaps = pushbackAndGaps.gaps;
-    auto closestPoints = interactionLists.closestPoints;
+    auto closestPoints = interactionLists.points;
 
     Kokkos::parallel_for("compute_something", numPoints, KOKKOS_LAMBDA(const int i_node) {
 
@@ -1545,23 +1545,7 @@ namespace
       interactionLists.for_each_face_interaction_of_node(i_node, [=](int nodeIdx, int contact_face_index, int dataIdx) {
         double closest_pt[3] = {   closestPoints(dataIdx, 0), closestPoints(dataIdx, 1), closestPoints(dataIdx, 2)};
         double direction[3] = {   pushbackDirs(i_node, 0), pushbackDirs(i_node, 1), pushbackDirs(i_node, 2)};
-        const double scale = penalty_parameter * gap / interactionLists.interactionListsMap.list_size(i_node);
-
-#if 0
-        if (gap < 0) {
-          mtk::Vec3<double> pt = points.getPoint(i_node);
-          mtk::Vec3<double> pb_dir(direction[0], direction[1], direction[2]);
-          std::cout << "  node " << i_node << "(" << pt << "):  dataIdx = " << dataIdx << "  gap = " << gap
-                  << " pushback dir = " << pb_dir << "  scale = " << scale << std::endl;
-          int listBegin = interactionLists.interactionListsMap.offsets[i_node];
-          int listEnd   = interactionLists.interactionListsMap.offsets[i_node + 1];
-          std::cout << " triangles: ";
-          for (int di = listBegin; di < listEnd; ++di) {
-            std::cout <<  interactionLists.nodeIdxFaceIdxInteractionPairs(di, 1) << " ";
-          }
-          std::cout << std::endl;
-        }
-#endif
+        const double scale = penalty_parameter * gap / interactionLists.num_interactions(i_node);
 
         scatter_contact_forces(gap, scale, direction, contact_faces_d,
                                contact_face_index, closest_pt, contact_nodes_d,
@@ -1570,109 +1554,6 @@ namespace
     });
   }
 
-  void ContactManager::compute_and_scatter_contact_force_OLD(
-    stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
-    DeviceContactEntityArrayView contact_nodes_d,
-    DeviceContactEntityArrayView contact_faces_d,
-    int num_contact_nodes,
-    nimble_kokkos::DeviceScalarNodeView contact_manager_force_d)
-  {
-    auto num_collisions = collision_list.get_num_collisions();
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points("points", num_collisions);
-    gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles("triangles", num_collisions);
-    gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> closest_points("closest_points", num_collisions);
-    load_contact_points_and_tris(num_collisions,
-                                 collision_list,
-                                 contact_nodes_d,
-                                 contact_faces_d,
-                                 points,
-                                 triangles);
-
-    constexpr bool save_projection_types_computed = true;
-    Kokkos::View<short *, nimble_kokkos::kokkos_device_execution_space> proj_types_returned_d;
-    if (save_projection_types_computed) {
-      Kokkos::resize(proj_types_returned_d, num_collisions);
-    }
-    Kokkos::Impl::Timer timer;
-    gtk::ComputeProjections<nimble_kokkos::kokkos_device_execution_space,
-      save_projection_types_computed>
-        projection(points, triangles, closest_points, proj_types_returned_d);
-    nimble_kokkos::DeviceScalarNodeView interaction_distance_d("interaction_distance_d", num_collisions);
-    nimble_kokkos::DeviceScalarNodeView min_distance_for_each_node_d("min_distance_for_each_node", num_contact_nodes); // THIS IS TOO LONG, MANY ZEROS
-    Kokkos::deep_copy(min_distance_for_each_node_d, std::numeric_limits<double>::max());
-
-    Kokkos::parallel_for("Minimum Projection Distance", num_collisions, KOKKOS_LAMBDA(const int i_collision) {
-      double pt[3], closest_pt[3], proj_vector[3];
-      points.getPointValue(i_collision, pt);
-      closest_points.getPointValue(i_collision, closest_pt);
-      for (int i = 0;i < 3; i++) {
-        proj_vector[i] = closest_pt[i] - pt[i];
-      }
-
-      double distance = proj_vector[0] * proj_vector[0] + proj_vector[1] * proj_vector[1] + proj_vector[2] * proj_vector[2];
-      if (distance > 0.0) {
-        distance = std::sqrt(distance);
-      }
-
-      interaction_distance_d(i_collision) = distance;
-      int contact_node_index = collision_list.m_data(i_collision, 0);
-      double min_distance = Kokkos::atomic_min_fetch(&min_distance_for_each_node_d(contact_node_index), distance);
-    });
-    nimble_kokkos::DeviceIntegerArrayView min_triangle_id_for_each_node_d("min_triangle_id_for_each_node", num_contact_nodes);
-    Kokkos::deep_copy(min_triangle_id_for_each_node_d, std::numeric_limits<int>::max());
-    Kokkos::parallel_for("Identify Interactions for Enforcement", num_collisions, KOKKOS_LAMBDA(const int i_collision) {
-      double distance = interaction_distance_d(i_collision);
-      int contact_node_index = collision_list.m_data(i_collision, 0);
-      int contact_face_index = collision_list.m_data(i_collision, 1);
-      double min_distance = min_distance_for_each_node_d(contact_node_index);
-      if (distance == min_distance) {
-        int triangle_id = contact_faces_d(contact_face_index).contact_entity_global_id_;
-        double min_triangle_id = Kokkos::atomic_min_fetch(&min_triangle_id_for_each_node_d(contact_node_index), triangle_id);
-      }
-    });
-    double penalty_parameter = penalty_parameter_;
-    Kokkos::deep_copy(contact_manager_force_d, 0.0);
-    Kokkos::parallel_for("Contact Force", num_collisions, KOKKOS_LAMBDA(const int i_collision) {
-      // contact will be enforced if:
-      //   this interaction matches the minimum node-face distance for the given node, and
-      //   the triangle face id matches the minimum face id for this interaction
-      double distance = interaction_distance_d(i_collision);
-      int contact_node_index = collision_list.m_data(i_collision, 0);
-      int contact_face_index = collision_list.m_data(i_collision, 1);
-      double min_distance = min_distance_for_each_node_d(contact_node_index);
-      int triangle_id = contact_faces_d(contact_face_index).contact_entity_global_id_;
-      double min_triangle_id = min_triangle_id_for_each_node_d(contact_node_index);
-      if (distance == min_distance && triangle_id == min_triangle_id) {
-        // TODO ADD TOLERANCE
-        double point[3], closest_pt[3], tri_node_1[3], tri_node_2[3], tri_node_3[3];
-        points.getPointValue(i_collision, point);
-        closest_points.getPointValue(i_collision, closest_pt);
-        triangles.getVertexValue(i_collision, 0, tri_node_1);
-        triangles.getVertexValue(i_collision, 1, tri_node_2);
-        triangles.getVertexValue(i_collision, 2, tri_node_3);
-
-        double tri_edge_1[3], tri_edge_2[3], tri_normal[3];
-        for (int i = 0;i < 3; ++i) {
-          tri_edge_1[i] = tri_node_2[i] - tri_node_1[i];
-          tri_edge_2[i] = tri_node_3[i] - tri_node_2[i];
-        }
-        tri_normal[0] = tri_edge_1[1] * tri_edge_2[2] - tri_edge_1[2] * tri_edge_2[1];
-        tri_normal[1] = tri_edge_1[2] * tri_edge_2[0] - tri_edge_1[0] * tri_edge_2[2];
-        tri_normal[2] = tri_edge_1[0] * tri_edge_2[1] - tri_edge_1[1] * tri_edge_2[0];
-        double gap = (point[0] - closest_pt[0]) * tri_normal[0] +
-          (point[1] - closest_pt[1]) * tri_normal[1] +
-          (point[2] - closest_pt[2]) * tri_normal[2];
-        double tri_normal_magnitude = std::sqrt(tri_normal[0] * tri_normal[0] +
-          tri_normal[1] * tri_normal[1] +
-          tri_normal[2] * tri_normal[2]);
-        double scale = penalty_parameter * gap / tri_normal_magnitude;
-
-        scatter_contact_forces(gap, scale, tri_normal, contact_faces_d,
-          contact_face_index, closest_pt, contact_nodes_d,
-          contact_node_index, contact_manager_force_d);
-        }
-    });
-  }
 #endif
 
   void ContactManager::ComputeContactForce(int step, bool debug_output) {
@@ -1774,15 +1655,8 @@ namespace
     stk::search::TimedMortonLBVHSearch<double, nimble_kokkos::kokkos_device_execution_space>(
       contact_nodes_search_tree_, contact_faces_search_tree_, collision_list, timers);
 
-#if 1
-    // san's averaging algorithm
     compute_and_scatter_contact_force(contact_nodes_d, contact_faces_d,
-      collision_list, contact_manager_force_d);
-#else
-    // original nimble
-    compute_and_scatter_contact_force_OLD(collision_list, contact_nodes_d,
-      contact_faces_d, num_contact_nodes, contact_manager_force_d);
-#endif
+                                      collision_list, contact_manager_force_d);
 #endif
 
   }

@@ -294,12 +294,6 @@ public:
                                            stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
                                            nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
 
-    void compute_and_scatter_contact_force_OLD(stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
-                                               DeviceContactEntityArrayView contact_nodes_d,
-                                               DeviceContactEntityArrayView contact_faces_d,
-                                               int num_contact_nodes,
-                                               nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
-
     void load_contact_points_and_tris(const int num_collisions,
                                       stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
                                       DeviceContactEntityArrayView contact_nodes_d,
