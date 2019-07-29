@@ -48,6 +48,7 @@
 // DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"
 #ifdef NIMBLE_HAVE_EXTRAS
 #include "Geom_NGP_NodeFacePushback.h"
+#include "Geom_ComputeProjections.h"
 #endif
 
 #ifdef NIMBLE_HAVE_MPI
