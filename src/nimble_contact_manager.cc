@@ -1535,7 +1535,7 @@ namespace
     Kokkos::deep_copy(contact_manager_force_d, 0.0);
     auto pushbackDirs = pushbackAndGaps.directions;
     auto gaps = pushbackAndGaps.gaps;
-    auto closestPoints = interactionLists.points;
+    auto closestPoints = get_projected_points(interactionLists);
 
     Kokkos::parallel_for("compute_something", numPoints, KOKKOS_LAMBDA(const int i_node) {
 
