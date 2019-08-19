@@ -111,44 +111,44 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named run_tests
+# Target rules for targets named test
 
 # Build rule for target.
-run_tests: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 run_tests
-.PHONY : run_tests
+test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 test
+.PHONY : test
 
 # fast build rule for target.
-run_tests/fast:
-	$(MAKE) -f CMakeFiles/run_tests.dir/build.make CMakeFiles/run_tests.dir/build
-.PHONY : run_tests/fast
+test/fast:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/build
+.PHONY : test/fast
 
-tests/main.o: tests/main.cc.o
+tests/main2.o: tests/main2.cpp.o
 
-.PHONY : tests/main.o
+.PHONY : tests/main2.o
 
 # target to build an object file
-tests/main.cc.o:
-	$(MAKE) -f CMakeFiles/run_tests.dir/build.make CMakeFiles/run_tests.dir/tests/main.cc.o
-.PHONY : tests/main.cc.o
+tests/main2.cpp.o:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/tests/main2.cpp.o
+.PHONY : tests/main2.cpp.o
 
-tests/main.i: tests/main.cc.i
+tests/main2.i: tests/main2.cpp.i
 
-.PHONY : tests/main.i
+.PHONY : tests/main2.i
 
 # target to preprocess a source file
-tests/main.cc.i:
-	$(MAKE) -f CMakeFiles/run_tests.dir/build.make CMakeFiles/run_tests.dir/tests/main.cc.i
-.PHONY : tests/main.cc.i
+tests/main2.cpp.i:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/tests/main2.cpp.i
+.PHONY : tests/main2.cpp.i
 
-tests/main.s: tests/main.cc.s
+tests/main2.s: tests/main2.cpp.s
 
-.PHONY : tests/main.s
+.PHONY : tests/main2.s
 
 # target to generate assembly for a file
-tests/main.cc.s:
-	$(MAKE) -f CMakeFiles/run_tests.dir/build.make CMakeFiles/run_tests.dir/tests/main.cc.s
-.PHONY : tests/main.cc.s
+tests/main2.cpp.s:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/tests/main2.cpp.s
+.PHONY : tests/main2.cpp.s
 
 # Help Target
 help:
@@ -157,11 +157,11 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... run_tests"
+	@echo "... test"
 	@echo "... edit_cache"
-	@echo "... tests/main.o"
-	@echo "... tests/main.i"
-	@echo "... tests/main.s"
+	@echo "... tests/main2.o"
+	@echo "... tests/main2.i"
+	@echo "... tests/main2.s"
 .PHONY : help
 
 

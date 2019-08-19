@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/me/mpi_buckets/build",
+  "command": "/usr/bin/c++   -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/home/me/mpi_buckets/src -I/home/me/mpi_buckets/dist_hash -I/home/me/mpi_buckets/mock  -std=c++11 -O3   -o CMakeFiles/test.dir/tests/main.cpp.o -c /home/me/mpi_buckets/tests/main.cpp",
+  "file": "/home/me/mpi_buckets/tests/main.cpp"
+}
+]

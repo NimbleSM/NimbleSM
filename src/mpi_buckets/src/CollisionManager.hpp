@@ -296,7 +296,7 @@ auto getExchangeMembers(View&&       kokkos_view,
     // Creates a map from ranks to the bounding boxes that
     // have to be sent to those ranks
     auto packets = GatherTransformBy(
-        gatherIntoBoundingBoxes(
+        gather_into_bounding_boxes(
             kokkos_view, 
             cell_size
         ),

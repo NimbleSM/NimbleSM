@@ -11,6 +11,7 @@ void str(std::string& s, void const* ptr)
     char buff[30];
     int  n = snprintf(buff, 30, "%p", ptr);
     s.append(buff, n);
+    
 }
 
 template <size_t N>

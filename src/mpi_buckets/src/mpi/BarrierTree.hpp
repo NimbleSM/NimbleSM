@@ -7,28 +7,28 @@
 
 class BarrierTree
 {
-    DataChannel  channel;
+    DataChannel channel;
     RequestQueue notifyQueue;
-    int          my_rank;
-    int          num_ranks;
-    int          unfinished_children;
+    int my_rank;
+    int num_ranks;
+    int unfinished_children;
 
     bool finishedFlag = false;
 
     void notifyParents()
     {
-        auto NotifyRank
-            = [](DataChannel const& channel, int my_rank, RequestQueue& queue) {
-                  queue.push(channel.notify(my_rank));
-              };
+        auto NotifyRank = [](DataChannel const& channel, int my_rank,
+                             RequestQueue& queue) {
+            queue.push(channel.notify(my_rank));
+        };
         onParentRanks(NotifyRank, notifyQueue);
     }
     void notifyChildren()
     {
-        auto NotifyRank
-            = [](DataChannel const& channel, int my_rank, RequestQueue& queue) {
-                  queue.push(channel.notify(my_rank));
-              };
+        auto NotifyRank = [](DataChannel const& channel, int my_rank,
+                             RequestQueue& queue) {
+            queue.push(channel.notify(my_rank));
+        };
         finishedFlag = true;
         onChildRanks(NotifyRank, notifyQueue);
     }
@@ -49,7 +49,7 @@ class BarrierTree
         }
         mpi_err("markChildComplete():finishedFlag = ", finishedFlag);
     }
-    template <class F, class... ExtraArgs>
+    template<class F, class... ExtraArgs>
     auto onChildRanks(F&& func, ExtraArgs&&... args) const -> void
     {
         auto const child_0 = (my_rank + 1) * 2 - 1;
@@ -63,7 +63,7 @@ class BarrierTree
             func(channel, (int)child_1, args...);
         }
     }
-    template <class F, class... ExtraArgs>
+    template<class F, class... ExtraArgs>
     auto onParentRanks(F&& func, ExtraArgs&&... args) const -> void
     {
         if (my_rank != 0)
@@ -107,9 +107,10 @@ class BarrierTree
       , num_ranks(channel.commSize())
       // Here, we count ourselves as an unfinished child
       , unfinished_children(countChildren() + 1)
-    {
-    }
-    BarrierTree(DataChannel channel) : BarrierTree(channel.comm, channel.tag) {}
+    {}
+    BarrierTree(DataChannel channel)
+      : BarrierTree(channel.comm, channel.tag)
+    {}
 
     void processStatus(MPI_Status const& status)
     {
@@ -127,19 +128,18 @@ class BarrierTree
     }
     void enqueueBarrier(RequestQueue& queue)
     {
-        auto EnqueueAwait
-            = [](DataChannel const& channel, int rank, RequestQueue& queue) {
-                  mpi_err("Awaiting ", rank);
-                  queue.push(channel.Iawait(rank));
-              };
+        auto EnqueueAwait = [](DataChannel const& channel, int rank,
+                               RequestQueue& queue) {
+            mpi_err("Awaiting ", rank);
+            queue.push(channel.Iawait(rank));
+        };
         onChildRanks(EnqueueAwait, queue);
         onParentRanks(EnqueueAwait, queue);
     }
-    template <class Tag>
+    template<class Tag>
     void enqueueBarrier(TaggedRequestQueue<Tag>& queue, Tag barrier_tag)
     {
-        auto EnqueueAwait = [barrier_tag](DataChannel const&       channel,
-                                          int                      rank,
+        auto EnqueueAwait = [barrier_tag](DataChannel const& channel, int rank,
                                           TaggedRequestQueue<Tag>& queue) {
             mpi_err("Awaiting ", rank);
             queue.push(channel.Iawait(rank), barrier_tag);

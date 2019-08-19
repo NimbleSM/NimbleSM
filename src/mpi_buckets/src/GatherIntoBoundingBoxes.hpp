@@ -4,20 +4,22 @@
 
 #include <unordered_map>
 
-/** gatherIntoBoundingBoxes takes a list of points from a kokkos view, and
+/** gather_into_bounding_boxes takes a list of points from a kokkos view, and
 constructs a map between grid indicies and the corresponding bounding boxes.
 Basically, it's finding a bounding box for all the points in a particular cell,
 for every cell that has any points in it. */
-template <class View, class Map = std::unordered_map<GridIndex, BoundingBox>>
-auto gatherIntoBoundingBoxes(View&& values, double const cell_size) -> Map
+using grid_box_map = std::unordered_map<GridIndex, BoundingBox>;
+template<class View>
+auto gather_into_bounding_boxes(View&& values, double const cell_size)
+  -> grid_box_map
 {
-    Map          boundingBoxLookup;
+    grid_box_map boundingBoxLookup;
     size_t const count = values.extent(0) / 3;
     if (count > 0)
     {
         double const scale = 1.0 / cell_size;
 
-        Point3d point{values(0), values(1), values(2)};
+        Point3d point {values(0), values(1), values(2)};
 
         auto current_index       = GridIndex(point, scale);
         auto current_cell_bounds = GridCellBounds(current_index, cell_size);

@@ -7,6 +7,7 @@ struct GridIndex : public Point3<int64_t>
 {
     using Base = Point3<int64_t>;
 
+    constexpr GridIndex() : Base{} {}
     constexpr GridIndex(Point3<double> point, double scale) noexcept
       : Base({GridHash::ifloor(point.x * scale),
               GridHash::ifloor(point.y * scale),
@@ -19,6 +20,11 @@ struct GridIndex : public Point3<int64_t>
               GridHash::ifloor(point.z)})
     {
     }
+    GridIndex(GridIndex const&) = default;
+    GridIndex(GridIndex&&) = default; 
+    
+    GridIndex& operator=(GridIndex const&) = default; 
+    GridIndex& operator=(GridIndex&&) = default; 
 
     // constexpr GridIndex(GridIndex const&) = default;
     // constexpr GridIndex(GridIndex &&) = default;
