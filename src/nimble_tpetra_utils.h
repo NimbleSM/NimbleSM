@@ -48,7 +48,7 @@
 #include "nimble_data_manager.h"
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  #include <Tpetra_DefaultPlatform.hpp>
+  #include <Tpetra_Core.hpp>
   #include <Teuchos_GlobalMPISession.hpp>
   #include <Teuchos_oblackholestream.hpp>
   #include <Tpetra_Vector.hpp>

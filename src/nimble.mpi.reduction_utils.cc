@@ -44,6 +44,7 @@
 #include "nimble.mpi.reduction_utils.h"
 #include <map>
 
+#ifdef NIMBLE_HAVE_MPI
 std::vector<int> nimble::PackIDSpace(const std::vector<int>& raw_node_ids,
                                      int max_nodes_assigned_to_a_rank,
                                      const mpicontext& context)
@@ -126,3 +127,4 @@ void nimble::EnsureCheckpoint(const mpicontext& context, const std::string& mess
   if (context.is_root())
     std::cout << message << std::endl;
 }
+#endif

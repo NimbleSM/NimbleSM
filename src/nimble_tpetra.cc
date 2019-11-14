@@ -82,12 +82,10 @@ int main(int argc, char *argv[]) {
   bool using_mpi = false;
   int num_mpi_ranks = 1;
   int my_mpi_rank = 0;
-  nimble::comm_type comm;
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  Teuchos::oblackholestream black_hole;
-  Teuchos::GlobalMPISession mpi_session (&argc, &argv, &black_hole);
-  comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+  Tpetra::ScopeGuard tpetraScope(&argc,&argv);
+  auto comm = Tpetra::getDefaultComm();
   using_mpi = true;
   num_mpi_ranks = comm->getSize();
   my_mpi_rank = comm->getRank();
