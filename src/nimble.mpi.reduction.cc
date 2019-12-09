@@ -42,7 +42,9 @@
 */
 
 #include "nimble.mpi.reduction.h"
+#include "nimble.mpi.mpicontext.h"
 
+#ifdef NIMBLE_HAVE_MPI
 nimble::reduction::ReductionInfo* nimble::reduction::GenerateReductionInfo(const std::vector<int>& raw_global_ids,
                                                                            const mpicontext& context)
 {
@@ -123,3 +125,4 @@ nimble::reduction::ReductionInfo* nimble::reduction::GenerateReductionInfo(const
   }
   return reduction_info;
 }
+#endif

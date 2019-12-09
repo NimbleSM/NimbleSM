@@ -43,6 +43,8 @@
 
 #include "nimble_tpetra_utils.h"
 
+#include <set>
+
 namespace nimble {
 
   void TpetraContainer::Initialize(GenesisMesh const & mesh,
