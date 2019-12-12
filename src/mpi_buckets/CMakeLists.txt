@@ -12,5 +12,5 @@ include_directories(mock)
 
 file(GLOB TESTS "tests/*.cpp")
 
-add_executable(test ${TESTS})
-target_link_libraries(test ${MPI_LIBRARIES})
+add_executable(test_mpi_buckets ${TESTS})
+target_link_libraries(test_mpi_buckets ${MPI_LIBRARIES})

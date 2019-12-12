@@ -240,6 +240,10 @@ IF(CRAY)
   set(Exodus_LIBS ${Exodus_LIBS} hdf5_hl hdf5 z)
 ENDIF()
 
+include_directories(src/mpi_buckets/dist_hash)
+include_directories(src/mpi_buckets/mock)
+include_directories(src/mpi_buckets/src)
+
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(examples)
