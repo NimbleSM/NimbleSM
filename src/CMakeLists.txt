@@ -34,42 +34,10 @@ set(NIMBLE_KOKKOS_SOURCES
 add_executable(NimbleSM_Serial nimble_serial.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
 
-set(NIMBLE_MAINS
-  nimble_serial.cc nimble_tpetra.cc nimble_mpi.cc nimble_qthread.cc nimble_darma.cc nimble_kokkos.cc
-)
-
-if (NIMBLE_NVIDIA_BUILD)
-  set_source_files_properties(${NIMBLE_SOURCES} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_DARMA_SOURCES} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_KOKKOS_SOURCES} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_TPETRA_SOURCES} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_MPI_SOURCES} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_MAINS} PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${NIMBLE_EXTRAS_SOURCES} PROPERTIES LANGUAGE CUDA)
+if (NIMBLE_HAVE_TRILINOS)
+  add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
+  target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
 endif()
-
-set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES})
-
-if (NIMBLE_HAVE_MPI OR NIMBLE_HAVE_QTHREADS OR NIMBLE_HAVE_DARMA OR NIMBLE_HAVE_KOKKOS)
-  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_MPI_SOURCES})
-endif()
-
-if (NIMBLE_HAVE_DARMA)
-  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_DARMA_SOURCES})
-endif()
-
-if(NIMBLE_HAVE_KOKKOS)
-  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_KOKKOS_SOURCES})
-endif()
-
-add_executable(NimbleSM_Serial nimble_serial.cc ${NIMBLE_SOURCES})
-target_link_libraries(NimbleSM_Serial ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
-install(TARGETS NimbleSM_Serial DESTINATION bin)
-
-IF(NIMBLE_HAVE_TRILINOS)
-  add_executable(NimbleSM_Tpetra nimble_tpetra.cc ${NIMBLE_SOURCES})
-  target_link_libraries(NimbleSM_Tpetra ${NIMBLE_EXTRAS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
-ENDIF()
 
 IF(NIMBLE_HAVE_MPI)
   add_executable(NimbleSM_MPI
