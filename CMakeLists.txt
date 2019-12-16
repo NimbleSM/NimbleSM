@@ -2,8 +2,8 @@
 # CMakeLists.txt file for NimbleSM
 #
 
-Cmake_minimum_required(VERSION 3.1)
-project(NimbleSM CXX C Fortran)
+Cmake_minimum_required(VERSION 3.13)
+project(NimbleSM CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
