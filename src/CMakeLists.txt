@@ -1,32 +1,27 @@
 
-set(NIMBLE_SOURCES
-  nimble_data_manager.cc
-  nimble_data_utils.cc
-  nimble_mesh_utils.cc
-  nimble_tpetra_utils.cc
-  nimble_block.cc
-  nimble_element.cc
-  nimble_exodus_output.cc
-  nimble_boundary_condition.cc
-  nimble_parser.cc
-  nimble_boundary_condition_manager.cc
-  nimble_genesis_mesh.cc
-  nimble_material.cc
-  nimble_material_factory.cc
-  nimble_material_factory_util.cc
-  nimble_expression_parser.cc
-  nimble_linear_solver.cc
-  nimble_contact_entity.cc
-  nimble_contact_manager.cc
-)
-
-set(NIMBLE_MPI_SOURCES
-  nimble.mpi.reduction_utils.cc
-  nimble.mpi.reduction.cc
-)
+target_sources(nimble PRIVATE
+    nimble_data_manager.cc
+    nimble_data_utils.cc
+    nimble_mesh_utils.cc
+    nimble_tpetra_utils.cc
+    nimble_block.cc
+    nimble_element.cc
+    nimble_exodus_output.cc
+    nimble_boundary_condition.cc
+    nimble_parser.cc
+    nimble_boundary_condition_manager.cc
+    nimble_genesis_mesh.cc
+    nimble_material.cc
+    nimble_material_factory.cc
+    nimble_material_factory_util.cc
+    nimble_expression_parser.cc
+    nimble_linear_solver.cc
+    nimble_contact_entity.cc
+    nimble_contact_manager.cc
+    )
 
 IF(NOT NIMBLE_HAVE_KOKKOS)
-  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} nimble_rve.cc)
+  target_sources(nimble PRIVATE nimble_rve.cc)
 ENDIF()
 
 set(NIMBLE_KOKKOS_SOURCES
@@ -36,9 +31,8 @@ set(NIMBLE_KOKKOS_SOURCES
   nimble_exodus_output_manager.cc
 )
 
-set(NIMBLE_DARMA_SOURCES
-  nimble_darma_utils.cc
-)
+add_executable(NimbleSM_Serial nimble_serial.cc)
+target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
 
 set(NIMBLE_MAINS
   nimble_serial.cc nimble_tpetra.cc nimble_mpi.cc nimble_qthread.cc nimble_darma.cc nimble_kokkos.cc
