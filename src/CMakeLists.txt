@@ -72,8 +72,12 @@ IF(NIMBLE_HAVE_TRILINOS)
 ENDIF()
 
 IF(NIMBLE_HAVE_MPI)
-  add_executable(NimbleSM_MPI nimble_mpi.cc ${NIMBLE_SOURCES})
-  target_link_libraries(NimbleSM_MPI ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
+  add_executable(NimbleSM_MPI
+      nimble_mpi.cc
+      nimble.mpi.reduction_utils.cc
+      nimble.mpi.reduction.cc
+      )
+  target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble )
 ENDIF()
 
 IF(NIMBLE_HAVE_QTHREADS)
