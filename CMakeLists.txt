@@ -12,16 +12,14 @@ enable_testing()
 
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-SET(HAVE_DARMA OFF CACHE BOOL "Whether to use DARMA")
-SET(USE_PURE_MPI OFF CACHE BOOL "Whether to use Pure MPI (no Trilinos)")
-SET(HAVE_BVH OFF CACHE BOOL "Whether to use BVH")
-SET(HAVE_TRILINOS OFF CACHE BOOL "Whether to use Trilinos")
-SET(HAVE_QTHREADS OFF CACHE BOOL "Whether to use QThreads")
-SET(HAVE_KOKKOS OFF CACHE BOOL "Whether to use Kokkos")
-SET(HAVE_NIMBLE_EXTRAS OFF CACHE BOOL "Whether to use NimbleSM Extras")
-SET(NIMBLE_NVIDIA_BUILD OFF CACHE BOOL "Whether to use Nvidia build")
+option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
+option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
+option(HAVE_NIMBLE_EXTRAS "Whether to use NimbleSM Extras" OFF)
+option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 
 if (HAVE_DARMA)
   find_package(DARMA REQUIRED COMPONENTS ${DARMA_BACKEND_PKG})
