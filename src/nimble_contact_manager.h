@@ -218,6 +218,9 @@ namespace nimble {
 
     void ComputeContactForce(int step, bool debug_output);
 
+    void BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
+                                         std::vector<ContactEntity> const & triangles);
+
     void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
                                 std::vector<ContactEntity> const & triangles,
                                 std::vector<ContactEntity::vertex>& closest_points,
