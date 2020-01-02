@@ -43,7 +43,6 @@
 
 #include "nimble_contact_manager.h"
 #include "nimble_utils.h"
-#include "mpi-buckets/src/CollisionManager.h"
 
 // DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"
 #ifdef NIMBLE_HAVE_EXTRAS
@@ -1291,8 +1290,8 @@ namespace
   ContactManager::BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
                                                   std::vector<ContactEntity> const & triangles) {
 
-    for (int i_node = 0 ; i_node < nodes.size()) {
-      for (int i_tri = 0 ; i_tri < triangles.size()) {
+    for (int i_node = 0 ; i_node < nodes.size() ; i_node++) {
+      for (int i_tri = 0 ; i_tri < triangles.size() ; i_tri++) {
 
         //ContactEntity.get_x_min()
 
