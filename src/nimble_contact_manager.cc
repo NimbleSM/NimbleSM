@@ -1288,6 +1288,19 @@ namespace
 #endif
 
   void
+  ContactManager::BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
+                                                  std::vector<ContactEntity> const & triangles) {
+
+    for (int i_node = 0 ; i_node < nodes.size() ; i_node++) {
+      for (int i_tri = 0 ; i_tri < triangles.size() ; i_tri++) {
+
+        //ContactEntity.get_x_min()
+
+      }
+    }
+  }
+
+  void
   ContactManager::ClosestPointProjection(std::vector<ContactEntity> const & nodes,
                                          std::vector<ContactEntity> const & triangles,
                                          std::vector<ContactEntity::vertex>& closest_points,
@@ -1707,6 +1720,14 @@ namespace
     }
 
 #endif
+
+    // DJL
+    // entities are stored in contact_nodes_d, contact_nodes_h
+    // 1) box box search
+    // 2) node-face projection
+    // 3) culling
+    // 4) enforcement
+
 
 #ifdef NIMBLE_HAVE_EXTRAS
     using namespace gtk::exp_ngp_contact;

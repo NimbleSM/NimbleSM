@@ -1,0 +1,31 @@
+genesis input file:              single_elem_complex_displacement.g
+exodus output file:              single_elem_complex_displacement.e
+final time:                      1.0
+number of load steps:            1
+output fields:                   reference_coordinate displacement velocity acceleration internal_force external_force deformation_gradient stress ipt01_deformation_gradient ipt02_deformation_gradient ipt03_deformation_gradient ipt04_deformation_gradient ipt05_deformation_gradient ipt06_deformation_gradient ipt07_deformation_gradient ipt08_deformation_gradient ipt01_stress ipt01_stress ipt02_stress ipt03_stress ipt04_stress ipt05_stress ipt06_stress ipt07_stress ipt08_stress
+material parameters:             material_1 neohookean density 7.8 bulk_modulus 1.6e12 shear_modulus 0.8e12
+macroscale block:                block_1 material_1
+boundary condition:              prescribed_velocity nodelist_1 x  -0.0266057719
+boundary condition:              prescribed_velocity nodelist_1 y  0.037145443
+boundary condition:              prescribed_velocity nodelist_1 z  0.0316802753
+boundary condition:              prescribed_velocity nodelist_2 x  -0.0184990606
+boundary condition:              prescribed_velocity nodelist_2 y  0.015245246
+boundary condition:              prescribed_velocity nodelist_2 z  0.0965343682
+boundary condition:              prescribed_velocity nodelist_3 x  0.038825278
+boundary condition:              prescribed_velocity nodelist_3 y  -0.0979494798
+boundary condition:              prescribed_velocity nodelist_3 z  -0.0807160388
+boundary condition:              prescribed_velocity nodelist_4 x  -0.0649052039
+boundary condition:              prescribed_velocity nodelist_4 y  0.036033109
+boundary condition:              prescribed_velocity nodelist_4 z  0.086596712
+boundary condition:              prescribed_velocity nodelist_5 x  0.047182757
+boundary condition:              prescribed_velocity nodelist_5 y  0.0229937363
+boundary condition:              prescribed_velocity nodelist_5 z  -0.0479331977
+boundary condition:              prescribed_velocity nodelist_6 x  0.0970446827
+boundary condition:              prescribed_velocity nodelist_6 y  -0.0386989439
+boundary condition:              prescribed_velocity nodelist_6 z  -0.0141851692
+boundary condition:              prescribed_velocity nodelist_7 x  0.0203137243
+boundary condition:              prescribed_velocity nodelist_7 y  -0.0829168359
+boundary condition:              prescribed_velocity nodelist_7 z  0.0884954679
+boundary condition:              prescribed_velocity nodelist_8 x  0.0983697401
+boundary condition:              prescribed_velocity nodelist_8 y  -0.0539530093
+boundary condition:              prescribed_velocity nodelist_8 z  0.0870425772
