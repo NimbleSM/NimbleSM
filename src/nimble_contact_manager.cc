@@ -42,9 +42,10 @@
 */
 
 #include "nimble_contact_manager.h"
+#include "nimble_contact_extras_stub.h"
 #include "nimble_utils.h"
+#include "mpi_buckets/src/CollisionManager.hpp"
 
-// DJL PARALLEL CONTACT #include "mpi-buckets/src/CollisionManager.h"
 #ifdef NIMBLE_HAVE_EXTRAS
 #include "Geom_NGP_NodeFacePushback.h"
 #endif
@@ -1474,6 +1475,7 @@ namespace
       }
     }
   }
+
 #ifdef NIMBLE_HAVE_EXTRAS
   void ContactManager::load_contact_points_and_tris(const int num_collisions,
                                                     stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
@@ -1541,13 +1543,13 @@ namespace
                                 mtk::Vec3<double>(face.coord_3_x_, face.coord_3_y_, face.coord_3_z_));
     });
 
-    NodeFaceInteractionLists interactionLists = compute_node_face_interaction_lists(numPoints, collision_list, points, triangles);
+    NodeFaceInteractions interactionLists = compute_node_face_interaction_lists(numPoints, collision_list, points, triangles);
     PushbackDirectionsAndGaps pushbackAndGaps = face_avg_pushback(interactionLists, points, triangles);
     double penalty_parameter = penalty_parameter_;
     Kokkos::deep_copy(contact_manager_force_d, 0.0);
-    auto pushbackDirs = pushbackAndGaps.pushbackDirections;
+    auto pushbackDirs = pushbackAndGaps.directions;
     auto gaps = pushbackAndGaps.gaps;
-    auto closestPoints = interactionLists.closestPoints;
+    auto closestPoints = interactionLists.get_projected_points();
 
     Kokkos::parallel_for("compute_something", numPoints, KOKKOS_LAMBDA(const int i_node) {
 
@@ -1556,23 +1558,7 @@ namespace
       interactionLists.for_each_face_interaction_of_node(i_node, [=](int nodeIdx, int contact_face_index, int dataIdx) {
         double closest_pt[3] = {   closestPoints(dataIdx, 0), closestPoints(dataIdx, 1), closestPoints(dataIdx, 2)};
         double direction[3] = {   pushbackDirs(i_node, 0), pushbackDirs(i_node, 1), pushbackDirs(i_node, 2)};
-        const double scale = penalty_parameter * gap / interactionLists.interactionListsMap.list_size(i_node);
-
-#if 0
-        if (gap < 0) {
-          mtk::Vec3<double> pt = points.getPoint(i_node);
-          mtk::Vec3<double> pb_dir(direction[0], direction[1], direction[2]);
-          std::cout << "  node " << i_node << "(" << pt << "):  dataIdx = " << dataIdx << "  gap = " << gap
-                  << " pushback dir = " << pb_dir << "  scale = " << scale << std::endl;
-          int listBegin = interactionLists.interactionListsMap.offsets[i_node];
-          int listEnd   = interactionLists.interactionListsMap.offsets[i_node + 1];
-          std::cout << " triangles: ";
-          for (int di = listBegin; di < listEnd; ++di) {
-            std::cout <<  interactionLists.nodeIdxFaceIdxInteractionPairs(di, 1) << " ";
-          }
-          std::cout << std::endl;
-        }
-#endif
+        const double scale = penalty_parameter * gap / interactionLists.num_interactions(i_node);
 
         scatter_contact_forces(gap, scale, direction, contact_faces_d,
                                contact_face_index, closest_pt, contact_nodes_d,
