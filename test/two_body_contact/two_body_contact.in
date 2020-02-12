@@ -9,4 +9,3 @@ macroscale block:                 block_1 material_1
 macroscale block:                 block_2 material_1
 boundary condition:               initial_velocity nodelist_2 x 20.0
 contact:                          master_blocks block_1 slave_blocks block_2 penalty_parameter 1.0e13
-contact visualization:            on

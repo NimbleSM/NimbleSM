@@ -38,8 +38,9 @@ struct GridIndex : public Point3<int64_t>
     }
 };
 
+namespace std {
 template <>
-struct std::hash<GridIndex>
+struct hash<GridIndex>
 {
     using argument_type = GridIndex;
     using result_type   = uint64_t;
@@ -59,3 +60,4 @@ struct std::hash<GridIndex>
         return applyHash(g.x, g.y, g.z);
     }
 };
+}
