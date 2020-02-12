@@ -11,3 +11,11 @@ cmake_install.cmake
 *.log
 .vscode
 *.gch
+
+# eclipse stuff
+.cproject
+.project
+.settings/*
+
+# ninja stuff
+*.ninja*
