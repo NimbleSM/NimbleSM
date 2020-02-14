@@ -37,6 +37,20 @@ set(NIMBLE_DARMA_SOURCES
   nimble_darma_utils.cc
 )
 
+set(NIMBLE_MAINS
+  nimble_serial.cc nimble_tpetra.cc nimble_mpi.cc nimble_qthread.cc nimble_darma.cc nimble_kokkos.cc
+)
+
+if (NIMBLE_NVIDIA_BUILD)
+  set_source_files_properties(${NIMBLE_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_DARMA_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_KOKKOS_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_TPETRA_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_MPI_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_MAINS} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${NIMBLE_EXTRAS_SOURCES} PROPERTIES LANGUAGE CUDA)
+endif()
+
 add_executable(NimbleSM_Serial nimble_serial.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES})
 target_link_libraries(NimbleSM_Serial ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
 install(TARGETS NimbleSM_Serial DESTINATION bin)
