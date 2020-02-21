@@ -114,7 +114,8 @@ namespace nimble {
     // record the nonzero entries in each row
     // the map key is the global id of the row
     // the entries in the set are the global ids of the entries in a given row
-    std::map<global_ordinal_type, std::set<global_ordinal_type>> matrix_nonzeros;
+    using global_ordinal_set = std::set<global_ordinal_type>;
+    std::map<global_ordinal_type, global_ordinal_set> matrix_nonzeros;
 
     int dim = mesh.GetDim();
     std::vector<int> block_ids = mesh.GetBlockIds();
@@ -133,7 +134,7 @@ namespace nimble {
               for (int j_dof=0 ; j_dof<dim ; j_dof++) {
                 global_ordinal_type matrix_entry_i = global_id_i * dim + i_dof;
                 global_ordinal_type matrix_entry_j = global_id_j * dim + j_dof;
-                std::set<int>& row_nonzeros = matrix_nonzeros[matrix_entry_i];
+                auto&& row_nonzeros = matrix_nonzeros[matrix_entry_i];
                 row_nonzeros.insert(matrix_entry_j);
               }
             }
@@ -143,16 +144,24 @@ namespace nimble {
       }
     }
 
-    // record the rows that have entries on this processor
-    std::vector<global_ordinal_type> my_entries;
-    int max_entries_per_row_hint = 0;
-    for (auto const & entry : matrix_nonzeros) {
-      my_entries.push_back(entry.first);
-      if (entry.second.size() > max_entries_per_row_hint) {
-        max_entries_per_row_hint = entry.second.size();
+    // record the rows that have entries on this processor and count nonzeros
+    std::vector<global_ordinal_type> my_entries(matrix_nonzeros.size());
+    {
+      int row_index = 0;
+      for (auto const & entry : matrix_nonzeros) {
+        my_entries[row_index] = entry.first;
+        ++row_index;
       }
     }
     std::sort(my_entries.begin(), my_entries.end());
+    std::vector<global_ordinal_set::size_type> num_matrix_nonzeros_per_row(matrix_nonzeros.size());
+    {
+      int row_index = 0;
+      for (auto&& entry : my_entries)
+      {
+        num_matrix_nonzeros_per_row[row_index++] = matrix_nonzeros.at(entry).size();
+      }
+    }
 
     // create a row map
     const Tpetra::global_size_t num_global_elements = Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
@@ -164,20 +173,14 @@ namespace nimble {
                                                                      comm_));
 
     // create a crs graph based on the row map
-    Teuchos::RCP<graph_type> crs_graph = Teuchos::rcp(new graph_type(row_map, max_entries_per_row_hint));
+    Teuchos::RCP<graph_type> crs_graph = Teuchos::rcp(new graph_type(row_map, Teuchos::arrayViewFromVector(num_matrix_nonzeros_per_row)));
 
     // identify the nonzeros in the crs graph
     for (auto const & entry : matrix_nonzeros) {
       int global_row = entry.first;
-      std::set<int> const & nonzeros_in_row_set = entry.second;
-      int num_nonzeros_in_row = nonzeros_in_row_set.size();
-      std::vector<int> nonzeros_in_row(num_nonzeros_in_row);
-      int index = 0;
-      for (auto const & nonzero : nonzeros_in_row_set) {
-        nonzeros_in_row[index++] = nonzero;
-      }
-      std::sort(nonzeros_in_row.begin(), nonzeros_in_row.end());
-      crs_graph->insertGlobalIndices(global_row, num_nonzeros_in_row, nonzeros_in_row.data());
+      auto&& nonzeros_in_row_set = entry.second;
+      std::vector<global_ordinal_type> nonzeros_in_row(nonzeros_in_row_set.begin(), nonzeros_in_row_set.end());
+      crs_graph->insertGlobalIndices(global_row, Teuchos::arrayViewFromVector(nonzeros_in_row));
     }
     crs_graph->fillComplete();
 
