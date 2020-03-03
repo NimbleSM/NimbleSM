@@ -47,23 +47,28 @@
 #include <memory>
 #include <string>
 
-namespace nimble { class Material; }
+namespace nimble {
+class Material;
+class MaterialParameters;
+}
 
 namespace nimble {
 
 class MaterialFactory {
  public:
-  MaterialFactory(const std::string& mat_params) : material_params(mat_params) {}
+  MaterialFactory();
   virtual ~MaterialFactory() = default;
 
-  virtual void create();
+  void parse_and_create(const std::string& mat_params);
 
   inline std::shared_ptr<Material> get_material() const { return material; }
 
  protected:
+  virtual void create();
+
   std::shared_ptr<Material> material;
 
-  const std::string material_params;
+  std::shared_ptr<const nimble::MaterialParameters> material_params;
 };
 
 }

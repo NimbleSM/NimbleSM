@@ -51,6 +51,7 @@
 namespace nimble {
 
   class DataManager;
+  class MaterialFactory;
 
   NIMBLE_INLINE_FUNCTION
   int StringLength(const char* str) {
@@ -267,7 +268,8 @@ namespace nimble {
     virtual void InitializeRVE(int elem_global_id,
                                int integration_point_id,
                                DataManager& data_manager,
-                               bool write_exodus_output) {}
+                               bool write_exodus_output,
+                               MaterialFactory& factory) {}
 
     NIMBLE_FUNCTION
     virtual void GetStress(int elem_id,

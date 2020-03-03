@@ -51,44 +51,27 @@
 #include <nimble_material_factory_util.h>
 #include <stddef.h>
 
-#ifdef NIMBLE_HAVE_EXTRAS
-#include <nimble_lame_material.h>
-#endif
-
 namespace nimble {
 
+MaterialFactory::MaterialFactory() {
+}
+
+void MaterialFactory::parse_and_create(const std::string &mat_params) {
+  material_params = ParseMaterialParametersString(mat_params.c_str());
+  create();
+}
+
 void MaterialFactory::create() {
-  // the first entry in the material parameters string is the material model name
-  size_t space_pos = material_params.find(" ");
-  const std::string name = material_params.substr(0, space_pos);
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  // LAME material models are designated with lame_
-  const bool is_lame_model = name.size() > 5 && name.substr(0,5) == "lame_";
-#endif
-
-  char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  int num_material_parameters;
-  char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM];
-  ParseMaterialParametersString(material_params.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-  MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-
-  if (StringsAreEqual(material_name, "neohookean")) {
-   material = std::make_shared<NeohookeanMaterial>(material_parameters_struct);
-  }
-  else if (StringsAreEqual(material_name, "elastic")) {
-    material = std::make_shared<ElasticMaterial>(material_parameters_struct);
-  }
-#ifdef NIMBLE_HAVE_EXTRAS
-  else if (is_lame_model) {
-    material = std::make_shared<LAMEMaterial>(material_parameters_struct);
-  }
-#endif
-  else {
+  char name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+  material_params->GetMaterialName(name, false);
+  std::string name_string(name);
+  if (StringsAreEqual(name_string.c_str(), "neohookean")) {
+    material = std::make_shared<NeohookeanMaterial>(*material_params);
+  } else if (StringsAreEqual(name_string.c_str(), "elastic")) {
+    material = std::make_shared<ElasticMaterial>(*material_params);
+  } else {
     throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
   }
-
 }
 
 }

@@ -54,6 +54,12 @@
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_view.h"
 #include "nimble_contact_manager.h"
+#include "nimble_material_factory.h"
+
+#ifdef NIMBLE_HAVE_EXTRAS
+#include "nimble_extras_material_factory.h"
+#endif
+
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/vt/context.hpp>
 #endif
@@ -89,6 +95,12 @@ int main(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
+#endif
+
+#ifdef NIMBLE_HAVE_EXTRAS
+  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+  using MaterialFactoryType = nimble::MaterialFactory;
 #endif
 
   int mpi_err;
@@ -170,7 +182,8 @@ int main(int argc, char *argv[]) {
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy);
+    MaterialFactoryType factory;
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -191,6 +204,7 @@ int main(int argc, char *argv[]) {
     nimble::Block& block = block_it->second;
     std::vector<double> & elem_data_n = model_data.GetElementDataOld(block_id);
     std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+    MaterialFactoryType factory;
     block.InitializeElementData(num_elem_in_block,
                                 elem_global_ids,
                                 rve_output_elem_ids,
@@ -198,6 +212,7 @@ int main(int argc, char *argv[]) {
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
+                                factory,
                                 data_manager);
   }
 

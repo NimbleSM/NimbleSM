@@ -44,7 +44,12 @@
 #include "nimble_darma_utils.h"
 #include "nimble_utils.h"
 #include "nimble_view.h"
+#include "nimble_material_factory.h"
 #include <iomanip>
+
+#ifdef NIMBLE_HAVE_EXTRAS
+#include "nimble_extras_material_factory.h"
+#endif
 
 using namespace darma_runtime;
 
@@ -100,6 +105,12 @@ namespace nimble {
     Parser parser
   ) const {
 
+#ifdef NIMBLE_HAVE_EXTRAS
+  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+  using MaterialFactoryType = nimble::MaterialFactory;
+#endif
+
     int num_ranks = index.max_value + 1;
     int my_rank = index.value;
     int min_rank = index.min_value;
@@ -154,7 +165,8 @@ namespace nimble {
       std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
       std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
       blocks[block_id] = Block();
-      blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh_handle.get_value(), rve_bc_strategy);
+      MaterialFactoryType factory;
+      blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh_handle.get_value(), rve_bc_strategy, factory);
       std::vector< std::pair<std::string, Length> > data_labels_and_lengths;
       blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
       model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -173,6 +185,7 @@ namespace nimble {
       std::vector<int> const & elem_global_ids = macroscale_mesh_handle.get_value().GetElementGlobalIdsInBlock(block_id);
       std::vector<double> & elem_data_n = model_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+      MaterialFactoryType factory;
       block.InitializeElementData(num_elem_in_block,
                                   elem_global_ids,
                                   rve_output_elem_ids,
@@ -180,6 +193,7 @@ namespace nimble {
                                   derived_elem_data_labels.at(block_id),
                                   elem_data_n,
                                   elem_data_np1,
+                                  factory,
                                   data_manager_handle.get_reference());
     }
 

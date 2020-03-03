@@ -59,6 +59,7 @@
 #endif
 
 namespace nimble { struct NGPLAMEData; }
+namespace nimble_kokkos { class MaterialFactory; }
 
 namespace nimble_kokkos {
 
@@ -82,9 +83,11 @@ namespace nimble_kokkos {
     }
 
     void Initialize(std::string const & macro_material_parameters,
-                    int num_elements);
+                    int num_elements,
+                    MaterialFactory& factory);
 
-    void InstantiateMaterialModel(int num_material_points);
+    void InstantiateMaterialModel(int num_material_points,
+                                  MaterialFactory& factory);
 
     void InstantiateElement();
 

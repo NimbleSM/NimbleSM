@@ -47,22 +47,20 @@
 #include <memory>
 #include <string>
 
-#ifdef NIMBLE_HAVE_KOKKOS
-
 namespace nimble {
 class Material;
 struct NGPLAMEData;
+class MaterialParameters;
 }
 
 namespace nimble_kokkos {
 
 class MaterialFactory {
  public:
-  explicit MaterialFactory(const std::string& mat_params, const int num_points)
-      : material_params(mat_params), num_material_points(num_points), material_device(nullptr) {}
+  explicit MaterialFactory();
   virtual ~MaterialFactory() = default;
 
-  virtual void create();
+  void parse_and_create(const std::string& mat_params, const int num_mat_points);
 
   inline std::shared_ptr<nimble::Material> get_material_host() const { return material_host; }
 
@@ -75,12 +73,11 @@ class MaterialFactory {
   nimble::Material* material_device;
   std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data;
 
-  const std::string material_params;
-  const int num_material_points;
+  std::shared_ptr<const nimble::MaterialParameters> material_params;
+
+  virtual void create();
 };
 
 }
-
-#endif
 
 #endif /* SRC_NIMBLE_KOKKOS_MATERIAL_FACTORY_H_ */

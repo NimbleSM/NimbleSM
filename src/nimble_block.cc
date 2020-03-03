@@ -55,36 +55,37 @@
 #include <nimble_material_factory.h>
 
 #ifndef NIMBLE_HAVE_KOKKOS
-  #include "nimble_rve.h"
+#include "nimble_rve.h"
 #endif
 
 namespace nimble {
 
-  void Block::Initialize(std::string const & macro_material_parameters) {
+  void Block::Initialize(std::string const & macro_material_parameters,
+                         MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
-    InstantiateMaterialModel();
+    InstantiateMaterialModel(factory);
     InstantiateElement();
   }
 
   void Block::Initialize(std::string const & macro_material_parameters,
                          std::map<int, std::string> const & rve_material_parameters,
                          GenesisMesh const & rve_mesh,
-                         std::string rve_boundary_condition_strategy) {
+                         std::string rve_boundary_condition_strategy,
+                         MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
     if (macro_material_parameters_ == "none") {
       rve_material_parameters_ = rve_material_parameters;
       rve_mesh_ = rve_mesh;
       rve_boundary_condition_strategy_ = rve_boundary_condition_strategy;
     }
-    InstantiateMaterialModel();
+    InstantiateMaterialModel(factory);
     InstantiateElement();
   }
 
-  void Block::InstantiateMaterialModel() {
+  void Block::InstantiateMaterialModel(MaterialFactory& factory) {
 
     if (macro_material_parameters_ != "none" && rve_material_parameters_.size() == 0) {
-      MaterialFactory factory(macro_material_parameters_);
-      factory.create();
+      factory.parse_and_create(macro_material_parameters_);
       material_ = factory.get_material();
     }
 #ifndef NIMBLE_HAVE_KOKKOS
@@ -209,6 +210,7 @@ namespace nimble {
                                     std::vector<std::string> const & derived_elem_data_labels,
                                     std::vector<double>& elem_data_n,
                                     std::vector<double>& elem_data_np1,
+                                    MaterialFactory& material_factory,
                                     DataManager& data_manager) {
 
     int num_int_pts = element_->NumIntegrationPointsPerElement();
@@ -220,7 +222,7 @@ namespace nimble {
         rve_exodus_output = true;
       }
       for (int i_ipt = 0 ; i_ipt < num_int_pts ; ++i_ipt) {
-        material_->InitializeRVE(elem_global_id, i_ipt+1, data_manager, rve_exodus_output);
+        material_->InitializeRVE(elem_global_id, i_ipt+1, data_manager, rve_exodus_output, material_factory);
       }
     }
 #endif

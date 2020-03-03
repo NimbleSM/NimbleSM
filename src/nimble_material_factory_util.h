@@ -44,15 +44,13 @@
 #ifndef SRC_NIMBLE_MATERIAL_FACTORY_UTIL_H_
 #define SRC_NIMBLE_MATERIAL_FACTORY_UTIL_H_
 
+#include <memory>
 #include <nimble_material.h>
 
 namespace nimble {
 
-void ParseMaterialParametersString(const char* material_parameters,
-                                   char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                   int& num_material_parameters,
-                                   char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                   double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM]);
+std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const char *material_parameters,
+                                                                          const int num_material_points = 0);
 
 }
 

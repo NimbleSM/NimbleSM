@@ -53,9 +53,11 @@
 #include "nimble_kokkos_block.h"
 #include "nimble_contact_manager.h"
 #include "nimble_utils.h"
+#include "nimble_kokkos_material_factory.h"
 
 #ifdef NIMBLE_HAVE_EXTRAS
 #include <nimble_ngp_lame_material.h>
+#include <nimble_extras_ngp_material_factory.h>
 #endif
 
 #include <iostream>
@@ -118,6 +120,12 @@ void main_routine(int argc, char *argv[]) {
   std::string input_deck_name = argv[1];
   nimble::Parser parser;
   parser.Initialize(input_deck_name);
+
+#ifdef NIMBLE_HAVE_EXTRAS
+  using MaterialFactoryType = nimble_kokkos::ExtrasMaterialFactory;
+#else
+  using MaterialFactoryType = nimble_kokkos::MaterialFactory;
+#endif
 
   // Read the mesh
   std::string genesis_file_name = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
@@ -186,10 +194,8 @@ void main_routine(int argc, char *argv[]) {
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
-    //blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy);
-    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block);
-    //int num_integration_points_per_element = blocks.at(block_id).GetHostElement()->NumIntegrationPointsPerElement();
-
+    MaterialFactoryType factory;
+    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, factory);
 
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;

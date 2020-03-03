@@ -44,23 +44,25 @@
 #include <stdexcept>
 #include <tuple>
 #include <utility>
-#include <vector>
 #include <nimble_kokkos_defs.h>
 #include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
 #include <nimble_material_factory_util.h>
-#include <stddef.h>
-
-#ifdef NIMBLE_HAVE_EXTRAS
-#include <nimble_ngp_lame_material.h>
-#endif
 
 namespace nimble_kokkos {
 
 using nimble::Material;
 
+MaterialFactory::MaterialFactory()
+    : material_device(nullptr) {
+}
+
+void MaterialFactory::parse_and_create(const std::string& mat_params, const int num_points) {
+  material_params = nimble::ParseMaterialParametersString(mat_params.c_str(), num_points);
+  create();
+}
+
 template <typename MatType>
-inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host_and_device(nimble::MaterialParameters& mat_params_struct) {
+inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
   auto mat_host = std::make_shared<MatType>(mat_params_struct);
   auto mat_device = static_cast<Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
   nimble::Material* pointer_that_lives_on_the_stack = mat_device;
@@ -71,80 +73,16 @@ inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host
 }
 
 void MaterialFactory::create() {
-  // the first entry in the material parameters string is the material model name
-  size_t space_pos = material_params.find(" ");
-  std::string name = material_params.substr(0, space_pos);
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  // NGP LAME material models are designated with ngp_lame_
-  const bool is_ngp_lame_model = name.size() > 9 && name.substr(0,9) == "ngp_lame_";
-#endif
-
-  char material_name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  int num_material_parameters;
-  char material_parameter_names[nimble::MaterialParameters::MAX_NUM_MAT_PARAM][nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  double material_parameter_values[nimble::MaterialParameters::MAX_NUM_MAT_PARAM];
-  nimble::ParseMaterialParametersString(material_params.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-  nimble::MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values, num_material_points);
-  if (nimble::StringsAreEqual(material_name, "neohookean")) {
+  char name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+  material_params->GetMaterialName(name, false);
+  std::string name_string(name);
+  if (nimble::StringsAreEqual(name_string.c_str(), "neohookean")) {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        material_parameters_struct);
-  } else if (nimble::StringsAreEqual(material_name, "elastic")) {
+        *material_params);
+  } else if (nimble::StringsAreEqual(name_string.c_str(), "elastic")) {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        material_parameters_struct);
-  }
-#ifdef NIMBLE_HAVE_EXTRAS
-  else if (is_ngp_lame_model) {
-
-    lame::ngp::MaterialType ngp_lame_material_type;
-    int num_state_data;
-    std::vector<double> parameters_vec;
-    std::vector<lame::ngp::UserFunction> mat_functions;
-
-    if (nimble::StringsAreEqual(material_name, "ngp_lame_hypoelastic")) {
-      ngp_lame_material_type = lame::ngp::MaterialType::HYPOELASTIC;
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("bulk_modulus"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("shear_modulus"));
-      num_state_data = 0;
-    }
-    else if(nimble::StringsAreEqual(material_name, "ngp_lame_neohookean")) {
-      ngp_lame_material_type = lame::ngp::MaterialType::NEOHOOKEAN;
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("bulk_modulus"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("shear_modulus"));
-      num_state_data = 0;
-    }
-    else if(nimble::StringsAreEqual(material_name, "ngp_lame_j2_plasticity")) {
-      ngp_lame_material_type = lame::ngp::MaterialType::J2_PLASTICITY;
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("youngs_modulus"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("poisson_ratio"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("yield_stress"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("beta"));
-      parameters_vec.push_back(material_parameters_struct.GetParameterValue("hardening_modulus"));
-      num_state_data = 12;
-    }
-    else {
-      throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid NGP LAME material model name.\n");
-    }
-
-    lame::ngp::MaterialProps mat_props(parameters_vec);
-    lame::ngp::MaterialAllocator* ngp_lame_material_allocator = lame::ngp::MaterialAllocator::create(ngp_lame_material_type,
-                                                                                                     parameters_vec,
-                                                                                                     mat_functions);
-    ngp_lame_data = std::make_shared<nimble::NGPLAMEData>(num_material_points, num_state_data);
-    double dt = 1.0;
-    lame::ngp::MaterialParams mat_params(ngp_lame_data->disp_grad_,
-                                         ngp_lame_data->velo_grad_,
-                                         ngp_lame_data->stress_old_,
-                                         ngp_lame_data->stress_new_,
-                                         ngp_lame_data->state_old_,
-                                         ngp_lame_data->state_new_,
-                                         dt);
-    mtk_ngp::DevicePtr<lame::ngp::Material> ngp_lame_material_d =
-        ngp_lame_material_allocator->allocate_device_material(mat_params, num_material_points);
-    material_host = std::make_shared<nimble::NGPLAMEMaterial>(material_parameters_struct, ngp_lame_material_d);
-  }
-#endif
-  else {
+        *material_params);
+  } else {
     throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
   }
 }

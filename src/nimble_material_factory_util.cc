@@ -43,16 +43,19 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <nimble_material.h>
 #include <stddef.h>
 
 namespace nimble {
 
-void ParseMaterialParametersString(const char* material_parameters,
-                                   char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                   int& num_material_parameters,
-                                   char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                   double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM]) {
+std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const char *material_parameters,
+                                                                          const int num_material_points) {
+
+  char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+  int num_material_parameters;
+  char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN];
+  double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM];
 
   num_material_parameters = 0;
 
@@ -113,6 +116,9 @@ void ParseMaterialParametersString(const char* material_parameters,
   for (int i=0 ; i<num_material_parameters; ++i) {
     material_parameter_values[i] = atof(material_parameter_value_strings[i]);
   }
+
+  return std::make_shared<MaterialParameters>(material_name, num_material_parameters, material_parameter_names,
+                                              material_parameter_values, num_material_points);
 }
 
 }
