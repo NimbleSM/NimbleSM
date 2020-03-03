@@ -12,6 +12,8 @@ set(NIMBLE_SOURCES
   nimble_boundary_condition_manager.cc
   nimble_genesis_mesh.cc
   nimble_material.cc
+  nimble_material_factory.cc
+  nimble_material_factory_util.cc
   nimble_expression_parser.cc
   nimble_linear_solver.cc
   nimble_contact_entity.cc
@@ -30,6 +32,7 @@ ENDIF()
 set(NIMBLE_KOKKOS_SOURCES
   nimble_kokkos_data_manager.cc
   nimble_kokkos_block.cc
+  nimble_kokkos_material_factory.cc
   nimble_exodus_output_manager.cc
 )
 

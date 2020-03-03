@@ -44,6 +44,7 @@
 #include "nimble_exodus_output_manager.h"
 #include "nimble_utils.h"
 #include <sstream>
+#include <nimble_kokkos_data_manager.h>
 
 #ifndef NIMBLE_HAVE_DARMA
   #include <vector>

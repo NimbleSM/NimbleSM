@@ -54,6 +54,10 @@
 #include "nimble_contact_manager.h"
 #include "nimble_utils.h"
 
+#ifdef NIMBLE_HAVE_EXTRAS
+#include <nimble_ngp_lame_material.h>
+#endif
+
 #include <iostream>
 
 void main_routine(int argc, char *argv[]) {
@@ -542,7 +546,7 @@ void main_routine(int argc, char *argv[]) {
                                                                                                                                 unrotated_stress_field_id,
                                                                                                                                 nimble::STEP_NP1);
 
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
+        auto ngp_lame_data = *(block.GetNGPLAMEData());
 
         typedef typename Kokkos::MDRangePolicy< Kokkos::Rank<2> > MDPolicyType_2D;
         MDPolicyType_2D mdpolicy_2d( {{0,0}}, {{num_elem_in_block,num_integration_points_per_element}} );
@@ -598,7 +602,7 @@ void main_routine(int argc, char *argv[]) {
         nimble_kokkos::Block& block = block_it->second;
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
-        nimble::NGPLAMEMaterial::NGPLAMEData ngp_lame_data = *(block.GetNGPLAMEData());
+        auto ngp_lame_data = *(block.GetNGPLAMEData());
 
         nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
                                                                                                                                 unrotated_stress_field_id,
