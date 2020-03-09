@@ -30,4 +30,5 @@ add_library(Trilinos::Trilinos INTERFACE IMPORTED)
 set_target_properties(Trilinos::Trilinos PROPERTIES
     INTERFACE_LINK_LIBRARIES "${Trilinos_LIBRARIES};${Trilinos_TPL_LIBRARIES}"
     INTERFACE_INCLUDE_DIRECTORIES "${Trilinos_INCLUDE_DIRS};${Trilinos_TPL_INCLUDE_DIRS}"
+    INTERFACE_LINK_OPTIONS "${Trilinos_LD_FLAGS}"
     )
