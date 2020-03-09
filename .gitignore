@@ -19,3 +19,7 @@ cmake_install.cmake
 
 # ninja stuff
 *.ninja*
+
+# IntelliJ/IDEA Clion stuff
+.idea/
+cmake-build-*/
