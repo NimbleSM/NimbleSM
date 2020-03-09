@@ -20,6 +20,7 @@ option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
 option(HAVE_NIMBLE_EXTRAS "Whether to use NimbleSM Extras" OFF)
 option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
+option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
