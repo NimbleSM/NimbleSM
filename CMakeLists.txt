@@ -79,11 +79,11 @@ if (HAVE_TRILINOS OR HAVE_NIMBLE_EXTRAS)
   endif()
 
   # Trilinos brings in Trilinos, Kokkos, and Exodus
-  ADD_DEFINITIONS(-DNIMBLE_HAVE_TRILINOS)
+  target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_TRILINOS)
   set(NIMBLE_HAVE_TRILINOS TRUE)
-  ADD_DEFINITIONS(-DNIMBLE_HAVE_KOKKOS)
+  target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_KOKKOS)
   set(NIMBLE_HAVE_KOKKOS TRUE)
-  ADD_DEFINITIONS(-DNIMBLE_HAVE_EXODUS)
+  target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_EXODUS)
   set(NIMBLE_HAVE_EXODUS TRUE)
 
   message(STATUS "Trilinos is enabled.")
