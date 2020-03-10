@@ -48,11 +48,6 @@
 #include "nimble_material.h"
 #include "nimble_genesis_mesh.h"
 
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_lame_material.h"
-  #include "nimble_ngp_lame_material.h"
-#endif
-
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
 #else
@@ -60,6 +55,8 @@
   #include <vector>
   #include <memory>
 #endif
+
+namespace nimble { class MaterialFactory; }
 
 namespace nimble {
 
@@ -106,14 +103,16 @@ namespace nimble {
     }
 #endif
 
-    void Initialize(std::string const & macro_material_parameters);
+    void Initialize(std::string const & macro_material_parameters,
+                    MaterialFactory& factory);
 
     void Initialize(std::string const & macro_material_parameters,
                     std::map<int, std::string> const & rve_material_parameters,
                     GenesisMesh const & rve_mesh,
-                    std::string rve_boundary_condition_strategy);
+                    std::string rve_boundary_condition_strategy,
+                    MaterialFactory& factory);
 
-    void InstantiateMaterialModel();
+    void InstantiateMaterialModel(MaterialFactory& factory);
 
     void InstantiateElement();
 
@@ -144,6 +143,7 @@ namespace nimble {
                                std::vector<std::string> const & derived_elem_data_labels,
                                std::vector<double>& elem_data_n,
                                std::vector<double>& elem_data_np1,
+                               MaterialFactory& material_factory,
                                DataManager& data_manager);
 
     void ComputeInternalForce(const double * const reference_coordinates,

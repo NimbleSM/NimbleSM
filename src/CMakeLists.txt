@@ -12,6 +12,8 @@ set(NIMBLE_SOURCES
   nimble_boundary_condition_manager.cc
   nimble_genesis_mesh.cc
   nimble_material.cc
+  nimble_material_factory.cc
+  nimble_material_factory_util.cc
   nimble_expression_parser.cc
   nimble_linear_solver.cc
   nimble_contact_entity.cc
@@ -30,6 +32,7 @@ ENDIF()
 set(NIMBLE_KOKKOS_SOURCES
   nimble_kokkos_data_manager.cc
   nimble_kokkos_block.cc
+  nimble_kokkos_material_factory.cc
   nimble_exodus_output_manager.cc
 )
 
@@ -51,27 +54,41 @@ if (NIMBLE_NVIDIA_BUILD)
   set_source_files_properties(${NIMBLE_EXTRAS_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
-add_executable(NimbleSM_Serial nimble_serial.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES})
+set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES})
+
+if (NIMBLE_HAVE_MPI OR NIMBLE_HAVE_QTHREADS OR NIMBLE_HAVE_DARMA OR NIMBLE_HAVE_KOKKOS)
+  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_MPI_SOURCES})
+endif()
+
+if (NIMBLE_HAVE_DARMA)
+  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_DARMA_SOURCES})
+endif()
+
+if(NIMBLE_HAVE_KOKKOS)
+  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} ${NIMBLE_KOKKOS_SOURCES})
+endif()
+
+add_executable(NimbleSM_Serial nimble_serial.cc ${NIMBLE_SOURCES})
 target_link_libraries(NimbleSM_Serial ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
 install(TARGETS NimbleSM_Serial DESTINATION bin)
 
 IF(NIMBLE_HAVE_TRILINOS)
-  add_executable(NimbleSM_Tpetra nimble_tpetra.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES})
+  add_executable(NimbleSM_Tpetra nimble_tpetra.cc ${NIMBLE_SOURCES})
   target_link_libraries(NimbleSM_Tpetra ${NIMBLE_EXTRAS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
 ENDIF()
 
 IF(NIMBLE_HAVE_MPI)
-  add_executable(NimbleSM_MPI nimble_mpi.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES} ${NIMBLE_MPI_SOURCES})
+  add_executable(NimbleSM_MPI nimble_mpi.cc ${NIMBLE_SOURCES})
   target_link_libraries(NimbleSM_MPI ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
 ENDIF()
 
 IF(NIMBLE_HAVE_QTHREADS)
-  add_executable(NimbleSM_Qthreads nimble_qthread.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES} ${NIMBLE_MPI_SOURCES})
+  add_executable(NimbleSM_Qthreads nimble_qthread.cc ${NIMBLE_SOURCES})
   target_link_libraries(NimbleSM_Qthreads ${LAME_LIBS} ${Exodus_LIBS} ${bvh_LIBS} ${Qthreads_LIBS})
 ENDIF()
 
 IF(NIMBLE_HAVE_DARMA)
-  add_executable(NimbleSM_Darma nimble_darma.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES} ${NIMBLE_DARMA_SOURCES} ${NIMBLE_MPI_SOURCES})
+  add_executable(NimbleSM_Darma nimble_darma.cc ${NIMBLE_SOURCES})
   IF(NIMBLE_HAVE_TRILINOS)
     target_link_libraries(NimbleSM_Darma ${NIMBLE_EXTRAS_LIBS} ${Exodus_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${DARMALIBRARIES} ${bvh_LIBS})
   ELSE()
@@ -82,6 +99,6 @@ IF(NIMBLE_HAVE_DARMA)
 ENDIF()
 
 IF(NIMBLE_HAVE_KOKKOS)
-  add_executable(NimbleSM_Kokkos nimble_kokkos.cc ${NIMBLE_SOURCES} ${NIMBLE_EXTRAS_SOURCES} ${NIMBLE_KOKKOS_SOURCES} ${NIMBLE_MPI_SOURCES})
+  add_executable(NimbleSM_Kokkos nimble_kokkos.cc ${NIMBLE_SOURCES})
   target_link_libraries(NimbleSM_Kokkos ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
 ENDIF()

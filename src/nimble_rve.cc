@@ -56,9 +56,10 @@ namespace nimble {
            std::string rve_boundary_condition_strategy)
     : Material(MaterialParameters()), material_parameters_string_(material_parameters_string),
       rve_mesh_(rve_mesh),
-      boundary_condition_strategy_(PERIODIC_BC)
+      boundary_condition_strategy_(PERIODIC_BC),
+      origin_x_(0.), origin_y_(0.), origin_z_(0.),
+      num_global_data_(-1)
   {
-
     if (rve_boundary_condition_strategy == "periodic bc") {
       boundary_condition_strategy_ = PERIODIC_BC;
     }
@@ -118,7 +119,8 @@ namespace nimble {
   void RVE::InitializeRVE(int elem_global_id,
                           int integration_point_id,
                           DataManager& data_manager,
-                          bool write_exodus_output) {
+                          bool write_exodus_output,
+                          MaterialFactory& factory) {
 
     RVEData& rve_data = data_manager.AllocateRVEData(elem_global_id, integration_point_id);
     ModelData& model_data = rve_data.model_data_;
@@ -151,7 +153,7 @@ namespace nimble {
     for (int i=0 ; i<num_blocks ; i++){
       int block_id = block_ids[i];
       blocks[block_id] = nimble::Block();
-      blocks[block_id].Initialize(material_parameters_string_.at(block_id));
+      blocks[block_id].Initialize(material_parameters_string_.at(block_id), factory);
       std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
       blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
       model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -178,6 +180,7 @@ namespace nimble {
                                   derived_elem_data_labels.at(block_id),
                                   elem_data_n,
                                   elem_data_np1,
+                                  factory,
                                   data_manager);
     }
 

@@ -53,6 +53,8 @@
   #include <string>
 #endif
 
+namespace nimble_kokkos { class ModelData; }
+
 namespace nimble_kokkos {
 
   class ExodusOutputManager {

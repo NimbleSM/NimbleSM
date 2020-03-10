@@ -49,6 +49,7 @@
 #include "nimble_data_manager.h"
 #include "nimble_linear_solver.h"
 #include "nimble_utils.h"
+#include "nimble_material_factory.h"
 #include "nimble_mesh_utils.h"
 #include "nimble.mpi.utils.h"
 #include "nimble.quanta.stopwatch.h"
@@ -62,6 +63,10 @@
 #include <fstream>
 #include <sstream>
 #include <qthread/qthread.hpp>
+
+#ifdef NIMBLE_HAVE_EXTRAS
+#include "nimble_extras_material_factory.h"
+#endif
 
 double time_previous_g, time_current_g;
 bool is_output_step_g;
@@ -149,6 +154,12 @@ static aligned_t QthreadsInitializeDataManager(void *arg)
   using nimble::SCALAR;
   using nimble::VECTOR;
 
+#ifdef NIMBLE_HAVE_EXTRAS
+  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+  using MaterialFactoryType = nimble::MaterialFactory;
+#endif
+
   qthread_arg_t* arg_struct = (qthread_arg_t*)arg;
   int mpi_rank = arg_struct->mpi_rank;
   int mpi_num_ranks = arg_struct->mpi_num_ranks;
@@ -197,7 +208,8 @@ static aligned_t QthreadsInitializeDataManager(void *arg)
     std::map<int, std::string> const & rve_material_parameters = parser_g.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser_g.GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = Block();
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh_array[qthread_job_id], rve_bc_strategy);
+    MaterialFactoryType factory;
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh_array[qthread_job_id], rve_bc_strategy, factory);
     std::vector< std::pair<std::string, Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -216,6 +228,7 @@ static aligned_t QthreadsInitializeDataManager(void *arg)
     std::vector<int> const & elem_global_ids = mesh_array[qthread_job_id].GetElementGlobalIdsInBlock(block_id);
     std::vector<double> & elem_data_n = model_data.GetElementDataOld(block_id);
     std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+    MaterialFactoryType factory;
     block.InitializeElementData(num_elem_in_block,
                                 elem_global_ids,
                                 rve_output_elem_ids,
@@ -223,6 +236,7 @@ static aligned_t QthreadsInitializeDataManager(void *arg)
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
+                                factory,
                                 data_manager_array[qthread_job_id]);
   }
 }

@@ -41,87 +41,52 @@
 //@HEADER
 */
 
-#include "nimble_block.h"
-#include "nimble_utils.h"
-#include "nimble_linear_solver.h"
-#include <cmath>
-#include <sstream>
-#include <stdexcept>
-#include <limits>
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <map>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+#include <nimble_block.h>
+#include <nimble_data_utils.h>
+#include <nimble_linear_solver.h>
+#include <nimble_material.h>
+#include <nimble_material_factory.h>
 
 #ifndef NIMBLE_HAVE_KOKKOS
-  #include "nimble_rve.h"
+#include "nimble_rve.h"
 #endif
 
 namespace nimble {
 
-  void Block::Initialize(std::string const & macro_material_parameters) {
+  void Block::Initialize(std::string const & macro_material_parameters,
+                         MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
-    InstantiateMaterialModel();
+    InstantiateMaterialModel(factory);
     InstantiateElement();
   }
 
   void Block::Initialize(std::string const & macro_material_parameters,
                          std::map<int, std::string> const & rve_material_parameters,
                          GenesisMesh const & rve_mesh,
-                         std::string rve_boundary_condition_strategy) {
+                         std::string rve_boundary_condition_strategy,
+                         MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
     if (macro_material_parameters_ == "none") {
       rve_material_parameters_ = rve_material_parameters;
       rve_mesh_ = rve_mesh;
       rve_boundary_condition_strategy_ = rve_boundary_condition_strategy;
     }
-    InstantiateMaterialModel();
+    InstantiateMaterialModel(factory);
     InstantiateElement();
   }
 
-  void Block::InstantiateMaterialModel() {
+  void Block::InstantiateMaterialModel(MaterialFactory& factory) {
 
     if (macro_material_parameters_ != "none" && rve_material_parameters_.size() == 0) {
-
-      // the first entry in the material parameters string is the material model name
-      size_t space_pos = macro_material_parameters_.find(" ");
-      std::string name = macro_material_parameters_.substr(0, space_pos);
-
-      // LAME material models are designated with lame_
-#ifdef NIMBLE_HAVE_EXTRAS
-      bool is_lame_model = false;
-      if (name.size() > 5 && name.substr(0,5) == "lame_") {
-        is_lame_model = true;
-      }
-
-      // NGP LAME material models are designated with ngp_lame_
-      bool is_ngp_lame_model = false;
-      if (name.size() > 9 && name.substr(0,9) == "ngp_lame_") {
-        is_ngp_lame_model = true;
-      }
-#endif
-
-      char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-      int num_material_parameters;
-      char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-      double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM];
-      ParseMaterialParametersString(macro_material_parameters_.c_str(), material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-      MaterialParameters material_parameters_struct(material_name, num_material_parameters, material_parameter_names, material_parameter_values);
-
-      if (StringsAreEqual(material_name, "neohookean")) {
-        material_ = std::make_shared<NeohookeanMaterial>(material_parameters_struct);
-      }
-      else if (StringsAreEqual(material_name, "elastic")) {
-        material_ = std::make_shared<ElasticMaterial>(material_parameters_struct);
-      }
-#ifdef NIMBLE_HAVE_EXTRAS
-      else if (is_lame_model) {
-        material_ = std::make_shared<LAMEMaterial>(material_parameters_struct);
-      }
-      else if (is_ngp_lame_model) {
-        //material_ = std::make_shared<NGPLAMEMaterial>(material_parameters_struct);
-      }
-#endif
-      else {
-        throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
-      }
+      factory.parse_and_create(macro_material_parameters_);
+      material_ = factory.get_material();
     }
 #ifndef NIMBLE_HAVE_KOKKOS
     else if (macro_material_parameters_ == "none" && rve_material_parameters_.size() != 0) {
@@ -245,6 +210,7 @@ namespace nimble {
                                     std::vector<std::string> const & derived_elem_data_labels,
                                     std::vector<double>& elem_data_n,
                                     std::vector<double>& elem_data_np1,
+                                    MaterialFactory& material_factory,
                                     DataManager& data_manager) {
 
     int num_int_pts = element_->NumIntegrationPointsPerElement();
@@ -256,7 +222,7 @@ namespace nimble {
         rve_exodus_output = true;
       }
       for (int i_ipt = 0 ; i_ipt < num_int_pts ; ++i_ipt) {
-        material_->InitializeRVE(elem_global_id, i_ipt+1, data_manager, rve_exodus_output);
+        material_->InitializeRVE(elem_global_id, i_ipt+1, data_manager, rve_exodus_output, material_factory);
       }
     }
 #endif

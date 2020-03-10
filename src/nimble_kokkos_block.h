@@ -44,13 +44,11 @@
 #ifndef NIMBLE_KOKKOS_BLOCK_H
 #define NIMBLE_KOKKOS_BLOCK_H
 
-#include "nimble_element.h"
-#include "nimble_material.h"
-#include "nimble_kokkos_data_manager.h"
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_ngp_lame_material.h"
-#endif
+#include <map>
+#include <vector>
+#include <nimble_element.h>
+#include <nimble_kokkos_defs.h>
+#include <nimble_material.h>
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -59,6 +57,9 @@
   #include <vector>
   #include <memory>
 #endif
+
+namespace nimble { struct NGPLAMEData; }
+namespace nimble_kokkos { class MaterialFactory; }
 
 namespace nimble_kokkos {
 
@@ -82,9 +83,11 @@ namespace nimble_kokkos {
     }
 
     void Initialize(std::string const & macro_material_parameters,
-                    int num_elements);
+                    int num_elements,
+                    MaterialFactory& factory);
 
-    void InstantiateMaterialModel(int num_material_points);
+    void InstantiateMaterialModel(int num_material_points,
+                                  MaterialFactory& factory);
 
     void InstantiateElement();
 
@@ -106,9 +109,7 @@ namespace nimble_kokkos {
 
     DeviceElementConnectivityView& GetDeviceElementConnectivityView() { return elem_conn_d; }
 
-#ifdef NIMBLE_HAVE_EXTRAS
-    std::shared_ptr<nimble::NGPLAMEMaterial::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
-#endif
+    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
 
     double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
                                    const double * const node_displacements,
@@ -143,9 +144,7 @@ namespace nimble_kokkos {
     std::shared_ptr<nimble::Material> material_host_ = nullptr;
     nimble::Material* material_device_;
 
-#ifdef NIMBLE_HAVE_EXTRAS
-    std::shared_ptr<nimble::NGPLAMEMaterial::NGPLAMEData> ngp_lame_data_;
-#endif
+    std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
   };
 
 } // namespace nimble

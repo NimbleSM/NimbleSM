@@ -48,6 +48,7 @@
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_data_manager.h"
 #include "nimble_linear_solver.h"
+#include "nimble_material_factory.h"
 #include "nimble_utils.h"
 #include "nimble_mesh_utils.h"
 #include "nimble_tpetra_utils.h"
@@ -58,6 +59,10 @@
 #include <iomanip>
 #include <cstdlib>
 #include <limits>
+
+#ifdef NIMBLE_HAVE_EXTRAS
+#include "nimble_extras_material_factory.h"
+#endif
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::GenesisMesh & mesh,
@@ -93,6 +98,12 @@ int main(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
+#endif
+
+#ifdef NIMBLE_HAVE_EXTRAS
+  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+  using MaterialFactoryType = nimble::MaterialFactory;
 #endif
 
   int status = 0;
@@ -163,8 +174,9 @@ int main(int argc, char *argv[]) {
     std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
+    MaterialFactoryType factory;
     blocks[block_id] = nimble::Block();
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy);
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     macroscale_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -185,6 +197,7 @@ int main(int argc, char *argv[]) {
     nimble::Block& block = block_it->second;
     std::vector<double> & elem_data_n = macroscale_data.GetElementDataOld(block_id);
     std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
+    MaterialFactoryType factory;
     block.InitializeElementData(num_elem_in_block,
                                 elem_global_ids,
                                 rve_output_elem_ids,
@@ -192,6 +205,7 @@ int main(int argc, char *argv[]) {
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
+                                factory,
                                 data_manager);
   }
 

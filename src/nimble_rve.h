@@ -104,7 +104,8 @@ namespace nimble {
     void InitializeRVE(int elem_global_id,
                        int integration_point_id,
                        DataManager& data_manager,
-                       bool write_exodus_output);
+                       bool write_exodus_output,
+                       MaterialFactory& factory) override;
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,

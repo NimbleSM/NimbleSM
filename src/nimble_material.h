@@ -46,12 +46,12 @@
 
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
-//#include "stdlib.h"
 #include <string.h>
 
 namespace nimble {
 
   class DataManager;
+  class MaterialFactory;
 
   NIMBLE_INLINE_FUNCTION
   int StringLength(const char* str) {
@@ -236,12 +236,6 @@ namespace nimble {
     int num_material_points_;
   };
 
-  void ParseMaterialParametersString(const char* material_parameters,
-                                     char material_name[MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                     int& num_material_parameters,
-                                     char material_parameter_names[MaterialParameters::MAX_NUM_MAT_PARAM][MaterialParameters::MAX_MAT_MODEL_STR_LEN],
-                                     double material_parameter_values[MaterialParameters::MAX_NUM_MAT_PARAM]);
-
   class Material {
 
     public:
@@ -274,7 +268,8 @@ namespace nimble {
     virtual void InitializeRVE(int elem_global_id,
                                int integration_point_id,
                                DataManager& data_manager,
-                               bool write_exodus_output) {}
+                               bool write_exodus_output,
+                               MaterialFactory& factory) {}
 
     NIMBLE_FUNCTION
     virtual void GetStress(int elem_id,
