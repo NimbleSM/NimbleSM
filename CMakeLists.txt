@@ -2,11 +2,12 @@
 # CMakeLists.txt file for NimbleSM
 #
 
-Cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.12)
 project(NimbleSM CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXSTENSIONS OFF)
 
 enable_testing()
 
@@ -99,6 +100,7 @@ if (HAVE_NIMBLE_EXTRAS)
   set(NIMBLE_EXTRAS_DIR "" CACHE PATH "Path to Nimble Extras")
   if(NIMBLE_EXTRAS_DIR)
     include(${NIMBLE_EXTRAS_DIR}/CMakeLists.txt)
+    target_link_libraries(nimble PUBLIC nimble::extras)
     message("-- Compiling with Nimble Extras:")
     message("       NIMBLE_EXTRAS_DIR: ${NIMBLE_EXTRAS_DIR}")
     message("       NIMBLE_EXTRAS_LIBS: ${NIMBLE_EXTRAS_LIBS}")
