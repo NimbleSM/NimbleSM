@@ -16,7 +16,17 @@ find_package(Trilinos CONFIG COMPONENTS ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPON
 #MESSAGE("       Trilinos_LIBRARIES: ${Trilinos_LIBRARIES}")
 # MESSAGE("       Trilinos_INCLUDE_DIRS: ${Trilinos_INCLUDE_DIRS}")
 # MESSAGE("       Trilinos_LIBRARY_DIRS: ${Trilinos_LIBRARY_DIRS}")
+string(REPLACE " " ";" _trilinos_flags ${Trilinos_CXX_COMPILER_FLAGS})
+if (${Trilinos_LD_FLAGS})
+  string(REPLACE " " ";" _trilinos_link_flags ${Trilinos_LD_FLAGS})
+endif()
 
+# Trilinos doesn't add -arch=sm_x flags to link flags, so regex them and add manually
+foreach(_flag IN LISTS _trilinos_flags)
+  if (_flag MATCHES "^--?arch=.+")
+    list(APPEND _trilinos_link_flags "${_flag}")
+  endif()
+endforeach()
 
 find_package_handle_standard_args(Trilinos
       REQUIRED_VARS Trilinos_DIR Trilinos_LIBRARIES Trilinos_INCLUDE_DIRS
@@ -30,5 +40,10 @@ add_library(Trilinos::Trilinos INTERFACE IMPORTED)
 set_target_properties(Trilinos::Trilinos PROPERTIES
     INTERFACE_LINK_LIBRARIES "${Trilinos_LIBRARIES};${Trilinos_TPL_LIBRARIES}"
     INTERFACE_INCLUDE_DIRECTORIES "${Trilinos_INCLUDE_DIRS};${Trilinos_TPL_INCLUDE_DIRS}"
-    INTERFACE_LINK_OPTIONS "${Trilinos_LD_FLAGS}"
+    INTERFACE_COMPILE_OPTIONS "${_trilinos_flags}"
+    INTERFACE_LINK_OPTIONS "${_trilinos_link_flags}"
     )
+
+# CMake 3.12 doesn't support INTERFACE_LINK_OPTIONS
+# set it as a "library" instead to propagate transitively
+set_property(TARGET Trilinos::Trilinos APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_trilinos_link_flags}")
