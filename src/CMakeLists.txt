@@ -1,35 +1,29 @@
 
 target_sources(nimble PRIVATE
-    nimble_data_manager.cc
-    nimble_data_utils.cc
-    nimble_mesh_utils.cc
-    nimble_tpetra_utils.cc
-    nimble_block.cc
-    nimble_element.cc
-    nimble_exodus_output.cc
-    nimble_boundary_condition.cc
-    nimble_parser.cc
-    nimble_boundary_condition_manager.cc
-    nimble_genesis_mesh.cc
-    nimble_material.cc
-    nimble_material_factory.cc
-    nimble_material_factory_util.cc
-    nimble_expression_parser.cc
-    nimble_linear_solver.cc
-    nimble_contact_entity.cc
-    nimble_contact_manager.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_block.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_element.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_parser.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition_manager.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_genesis_mesh.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_material.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_util.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
     )
 
 IF(NOT NIMBLE_HAVE_KOKKOS)
-  target_sources(nimble PRIVATE nimble_rve.cc)
+  target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.cc)
 ENDIF()
-
-set(NIMBLE_KOKKOS_SOURCES
-  nimble_kokkos_data_manager.cc
-  nimble_kokkos_block.cc
-  nimble_kokkos_material_factory.cc
-  nimble_exodus_output_manager.cc
-)
 
 add_executable(NimbleSM_Serial nimble_serial.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
@@ -54,6 +48,10 @@ IF(NIMBLE_HAVE_QTHREADS)
 ENDIF()
 
 IF(NIMBLE_HAVE_KOKKOS)
-  add_executable(NimbleSM_Kokkos nimble_kokkos.cc ${NIMBLE_SOURCES})
-  target_link_libraries(NimbleSM_Kokkos ${NIMBLE_EXTRAS_LIBS} ${NIMBLE_KOKKOS_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${Exodus_LIBS} ${bvh_LIBS} ${MPI_CXX_LIBRARIES})
+  target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
+                 ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_data_manager.cc
+                 ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
+)
+  add_executable(NimbleSM_Kokkos nimble_kokkos.cc)
+  target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
 ENDIF()
