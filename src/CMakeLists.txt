@@ -7,7 +7,6 @@ target_sources(nimble PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/nimble_block.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_element.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_parser.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition_manager.cc
@@ -50,6 +49,7 @@ ENDIF()
 IF(NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
                  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_data_manager.cc
+                 ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
                  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
 )
   add_executable(NimbleSM_Kokkos nimble_kokkos.cc nimble.mpi.reduction.cc nimble.mpi.reduction_utils.cc)
