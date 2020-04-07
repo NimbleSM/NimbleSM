@@ -31,6 +31,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
             epu_required = True
         else:
             command.append("1")
+        command.append("--use-hwthread-cpus")
         command.append(executable_name)
     if "NimbleSM_Qthreads" in executable_name:
         if qthreads_num_shepherds:
