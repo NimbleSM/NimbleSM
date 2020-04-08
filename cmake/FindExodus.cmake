@@ -32,7 +32,7 @@ if (Exodus_FOUND)
     add_library(Exodus::ExodusII UNKNOWN IMPORTED)
     set_target_properties(Exodus::ExodusII PROPERTIES
       IMPORTED_LOCATION "${exodus_LIBRARY}"
-      INTERFACE_INCLUDE_DIRECTORIES "${exodus_INCLUDE_DIR}"
+      INTERFACE_INCLUDE_DIRECTORIES "${exodus_INCLUDE_DIR};${SEACASExodus_TPL_INCLUDE_DIRS}"
       INTERFACE_LINK_LIBRARIES "${SEACASExodus_TPL_LIBRARIES}"
     )
   endif()
