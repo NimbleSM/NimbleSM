@@ -1,5 +1,6 @@
 .ccls-cache
 build
+build-*/
 docs/doxygen/xml
 docs/doxygen/latex
 docs/doxygen/html
@@ -19,3 +20,11 @@ cmake_install.cmake
 
 # ninja stuff
 *.ninja*
+
+# IntelliJ/IDEA Clion stuff
+.idea/
+cmake-build-*/
+
+# Vim swapfiles, etc
+*.swp
+*.swo
