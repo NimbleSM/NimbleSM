@@ -299,6 +299,19 @@ namespace nimble {
     virtual void GetTangent(int num_pts,
                             double* material_tangent) const = 0;
 
+    NIMBLE_FUNCTION
+    MaterialParameters const & GetMaterialParameters() const { return material_parameters_;}
+
+#ifdef NIMBLE_HAVE_UQ
+    NIMBLE_FUNCTION
+    virtual void GetOffNominalStress(const std::vector<double> & params_this_sample,
+                                     const int & bulk_mod_idx,
+                                     const int & shear_mod_idx,
+                                     int num_pts,
+                                     const double * const deformation_gradient_np1,
+                                     double* stress_np1) = 0;
+#endif
+
   protected:
 
     const int K_S_XX_ = 0 ;
@@ -382,6 +395,16 @@ namespace nimble {
     void GetTangent(int num_pts,
                     double* material_tangent) const ;
 
+#ifdef NIMBLE_HAVE_UQ
+    NIMBLE_FUNCTION
+    void GetOffNominalStress(const std::vector<double> & params_this_sample,
+                             const int & bulk_mod_idx,
+                             const int & shear_mod_idx,
+                             int num_pts,
+                             const double * const deformation_gradient_np1,
+                             double* stress_np1);
+#endif
+
   private:
 
     int num_state_variables_;
@@ -448,6 +471,16 @@ namespace nimble {
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
                     double* material_tangent) const ;
+
+#ifdef NIMBLE_HAVE_UQ
+    NIMBLE_FUNCTION
+    void GetOffNominalStress(const std::vector<double> & params_this_sample,
+                             const int & bulk_mod_idx,
+                             const int & shear_mod_idx,
+                             int num_pts,
+                             const double * const deformation_gradient_np1,
+                             double* stress_np1);
+#endif
 
   private:
 

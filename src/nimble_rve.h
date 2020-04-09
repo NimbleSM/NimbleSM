@@ -135,6 +135,16 @@ namespace nimble {
     void GetTangent(int num_pts,
                     double* material_tangent) const;
 
+#ifdef NIMBLE_HAVE_UQ
+    NIMBLE_FUNCTION
+    void GetOffNominalStress(const std::vector<double> & params_this_sample,
+                             const int & bulk_mod_idx,
+                             const int & shear_mod_idx,
+                             int num_pts,
+                             const double * const deformation_gradient_np1,
+                             double* stress_np1) {}
+#endif
+
   private:
 
     std::map<int, std::string> material_parameters_string_;

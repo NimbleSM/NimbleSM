@@ -356,6 +356,11 @@ namespace nimble {
         displacement = displacement_fluctuation;
       }
 
+#ifdef NIMBLE_HAVE_UQ
+      std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0);
+      std::vector<Viewify> bc_offnom_velocity_views(0);
+#endif
+
       std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
       std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
       std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
@@ -407,6 +412,14 @@ namespace nimble {
                                      elem_data_np1,
                                      data_manager,
                                      compute_stress_only,
+#ifdef NIMBLE_HAVE_UQ
+                                     false,
+                                     nullptr,
+                                     0,
+                                     offnominal_displacements,
+                                     offnominal_internal_forces,
+                                     displacement_sensitivities,
+#endif
                                      false);
         }
         CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
@@ -418,7 +431,11 @@ namespace nimble {
 
         std::vector<double> rve_center = rve_mesh_.BoundingBoxCenter();
 
-        bc_.ApplyKinematicBC(time_current, time_previous, Viewify(coord,3), Viewify(displacement,3), Viewify(velocity,3));
+        bc_.ApplyKinematicBC(time_current, time_previous, Viewify(coord,3), Viewify(displacement,3), Viewify(velocity,3)
+#ifdef NIMBLE_HAVE_UQ
+                           , bc_offnom_velocity_views
+#endif
+                            );
 
         // Compute the residual, which is a norm of the (rearranged) nodal force vector, with the dof associated
         // with kinematic BC removed.
@@ -447,7 +464,16 @@ namespace nimble {
                                      elem_data_n,
                                      elem_data_np1,
                                      data_manager,
-                                     false);
+                                     false
+#ifdef NIMBLE_HAVE_UQ
+                                    ,false
+                                    ,nullptr
+                                    ,0
+                                    ,offnominal_displacements
+                                    ,offnominal_internal_forces
+                                    ,displacement_sensitivities
+#endif
+);
         }
         CheckVectorSanity(num_unknowns, internal_force, "RVE internal force, initial residual calculation");
 
@@ -594,7 +620,16 @@ namespace nimble {
                                        elem_data_n,
                                        elem_data_np1,
                                        data_manager,
-                                       false);
+                                       false
+#ifdef NIMBLE_HAVE_UQ
+                                      ,false
+                                      ,nullptr
+                                      ,0
+                                      ,offnominal_displacements
+                                      ,offnominal_internal_forces
+                                      ,displacement_sensitivities
+#endif
+                                      );
           }
           CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
           for (int i=0 ; i<linear_system_num_nodes*dim ; i++) {

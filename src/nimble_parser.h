@@ -166,6 +166,20 @@ namespace nimble {
       return material_props;
     }
 
+    int GetBlockIdFromMaterial (const std::string & material_key) const {
+      int block_id = -1;
+      //std::map<int, BlockProperties>::iterator it;
+      //for(it = macroscale_blocks_.begin(); it != macroscale_blocks_.end(); it++){
+      for(auto const & entry : macroscale_blocks_) {
+        BlockProperties const & block_props = entry.second;//it->second;
+        if(material_key == block_props.material_key_ ) {
+          block_id = entry.first;//it->first; //Found the block id with the material string
+          break;
+        }
+      } 
+      return block_id;
+    }
+
     std::map<int, std::string> GetMicroscaleMaterialParameters() const {
       std::map<int, std::string> block_id_to_microscale_props_map;
       for (auto const & entry : microscale_blocks_) {
@@ -190,6 +204,18 @@ namespace nimble {
       }
       return output_field_string_;
     }
+
+#ifdef NIMBLE_HAVE_UQ
+    std::string const & UqModelString()  const { return uq_model_string_; }
+    std::map<std::string, std::string> const & UqParamsStrings()const { return uq_parameters_strings_; }
+
+    bool HasUq() const {
+      if (uq_model_string_.size() == 0 || uq_parameters_strings_.size() == 0)
+        return false;
+      else
+        return true;
+    }
+#endif
 
   protected:
 
@@ -218,6 +244,10 @@ namespace nimble {
     std::string microscale_boundary_condition_strategy_;
     std::vector<std::string> boundary_condition_strings_;
     std::string output_field_string_;
+#ifdef NIMBLE_HAVE_UQ
+    std::map<std::string, std::string> uq_parameters_strings_;
+    std::string uq_model_string_;
+#endif
   };
 } // namespace nimble
 

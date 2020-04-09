@@ -344,6 +344,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* external_force = model_data.GetNodeData(external_force_field_id);
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
+#ifdef NIMBLE_HAVE_UQ
+  std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0);
+  std::vector<Viewify> bc_offnom_velocity_views(0);
+#endif
+
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
@@ -380,9 +385,18 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
 
-  bc.ApplyInitialConditions(Viewify(reference_coordinate,3), Viewify(velocity,3));
+  bc.ApplyInitialConditions(Viewify(reference_coordinate,3), Viewify(velocity,3)
+#ifdef NIMBLE_HAVE_UQ
+                           ,bc_offnom_velocity_views
+#endif
+                           );
+
   // Allow prescribed velocities to trump initial velocities
-  bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3));
+  bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+#ifdef NIMBLE_HAVE_UQ
+                     , bc_offnom_velocity_views
+#endif
+                     );
 
   // For explicit dynamics, the macroscale model is never treated as an RVE
   // so rve_macroscale_deformation_gradient will always be the identity matrix
@@ -460,7 +474,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       velocity[i] += half_delta_time * acceleration[i];
     }
 
-    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3));
+    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+#ifdef NIMBLE_HAVE_UQ
+                     , bc_offnom_velocity_views
+#endif
+                       );
 
     // Evaluate external body forces
     for (int i=0 ; i<num_unknowns ; ++i) {
@@ -498,7 +516,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  elem_data_n,
                                  elem_data_np1,
                                  data_manager,
-                                 is_output_step);
+                                 is_output_step
+#ifdef NIMBLE_HAVE_UQ
+                                 ,false
+                                 ,nullptr
+                                 ,0
+                                 ,offnominal_displacements
+                                 ,offnominal_internal_forces
+                                 ,displacement_sensitivities
+#endif
+                                 );
     }
 
     // Evaluate the contact force
@@ -553,7 +580,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                         derived_elem_data.at(block_id));
       }
 
-      bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3));
+      bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+#ifdef NIMBLE_HAVE_UQ
+                     , bc_offnom_velocity_views
+#endif
+                         );
 
       // Write output
       model_data.GetNodeDataForOutput(node_data_for_output);
