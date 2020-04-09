@@ -119,14 +119,14 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         os.remove(log_file_name)
     logfile = open(log_file_name, 'w')
 
-    logfile.write("\nrun_exodiff_test.py command: " + string.join(command) + "\n")
+    logfile.write("\nrun_exodiff_test.py command: " + " ".join(command) + "\n")
     logfile.flush()
 
     # remove old output files, if any (this will miss some files in parallel runs)
     if os.path.exists(epu_exodus_output_name):
         os.remove(epu_exodus_output_name)
 
-    print "\nCommand:", command
+    print("\nCommand:", command)
 
     # run the code
     p = Popen(command, stdout=logfile, stderr=logfile)
@@ -142,7 +142,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
                    "-output_extension", \
                    epu_output_extension, \
                    nimble_output_name]
-        print "EPU COMMAND", command
+        print("EPU COMMAND", command)
         p = Popen(command, stdout=logfile, stderr=logfile)
         return_code = p.wait()
         if return_code != 0:
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument('--qthreads-num-workers-per-shepherd', required=False, type=int, action='store', nargs=1, metavar='qthread-num-workers-per-shepherd', help='Number of qthreads workers per shepherd')
 
     args = vars(parser.parse_args())
-    print args
+    print(args)
 
     executable = args['executable'][0]
 
