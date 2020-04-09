@@ -63,6 +63,10 @@
 #include "nimble_extras_material_factory.h"
 #endif
 
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
+#endif
+
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,

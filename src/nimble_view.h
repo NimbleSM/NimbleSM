@@ -52,6 +52,8 @@ class Viewify {
 
  public:
 
+ Viewify() {} // for NIMBLE_HAVE_UQ?
+
  Viewify(double* data, int dim)
    : data_(data), dim_(dim) {}
 

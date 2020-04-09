@@ -33,6 +33,7 @@ target_include_directories(nimble PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/src)
 if (HAVE_UQ)
   set(NIMBLE_HAVE_UQ TRUE)
   message(STATUS "Compiling with UQ")
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_UQ)
 endif()
 
 # Optional dependency for pure MPI build (no Trilinos)

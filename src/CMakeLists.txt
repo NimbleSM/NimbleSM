@@ -25,7 +25,7 @@ IF(NOT NIMBLE_HAVE_KOKKOS)
 ENDIF()
 
 IF(NIMBLE_HAVE_UQ)
-  set(NIMBLE_SOURCES ${NIMBLE_SOURCES} nimble_uq.cc)
+  target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_uq.cc)
 ENDIF()
 
 add_executable(NimbleSM_Serial nimble_serial.cc)

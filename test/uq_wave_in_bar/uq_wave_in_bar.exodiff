@@ -1,0 +1,68 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.89) Modified: 2017-09-19
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2018/08/13   11:51:09 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NimbleSM/test/wave_in_bar/wave_in_bar.gold.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 1, Nodes = 404, Elements = 100, Nodesets = 2, Sidesets = 0
+#          Vars: Global = 0, Nodal = 6, Element = 135, Nodeset = 0, Sideset = 0, Times = 4
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           1e-05 @ t4
+
+
+# No GLOBAL VARIABLES
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x  absolute 2.930891200000e-09    # min:               0 @ t1,n103	max:    0.0029308912 @ t4,n97
+	displacement_y  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	displacement_z  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	velocity_x      absolute 1.275735600000e-03    # min:               0 @ t1,n1	max:       1275.7356 @ t3,n256
+	velocity_y      absolute 7.188429400000e-07    # min:               0 @ t1,n103	max:      0.71884294 @ t4,n9
+	velocity_z      absolute 7.188429400000e-07    # min:               0 @ t1,n103	max:      0.71884294 @ t4,n9
+	off_nom_displacement_1_x  absolute 2.930891200000e-09    # min:               0 @ t1,n103	max:    0.0029308912 @ t4,n97
+	off_nom_displacement_1_y  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	off_nom_displacement_1_z  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	off_nom_displacement_2_x  absolute 2.930891200000e-09    # min:               0 @ t1,n103	max:    0.0029308912 @ t4,n97
+	off_nom_displacement_2_y  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	off_nom_displacement_2_z  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	off_nom_displacement_3_x  absolute 2.930891200000e-09    # min:               0 @ t1,n103	max:    0.0029308912 @ t4,n97
+	off_nom_displacement_3_y  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+	off_nom_displacement_3_z  absolute 2.039685800000e-14    # min:               0 @ t1,n103	max:   2.0396858e-08 @ t3,n242
+
+ELEMENT VARIABLES relative 1.e-6 floor 0.0
+	deformation_gradient_xx        absolute 1.001764500000e-06    # min:       0.9983761 @ t3,b1,e73	max:       1.0017645 @ t4,b1,e23
+	deformation_gradient_xy        absolute 1.0e-12
+	deformation_gradient_xz        absolute 1.0e-12
+	deformation_gradient_yx        absolute 1.0e-12
+	deformation_gradient_yy        absolute 1.000000500000e-06    # min:      0.99999864 @ t3,b1,e60	max:       1.0000005 @ t3,b1,e55
+	deformation_gradient_yz        absolute 1.0e-12
+	deformation_gradient_zx        absolute 1.0e-12
+	deformation_gradient_zy        absolute 1.0e-12
+	deformation_gradient_zz        absolute 1.000000500000e-06    # min:      0.99999864 @ t3,b1,e60	max:       1.0000005 @ t3,b1,e55
+	stress_xx                      absolute 5.284789200000e+03    # min:               0 @ t1,b1,e1	max:   5.2847892e+09 @ t4,b1,e23
+	stress_xy                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     0.088557641 @ t4,b1,e31
+	stress_yy                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       2522389.2 @ t3,b1,e60
+	stress_yz                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     0.022117094 @ t3,b1,e14
+	stress_zx                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     0.075358099 @ t4,b1,e68
+	stress_zz                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       2522389.2 @ t3,b1,e60
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+
