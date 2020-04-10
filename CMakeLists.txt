@@ -5,9 +5,17 @@
 cmake_minimum_required(VERSION 3.12)
 project(NimbleSM CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXSTENSIONS OFF)
+
+if (NIMBLE_NVIDIA_BUILD)
+  enable_language(CUDA)
+  add_definitions(-DNIMBLE_NVIDIA_BUILD)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(CMAKE_CXX_FLAGS )
+else()
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
 
 enable_testing()
 
@@ -61,22 +69,13 @@ else()
   set(bvh_LIBS)
 endif()
 
-if (NIMBLE_NVIDIA_BUILD)
-  enable_language(CUDA)
-  add_definitions(-DNIMBLE_NVIDIA_BUILD)
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true --expt-extended-lambda")
-  set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -rdc=true")
-endif()
-
 # Optional Trilinos dependencies
 if (HAVE_TRILINOS OR HAVE_NIMBLE_EXTRAS)
   set(NIMBLE_TRILINOS_COMPONENTS KokkosCore Tpetra)
   if(NOT HAVE_NIMBLE_EXTRAS) # exodus from Trilinos
     set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} SEACASExodus)
   else()
-    set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} Sacado)
+    set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} Sacado Zoltan)
   endif()
 
   # Trilinos brings in Trilinos, Kokkos, and Exodus
