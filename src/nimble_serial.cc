@@ -50,6 +50,7 @@
 #include "nimble_linear_solver.h"
 #include "nimble_utils.h"
 #include "nimble_mesh_utils.h"
+#include "nimble_contact_interface.h"
 #include "nimble_contact_manager.h"
 #include "nimble_view.h"
 #include "nimble_material_factory.h"
@@ -61,6 +62,7 @@
 
 #ifdef NIMBLE_HAVE_EXTRAS
 #include "nimble_extras_material_factory.h"
+#include <nimble_contact_extras.h>
 #endif
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
@@ -250,7 +252,13 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
 
-  nimble::ContactManager contact_manager;
+  std::shared_ptr<nimble::ContactInterface> contact_interface;
+#ifdef NIMBLE_HAVE_EXTRAS
+    contact_interface.reset(new nimble::ExtrasContactInterface());
+#else
+    contact_interface.reset(new nimble::ContactInterface());
+#endif
+  nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {

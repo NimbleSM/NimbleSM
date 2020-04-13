@@ -41,6 +41,7 @@
 //@HEADER
 */
 
+#include <nimble_contact_interface.h>
 #include "nimble_version.h"
 #include "nimble_parser.h"
 #include "nimble_exodus_output.h"
@@ -58,6 +59,7 @@
 #ifdef NIMBLE_HAVE_EXTRAS
 #include <nimble_ngp_lame_material.h>
 #include <nimble_extras_ngp_material_factory.h>
+#include <nimble_contact_extras.h>
 #endif
 
 #include <iostream>
@@ -350,7 +352,13 @@ void main_routine(int argc, char *argv[]) {
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
 
-  nimble::ContactManager contact_manager;
+  std::shared_ptr<nimble::ContactInterface> contact_interface;
+#ifdef NIMBLE_HAVE_EXTRAS
+    contact_interface.reset(new nimble::ExtrasContactInterface());
+#else
+    contact_interface.reset(new nimble::ContactInterface());
+#endif
+  nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {

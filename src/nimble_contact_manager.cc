@@ -42,12 +42,9 @@
 */
 
 #include "nimble_contact_manager.h"
+#include "nimble_contact_interface.h"
 #include "nimble_utils.h"
 #include "mpi_buckets/src/CollisionManager.hpp"
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_contact_extras.h"
-#endif
 
 #ifdef NIMBLE_HAVE_MPI
   #include "mpi.h"
@@ -341,7 +338,8 @@ namespace nimble {
 #endif
   }
 
-  ContactManager::ContactManager(size_t dicing_factor)
+  ContactManager::ContactManager(std::shared_ptr<ContactInterface> interface,
+                                 size_t dicing_factor)
     : penalty_parameter_(0.0),
       dicing_factor_(dicing_factor)
 #if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
@@ -349,10 +347,8 @@ namespace nimble {
       face_patch_collection_(bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor))),
       node_patch_collection_(bvh::vt::index_1d(bvh::vt::context::current()->num_ranks() * static_cast<int>(dicing_factor)))
 #endif
+  , contact_interface(interface)
   {
-#ifdef NIMBLE_HAVE_EXTRAS
-    contact_interface.reset(new ExtrasContactInterface());
-#endif
   }
 
   void
@@ -1501,7 +1497,7 @@ namespace
     // 3) culling
     // 4) enforcement
 
-#ifdef NIMBLE_HAVE_EXTRAS
+#ifdef NIMBLE_HAVE_KOKKOS
   contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_, penalty_parameter_);
 #endif
   }

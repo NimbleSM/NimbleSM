@@ -49,14 +49,12 @@
 #include <memory>
 #include <float.h>
 #include <cmath>
+
 #include "nimble_contact_entity.h"
+#include "nimble_contact_interface.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_exodus_output.h"
 #include "nimble.mpi.utils.h"
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_contact_extras.h"
-#endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
   #include "nimble_kokkos_defs.h"
@@ -77,7 +75,7 @@
 
 namespace nimble {
 
-class ExtrasContactInterface;
+class ContactInterface;
 
   class ContactManager {
 
@@ -89,7 +87,8 @@ class ExtrasContactInterface;
       FACE=2
     } PROJECTION_TYPE;
 
-    explicit ContactManager( std::size_t dicing_factor = 1);
+    explicit ContactManager( std::shared_ptr<ContactInterface> interface,
+                             std::size_t dicing_factor = 1);
 
     virtual ~ContactManager() {}
 
@@ -288,7 +287,7 @@ class ExtrasContactInterface;
     patch_collection node_patch_collection_;
 #endif
 
-    std::shared_ptr<ExtrasContactInterface> contact_interface;
+    std::shared_ptr<ContactInterface> contact_interface;
 };
 
 } // namespace nimble
