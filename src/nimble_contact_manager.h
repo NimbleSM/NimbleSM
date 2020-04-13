@@ -46,16 +46,21 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 #include <float.h>
 #include <cmath>
 #include "nimble_contact_entity.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_exodus_output.h"
-#include "nimble_kokkos_defs.h"
 #include "nimble.mpi.utils.h"
 
 #ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_extras_contact_includes.h"
+  #include "nimble_contact_extras.h"
+#endif
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  #include "nimble_kokkos_defs.h"
+  #include "nimble_kokkos_contact_defs.h"
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
@@ -71,6 +76,8 @@
 #endif
 
 namespace nimble {
+
+class ExtrasContactInterface;
 
   class ContactManager {
 
@@ -160,8 +167,8 @@ namespace nimble {
       nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
       nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
       nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
-      DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
-      DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+      nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+      nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
 
       Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
                            num_nodes_in_contact_manager,
@@ -243,7 +250,6 @@ namespace nimble {
 #endif
 
   protected:
-
     bool contact_enabled_ = false;
     double penalty_parameter_;
 
@@ -264,19 +270,12 @@ namespace nimble {
     nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
     nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
 
-    using DeviceContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device >;
-    DeviceContactEntityArrayView contact_faces_d_ = DeviceContactEntityArrayView("contact_faces_d", 1);
-    DeviceContactEntityArrayView contact_nodes_d_ = DeviceContactEntityArrayView("contact_nodes_d", 1);
+    nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
+    nimble_kokkos::DeviceContactEntityArrayView contact_nodes_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_nodes_d", 1);
 
     // TODO remove this once enforcement is on device
-    using HostContactEntityArrayView = Kokkos::View< ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_host >;
-    HostContactEntityArrayView contact_faces_h_ = HostContactEntityArrayView("contact_faces_h", 1);
-    HostContactEntityArrayView contact_nodes_h_ = HostContactEntityArrayView("contact_nodes_h", 1);
-#endif
-
-#ifdef NIMBLE_HAVE_EXTRAS
-    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_nodes_search_tree_;
-    stk::search::mas_aabb_tree<double, nimble_kokkos::kokkos_device_execution_space> contact_faces_search_tree_;
+    nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
+    nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
 #endif
 
     std::size_t dicing_factor_; ///< Patch dicing factor for overdecomposition
@@ -289,32 +288,9 @@ namespace nimble {
     patch_collection node_patch_collection_;
 #endif
 
-public:
-
-#ifdef NIMBLE_HAVE_EXTRAS
-    void compute_and_scatter_contact_force(DeviceContactEntityArrayView contact_nodes_d,
-                                           DeviceContactEntityArrayView contact_faces_d,
-                                           stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
-                                           nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
-
-    void load_contact_points_and_tris(const int num_collisions,
-                                      stk::search::CollisionList<nimble_kokkos::kokkos_device_execution_space> collision_list,
-                                      DeviceContactEntityArrayView contact_nodes_d,
-                                      DeviceContactEntityArrayView contact_faces_d,
-                                      gtk::PointsView<nimble_kokkos::kokkos_device_execution_space> points,
-                                      gtk::TrianglesView<nimble_kokkos::kokkos_device_execution_space> triangles);
-
-    KOKKOS_FUNCTION void scatter_contact_forces(double gap,
-                                                double scale,
-                                                double tri_normal[3],
-                                                DeviceContactEntityArrayView contact_faces_d,
-                                                int contact_face_index,
-                                                const double* closest_pt,
-                                                DeviceContactEntityArrayView contact_nodes_d,
-                                                int contact_node_index,
-                                                nimble_kokkos::DeviceScalarNodeView contact_manager_force_d);
-#endif
+    std::shared_ptr<ExtrasContactInterface> contact_interface;
 };
+
 } // namespace nimble
 
 #endif // NIMBLE_MATERIAL_H

@@ -24,6 +24,10 @@ IF(NOT NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.cc)
 ENDIF()
 
+IF(NIMBLE_HAVE_EXTRAS)
+  target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_extras.cc)
+ENDIF()
+
 add_executable(NimbleSM_Serial nimble_serial.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
 
