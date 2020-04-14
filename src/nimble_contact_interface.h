@@ -53,17 +53,73 @@
 
 namespace nimble {
 
+struct PenaltyContactEnforcement {
+  PenaltyContactEnforcement() : penalty(0.0) {}
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  KOKKOS_FORCEINLINE_FUNCTION
+#endif
+  void EnforceContact(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
+                      const double direction[3], const double closest_pt[3]) const {
+    double contact_force[3] { };
+    const double scale = penalty * gap / numNodeFaces;
+    for (int i = 0; i < 3; ++i) {
+      contact_force[i] = scale * direction[i];
+    }
+    face.ComputeNodalContactForces(contact_force, closest_pt);
+    for (int i = 0; i < 3; ++i) {
+      contact_force[i] *= -1.0;
+    }
+    node.ComputeNodalContactForces(contact_force, closest_pt);
+  }
+
+  double penalty;
+};
+
 class ContactInterface {
  public:
   ContactInterface() = default;
   virtual ~ContactInterface() = default;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  virtual void ComputeContact(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
-                              nimble_kokkos::DeviceContactEntityArrayView contact_faces,
-                              nimble_kokkos::DeviceScalarNodeView contact_manager_force, double penalty_parameter) {
+  void SetUpPenaltyEnforcement(const double penalty_param) {
+    enforcement.penalty = penalty_param;
+  }
+
+  void ComputeContact(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
+                      nimble_kokkos::DeviceContactEntityArrayView contact_faces,
+                      nimble_kokkos::DeviceScalarNodeView contact_manager_force) {
+    contact_force = contact_manager_force;
+    ZeroContactForces();
+    DoSearchAndEnforcement(contact_nodes, contact_faces);
+  }
+
+  inline void ZeroContactForces() {
+    Kokkos::deep_copy(contact_force, 0.0);
+  }
+
+  virtual void DoSearchAndEnforcement(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
+                                      nimble_kokkos::DeviceContactEntityArrayView contact_faces) {
     std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
+
+ protected:
+  KOKKOS_FORCEINLINE_FUNCTION
+  void EnforceNodeFaceInteraction(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
+                                  const double direction[3], const double closest_pt[3]) const {
+    if (gap < 0.0) {
+      enforcement.EnforceContact(node, face, numNodeFaces, gap, direction, closest_pt);
+      node.ScatterForceToContactManagerForceVector(contact_force);
+      face.ScatterForceToContactManagerForceVector(contact_force);
+    }
+  }
+#endif
+
+ private:
+  PenaltyContactEnforcement enforcement;
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  nimble_kokkos::DeviceScalarNodeView contact_force;
 #endif
 };
 

@@ -1498,7 +1498,7 @@ namespace
     // 4) enforcement
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_, penalty_parameter_);
+  contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
 #endif
   }
 #if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)

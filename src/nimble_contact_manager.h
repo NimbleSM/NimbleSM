@@ -106,6 +106,7 @@ class ContactInterface;
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
+      contact_interface->SetUpPenaltyEnforcement(penalty_parameter_);
     }
 
     void CreateContactEntities(GenesisMesh const & mesh,
