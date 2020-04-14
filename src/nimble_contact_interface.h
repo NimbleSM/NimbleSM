@@ -53,12 +53,12 @@
 
 namespace nimble {
 
+#ifdef NIMBLE_HAVE_KOKKOS
+
 struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
-#ifdef NIMBLE_HAVE_KOKKOS
   KOKKOS_FORCEINLINE_FUNCTION
-#endif
   void EnforceContact(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
                       const double direction[3], const double closest_pt[3]) const {
     if (gap < 0.0) {
@@ -78,21 +78,23 @@ struct PenaltyContactEnforcement {
   }
 
   double penalty;
-#ifdef NIMBLE_HAVE_KOKKOS
   nimble_kokkos::DeviceScalarNodeView contact_manager_force;
-#endif
 };
+
+#endif
 
 class ContactInterface {
  public:
   ContactInterface() = default;
   virtual ~ContactInterface() = default;
 
-#ifdef NIMBLE_HAVE_KOKKOS
   void SetUpPenaltyEnforcement(const double penalty_param) {
+#ifdef NIMBLE_HAVE_KOKKOS
     enforcement.penalty = penalty_param;
+#endif
   }
 
+#ifdef NIMBLE_HAVE_KOKKOS
   void ComputeContact(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
                       nimble_kokkos::DeviceContactEntityArrayView contact_faces,
                       nimble_kokkos::DeviceScalarNodeView contact_manager_force) {
@@ -119,10 +121,10 @@ class ContactInterface {
       enforcement.EnforceContact(node, face, numNodeFaces, gap, direction, closest_pt);
     }
   }
-#endif
 
  private:
   PenaltyContactEnforcement enforcement;
+#endif
 };
 
 }
