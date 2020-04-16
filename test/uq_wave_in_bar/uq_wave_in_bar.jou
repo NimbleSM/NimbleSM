@@ -1,0 +1,9 @@
+
+reset
+create brick x 2.0 y 0.02 z 0.02
+block 1 volume 1
+volume all size 0.02
+mesh volume all
+nodeset 1 volume 1
+nodeset 2 surface 6
+export genesis 'wave_in_bar.g' overwrite

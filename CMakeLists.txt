@@ -23,6 +23,7 @@ set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
 option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
 option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
@@ -35,6 +36,13 @@ add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
 target_include_directories(nimble PUBLIC src)
 target_include_directories(nimble PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/src)
+
+# Optional functionality for UQ
+if (HAVE_UQ)
+  set(NIMBLE_HAVE_UQ TRUE)
+  message(STATUS "Compiling with UQ")
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_UQ)
+endif()
 
 # Optional dependency for pure MPI build (no Trilinos)
 if (USE_PURE_MPI OR HAVE_NIMBLE_EXTRAS)

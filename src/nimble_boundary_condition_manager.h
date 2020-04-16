@@ -87,7 +87,11 @@ namespace nimble {
 
     template <typename ViewT>
     void ApplyInitialConditions(const ViewT reference_coordinates,
-                                ViewT velocity) {
+                                ViewT velocity
+#ifdef NIMBLE_HAVE_UQ
+                                ,std::vector<ViewT> & offnom_velocities
+#endif
+                               ) {
 
       for (unsigned int i_bc=0 ; i_bc<boundary_conditions_.size() ; i_bc++) {
 
@@ -102,6 +106,11 @@ namespace nimble {
             double magnitude = bc.magnitude_;
             for (unsigned int n=0 ; n<node_set.size() ; n++) {
               velocity(node_set[n],coordinate) = magnitude;
+#ifdef NIMBLE_HAVE_UQ
+              for(int nuq = 0; nuq<offnom_velocities.size(); nuq++) {
+                offnom_velocities[nuq](node_set[n],coordinate) = magnitude;
+              } 
+#endif
             }
           }
           else {
@@ -114,6 +123,11 @@ namespace nimble {
               }
               bc.expression_.t = 0.0;
               velocity(node_set[n],coordinate) = bc.expression_.eval();
+#ifdef NIMBLE_HAVE_UQ
+              for(int nuq = 0; nuq<offnom_velocities.size(); nuq++) {
+                offnom_velocities[nuq](node_set[n],coordinate) = bc.expression_.eval();
+              }
+#endif
             }
           }
         }
@@ -125,7 +139,11 @@ namespace nimble {
                           double time_previous,
                           const ViewT reference_coordinates,
                           ViewT displacement,
-                          ViewT velocity) {
+                          ViewT velocity
+#ifdef NIMBLE_HAVE_UQ
+                         ,std::vector<ViewT> & offnom_velocities
+#endif    
+                         ) {
 
       double delta_t = time_current - time_previous;
 
@@ -142,6 +160,11 @@ namespace nimble {
             double velocity_magnitude = bc.magnitude_;
             for (unsigned int n=0 ; n<node_set.size() ; n++) {
               velocity(node_set[n],coordinate) = velocity_magnitude;
+#ifdef NIMBLE_HAVE_UQ
+              for(int nuq = 0; nuq<offnom_velocities.size(); nuq++) {
+                offnom_velocities[nuq](node_set[n],coordinate) = velocity_magnitude;
+              }
+#endif
               if (time_integration_scheme_ == QUASISTATIC) {
                 displacement(node_set[n],coordinate) += velocity_magnitude * delta_t;
               }
@@ -158,6 +181,11 @@ namespace nimble {
               bc.expression_.t = time_current;
               double velocity_magnitude = bc.expression_.eval();
               velocity(node_set[n],coordinate) = velocity_magnitude;
+#ifdef NIMBLE_HAVE_UQ
+              for(int nuq = 0; nuq<offnom_velocities.size(); nuq++) {
+                offnom_velocities[nuq](node_set[n],coordinate) = velocity_magnitude;
+              }
+#endif
               if (time_integration_scheme_ == QUASISTATIC) {
                 displacement(node_set[n],coordinate) += velocity_magnitude * delta_t;
               }

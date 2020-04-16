@@ -58,6 +58,10 @@
 #include "nimble_rve.h"
 #endif
 
+#ifdef NIMBLE_HAVE_UQ
+  #include "nimble_uq.h"
+#endif
+
 namespace nimble {
 
   void Block::Initialize(std::string const & macro_material_parameters,
@@ -289,6 +293,14 @@ namespace nimble {
                                    std::vector<double> & elem_data_np1,
                                    DataManager& data_manager,
                                    bool is_output_step,
+#ifdef NIMBLE_HAVE_UQ
+                                   const bool & uq_enabled,
+                                   const UqParameters* uq_params,
+                                   const int & num_uq_samples,
+                                   const std::vector<double*> offnominal_displacements,
+                                   const std::vector<double*> offnominal_internal_forces,
+                                   const std::vector<double*> displacement_sensitivities,
+#endif
                                    bool compute_stress_only) const {
 
     int dim = element_->Dim();
@@ -307,6 +319,19 @@ namespace nimble {
     double cauchy_stress_n[sym_tensor_size*num_int_pt_per_elem];
     double cauchy_stress_np1[sym_tensor_size*num_int_pt_per_elem];
     double force[vector_size*num_node_per_elem];
+
+#ifdef NIMBLE_HAVE_UQ
+    int num_uq_params = 0; std::vector<std::vector<double>> def_grad_sensitivities(0);
+    std::vector<double> disp_sens_this_param(0), def_grad_this_sample(0);
+    double cauchy_stress_this_sample[sym_tensor_size*num_int_pt_per_elem];
+    if(uq_enabled) {
+      num_uq_params = uq_params->GetNumParams();
+      def_grad_sensitivities.resize(num_uq_params);
+      for(int np=0; np<num_uq_params; np++) def_grad_sensitivities[np].resize(full_tensor_size*num_int_pt_per_elem, 0.0);
+      disp_sens_this_param.resize(vector_size*num_node_per_elem, 0.0);
+      def_grad_this_sample.resize(full_tensor_size*num_int_pt_per_elem, 0.0);
+    }
+#endif
 
     double* state_data_n(0);
     double* state_data_np1(0);
@@ -338,6 +363,27 @@ namespace nimble {
       element_->ComputeDeformationGradients(ref_coord,
                                             cur_coord,
                                             def_grad_np1);
+
+#ifdef NIMBLE_HAVE_UQ
+      if(uq_enabled) {
+        //Loop over num_uq_params, compute deformation_gradient_sensitivity
+        //"sensitivity" implies derivative w.r.t. uncertain parameter \lambda
+        //"gradient" implies derivative w.r.t reference coordinate \Xb
+        //IMPORTANT DETAIL: deformation_gradient_sensitivity = displacement_sensitivity_gradient (Go Figure)
+        for(int param=0; param<num_uq_params; param++){
+          //Copy from global nodal vector to vector for nodes of this element
+          for (int node=0 ; node<num_node_per_elem ; node++) {
+            int node_id = elem_conn[elem*num_node_per_elem + node];
+            for (int i=0 ; i<vector_size ; i++) {
+              disp_sens_this_param[node*vector_size + i] = displacement_sensitivities[param][vector_size*node_id + i];
+            }
+          }
+          element_->ComputeDeformationGradients(ref_coord,
+                                                &(disp_sens_this_param[0]),
+                                                &(def_grad_sensitivities[param][0]) );
+        }
+      }
+#endif
 
       // Add in the macroscale displacement gradient (nonzero only for multiscale RVE problems)
       for (int i_ipt = 0 ; i_ipt < num_int_pt_per_elem ; i_ipt++) {
@@ -407,6 +453,52 @@ namespace nimble {
           }
         }
       }
+
+#ifdef NIMBLE_HAVE_UQ
+      if(uq_enabled) {
+        //---START MAIN LOOP OVER NUMBER OF UQ OFFNOMINAL SAMPLES--//
+        for(int sample=0; sample < num_uq_samples; sample++) {
+
+          //--STEP 1: Apply Taylor's series closure for deformation gradient of THIS sample
+          uq_params->ApplyTaylorsSeriesClosure(sample,
+                                               full_tensor_size*num_int_pt_per_elem,
+                                               def_grad_np1,
+                                               def_grad_sensitivities,
+                                               def_grad_this_sample );
+
+
+          //--STEP 2: Apply Material Model to Compute Stress of THIS sample
+          material_->GetOffNominalStress(uq_params->GetParamsForSample(sample),
+                                         bulk_modulus_uq_index_,
+                                         shear_modulus_uq_index_,
+                                         num_int_pt_per_elem,
+                                         &(def_grad_this_sample[0]),
+                                         cauchy_stress_this_sample);
+
+          //--STEP 3: Perform assembly of stresses into nodal forces for THIS sample
+          double * displacement_this_sample = offnominal_displacements[sample];
+          for (int node=0 ; node<num_node_per_elem ; node++) {
+            int node_id = elem_conn[elem*num_node_per_elem + node];
+            for (int i=0 ; i<vector_size ; i++) {
+              cur_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i] + displacement_this_sample[vector_size*node_id + i];
+            }
+          }
+
+          element_->ComputeNodalForces(cur_coord,
+                                       cauchy_stress_this_sample,
+                                       force);
+
+          double * internal_force_this_sample = offnominal_internal_forces[sample];
+          for (int node=0 ; node<num_node_per_elem ; node++) {
+            int node_id = elem_conn[elem*num_node_per_elem + node];
+            for (int i=0 ; i<vector_size ; i++) {
+              internal_force_this_sample[vector_size*node_id + i] += force[node*vector_size + i];
+            }
+          }
+
+        }
+      }
+#endif
     }
   }
 

@@ -350,6 +350,17 @@ namespace nimble {
         else if (key == "output fields") {
           output_field_string_ = value;
         }
+#ifdef NIMBLE_HAVE_UQ
+	else if (key == "uq parameters") {
+          size_t space_pos = value.find(" ");
+          std::string material_key = value.substr(0, space_pos);
+          std::string uq_params = value.substr(space_pos+1, value.size());
+          uq_parameters_strings_[material_key] = uq_params;
+        }
+        else if (key == "uq model") {
+          uq_model_string_ = value;
+        }
+#endif
         else{
           std::string msg = "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
           throw std::logic_error(msg);
