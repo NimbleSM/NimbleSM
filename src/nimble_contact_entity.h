@@ -51,10 +51,6 @@
 #include <math.h>
 #include "nimble_kokkos_defs.h"
 
-#ifdef NIMBLE_HAVE_EXTRAS
-  #include "nimble_extras_contact_includes.h"
-#endif
-
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
 #endif
