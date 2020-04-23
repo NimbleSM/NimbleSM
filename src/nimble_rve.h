@@ -81,24 +81,24 @@ namespace nimble {
     std::map<std::string, double> ParseParametersString(std::string const & material_parameters_string) const;
 
     NIMBLE_FUNCTION
-    int NumStateVariables() const { return 0; }
+    int NumStateVariables() const override { return 0; }
 
     NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override {
       printf("\n**** Error, bad index in RVE::GetStateVariableLabel().\n");
     }
 
     NIMBLE_FUNCTION
-    double GetStateVariableInitialValue(int index) const  {
+    double GetStateVariableInitialValue(int index) const override {
       printf("\n**** Error, bad index in RVE::GetStateVariableInitialValue().\n");
       return 0.0;
     }
 
     NIMBLE_FUNCTION
-    double GetDensity() const ;
+    double GetDensity() const override;
 
     NIMBLE_FUNCTION
-    double GetBulkModulus() const ;
+    double GetBulkModulus() const override;
 
     NIMBLE_FUNCTION
     void InitializeRVE(int elem_global_id,
@@ -119,7 +119,7 @@ namespace nimble {
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
-                   bool is_output_step);
+                   bool is_output_step) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
     NIMBLE_FUNCTION
@@ -133,7 +133,7 @@ namespace nimble {
 
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
-                    double* material_tangent) const;
+                    double* material_tangent) const override;
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
