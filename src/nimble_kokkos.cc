@@ -44,6 +44,7 @@
 #include <cassert>
 #include <nimble_contact_interface.h>
 #include <nimble_kokkos_block_material_interface.h>
+#include <nimble_kokkos_block_material_interface_factory.h>
 #include "nimble_version.h"
 #include "nimble_parser.h"
 #include "nimble_exodus_output.h"
@@ -61,6 +62,7 @@
 #ifdef NIMBLE_HAVE_EXTRAS
 #include <nimble_extras_ngp_material_factory.h>
 #include <nimble_contact_extras.h>
+#include <nimble_extras_ngp_block_material_interface_factory.h>
 #endif
 
 #include <iostream>
@@ -126,8 +128,12 @@ void main_routine(int argc, char *argv[]) {
 
 #ifdef NIMBLE_HAVE_EXTRAS
   using MaterialFactoryType = nimble_kokkos::ExtrasMaterialFactory;
+  using BlockMaterialInterfaceFactoryType = nimble_kokkos::ExtrasBlockMaterialInterfaceFactory;
+  using ContactInterfaceType = nimble::ExtrasContactInterface;
 #else
   using MaterialFactoryType = nimble_kokkos::MaterialFactory;
+  using BlockMaterialInterfaceFactoryType = nimble_kokkos::BlockMaterialInterfaceFactory;
+  using ContactInterfaceType = nimble::ContactInterface;
 #endif
 
   // Read the mesh
@@ -336,12 +342,7 @@ void main_routine(int argc, char *argv[]) {
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
 
-  std::shared_ptr<nimble::ContactInterface> contact_interface;
-#ifdef NIMBLE_HAVE_EXTRAS
-    contact_interface.reset(new nimble::ExtrasContactInterface());
-#else
-    contact_interface.reset(new nimble::ContactInterface());
-#endif
+  std::shared_ptr<nimble::ContactInterface> contact_interface(new ContactInterfaceType());
 
   nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
@@ -506,15 +507,8 @@ void main_routine(int argc, char *argv[]) {
         block_data.emplace_back(block, *material_d, block_id, num_elem_in_block, num_integration_points_per_element);
       }
 
-      std::shared_ptr<nimble_kokkos::BlockMaterialInterface> block_material_interface;
-      if (!blocks.begin()->second.GetHostMaterialModel()->IsNGPLAMEModel()) {
-        block_material_interface.reset(
-            new nimble_kokkos::BlockMaterialInterface(time_previous, time_current, field_ids, block_data, model_data));
-      } else {
-        block_material_interface.reset(
-            new nimble_kokkos::ExtrasBlockMaterialInterface(time_previous, time_current, field_ids, block_data,
-                                                            model_data));
-      }
+      BlockMaterialInterfaceFactoryType factory;
+      auto block_material_interface = factory.create(time_previous, time_current, field_ids, block_data, model_data);
 
       block_material_interface->ComputeStress();
     }
