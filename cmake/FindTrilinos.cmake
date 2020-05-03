@@ -28,6 +28,7 @@ foreach(_flag IN LISTS _trilinos_flags)
   endif()
 endforeach()
 
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Trilinos
       REQUIRED_VARS Trilinos_DIR Trilinos_LIBRARIES Trilinos_INCLUDE_DIRS
     )
