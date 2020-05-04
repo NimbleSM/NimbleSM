@@ -73,7 +73,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
-                           nimble::ExodusOutput & exodus_output
+                           nimble::ExodusOutput & exodus_output,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface
 #ifdef NIMBLE_HAVE_UQ
                            ,nimble::UqModel const & uq_model
                            ,nimble::UqParameters & uq_parameters
@@ -101,19 +102,12 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step);
 
-int main(int argc, char *argv[]) {
+namespace nimble {
 
+std::string NimbleSerialInitializeAndGetInputDeck(int argc, char* argv[]) {
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
-#else
-  using MaterialFactoryType = nimble::MaterialFactory;
-#endif
-
-  int status = 0;
 
   // Banner
   std::cout << "\n-- NimbleSM" << std::endl;
@@ -124,6 +118,12 @@ int main(int argc, char *argv[]) {
   }
 
   std::string input_deck_name = argv[1];
+  return input_deck_name;
+}
+
+int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
+                     std::shared_ptr<nimble::ContactInterface> contact_interface,
+                     const std::string& input_deck_name) {
   nimble::Parser parser;
   parser.Initialize(input_deck_name);
 
@@ -188,8 +188,7 @@ int main(int argc, char *argv[]) {
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
-    MaterialFactoryType factory;
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, factory);
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     macroscale_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -237,7 +236,6 @@ int main(int argc, char *argv[]) {
     nimble::Block& block = block_it->second;
     std::vector<double> & elem_data_n = macroscale_data.GetElementDataOld(block_id);
     std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
-    MaterialFactoryType factory;
     block.InitializeElementData(num_elem_in_block,
                                 elem_global_ids,
                                 rve_output_elem_ids,
@@ -245,7 +243,7 @@ int main(int argc, char *argv[]) {
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
-                                factory,
+                                *material_factory,
                                 data_manager);
   }
 
@@ -276,8 +274,11 @@ int main(int argc, char *argv[]) {
     reference_coordinate[3*i+2] = ref_coord_z[i];
   }
 
+  int status = 0;
+
   if (time_integration_scheme == "explicit") {
-    status = ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output
+    status = ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output,
+                                    contact_interface
 #ifdef NIMBLE_HAVE_UQ
                                    ,macroscale_data.GetUqModel()
                                    ,uq_parameters
@@ -295,11 +296,25 @@ int main(int argc, char *argv[]) {
   return status;
 }
 
+}
+
+int main(int argc, char *argv[]) {
+  std::string input_deck = nimble::NimbleSerialInitializeAndGetInputDeck(argc, argv);
+
+  std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
+  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+
+  int status = nimble::NimbleSerialMain(material_factory, contact_interface, input_deck);
+
+  return status;
+}
+
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & bc,
-                           nimble::ExodusOutput & exodus_output
+                           nimble::ExodusOutput & exodus_output,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface
 #ifdef NIMBLE_HAVE_UQ
                           ,nimble::UqModel const & uq_model
                           ,nimble::UqParameters & uq_parameters
@@ -312,12 +327,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
 
-  std::shared_ptr<nimble::ContactInterface> contact_interface;
-#ifdef NIMBLE_HAVE_EXTRAS
-    contact_interface.reset(new nimble::ExtrasContactInterface());
-#else
-    contact_interface.reset(new nimble::ContactInterface());
-#endif
   nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
