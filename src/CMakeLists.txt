@@ -60,7 +60,8 @@ if(NIMBLE_HAVE_MPI)
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.serialization.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.utils.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.arrayview.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.arrayview.h
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.stopwatch.h)
 endif()
 
 IF(NOT NIMBLE_HAVE_KOKKOS)
