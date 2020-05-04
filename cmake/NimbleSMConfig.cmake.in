@@ -10,7 +10,7 @@ if(NIMBLE_HAVE_MPI)
 endif()
 
 if(NIMBLE_HAVE_TRILINOS)
-  find_dependency(Trilinos)
+  find_dependency(Trilinos COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS})
 else()
   if(NIMBLE_HAVE_KOKKOS)
     find_dependency(Kokkos)
