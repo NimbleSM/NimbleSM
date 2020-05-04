@@ -50,12 +50,14 @@
 #include <nimble_kokkos_defs.h>
 #include <nimble_utils.h>
 
-#ifdef NIMBLE_HAVE_EXTRAS
-#include <nimble_ngp_lame_material.h>
-#endif
-
 namespace nimble_kokkos
 {
+
+using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
+inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
+{
+  return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
+}
 
 struct BlockData {
   BlockData(nimble_kokkos::Block &block_, nimble::Material &material_d_, const int block_id_,
@@ -89,12 +91,6 @@ class BlockMaterialInterface {
   }
 
   virtual ~BlockMaterialInterface() = default;
-
-  using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
-  static inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
-  {
-    return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
-  }
 
   virtual void ComputeStress() const {
     for (auto &&block_data : blocks) {
