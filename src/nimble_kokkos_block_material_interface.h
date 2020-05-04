@@ -60,7 +60,7 @@ inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_ele
 }
 
 struct BlockData {
-  BlockData(nimble_kokkos::Block &block_, nimble::Material &material_d_, const int block_id_,
+  BlockData(nimble_kokkos::Block &block_, nimble::Material* material_d_, const int block_id_,
             const int num_block_elems_, const int num_points_per_block_elem_)
       :
       block(block_),
@@ -71,7 +71,7 @@ struct BlockData {
   }
 
   nimble_kokkos::Block &block;
-  nimble::Material &material_device;
+  nimble::Material *material_device;
   int id;
   int num_elems;
   int num_points_per_elem;
@@ -92,33 +92,7 @@ class BlockMaterialInterface {
 
   virtual ~BlockMaterialInterface() = default;
 
-  virtual void ComputeStress() const {
-    for (auto &&block_data : blocks) {
-      auto deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(
-          block_data.id, field_ids.deformation_gradient, nimble::STEP_N);
-      auto deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(
-          block_data.id, field_ids.deformation_gradient, nimble::STEP_NP1);
-      auto stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_data.id, field_ids.stress,
-                                                                               nimble::STEP_N);
-      auto stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_data.id, field_ids.stress,
-                                                                                 nimble::STEP_NP1);
-      auto mdpolicy_2d = make_elem_point_range_policy(block_data.num_elems, block_data.num_points_per_elem);
-      Kokkos::parallel_for(
-          "Stress",
-          mdpolicy_2d,
-          KOKKOS_LAMBDA (const int i_elem, const int i_ipt) {
-            auto element_deformation_gradient_step_n_d = Kokkos::subview(deformation_gradient_step_n_d, i_elem, i_ipt,
-                                                                         Kokkos::ALL());
-            auto element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem,
-                                                                           i_ipt, Kokkos::ALL());
-            auto element_stress_step_n_d = Kokkos::subview(stress_step_n_d, i_elem, i_ipt, Kokkos::ALL());
-            auto element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, i_ipt, Kokkos::ALL());
-            block_data.material_device.GetStress(time_n, time_np1, element_deformation_gradient_step_n_d,
-                                                 element_deformation_gradient_step_np1_d, element_stress_step_n_d,
-                                                 element_stress_step_np1_d);
-          });
-    }
-  }
+  virtual void ComputeStress() const;
 
  protected:
   const double time_n;

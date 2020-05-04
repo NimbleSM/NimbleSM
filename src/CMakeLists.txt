@@ -65,7 +65,8 @@ IF(NIMBLE_HAVE_KOKKOS)
                  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_data_manager.cc
                  ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
                  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
-)
+		 ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc)
+
   add_executable(NimbleSM_Kokkos nimble_kokkos.cc nimble.mpi.reduction.cc nimble.mpi.reduction_utils.cc)
   target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
   if (NIMBLE_HAVE_EXTRAS)
