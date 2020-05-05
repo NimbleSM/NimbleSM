@@ -628,18 +628,3 @@ int NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_fa
 }
 
 }
-
-int main(int argc, char *argv[]) {
-  nimble::NimbleMPIInitData init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
-
-  {
-    std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory(new nimble_kokkos::MaterialFactory);
-    std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-    std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
-
-    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, init_data);
-  }
-
-  nimble::NimbleKokkosFinalize(init_data);
-  return 0;
-}

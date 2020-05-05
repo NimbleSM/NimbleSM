@@ -298,17 +298,6 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 
 }
 
-int main(int argc, char *argv[]) {
-  std::string input_deck = nimble::NimbleSerialInitializeAndGetInputDeck(argc, argv);
-
-  std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
-  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-
-  int status = nimble::NimbleSerialMain(material_factory, contact_interface, input_deck);
-
-  return status;
-}
-
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,

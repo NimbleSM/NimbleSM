@@ -17,7 +17,8 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_serial.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
@@ -41,14 +42,16 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_version.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_serial.h)
 
 if(NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_defs.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.h)
 endif()
 
 if(NIMBLE_HAVE_MPI)
@@ -61,7 +64,8 @@ if(NIMBLE_HAVE_MPI)
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.utils.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.arrayview.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.stopwatch.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.stopwatch.h
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.h)
 endif()
 
 IF(NOT NIMBLE_HAVE_KOKKOS)
@@ -73,7 +77,7 @@ IF(NIMBLE_HAVE_UQ)
   target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_uq.cc)
 ENDIF()
 
-add_executable(NimbleSM_Serial nimble_serial.cc)
+add_executable(NimbleSM_Serial nimble_serial_main.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
 
 if (NIMBLE_HAVE_TRILINOS)
@@ -85,8 +89,9 @@ IF(NIMBLE_HAVE_MPI)
   target_sources(nimble PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction_utils.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.cc
     )
-  add_executable(NimbleSM_MPI nimble_mpi.cc)
+  add_executable(NimbleSM_MPI nimble_mpi_main.cc)
   target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
 ENDIF()
 
@@ -101,15 +106,17 @@ IF(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_data_manager.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.cc)
 
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_data_manager.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.h)
 
-  add_executable(NimbleSM_Kokkos nimble_kokkos.cc)
+  add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
   target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
 ENDIF()
 

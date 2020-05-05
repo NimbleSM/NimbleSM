@@ -265,15 +265,6 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 
 }
 
-int main(int argc, char *argv[]) {
-  nimble::NimbleMPIInitData init_data = nimble::NimbleMPIInitializeAndGetInput(argc, argv);
-
-  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-  std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
-
-  nimble::NimbleMPIMain(material_factory, contact_interface, init_data);
-}
-
 int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::GenesisMesh & mesh,
 			   nimble::DataManager & data_manager,
