@@ -289,11 +289,13 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     status = QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
   }
 
+  return status;
+}
+
+void NimbleSerialFinalize() {
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
 #endif
-
-  return status;
 }
 
 }

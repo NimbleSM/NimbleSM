@@ -57,6 +57,8 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      const std::string& input_deck_name);
 
+void NimbleSerialFinalize();
+
 }
 
 #endif

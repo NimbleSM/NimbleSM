@@ -254,13 +254,14 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
 
+  return status;
+}
+
+void NimbleMPIFinalize() {
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
 #endif
-
   MPI_Finalize();
-
-  return status;
 }
 
 }
