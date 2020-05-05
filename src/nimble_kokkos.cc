@@ -58,33 +58,30 @@
 #include "nimble_contact_manager.h"
 #include "nimble_utils.h"
 #include "nimble_kokkos_material_factory.h"
-
-#ifdef NIMBLE_HAVE_EXTRAS
-#include <nimble_extras_ngp_material_factory.h>
-#include <nimble_contact_extras.h>
-#include <nimble_extras_ngp_block_material_interface_factory.h>
-#endif
+#include "nimble_kokkos.h"
 
 #include <iostream>
 
-void main_routine(int argc, char *argv[]) {
+namespace nimble {
+
+NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+  MPI_Init(&argc, &argv);
+  Kokkos::initialize(argc, argv);
 
   int mpi_err;
-  int num_mpi_ranks;
-  int my_mpi_rank;
+  NimbleMPIInitData init_data;
 
-  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_mpi_ranks);
+  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &init_data.num_mpi_ranks);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n");
   }
-  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_rank);
+  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &init_data.my_mpi_rank);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
   }
 
   // Banner
-  if (my_mpi_rank == 0) {
-
+  if (init_data.my_mpi_rank == 0) {
     std::string nimble_have_kokkos("false");
 #ifdef NIMBLE_HAVE_KOKKOS
     nimble_have_kokkos = "true";
@@ -106,7 +103,7 @@ void main_routine(int argc, char *argv[]) {
       MPI_Finalize();
       exit(1);
     }
-    std::cout << "NimbleSM_Kokkos initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
+    std::cout << "NimbleSM_Kokkos initialized on " << init_data.num_mpi_ranks << " mpi rank(s)." << std::endl;
 
     std::cout << "\nKokkos configuration:" << std::endl;
     std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
@@ -122,19 +119,30 @@ void main_routine(int argc, char *argv[]) {
     std::cout << std::endl;
   }
 
-  std::string input_deck_name = argv[1];
+  init_data.input_deck_name = std::string(argv[1]);
+
+  return init_data;
+}
+
+void NimbleKokkosFinalize(const NimbleMPIInitData& init_data) {
+  if (init_data.my_mpi_rank == 0) {
+    std::cout << "\ncomplete.\n" << std::endl;
+  }
+
+  Kokkos::finalize();
+  MPI_Finalize();
+}
+
+int NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
+                     std::shared_ptr<nimble::ContactInterface> contact_interface,
+                     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
+                     const NimbleMPIInitData& init_data) {
+  const int num_mpi_ranks = init_data.num_mpi_ranks;
+  const int my_mpi_rank = init_data.my_mpi_rank;
+  const std::string& input_deck_name = init_data.input_deck_name;
+
   nimble::Parser parser;
   parser.Initialize(input_deck_name);
-
-#ifdef NIMBLE_HAVE_EXTRAS
-  using MaterialFactoryType = nimble_kokkos::ExtrasMaterialFactory;
-  using BlockMaterialInterfaceFactoryType = nimble_kokkos::ExtrasBlockMaterialInterfaceFactory;
-  using ContactInterfaceType = nimble::ExtrasContactInterface;
-#else
-  using MaterialFactoryType = nimble_kokkos::MaterialFactory;
-  using BlockMaterialInterfaceFactoryType = nimble_kokkos::BlockMaterialInterfaceFactory;
-  using ContactInterfaceType = nimble::ContactInterface;
-#endif
 
   // Read the mesh
   std::string genesis_file_name = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
@@ -201,8 +209,7 @@ void main_routine(int argc, char *argv[]) {
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
-    MaterialFactoryType factory;
-    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, factory);
+    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
 
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
@@ -273,7 +280,7 @@ void main_routine(int argc, char *argv[]) {
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
-  for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index+=1, block_it++) {
+  for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
     Kokkos::resize(gathered_lumped_mass_d.at(block_index), num_elem_in_block);
@@ -342,8 +349,6 @@ void main_routine(int argc, char *argv[]) {
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
 
-  std::shared_ptr<nimble::ContactInterface> contact_interface(new ContactInterfaceType());
-
   nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
@@ -382,11 +387,10 @@ void main_routine(int argc, char *argv[]) {
 
   double time_current(0.0), time_previous(0.0);
   double final_time = parser.FinalTime();
-  double delta_time, half_delta_time;
-  int num_load_steps = parser.NumLoadSteps();
+  double delta_time(0.0), half_delta_time(0.0);
+  const int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
 
-  // Apply the initial conditions and kinematic boundary conditions
   boundary_condition_manager.ApplyInitialConditions(reference_coordinate_h, velocity_h);
   boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
   Kokkos::deep_copy(displacement_d, displacement_h);
@@ -409,7 +413,7 @@ void main_routine(int argc, char *argv[]) {
     contact_manager.ContactVisualizationWriteStep(time_current);
   }
 
-  for (int step=0 ; step<num_load_steps ; step++) {
+  for (int step = 0 ; step < num_load_steps ; ++step) {
 
     if (my_mpi_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
@@ -419,10 +423,7 @@ void main_routine(int argc, char *argv[]) {
         std::cout << "  100% complete\n" << std::endl << std::flush;
       }
     }
-    bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
-    }
+    bool is_output_step = (step%output_frequency == 0 || step == num_load_steps - 1);
 
     time_previous = time_current;
     time_current += final_time/num_load_steps;
@@ -507,9 +508,7 @@ void main_routine(int argc, char *argv[]) {
         block_data.emplace_back(block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
       }
 
-      BlockMaterialInterfaceFactoryType factory;
-      auto block_material_interface = factory.create(time_previous, time_current, field_ids, block_data, model_data);
-
+      auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data, model_data);
       block_material_interface->ComputeStress();
     }
 
@@ -626,18 +625,21 @@ void main_routine(int argc, char *argv[]) {
     // }
 
   } // loop over time steps
+}
 
-  if (my_mpi_rank == 0) {
-    std::cout << "\ncomplete.\n" << std::endl;
-  }
 }
 
 int main(int argc, char *argv[]) {
-  MPI_Init(&argc, &argv);
-  Kokkos::initialize(argc, argv);
-  //Kokkos::print_configuration(std::cout);
-  main_routine(argc, argv);
-  Kokkos::finalize();
-  MPI_Finalize();
+  nimble::NimbleMPIInitData init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
+
+  {
+    std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory(new nimble_kokkos::MaterialFactory);
+    std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+    std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
+
+    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, init_data);
+  }
+
+  nimble::NimbleKokkosFinalize(init_data);
   return 0;
 }
