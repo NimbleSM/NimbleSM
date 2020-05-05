@@ -504,7 +504,7 @@ void main_routine(int argc, char *argv[]) {
         assert(material_d != nullptr);
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
-        block_data.emplace_back(block, *material_d, block_id, num_elem_in_block, num_integration_points_per_element);
+        block_data.emplace_back(block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
       }
 
       BlockMaterialInterfaceFactoryType factory;
