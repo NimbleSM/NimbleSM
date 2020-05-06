@@ -60,11 +60,6 @@
 #include <cstdlib>
 #include <limits>
 
-#ifdef NIMBLE_HAVE_EXTRAS
-#include "nimble_extras_material_factory.h"
-#include <nimble_contact_extras.h>
-#endif
-
 #ifdef NIMBLE_HAVE_UQ
 #include "nimble_uq.h"
 #endif
