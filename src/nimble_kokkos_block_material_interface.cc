@@ -1,4 +1,5 @@
 #include <nimble_kokkos_block_material_interface.h>
+#include <nimble_material.h>
 
 namespace nimble_kokkos {
 

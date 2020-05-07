@@ -59,6 +59,6 @@ int main(int argc, char *argv[]) {
     nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, init_data);
   }
 
-  nimble::NimbleKokkosFinalize(init_data);
-  return 0;
+  int status = nimble::NimbleKokkosFinalize(init_data);
+  return status;
 }

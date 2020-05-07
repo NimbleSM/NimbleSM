@@ -124,16 +124,16 @@ NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   return init_data;
 }
 
-void NimbleKokkosFinalize(const NimbleMPIInitData& init_data) {
+int NimbleKokkosFinalize(const NimbleMPIInitData& init_data) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
   }
 
   Kokkos::finalize();
-  MPI_Finalize();
+  return MPI_Finalize();
 }
 
-int NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
+void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      const NimbleMPIInitData& init_data) {

@@ -57,12 +57,12 @@ namespace nimble {
 
 NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
-int NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
+void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      const NimbleMPIInitData& input_deck_name);
 
-void NimbleKokkosFinalize(const NimbleMPIInitData& init_data);
+int NimbleKokkosFinalize(const NimbleMPIInitData& init_data);
 
 }
 
