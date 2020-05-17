@@ -66,6 +66,10 @@
   #include <bvh/vt/context.hpp>
 #endif
 
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
+#endif
+
 #include <mpi.h>
 #include <iostream>
 #include <iomanip>
@@ -353,7 +357,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
-  std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0);
+  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
   std::vector<Viewify> bc_offnom_velocity_views(0);
 #endif
 
@@ -526,12 +530,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  data_manager,
                                  is_output_step
 #ifdef NIMBLE_HAVE_UQ
-                                 ,false
-                                 ,nullptr
-                                 ,0
-                                 ,offnominal_displacements
-                                 ,offnominal_internal_forces
-                                 ,displacement_sensitivities
+                                 ,&uq_model
 #endif
                                  );
     }
@@ -650,6 +649,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   }
 
   return 1;
+// HACK DEAD CODE?
   /*
 
   int status = 0;

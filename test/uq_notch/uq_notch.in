@@ -1,0 +1,17 @@
+genesis input file:               uq_notch.g
+exodus output file:               uq_notch.e
+final time:                       1.0e-5
+number of load steps:             1000
+output frequency:                 100
+output fields:                    displacement velocity deformation_gradient stress off_nom_displacement_0 off_nom_displacement_1 off_nom_displacement_2
+material parameters:              material_1 neohookean density 7.8 shear_modulus 1.5e12 bulk_modulus 1.0e12
+material parameters:              material_2 neohookean density 7.8 shear_modulus 1.5e12 bulk_modulus 1.0e12
+macroscale block:                 block_1 material_1
+macroscale block:                 block_2 material_2
+uq model:                   quadature/samples 3 quadratic_self 0.0001 seed 1234
+uq parameters:              material_1 shear_modulus gaussian 2.0e11 
+uq parameters:              material_2 bulk_modulus uniform 2.0e11 
+boundary condition:               initial_velocity nodelist_10 y -1000.0
+boundary condition:               prescribed_velocity nodelist_20 x 0.0
+boundary condition:               prescribed_velocity nodelist_20 y 0.0
+boundary condition:               prescribed_velocity nodelist_20 z 0.0

@@ -212,8 +212,7 @@ namespace nimble {
     bool HasUq() const {
       if (uq_model_string_.size() == 0 || uq_parameters_strings_.size() == 0)
         return false;
-      else
-        return true;
+      else return true;
     }
 #endif
 

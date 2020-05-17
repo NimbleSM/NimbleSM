@@ -28,6 +28,7 @@ add_subdirectory(two_body_contact)
 
 if(NIMBLE_HAVE_UQ)
   add_subdirectory(uq_wave_in_bar)
+  add_subdirectory(uq_notch)
 endif()
 
 # NOTE failing

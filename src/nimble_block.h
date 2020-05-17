@@ -60,13 +60,21 @@ namespace nimble { class MaterialFactory; }
 
 namespace nimble {
 
-  class UqParameters;//Forward declaration to avoid circular header inclusion
+  class UqModel;//Forward declaration to avoid circular header inclusion
 
   class Block {
 
   public:
 
-  Block() : macro_material_parameters_("none"), vol_ave_volume_offset_(-1) , rve_boundary_condition_strategy_("none") {}
+    Block() :
+      macro_material_parameters_("none"), 
+      vol_ave_volume_offset_(-1), 
+      rve_boundary_condition_strategy_("none") 
+#ifdef NIMBLE_HAVE_UQ
+      ,bulk_modulus_uq_index_(-1)
+      ,shear_modulus_uq_index_(-1)
+#endif
+      {}
 
     virtual ~Block() { }
 
@@ -164,12 +172,7 @@ namespace nimble {
                               DataManager& data_manager,
                               bool is_output_step,
 #ifdef NIMBLE_HAVE_UQ
-                              const bool & uq_enabled,
-                              const UqParameters* uq_params,
-                              const int & num_uq_samples,
-                              const std::vector<double*> offnominal_displacements,
-                              const std::vector<double*> offnominal_internal_forces,
-                              const std::vector<double*> displacement_sensitivities,
+                              UqModel* uq_model,
 #endif
                               bool compute_stress_only = false) const ;
 
@@ -194,15 +197,13 @@ namespace nimble {
     std::shared_ptr<Material> const GetMaterialPointer() const { return material_; }
 
 #ifdef NIMBLE_HAVE_UQ
-    void SetUqParamsIndexRange( const int & param_low,
-                                const int & param_hi,
-                                const std::vector<std::string> & param_names) {
-      range_of_uq_params_ = std::make_pair(param_low, param_hi);
-      bulk_modulus_uq_index_ = -1;
+    // HACK specific to elastic models
+    void SetUqParameters(const std::map<std::string,int> & param_indices) {
+      bulk_modulus_uq_index_  = -1;
       shear_modulus_uq_index_ = -1;
-      for(int p = param_low; p <= param_hi; p++) {
-        if(param_names[p]=="bulk_modulus") { bulk_modulus_uq_index_ = p;}
-        if(param_names[p]=="shear_modulus") { shear_modulus_uq_index_ = p;}
+      for(auto const& it : param_indices) {
+        if(it.first=="bulk_modulus")  { bulk_modulus_uq_index_  = it.second;}
+        if(it.first=="shear_modulus") { shear_modulus_uq_index_ = it.second;}
       }
     }
 #endif
@@ -227,7 +228,8 @@ namespace nimble {
     std::vector<int> vol_ave_offsets_;
     std::map<int, int> vol_ave_index_to_derived_data_index_;
 #ifdef NIMBLE_HAVE_UQ
-    std::pair<int, int> range_of_uq_params_;
+    // HACK specific to elastic models
+//  std::pair<int, int> range_of_uq_params_;
     int bulk_modulus_uq_index_;
     int shear_modulus_uq_index_;
 #endif

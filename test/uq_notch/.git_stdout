@@ -1,0 +1,51 @@
+On branch master
+Your branch is ahead of 'origin/master' by 2 commits.
+  (use "git push" to publish your local commits)
+Untracked files:
+	../../.git_stdout
+	../../Notes/Development/bib.stdout
+	../../Notes/Development/citation.log
+	../../Notes/Development/comment.log
+	../../Notes/Development/final.stdout
+	../../Notes/Development/revise.log
+	../../Notes/Development/tex.stdout
+	../../Notes/Development/uncertainty_propagation.aux
+	../../Notes/Development/uncertainty_propagation.bbl
+	../../Notes/Development/uncertainty_propagation.blg
+	../../Notes/Development/uncertainty_propagation.log
+	../../Notes/Development/uncertainty_propagation.pdf
+	../../Notes/Development/warning.log
+	../../Notes/Elastic/.git_stdout
+	../../Notes/Elastic/Plots/wave_efficiency.pdf
+	../../Notes/Elastic/bib.stdout
+	../../Notes/Elastic/citation.log
+	../../Notes/Elastic/comment.log
+	../../Notes/Elastic/final.stdout
+	../../Notes/Elastic/forward_propagation.aux
+	../../Notes/Elastic/forward_propagation.bbl
+	../../Notes/Elastic/forward_propagation.blg
+	../../Notes/Elastic/forward_propagation.log
+	../../Notes/Elastic/forward_propagation.pdf
+	../../Notes/Elastic/revise.log
+	../../Notes/Elastic/tex.stdout
+	../../Notes/Elastic/warning.log
+	../.git_stdout
+	.git_stdout
+
+nothing added to commit but untracked files present
+From kolmogorov.ca.sandia.gov:/home/cvs/forwardUQ
+   faf0aaa..5cc873a  master     -> origin/master
+Merge made by the 'recursive' strategy.
+ examples/uq_impact/accuracy/compare.py     | 167 +++++++++++++++++++++++++++++
+ examples/uq_impact/accuracy/impact.in.tmpl |  14 ++-
+ examples/uq_impact/accuracy/sample.sh      |  12 ++-
+ examples/uq_impact/extract.py              |  61 ++++-------
+ examples/uq_impact/uq_impact.in.tmpl       |   4 +-
+ src/nimble_uq.cc                           |   9 ++
+ src/nimble_uq.h                            |  84 +++++++++------
+ {Tools => tools}/exodus.py                 |   0
+ {Tools => tools}/sample.py                 |   0
+ 9 files changed, 263 insertions(+), 88 deletions(-)
+ create mode 100755 examples/uq_impact/accuracy/compare.py
+ rename {Tools => tools}/exodus.py (100%)
+ rename {Tools => tools}/sample.py (100%)

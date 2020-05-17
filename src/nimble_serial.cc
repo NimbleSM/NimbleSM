@@ -75,8 +75,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
                            nimble::ExodusOutput & exodus_output
 #ifdef NIMBLE_HAVE_UQ
-                           ,nimble::UqModel const & uq_model
-                           ,nimble::UqParameters & uq_parameters
+                           ,nimble::UqModel & uq_model
 #endif
                            );
 
@@ -164,20 +163,6 @@ int main(int argc, char *argv[]) {
   int external_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
   int contact_force_field_id =  macroscale_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
   int skin_node_field_id =  macroscale_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
-#ifdef NIMBLE_HAVE_UQ
-  bool uq_enabled = parser.HasUq();
-  if(uq_enabled) {
-    macroscale_data.SetUqModel(parser.UqModelString());
-    //Allocate "Off-Nominal" displacements and forces at nodes
-    int n_uq_samples = macroscale_data.GetUqModel().num_samples_;
-    int offnominal_displacement_ids[n_uq_samples], offnominal_internal_force_ids[n_uq_samples], offnominal_velocity_ids[n_uq_samples];
-    for(int nuq=0; nuq<n_uq_samples; nuq++){
-      offnominal_displacement_ids[nuq] = macroscale_data.AllocateNodeData(nimble::VECTOR, "off_nom_displacement_"+std::to_string(nuq), num_nodes);
-      offnominal_velocity_ids[nuq] = macroscale_data.AllocateNodeData(nimble::VECTOR, "off_nom_velocity_"+std::to_string(nuq), num_nodes);
-      offnominal_internal_force_ids[nuq] = macroscale_data.AllocateNodeData(nimble::VECTOR, "off_nom_internal_force_"+std::to_string(nuq), num_nodes);
-    }
-  }
-#endif
   // Blocks
   std::map<int, nimble::Block>& blocks = macroscale_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -196,29 +181,20 @@ int main(int argc, char *argv[]) {
   }
 
 #ifdef NIMBLE_HAVE_UQ
-  nimble::UqParameters uq_parameters( macroscale_data.GetUqModel() );
-  if(uq_enabled) {
-    //Initialize Uq Parameters
-    
-    std::map<std::string, std::string> uq_param_strings = parser.UqParamsStrings();
-    //Iterate through all specified material-->UqParam combination strings
-    for(std::map<std::string, std::string>::iterator it = uq_param_strings.begin(); it != uq_param_strings.end(); it++){
+  // configure & allocate
+  nimble::UqModel uq_model(dim,num_nodes,num_blocks); 
+  if(parser.HasUq()) {
+    uq_model.ParseConfiguration(parser.UqModelString()); 
+    std::map<std::string, std::string> lines = parser.UqParamsStrings();
+    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
       std::string material_key = it->first;
       int block_id = parser.GetBlockIdFromMaterial( material_key );
       std::string uq_params_this_material = it->second;
-      int param_idx_low_in_block = uq_parameters.GetNumParams();
-      uq_parameters.ParseInputStrings( uq_params_this_material, block_id, blocks[block_id] );
-      int param_idx_hi_in_block = uq_parameters.GetNumParams() - 1 ;
-      blocks[block_id].SetUqParamsIndexRange( param_idx_low_in_block, param_idx_hi_in_block, uq_parameters.GetParamNames() );
+      uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
-    //Now sample the actual Uq parameters as parsed from strings
-    uq_parameters.SampleParameters();
-    //Allocate displacement sensitvities, at each node
-    int displacement_sensitivity_ids[ uq_parameters.GetNumParams() ];
-    for(int np=0; np<uq_parameters.GetNumParams(); np++){
-      displacement_sensitivity_ids[np] = macroscale_data.AllocateNodeData(nimble::VECTOR, "disp_sensitivity_param_"+std::to_string(np), num_nodes);
-    }
-  }
+    // initialize
+    uq_model.Initialize(macroscale_data);
+  } 
 #endif
 
   std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
@@ -279,8 +255,7 @@ int main(int argc, char *argv[]) {
   if (time_integration_scheme == "explicit") {
     status = ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output
 #ifdef NIMBLE_HAVE_UQ
-                                   ,macroscale_data.GetUqModel()
-                                   ,uq_parameters
+                                   ,uq_model
 #endif
                                    );
   }
@@ -301,8 +276,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::BoundaryConditionManager & bc,
                            nimble::ExodusOutput & exodus_output
 #ifdef NIMBLE_HAVE_UQ
-                          ,nimble::UqModel const & uq_model
-                          ,nimble::UqParameters & uq_parameters
+                          ,nimble::UqModel & uq_model
 #endif
                            ) {
 
@@ -375,26 +349,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* contact_force = macroscale_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
-  std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0),
-                       offnominal_velocities(0);
   std::vector<Viewify> bc_offnom_velocity_views(0);
-  bool uq_enabled = parser.HasUq();
-  if(uq_enabled) {
-    int n_uq_samples = uq_model.num_samples_;
-    for(int nuq=0; nuq<n_uq_samples; nuq++){
-      offnominal_displacements.push_back( macroscale_data.GetNodeData( macroscale_data.GetFieldId("off_nom_displacement_"+std::to_string(nuq) ) ) );
-      offnominal_internal_forces.push_back( macroscale_data.GetNodeData( macroscale_data.GetFieldId("off_nom_internal_force_"+std::to_string(nuq) ) ) );
-      offnominal_velocities.push_back( macroscale_data.GetNodeData( macroscale_data.GetFieldId("off_nom_velocity_"+std::to_string(nuq) ) ) );
+  if(uq_model.Initialized()) {
+/// FOR CALL TO BCS ===================
+    int num_samples = uq_model.GetNumSamples();
+    for(int nuq=0; nuq<num_samples; nuq++){
+       double * v =  macroscale_data.GetNodeData(macroscale_data.GetFieldId("off_nom_velocity_"+std::to_string(nuq)));
+       bc_offnom_velocity_views.push_back( Viewify(v,3) );
     }
-
-    for(int np = 0; np < uq_parameters.GetNumParams(); np++) {
-      displacement_sensitivities.push_back(macroscale_data.GetNodeData(  macroscale_data.GetFieldId("disp_sensitivity_param_"+std::to_string(np) ) ) );
-    }
-
-    for(int nuq=0; nuq<n_uq_samples; nuq++){
-       bc_offnom_velocity_views.push_back( Viewify(offnominal_velocities[nuq],3) );
-    }
-  }
+    uq_model.Setup();
+  } 
 #endif
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = macroscale_data.GetElementDataLabels();
@@ -513,14 +477,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
 
 #ifdef NIMBLE_HAVE_UQ
-   for(int nuq=0; nuq<uq_model.num_samples_; nuq++){
-     double * int_force_this_sample = offnominal_internal_forces[nuq];
-     double * velocity_this_sample = offnominal_velocities[nuq];
-     for (int i=0 ; i<num_unknowns ; ++i) {
-       double acceleration_this_sample = (1.0/lumped_mass[i/3]) * (int_force_this_sample[i]);
-       velocity_this_sample[i] += half_delta_time * acceleration_this_sample;
-     }
-   }
+   // 1st half step: update velocities for approximate trajectories
+   uq_model.UpdateVelocity(half_delta_time);
 #endif
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
@@ -540,48 +498,15 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
 
 #ifdef NIMBLE_HAVE_UQ
-   for(int nuq=0; nuq<uq_model.num_samples_; nuq++){
-     double * disp_this_sample = offnominal_displacements[nuq];
-     double * velocity_this_sample = offnominal_velocities[nuq];
-     for (int i=0 ; i<num_unknowns ; ++i) {
-       disp_this_sample[i] += delta_time * velocity_this_sample[i];
-     }
-   }
-#endif
-
-#ifdef NIMBLE_HAVE_UQ
-    if(uq_enabled) {
-      // HACK specific to 1D & linear in parameter
-      // Compute displacement sensitivites, i.e. \partial(U)/\partial(\lambda)
-      // Loop over parameters and do one-by-one
-      for(int np=0; np<uq_parameters.GetNumParams(); np++){
-        int left_sample = uq_parameters.GetLeftAdjSampleForParam(np);
-        int right_sample = uq_parameters.GetRightAdjSampleForParam(np);
-
-        int left_off_nom_disp_field_id = macroscale_data.GetFieldId( "off_nom_displacement_"+std::to_string(left_sample) );
-        int right_off_nom_disp_field_id = macroscale_data.GetFieldId("off_nom_displacement_"+std::to_string(right_sample));
-
-        double* left_off_nom_disp = macroscale_data.GetNodeData(left_off_nom_disp_field_id);
-        double* right_off_nom_disp= macroscale_data.GetNodeData(right_off_nom_disp_field_id);
-
-        if(left_sample != right_sample) { // protect against nsamples ==1
-          uq_parameters.ComputeDisplacementSensitivity(np, num_unknowns, displacement, left_off_nom_disp, right_off_nom_disp,
-                                                       displacement_sensitivities[np]);
-        }
-      }
-    }
+   // advance approximate trajectories
+   uq_model.UpdateDisplacement(delta_time);
+   uq_model.Prep();
 #endif
 
     // Evaluate the internal force
     for (int i=0 ; i<num_unknowns ; ++i) {
       internal_force[i] = 0.0;
     }
-#ifdef NIMBLE_HAVE_UQ
-    for(int nuq=0; nuq<uq_model.num_samples_; nuq++){
-      double * int_force_this_sample = offnominal_internal_forces[nuq];
-      for (int i=0 ; i<num_unknowns ; ++i) { int_force_this_sample[i] = 0.0;}
-    }
-#endif
     for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
       int block_id = block_it->first;
       int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -606,12 +531,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  data_manager,
                                  is_output_step
 #ifdef NIMBLE_HAVE_UQ
-                                 ,uq_enabled
-                                 ,&uq_parameters
-                                 ,uq_model.num_samples_
-                                 ,offnominal_displacements
-                                 ,offnominal_internal_forces
-                                 ,displacement_sensitivities
+                                 ,&uq_model 
 #endif
                                  );
     }
@@ -633,14 +553,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       velocity[i] += half_delta_time * acceleration[i];
     }
 #ifdef NIMBLE_HAVE_UQ
-   for(int nuq=0; nuq<uq_model.num_samples_; nuq++){
-     double * int_force_this_sample = offnominal_internal_forces[nuq];
-     double * velocity_this_sample = offnominal_velocities[nuq];
-     for (int i=0 ; i<num_unknowns ; ++i) {
-       double acceleration_this_sample = (1.0/lumped_mass[i/3]) * (int_force_this_sample[i]);
-       velocity_this_sample[i] += half_delta_time * acceleration_this_sample;
-     }
-   }
+   // 2nd half step: update velocities for approximate trajectories
+   uq_model.UpdateVelocity(half_delta_time);
 #endif
 
     if (is_output_step) {
@@ -774,6 +688,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   int output_frequency = parser.OutputFrequency();
 
 #ifdef NIMBLE_HAVE_UQ
+  if (parser.HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
   std::vector<Viewify> bc_offnom_velocity_views(0);
 #endif
 
@@ -1087,7 +1002,11 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
   int num_unknowns = num_nodes * mesh.GetDim();
 
 #ifdef NIMBLE_HAVE_UQ
-  std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0);
+// HACK 
+  nimble::UqModel uq_model(dim,num_nodes);
+  std::vector<double*> offnominal_displacements(0), 
+                       offnominal_internal_forces(0), 
+                       displacement_sensitivities(0);
 #endif
 
   for (int i=0 ; i<num_unknowns ; ++i) {
@@ -1117,12 +1036,7 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                data_manager,
                                is_output_step
 #ifdef NIMBLE_HAVE_UQ
-                              ,false
-                              ,nullptr
-                              ,0
-                              ,offnominal_displacements
-                              ,offnominal_internal_forces
-                              ,displacement_sensitivities
+                              ,&uq_model
 #endif
                                );
   }

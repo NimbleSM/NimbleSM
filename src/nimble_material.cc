@@ -318,12 +318,13 @@ namespace nimble {
   }
 
 #ifdef NIMBLE_HAVE_UQ
-  void NeohookeanMaterial::GetOffNominalStress(const std::vector<double> & params_this_sample,
-                                               const int & bulk_mod_idx,
-                                               const int & shear_mod_idx,
-                                               int num_pts,
-                                               const double * const deformation_gradient_np1,
-                                               double* stress_np1) {
+  void NeohookeanMaterial::GetOffNominalStress(
+      const std::vector<double> & params_this_sample,
+      const int & bulk_mod_idx,
+      const int & shear_mod_idx,
+      int num_pts,
+      const double * const deformation_gradient_np1,
+      double* stress_np1) {
 
     double bulk_mod = (bulk_mod_idx == -1) ? bulk_modulus_ : params_this_sample[bulk_mod_idx];
     double shear_mod = (shear_mod_idx == -1) ? shear_modulus_ : params_this_sample[shear_mod_idx];
