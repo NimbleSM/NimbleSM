@@ -56,14 +56,10 @@
 #include "nimble_contact_manager.h"
 #include <nimble_contact_interface.h>
 #include "nimble_material_factory.h"
-
-#ifdef NIMBLE_HAVE_EXTRAS
-#include "nimble_extras_material_factory.h"
-#include <nimble_contact_extras.h>
-#endif
+#include "nimble_mpi.h"
 
 #ifdef NIMBLE_HAVE_BVH
-  #include <bvh/vt/context.hpp>
+#include <bvh/vt/context.hpp>
 #endif
 
 #include <mpi.h>
@@ -80,6 +76,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::DataManager & data_manager,
 			   nimble::BoundaryConditionManager & boundary_condition_manager,
          nimble::ExodusOutput & exodus_output,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
          int my_mpi_rank);
 
@@ -88,55 +85,61 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
 			      nimble::DataManager & data_manager,
 			      nimble::BoundaryConditionManager & boundary_condition_manager,
 			      nimble::ExodusOutput & exodus_output,
-            int num_mpi_ranks,
-            int my_mpi_rank);
+                              int num_mpi_ranks,
+                              int my_mpi_rank);
 
-int main(int argc, char *argv[]) {
+namespace nimble {
 
+NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif
 
-#ifdef NIMBLE_HAVE_EXTRAS
-  using MaterialFactoryType = nimble::ExtrasMaterialFactory;
-#else
-  using MaterialFactoryType = nimble::MaterialFactory;
-#endif
+  int mpi_err = -1;
+  nimble::NimbleMPIInitData init_data;
 
-  int mpi_err;
-  int num_mpi_ranks;
-  int my_mpi_rank;
-
-  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_mpi_ranks);
+  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &init_data.num_mpi_ranks);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n");
   }
-  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_mpi_rank);
+  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &init_data.my_mpi_rank);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
   }
-
-#ifdef NIMBLE_HAVE_BVH
-  auto comm = MPI_COMM_WORLD;
-  bvh::vt::context vt_ctx{ argc, argv, &comm };
-#endif
-
-  int status = 0;
-
+  
   // Banner
-  if (my_mpi_rank == 0) {
+  if (init_data.my_mpi_rank == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
     if (argc != 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_MPI <input_deck.in>\n" << std::endl;
       exit(1);
     }
-    std::cout << "NimbleSM_MPI initialized on " << num_mpi_ranks << " mpi rank(s)." << std::endl;
+    std::cout << "NimbleSM_MPI initialized on " << init_data.num_mpi_ranks << " mpi rank(s)." << std::endl;
   }
 
-  std::string input_deck_name = argv[1];
+  init_data.input_deck_name = std::string(argv[1]);
+
+  return init_data;
+}
+
+int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
+                  std::shared_ptr<nimble::ContactInterface> contact_interface,
+                  const nimble::NimbleMPIInitData& init_data) {
+  
+#ifdef NIMBLE_HAVE_BVH
+  auto comm = MPI_COMM_WORLD;
+  bvh::vt::context vt_ctx{ argc, argv, &comm };
+#endif
+
+  const int my_mpi_rank = init_data.my_mpi_rank;
+  const int num_mpi_ranks = init_data.num_mpi_ranks;
+  const std::string input_deck_name = init_data.input_deck_name;
+
+  int status = 0;
+
   nimble::Parser parser;
   parser.Initialize(input_deck_name);
 
@@ -184,8 +187,7 @@ int main(int argc, char *argv[]) {
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
-    MaterialFactoryType factory;
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, factory);
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -206,7 +208,6 @@ int main(int argc, char *argv[]) {
     nimble::Block& block = block_it->second;
     std::vector<double> & elem_data_n = model_data.GetElementDataOld(block_id);
     std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
-    MaterialFactoryType factory;
     block.InitializeElementData(num_elem_in_block,
                                 elem_global_ids,
                                 rve_output_elem_ids,
@@ -214,7 +215,7 @@ int main(int argc, char *argv[]) {
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
-                                factory,
+                                *material_factory,
                                 data_manager);
   }
 
@@ -247,19 +248,22 @@ int main(int argc, char *argv[]) {
   }
 
   if (time_integration_scheme == "explicit") {
-    ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
+    ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank);
   }
   else if (time_integration_scheme == "quasistatic") {
     QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
 
+  return status;
+}
+
+void NimbleMPIFinalize() {
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
 #endif
-
   MPI_Finalize();
+}
 
-  return status;
 }
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
@@ -267,6 +271,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::DataManager & data_manager,
 			   nimble::BoundaryConditionManager & bc,
 			   nimble::ExodusOutput & exodus_output,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
          int my_mpi_rank) {
 
@@ -274,12 +279,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
 
-  std::shared_ptr<nimble::ContactInterface> contact_interface;
-#ifdef NIMBLE_HAVE_EXTRAS
-    contact_interface.reset(new nimble::ExtrasContactInterface());
-#else
-    contact_interface.reset(new nimble::ContactInterface());
-#endif
   nimble::ContactManager contact_manager(contact_interface);
   
   bool contact_enabled = parser.HasContact();

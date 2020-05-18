@@ -3,8 +3,9 @@
 #
 
 cmake_minimum_required(VERSION 3.12)
-project(NimbleSM CXX)
+project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
+include(GNUInstallDirs)
 
 if (NIMBLE_NVIDIA_BUILD)
   enable_language(CUDA)
@@ -21,21 +22,22 @@ enable_testing()
 
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
 option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
 option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
-option(HAVE_NIMBLE_EXTRAS "Whether to use NimbleSM Extras" OFF)
 option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
-target_include_directories(nimble PUBLIC src)
-target_include_directories(nimble PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/src)
+
+target_include_directories(nimble PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Optional functionality for UQ
 if (HAVE_UQ)
@@ -45,7 +47,7 @@ if (HAVE_UQ)
 endif()
 
 # Optional dependency for pure MPI build (no Trilinos)
-if (USE_PURE_MPI OR HAVE_NIMBLE_EXTRAS)
+if (USE_PURE_MPI)
   set(NIMBLE_HAVE_MPI TRUE)
   message(STATUS "Compiling with MPI")
   find_package(MPI REQUIRED)
@@ -78,46 +80,28 @@ else()
 endif()
 
 # Optional Trilinos dependencies
-if (HAVE_TRILINOS OR HAVE_NIMBLE_EXTRAS)
-  set(NIMBLE_TRILINOS_COMPONENTS KokkosCore Tpetra)
-  if(NOT HAVE_NIMBLE_EXTRAS) # exodus from Trilinos
-    set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} SEACASExodus)
-  else()
-    set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} Sacado Zoltan)
-  endif()
-
-  # Trilinos brings in Trilinos, Kokkos, and Exodus
+if(HAVE_TRILINOS)
+  option(USE_TRILINOS_EXODUS "Whether to use Exodus from Trilinos" ON)
+  # Trilinos brings in Trilinos, Kokkos, and (optionally) Exodus
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_TRILINOS)
   set(NIMBLE_HAVE_TRILINOS TRUE)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_KOKKOS)
   set(NIMBLE_HAVE_KOKKOS TRUE)
-  target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_EXODUS)
-  set(NIMBLE_HAVE_EXODUS TRUE)
-
+  if(USE_TRILINOS_EXODUS)
+    target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_EXODUS)
+    set(NIMBLE_HAVE_EXODUS TRUE)
+  endif()
   message(STATUS "Trilinos is enabled.")
   set(Trilinos_DIR CACHE PATH "Path to Trilinos install directory")
+  set(NIMBLE_TRILINOS_COMPONENTS KokkosCore TpetraCore)
+  if(USE_TRILINOS_EXODUS)
+    set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} SEACASExodus)
+  endif()
   find_package(Trilinos REQUIRED COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS})
   target_link_libraries(nimble PUBLIC Trilinos::Trilinos)
 else()
   message(STATUS "Trilinos is NOT enabled.")
   set(NIMBLE_HAVE_TRILINOS FALSE)
-endif()
-
-if (HAVE_NIMBLE_EXTRAS)
-  set(NIMBLE_EXTRAS_DIR "" CACHE PATH "Path to Nimble Extras")
-  if(NIMBLE_EXTRAS_DIR)
-    include(${NIMBLE_EXTRAS_DIR}/CMakeLists.txt)
-    message("-- Compiling with Nimble Extras:")
-    message("       NIMBLE_EXTRAS_DIR: ${NIMBLE_EXTRAS_DIR}")
-    message("       NIMBLE_EXTRAS_LIBS: ${NIMBLE_EXTRAS_LIBS}")
-    add_definitions(-DNIMBLE_HAVE_EXTRAS)
-    set(NIMBLE_HAVE_EXTRAS TRUE)
-    target_link_libraries(nimble PUBLIC ${NIMBLE_EXTRAS_LIBS};${Exodus_LIBS})
-  else()
-    message(FATAL_ERROR "\n**** Error:  Expected NIMBLE_EXTRAS_DIR.\n")
-    set(NIMBLE_EXTRAS_SOURCES )
-    set(NIMBLE_EXTRAS_LIBS )
-  endif()
 endif()
 
 # Qthreads library dependencies
@@ -130,7 +114,7 @@ endif()
 
 # Optional Kokkos dependency
 # If trilinos is used, it comes with Kokkos so we don't need standalone
-if(NOT HAVE_TRILINOS)
+if(NOT HAVE_TRILINOS AND HAVE_KOKKOS)
   if(HAVE_KOKKOS)
     if(KOKKOS_ROOT_DIR)
       message("-- Compiling with Kokkos")
@@ -160,17 +144,16 @@ if(NOT HAVE_TRILINOS)
 endif()
 
 # Exodus library dependencies
-message(STATUS "HAVE_TRILINOS: ${HAVE_TRILINOS}; HAVE_NIMBLE_EXTRAS: ${HAVE_NIMBLE_EXTRAS}")
-if(NOT HAVE_TRILINOS AND NOT HAVE_NIMBLE_EXTRAS)
+message(STATUS "HAVE_TRILINOS: ${HAVE_TRILINOS}")
+if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
   find_package(Exodus REQUIRED)
   set(NIMBLE_HAVE_EXODUS TRUE)
-  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_EXODUS)
-  target_link_libraries(nimble PUBLIC Exodus::ExodusII)
+  target_compile_definitions(nimble PRIVATE NIMBLE_HAVE_EXODUS)
+  target_link_libraries(nimble PRIVATE Exodus::ExodusII)
   if(CRAY)
-    target_link_libraries(nimble hdf5_hl hdf5 z)
+    target_link_libraries(nimble PRIVATE hdf5_hl hdf5 z)
   endif()
 endif()
-
 
 include_directories(src)
 include_directories(src/mpi_buckets/dist_hash)
@@ -181,3 +164,27 @@ add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(examples)
 
+install(TARGETS nimble EXPORT NimbleSMTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT NimbleSMTargets NAMESPACE NimbleSM:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NimbleSM
+  EXPORT_LINK_INTERFACE_LIBRARIES)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NimbleSMSettings.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMSettings.cmake
+  @ONLY)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(cmake/NimbleSMConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NimbleSM)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMSettings.cmake
+  ${CMAKE_SOURCE_DIR}/cmake/FindDARMA.cmake
+  ${CMAKE_SOURCE_DIR}/cmake/FindExodus.cmake
+  ${CMAKE_SOURCE_DIR}/cmake/FindQThreads.cmake
+  ${CMAKE_SOURCE_DIR}/cmake/FindTrilinos.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NimbleSM)
