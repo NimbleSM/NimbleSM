@@ -601,28 +601,27 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       }
     }
 
-    // TODO Copy STEP_NP1 data to STEP_N
-    // for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
-    //   int block_id = block_it->first;
-    //   nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
-    //                                                                                                                               deformation_gradient_field_id,
-    //                                                                                                                               nimble::STEP_N);
-    //   nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-    //                                                                                                                         unrotated_stress_field_id,
-    //                                                                                                                         nimble::STEP_N);
-    //   nimble_kokkos::DeviceSymTensorIntPtView stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-    //                                                                                                               stress_field_id,
-    //                                                                                                               nimble::STEP_N);
-    //   nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(block_id,
-    //                                                                                                                                 deformation_gradient_field_id,
-    //                                                                                                                                 nimble::STEP_NP1);
-    //   nimble_kokkos::DeviceSymTensorIntPtView unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-    //                                                                                                                           unrotated_stress_field_id,
-    //                                                                                                                           nimble::STEP_NP1);
-    //   nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-    //                                                                                                                 stress_field_id,
-    //                                                                                                                 nimble::STEP_NP1);
-    // }
+    // Copy STEP_NP1 data to STEP_N
+    for (block_index = 0, block_it = blocks.begin(); block_it != blocks.end(); block_index++, block_it++) {
+      int block_id = block_it->first;
+      auto deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(
+          block_id, field_ids.deformation_gradient, nimble::STEP_N);
+      auto unrotated_stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                                         field_ids.unrotated_stress,
+                                                                                         nimble::STEP_N);
+      auto stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_ids.stress,
+                                                                               nimble::STEP_N);
+      auto deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(
+          block_id, field_ids.deformation_gradient, nimble::STEP_NP1);
+      auto unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                                           field_ids.unrotated_stress,
+                                                                                           nimble::STEP_NP1);
+      auto stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_ids.stress,
+                                                                                 nimble::STEP_NP1);
+      Kokkos::deep_copy(deformation_gradient_step_n_d, deformation_gradient_step_np1_d);
+      Kokkos::deep_copy(unrotated_stress_step_n_d, unrotated_stress_step_np1_d);
+      Kokkos::deep_copy(stress_step_n_d, stress_step_np1_d);
+    }
 
   } // loop over time steps
 }
