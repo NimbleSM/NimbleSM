@@ -57,10 +57,6 @@
   #include <map>
 #endif
 
-#ifdef NIMBLE_HAVE_UQ
-  #include "nimble_uq.h"
-#endif
-
 namespace nimble {
 
   class ModelData {
@@ -68,9 +64,6 @@ namespace nimble {
   public:
 
     ModelData() : dim_(3), critical_time_step_(0.0) 
-#ifdef NIMBLE_HAVE_UQ
-                , uq_model_()
-#endif
                 {}
 
     virtual ~ModelData() {}
@@ -147,15 +140,6 @@ namespace nimble {
       element_data_n_.swap(element_data_np1_);
     }
 
-#ifdef NIMBLE_HAVE_UQ
-    void SetUqModel(std::string uq_model_string) {
-      UqModel model(uq_model_string);
-      uq_model_ = model;
-    }
-
-    UqModel const & GetUqModel() const { return uq_model_;}
-#endif
-
   protected:
 
     void AssignFieldId(Field& field);
@@ -208,11 +192,6 @@ namespace nimble {
 
     //! Map from global node it to local node id
     std::map<int, int> global_node_id_to_local_node_id_;
-
-#ifdef NIMBLE_HAVE_UQ
-    //struct setting up the macroscale UQ model
-    UqModel uq_model_;
-#endif
 
   };
 

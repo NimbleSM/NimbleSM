@@ -357,7 +357,6 @@ namespace nimble {
       }
 
 #ifdef NIMBLE_HAVE_UQ
-      std::vector<double*> offnominal_displacements(0), offnominal_internal_forces(0), displacement_sensitivities(0);
       std::vector<Viewify> bc_offnom_velocity_views(0);
 #endif
 
@@ -413,12 +412,7 @@ namespace nimble {
                                      data_manager,
                                      compute_stress_only,
 #ifdef NIMBLE_HAVE_UQ
-                                     false,
-                                     nullptr,
-                                     0,
-                                     offnominal_displacements,
-                                     offnominal_internal_forces,
-                                     displacement_sensitivities,
+                                     nullptr, // HACK
 #endif
                                      false);
         }
@@ -466,12 +460,7 @@ namespace nimble {
                                      data_manager,
                                      false
 #ifdef NIMBLE_HAVE_UQ
-                                    ,false
-                                    ,nullptr
-                                    ,0
-                                    ,offnominal_displacements
-                                    ,offnominal_internal_forces
-                                    ,displacement_sensitivities
+                                    ,nullptr // HACK
 #endif
 );
         }
@@ -622,12 +611,7 @@ namespace nimble {
                                        data_manager,
                                        false
 #ifdef NIMBLE_HAVE_UQ
-                                      ,false
-                                      ,nullptr
-                                      ,0
-                                      ,offnominal_displacements
-                                      ,offnominal_internal_forces
-                                      ,displacement_sensitivities
+                                      ,nullptr // HACK
 #endif
                                       );
           }
