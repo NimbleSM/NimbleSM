@@ -63,7 +63,7 @@
 #define NIMBLE_VERSION_STRING "1.1.0"
 
 namespace nimble {
-  std::string NimbleVersion() { return(NIMBLE_VERSION_STRING); }
+  inline std::string NimbleVersion() { return(NIMBLE_VERSION_STRING); }
 }
 
 #endif

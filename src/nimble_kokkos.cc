@@ -502,7 +502,6 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
         int block_id = block_it.first;
         nimble_kokkos::Block &block = block_it.second;
         nimble::Material *material_d = block.GetDeviceMaterialModel();
-        assert(material_d != nullptr);
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
         block_data.emplace_back(block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
