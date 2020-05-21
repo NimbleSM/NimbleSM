@@ -52,6 +52,7 @@
 namespace nimble_kokkos { class MaterialFactory; }
 namespace nimble { class ContactInterface; }
 namespace nimble_kokkos { class BlockMaterialInterfaceFactory; }
+namespace nimble { class Parser; }
 
 namespace nimble {
 
@@ -60,6 +61,7 @@ NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
+                     std::shared_ptr<nimble::Parser> parser,
                      const NimbleMPIInitData& input_deck_name);
 
 int NimbleKokkosFinalize(const NimbleMPIInitData& init_data);

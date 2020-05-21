@@ -49,6 +49,7 @@
 
 namespace nimble { class MaterialFactory; }
 namespace nimble { class ContactInterface; }
+namespace nimble { class Parser; }
 
 namespace nimble {
 
@@ -62,6 +63,7 @@ NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]);
 
 int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
+                  std::shared_ptr<nimble::Parser> parser,
                   const NimbleMPIInitData& input_deck_name);
 
 void NimbleMPIFinalize();

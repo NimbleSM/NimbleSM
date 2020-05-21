@@ -44,6 +44,7 @@
 #include "nimble_serial.h"
 #include "nimble_contact_interface.h"
 #include "nimble_material_factory.h"
+#include "nimble_parser.h"
 
 #include <memory>
 
@@ -54,8 +55,9 @@ int main(int argc, char *argv[]) {
   {
     std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+    std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
 
-    status = nimble::NimbleSerialMain(material_factory, contact_interface, input_deck);
+    status = nimble::NimbleSerialMain(material_factory, contact_interface, parser, input_deck);
   }
   nimble::NimbleSerialFinalize();
 

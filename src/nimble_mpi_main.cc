@@ -45,6 +45,7 @@
 #include <nimble_contact_interface.h>
 #include "nimble_material_factory.h"
 #include "nimble_mpi.h"
+#include "nimble_parser.h"
 
 int main(int argc, char *argv[]) {
   nimble::NimbleMPIInitData init_data = nimble::NimbleMPIInitializeAndGetInput(argc, argv);
@@ -53,8 +54,9 @@ int main(int argc, char *argv[]) {
   {
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
     std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
+    std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
 
-    status = nimble::NimbleMPIMain(material_factory, contact_interface, init_data);
+    status = nimble::NimbleMPIMain(material_factory, contact_interface, parser, init_data);
   }
 
   nimble::NimbleMPIFinalize();

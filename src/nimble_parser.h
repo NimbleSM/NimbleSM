@@ -218,6 +218,8 @@ namespace nimble {
 
   protected:
 
+    virtual void ParseKeyValue(const std::string& k, const std::string& v);
+
     void ReadFile();
 
     std::string file_name_;
