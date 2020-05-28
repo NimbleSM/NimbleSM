@@ -683,7 +683,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   int output_frequency = parser.OutputFrequency();
 
 #ifdef NIMBLE_HAVE_UQ
-  if (parser->HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
+  if (parser.HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
   std::vector<Viewify> bc_offnom_velocity_views(0);
 #endif
 
