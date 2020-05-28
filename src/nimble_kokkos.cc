@@ -136,17 +136,17 @@ int NimbleKokkosFinalize(const NimbleMPIInitData& init_data) {
 void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
+                     std::shared_ptr<nimble::Parser> parser,
                      const NimbleMPIInitData& init_data) {
   const int num_mpi_ranks = init_data.num_mpi_ranks;
   const int my_mpi_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
 
-  nimble::Parser parser;
-  parser.Initialize(input_deck_name);
+  parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
-  std::string rve_genesis_file_name = nimble::IOFileName(parser.RVEGenesisFileName(), "g");
+  std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
+  std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
   nimble::GenesisMesh mesh;
   mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
@@ -154,7 +154,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     rve_mesh.ReadFile(rve_genesis_file_name);
   }
   std::string tag = "kokkos";
-  std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+  std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
@@ -204,9 +204,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
     int block_id = block_ids.at(i);
-    std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
-    std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
+    std::string const & macro_material_parameters = parser->GetMacroscaleMaterialParameters(block_id);
+    std::map<int, std::string> const & rve_material_parameters = parser->GetMicroscaleMaterialParameters();
+    std::string rve_bc_strategy = parser->GetMicroscaleBoundaryConditionStrategy();
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
     blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
@@ -229,7 +229,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // volume-averaged quantities for I/O are stored as element data
     model_data.AllocateElementData(block_id, nimble::SYMMETRIC_TENSOR, "stress", num_elements_in_block);
 
-    if (parser.GetOutputFieldString().find("volume") != std::string::npos) {
+    if (parser->GetOutputFieldString().find("volume") != std::string::npos) {
       model_data.AllocateElementData(block_id, nimble::SCALAR, "volume", num_elements_in_block);
     }
   }
@@ -237,15 +237,15 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   // Initialize the initial- and boundary-condition manager
   std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
-  std::string const & time_integration_scheme = parser.TimeIntegrationScheme();
+  std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
+  std::string const & time_integration_scheme = parser->TimeIntegrationScheme();
 
   nimble::BoundaryConditionManager boundary_condition_manager;
   boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
   // Initialize the output file
   nimble_kokkos::ExodusOutputManager exodus_output_manager;
-  exodus_output_manager.SpecifyOutputFields(model_data, parser.GetOutputFieldString());
+  exodus_output_manager.SpecifyOutputFields(model_data, parser->GetOutputFieldString());
   std::vector<std::string> global_data_labels;
   std::vector<std::string> node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
   std::map<int, std::vector<std::string> > elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
@@ -350,12 +350,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   int mpi_vector_dimension = 3;
 
   nimble::ContactManager contact_manager(contact_interface);
-  bool contact_enabled = parser.HasContact();
-  bool contact_visualization = parser.ContactVisualization();
+  bool contact_enabled = parser->HasContact();
+  bool contact_visualization = parser->ContactVisualization();
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
-    nimble::ParseContactCommand(parser.ContactString(),
+    nimble::ParseContactCommand(parser->ContactString(),
                                 contact_master_block_names,
                                 contact_slave_block_names,
                                 penalty_parameter);
@@ -371,7 +371,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                           contact_slave_block_ids);
     if (contact_visualization) {
       std::string tag = "kokkos";
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser->ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
@@ -386,10 +386,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   }
 
   double time_current(0.0), time_previous(0.0);
-  double final_time = parser.FinalTime();
+  double final_time = parser->FinalTime();
   double delta_time(0.0), half_delta_time(0.0);
-  const int num_load_steps = parser.NumLoadSteps();
-  int output_frequency = parser.OutputFrequency();
+  const int num_load_steps = parser->NumLoadSteps();
+  int output_frequency = parser->OutputFrequency();
 
   boundary_condition_manager.ApplyInitialConditions(reference_coordinate_h, velocity_h);
   boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);

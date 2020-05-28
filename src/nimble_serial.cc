@@ -117,13 +117,13 @@ std::string NimbleSerialInitializeAndGetInputDeck(int argc, char* argv[]) {
 
 int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
+                     std::shared_ptr<nimble::Parser> parser,
                      const std::string& input_deck_name) {
-  nimble::Parser parser;
-  parser.Initialize(input_deck_name);
+  parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = parser.GenesisFileName();
-  std::string rve_genesis_file_name = parser.RVEGenesisFileName();
+  std::string genesis_file_name = parser->GenesisFileName();
+  std::string rve_genesis_file_name = parser->RVEGenesisFileName();
   nimble::GenesisMesh mesh;
   mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
@@ -132,7 +132,7 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   }
   std::string tag = "serial";
 
-  std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+  std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
@@ -164,9 +164,9 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
     int block_id = block_ids[i];
-    std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
-    std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
+    std::string const & macro_material_parameters = parser->GetMacroscaleMaterialParameters(block_id);
+    std::map<int, std::string> const & rve_material_parameters = parser->GetMicroscaleMaterialParameters();
+    std::string rve_bc_strategy = parser->GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
     blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
@@ -177,12 +177,12 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 #ifdef NIMBLE_HAVE_UQ
   // configure & allocate
   nimble::UqModel uq_model(dim,num_nodes,num_blocks); 
-  if(parser.HasUq()) {
-    uq_model.ParseConfiguration(parser.UqModelString()); 
-    std::map<std::string, std::string> lines = parser.UqParamsStrings();
+  if(parser->HasUq()) {
+    uq_model.ParseConfiguration(parser->UqModelString());
+    std::map<std::string, std::string> lines = parser->UqParamsStrings();
     for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
       std::string material_key = it->first;
-      int block_id = parser.GetBlockIdFromMaterial( material_key );
+      int block_id = parser->GetBlockIdFromMaterial( material_key );
       std::string uq_params_this_material = it->second;
       uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
@@ -193,13 +193,13 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 
   std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
   macroscale_data.AllocateElementData(num_elem_in_each_block);
-  macroscale_data.SpecifyOutputFields(parser.GetOutputFieldString());
+  macroscale_data.SpecifyOutputFields(parser->GetOutputFieldString());
   std::map<int, std::vector<std::string> > const & elem_data_labels = macroscale_data.GetElementDataLabels();
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = macroscale_data.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > const & derived_elem_data_labels = macroscale_data.GetDerivedElementDataLabelsForOutput();
 
   // Initialize the element data
-  std::vector<int> rve_output_elem_ids = parser.MicroscaleOutputElementIds();
+  std::vector<int> rve_output_elem_ids = parser->MicroscaleOutputElementIds();
   for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -221,8 +221,8 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   // Initialize the initial- and boundary-condition manager
   std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
-  std::string time_integration_scheme = parser.TimeIntegrationScheme();
+  std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
+  std::string time_integration_scheme = parser->TimeIntegrationScheme();
   nimble::BoundaryConditionManager bc;
   bc.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
   // Initialize the output file
@@ -248,7 +248,7 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   int status = 0;
 
   if (time_integration_scheme == "explicit") {
-    status = ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output,
+    status = ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output,
                                     contact_interface
 #ifdef NIMBLE_HAVE_UQ
                                    ,uq_model
@@ -256,7 +256,7 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                                    );
   }
   else if (time_integration_scheme == "quasistatic") {
-    status = QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output);
+    status = QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output);
   }
 
   return status;

@@ -169,7 +169,8 @@ namespace nimble {
     }
   }
 
-  BlockProperties::BlockProperties(std::string props) {
+  BlockProperties::BlockProperties(std::string props)
+  : block_id_(-1) {
     size_t space_pos = props.find(" ");
     block_name_ = props.substr(0, space_pos);
     material_key_ = props.substr(space_pos+1, props.size());
@@ -180,10 +181,26 @@ namespace nimble {
     ss >> block_id_;
   }
 
-  Parser::Parser() : file_name_("none"), genesis_file_name_("none"),  use_two_level_mesh_decomposition_(false), write_timing_data_file_(false), rve_genesis_file_name_("none"), exodus_file_name_("none"),
-                     time_integration_scheme_("explicit"), nonlinear_solver_relative_tolerance_(1.0e-6), nonlinear_solver_max_iterations_(200), final_time_(1.0), num_load_steps_(0), output_frequency_(1), visualize_contact_entities_(false), visualize_contact_bounding_boxes_(false), contact_visualization_file_name_("none"), microscale_boundary_condition_strategy_("periodic bc") {
-    material_strings_["rve"] = "none";
-  }
+Parser::Parser()
+    :
+    file_name_("none"),
+    genesis_file_name_("none"),
+    use_two_level_mesh_decomposition_(false),
+    write_timing_data_file_(false),
+    rve_genesis_file_name_("none"),
+    exodus_file_name_("none"),
+    time_integration_scheme_("explicit"),
+    nonlinear_solver_relative_tolerance_(1.0e-6),
+    nonlinear_solver_max_iterations_(200),
+    final_time_(1.0),
+    num_load_steps_(0),
+    output_frequency_(1),
+    visualize_contact_entities_(false),
+    visualize_contact_bounding_boxes_(false),
+    contact_visualization_file_name_("none"),
+    microscale_boundary_condition_strategy_("periodic bc") {
+  material_strings_["rve"] = "none";
+}
 
   void Parser::Initialize(std::string file_name) {
     file_name_ = file_name;
@@ -230,142 +247,147 @@ namespace nimble {
         std::string value = line.substr(colon_pos+1, line.size());
         value = value.substr(value.find_first_not_of(" "), value.find_last_not_of(" ")+1);
 
-        if (key == "genesis input file") {
-          genesis_file_name_ = value;
-        }
-        else if (key == "rve genesis input file") {
-          rve_genesis_file_name_ = value;
-        }
-        else if (key == "exodus output file") {
-          exodus_file_name_ = value;
-        }
-        else if (key == "use two level mesh decomposition") {
-          std::string value_upper_case(value);
-          std::transform(value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
-          if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
-            use_two_level_mesh_decomposition_ = true;
-          }
-          else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
-            use_two_level_mesh_decomposition_ = false;
-          }
-          else {
-            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"use two level mesh decomposition\" " + value + "\n";
-            throw std::logic_error(msg);
-          }
-        }
-        else if (key == "write timing data file") {
-          std::string value_upper_case(value);
-          std::transform(value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
-          if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
-            write_timing_data_file_ = true;
-          }
-          else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
-            write_timing_data_file_ = false;
-          }
-          else {
-            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"write timing data file\" " + value + "\n";
-            throw std::logic_error(msg);
-          }
-        }
-        else if (key == "time integration scheme") {
-          time_integration_scheme_ = value;
-        }
-        else if (key == "nonlinear solver relative tolerance") {
-          nonlinear_solver_relative_tolerance_ = std::atof(value.c_str());
-        }
-        else if (key == "nonlinear solver maximum iterations") {
-          nonlinear_solver_max_iterations_ = std::atoi(value.c_str());
-        }
-        else if (key == "final time") {
-          final_time_ = std::atof(value.c_str());
-        }
-        else if (key == "number of load steps") {
-          num_load_steps_ = std::atoi(value.c_str());
-        }
-        else if (key == "output frequency") {
-          output_frequency_ = std::atoi(value.c_str());
-        }
-        else if (key == "contact") {
-          contact_string_ = value;
-        }
-        else if (key == "contact visualization") {
-
-          std::stringstream ss(value);
-          std::string val;
-          std::vector<std::string> vals;
-          while (ss >> val) {
-            vals.push_back(val);
-          }
-
-          if (vals.size() != 6 ||
-              vals[0] != "visualize_contact_entities" ||
-              (vals[1] != "on" && vals[1] != "off") ||
-              vals[2] != "visualize_bounding_boxes" ||
-              (vals[3] != "on" && vals[3] != "off") ||
-              vals[4] != "file_name") {
-            std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"contact visualization\"\n";
-            msg += "**** Allowable syntax is \"visualize_contatct_entities <on/off> visualize_bounding_boxes <on/off> file_name <file_name.e>\"\n";
-            throw std::logic_error(msg);
-          }
-
-          visualize_contact_entities_ = false;
-          if (vals[1] == "on") {
-            visualize_contact_entities_ = true;
-          }
-
-          visualize_contact_bounding_boxes_ = false;
-          if (vals[3] == "on") {
-            visualize_contact_bounding_boxes_ = true;
-          }
-
-          contact_visualization_file_name_ = vals[5];
-        }
-        else if (key == "microscale output element ids") {
-          std::stringstream ss(value);
-          int global_id;
-          while (ss >> global_id) {
-            microscale_output_element_ids_.push_back(global_id);
-          }
-        }
-        else if (key == "material parameters" ) {
-          size_t space_pos = value.find(" ");
-          std::string material_key = value.substr(0, space_pos);
-          std::string material_props = value.substr(space_pos+1, value.size());
-          material_strings_[material_key] = material_props;
-        }
-        else if (key == "macroscale block") {
-          BlockProperties block_props(value);
-          macroscale_blocks_[block_props.block_id_] = block_props;
-        }
-        else if (key == "microscale block") {
-          BlockProperties block_props(value);
-          microscale_blocks_[block_props.block_id_] = block_props;
-        }
-        else if (key == "microscale boundary condition strategy") {
-          microscale_boundary_condition_strategy_ = value;
-        }
-        else if (key == "boundary condition") {
-          boundary_condition_strings_.push_back(value);
-        }
-        else if (key == "output fields") {
-          output_field_string_ = value;
-        }
-#ifdef NIMBLE_HAVE_UQ
-	else if (key == "uq parameters") {
-          size_t space_pos = value.find(" ");
-          std::string material_key = value.substr(0, space_pos);
-          std::string uq_params = value.substr(space_pos+1, value.size());
-          uq_parameters_strings_[material_key] = uq_params;
-        }
-        else if (key == "uq model") {
-          uq_model_string_ = value;
-        }
-#endif
-        else{
-          std::string msg = "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
-          throw std::logic_error(msg);
-        }
+        ParseKeyValue(key, value);
       }
     }
   }
+
+void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
+  if (key == "genesis input file") {
+    genesis_file_name_ = value;
+  }
+  else if (key == "rve genesis input file") {
+    rve_genesis_file_name_ = value;
+  }
+  else if (key == "exodus output file") {
+    exodus_file_name_ = value;
+  }
+  else if (key == "use two level mesh decomposition") {
+    std::string value_upper_case(value);
+    std::transform(value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
+    if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
+      use_two_level_mesh_decomposition_ = true;
+    }
+    else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
+      use_two_level_mesh_decomposition_ = false;
+    }
+    else {
+      std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"use two level mesh decomposition\" " + value + "\n";
+      throw std::logic_error(msg);
+    }
+  }
+  else if (key == "write timing data file") {
+    std::string value_upper_case(value);
+    std::transform(value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
+    if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
+      write_timing_data_file_ = true;
+    }
+    else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
+      write_timing_data_file_ = false;
+    }
+    else {
+      std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"write timing data file\" " + value + "\n";
+      throw std::logic_error(msg);
+    }
+  }
+  else if (key == "time integration scheme") {
+    time_integration_scheme_ = value;
+  }
+  else if (key == "nonlinear solver relative tolerance") {
+    nonlinear_solver_relative_tolerance_ = std::atof(value.c_str());
+  }
+  else if (key == "nonlinear solver maximum iterations") {
+    nonlinear_solver_max_iterations_ = std::atoi(value.c_str());
+  }
+  else if (key == "final time") {
+    final_time_ = std::atof(value.c_str());
+  }
+  else if (key == "number of load steps") {
+    num_load_steps_ = std::atoi(value.c_str());
+  }
+  else if (key == "output frequency") {
+    output_frequency_ = std::atoi(value.c_str());
+  }
+  else if (key == "contact") {
+    contact_string_ = value;
+  }
+  else if (key == "contact visualization") {
+
+    std::stringstream ss(value);
+    std::string val;
+    std::vector<std::string> vals;
+    while (ss >> val) {
+      vals.push_back(val);
+    }
+
+    if (vals.size() != 6 ||
+        vals[0] != "visualize_contact_entities" ||
+        (vals[1] != "on" && vals[1] != "off") ||
+        vals[2] != "visualize_bounding_boxes" ||
+        (vals[3] != "on" && vals[3] != "off") ||
+        vals[4] != "file_name") {
+      std::string msg = "\n**** Error in Parser::ReadFile(), unexpected value for \"contact visualization\"\n";
+      msg += "**** Allowable syntax is \"visualize_contatct_entities <on/off> visualize_bounding_boxes <on/off> file_name <file_name.e>\"\n";
+      throw std::logic_error(msg);
+    }
+
+    visualize_contact_entities_ = false;
+    if (vals[1] == "on") {
+      visualize_contact_entities_ = true;
+    }
+
+    visualize_contact_bounding_boxes_ = false;
+    if (vals[3] == "on") {
+      visualize_contact_bounding_boxes_ = true;
+    }
+
+    contact_visualization_file_name_ = vals[5];
+  }
+  else if (key == "microscale output element ids") {
+    std::stringstream ss(value);
+    int global_id;
+    while (ss >> global_id) {
+      microscale_output_element_ids_.push_back(global_id);
+    }
+  }
+  else if (key == "material parameters" ) {
+    size_t space_pos = value.find(" ");
+    std::string material_key = value.substr(0, space_pos);
+    std::string material_props = value.substr(space_pos+1, value.size());
+    material_strings_[material_key] = material_props;
+  }
+  else if (key == "macroscale block") {
+    BlockProperties block_props(value);
+    macroscale_blocks_[block_props.block_id_] = block_props;
+  }
+  else if (key == "microscale block") {
+    BlockProperties block_props(value);
+    microscale_blocks_[block_props.block_id_] = block_props;
+  }
+  else if (key == "microscale boundary condition strategy") {
+    microscale_boundary_condition_strategy_ = value;
+  }
+  else if (key == "boundary condition") {
+    boundary_condition_strings_.push_back(value);
+  }
+  else if (key == "output fields") {
+    output_field_string_ = value;
+  }
+#ifdef NIMBLE_HAVE_UQ
+else if (key == "uq parameters") {
+    size_t space_pos = value.find(" ");
+    std::string material_key = value.substr(0, space_pos);
+    std::string uq_params = value.substr(space_pos+1, value.size());
+    uq_parameters_strings_[material_key] = uq_params;
+  }
+  else if (key == "uq model") {
+    uq_model_string_ = value;
+  }
+#endif
+  else{
+    std::string msg = "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
+    throw std::logic_error(msg);
+  }
+}
+
 }

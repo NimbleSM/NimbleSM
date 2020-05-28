@@ -131,6 +131,7 @@ NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
 
 int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
+                  std::shared_ptr<nimble::Parser> parser,
                   const nimble::NimbleMPIInitData& init_data) {
   
 #ifdef NIMBLE_HAVE_BVH
@@ -144,12 +145,11 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 
   int status = 0;
 
-  nimble::Parser parser;
-  parser.Initialize(input_deck_name);
+  parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
-  std::string rve_genesis_file_name = nimble::IOFileName(parser.RVEGenesisFileName(), "g");
+  std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
+  std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
   nimble::GenesisMesh mesh;
   mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
@@ -157,7 +157,7 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     rve_mesh.ReadFile(rve_genesis_file_name);
   }
   std::string tag = "mpi";
-  std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+  std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
@@ -187,9 +187,9 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
     int block_id = block_ids[i];
-    std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
-    std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
+    std::string const & macro_material_parameters = parser->GetMacroscaleMaterialParameters(block_id);
+    std::map<int, std::string> const & rve_material_parameters = parser->GetMicroscaleMaterialParameters();
+    std::string rve_bc_strategy = parser->GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
     blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
@@ -198,13 +198,13 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   }
   std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
   model_data.AllocateElementData(num_elem_in_each_block);
-  model_data.SpecifyOutputFields(parser.GetOutputFieldString());
+  model_data.SpecifyOutputFields(parser->GetOutputFieldString());
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
 
   // Initialize the element data
-  std::vector<int> rve_output_elem_ids = parser.MicroscaleOutputElementIds();
+  std::vector<int> rve_output_elem_ids = parser->MicroscaleOutputElementIds();
   for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -226,8 +226,8 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   // Initialize the initial- and boundary-condition manager
   std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
-  std::string time_integration_scheme = parser.TimeIntegrationScheme();
+  std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
+  std::string time_integration_scheme = parser->TimeIntegrationScheme();
   nimble::BoundaryConditionManager bc;
   bc.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
@@ -252,10 +252,10 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   }
 
   if (time_integration_scheme == "explicit") {
-    ExplicitTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank);
+    ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank);
   }
   else if (time_integration_scheme == "quasistatic") {
-    QuasistaticTimeIntegrator(parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
+    QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
 
   return status;

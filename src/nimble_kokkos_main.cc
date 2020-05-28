@@ -47,6 +47,7 @@
 #include <nimble_kokkos_material_factory.h>
 #include <nimble_contact_interface.h>
 #include <nimble_kokkos_block_material_interface_factory.h>
+#include <nimble_parser.h>
 
 int main(int argc, char *argv[]) {
   nimble::NimbleMPIInitData init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
@@ -55,8 +56,9 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory(new nimble_kokkos::MaterialFactory);
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
+    std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
 
-    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, init_data);
+    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, parser, init_data);
   }
 
   int status = nimble::NimbleKokkosFinalize(init_data);
