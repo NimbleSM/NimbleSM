@@ -44,10 +44,10 @@
 #include "nimble_contact_manager.h"
 #include "nimble_contact_interface.h"
 #include "nimble_utils.h"
-#include "mpi_buckets/src/CollisionManager.hpp"
 
 #ifdef NIMBLE_HAVE_MPI
   #include "mpi.h"
+  #include "mpi_buckets/src/CollisionManager.hpp"
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
@@ -393,8 +393,13 @@ namespace nimble {
     // create a list of ghosted nodes (e.g., nodes that are owned by a different processor)
     std::vector<int> partition_boundary_node_local_ids;
     std::vector<int> min_rank_containing_partition_boundary_nodes;
+#ifdef NIMBLE_HAVE_MPI
     mpi_container.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_local_ids,
                                                    min_rank_containing_partition_boundary_nodes);
+#else
+   min_rank_containing_partition_boundary_nodes.push_back(0);
+#endif
+
     std::vector<int> ghosted_node_local_ids;
     for (int i=0 ; i<partition_boundary_node_local_ids.size() ; i++) {
       if (min_rank_containing_partition_boundary_nodes[i] != mpi_rank) {
