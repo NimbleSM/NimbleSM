@@ -311,6 +311,9 @@ void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
   else if (key == "contact") {
     contact_string_ = value;
   }
+  else if (key == "contact backend") {
+    contact_backend_string_ = value;
+  }
   else if (key == "contact visualization") {
 
     std::stringstream ss(value);

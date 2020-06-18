@@ -235,6 +235,7 @@ namespace nimble {
     int num_load_steps_;
     int output_frequency_;
     std::string contact_string_;
+    std::string contact_backend_string_;
     bool visualize_contact_entities_;
     bool visualize_contact_bounding_boxes_;
     std::string contact_visualization_file_name_;

@@ -59,7 +59,7 @@
 #include "nimble_mpi.h"
 
 #ifdef NIMBLE_HAVE_BVH
-#include <bvh/vt/context.hpp>
+#include "contact/parallel/bvh_contact_manager.h"
 #endif
 
 #ifdef NIMBLE_HAVE_UQ
@@ -136,7 +136,8 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   
 #ifdef NIMBLE_HAVE_BVH
   auto comm = MPI_COMM_WORLD;
-  bvh::vt::context vt_ctx{ argc, argv, &comm };
+
+  //bvh::vt::context vt_ctx{ argc, argv, &comm };
 #endif
 
   const int my_mpi_rank = init_data.my_mpi_rank;
@@ -283,11 +284,27 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
 
+#ifdef NIMBLE_HAVE_BVH
+  nimble::BvhContactManager contact_manager(contact_interface, 2);
+#else
   nimble::ContactManager contact_manager(contact_interface);
+#endif
   
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
-  
+
+  std::vector<int> global_node_ids(num_nodes);
+  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
+  for (int n=0 ; n<num_nodes ; ++n) {
+    global_node_ids[n] = global_node_ids_ptr[n];
+  }
+
+  // DJL
+  // Here is where the initialization occurs for MPI operations
+  // In this call, each rank determines which nodes are shared with which other ranks
+  // This information is stored so that the vector reductions will work later
+  nimble::MPIContainer mpi_container;
+  mpi_container.Initialize(global_node_ids);
   if (contact_enabled) {
     
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
@@ -306,6 +323,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     contact_manager.SetPenaltyParameter(penalty_parameter);
     
     contact_manager.CreateContactEntities(mesh,
+                                          mpi_container,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
 
@@ -315,19 +333,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
-
-  std::vector<int> global_node_ids(num_nodes);
-  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
-  for (int n=0 ; n<num_nodes ; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
-
-  // DJL
-  // Here is where the initialization occurs for MPI operations
-  // In this call, each rank determines which nodes are shared with which other ranks
-  // This information is stored so that the vector reductions will work later
-  nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids);
 
   int num_global_data = 0;
   std::vector<double> global_data(num_global_data);
@@ -539,7 +544,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 #ifdef NIMBLE_HAVE_BVH
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement);
-      contact_manager.ComputeParallelContactForce(step+1, is_output_step, contact_visualization);
+      contact_manager.ComputeParallelContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force);
       if (contact_visualization && is_output_step) {
         contact_manager.ContactVisualizationWriteStep(time_current);

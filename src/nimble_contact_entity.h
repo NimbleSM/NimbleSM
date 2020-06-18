@@ -514,7 +514,7 @@ namespace nimble {
   // Free functions for accessing entity info for bvh
   bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity );
   std::size_t get_entity_global_id( const ContactEntity &_entity );
-  tim::vec3d get_entity_centroid( const ContactEntity &_entity );
+  bvh::m::vec3d get_entity_centroid( const ContactEntity &_entity );
 #endif
 
 } // namespace nimble
