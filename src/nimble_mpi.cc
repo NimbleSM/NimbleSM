@@ -328,8 +328,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                           contact_slave_block_ids);
 
     if (contact_visualization) {
-      std::string tag = "serial.contact_entities";
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+      std::string tag = "mpi.contact_entities";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }

@@ -232,11 +232,22 @@ class ContactInterface;
                                 std::vector<ContactEntity::vertex>& closest_points,
                                 std::vector<PROJECTION_TYPE>& projection_types);
 
-    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
+    virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
-    void ContactVisualizationWriteStep(double time_current);
+    virtual void ContactVisualizationWriteStep(double time_current);
 
   protected:
+
+    void InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
+                                            nimble::GenesisMesh &mesh,
+                                            nimble::ExodusOutput &out,
+                                            ContactEntity *faces, std::size_t nfaces,
+                                            ContactEntity *nodes, std::size_t nnodes);
+    void WriteVisualizationData( double t, nimble::GenesisMesh &mesh,
+                                 nimble::ExodusOutput &out,
+        ContactEntity *faces, std::size_t nfaces,
+        ContactEntity *nodes, std::size_t nnodes );
+
     bool contact_enabled_ = false;
     double penalty_parameter_;
 
