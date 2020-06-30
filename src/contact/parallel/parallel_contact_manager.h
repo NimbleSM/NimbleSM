@@ -55,7 +55,13 @@ namespace nimble {
 
     virtual void ComputeParallelContactForce(int step, bool debug_output) = 0;
 
+    int Rank() const noexcept { return m_rank; }
+    int NumRanks() const noexcept { return m_num_ranks; }
+
   private:
+
+    int m_rank;
+    int m_num_ranks;
   };
 }
 

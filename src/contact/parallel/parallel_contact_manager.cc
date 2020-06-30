@@ -45,5 +45,8 @@
 
 namespace nimble {
   ParallelContactManager::ParallelContactManager(std::shared_ptr<ContactInterface> interface)
-    : ContactManager{interface} {}
+    : ContactManager{interface} {
+    MPI_Comm_rank( MPI_COMM_WORLD, &m_rank );
+    MPI_Comm_size( MPI_COMM_WORLD, &m_num_ranks );
+  }
 }
