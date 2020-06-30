@@ -8,6 +8,12 @@
 
 
 namespace nimble {
+  struct NarrowphaseResult
+  {
+    std::size_t first_global_id;
+    std::size_t second_global_id;
+  };
+
   class BvhContactManager : public ParallelContactManager
   {
   public:
@@ -19,6 +25,9 @@ namespace nimble {
     BvhContactManager &operator=( const BvhContactManager &) = delete;
     BvhContactManager &operator=( BvhContactManager &&) noexcept;
 
+    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name) override {}
+    void ContactVisualizationWriteStep( double time ) override;
+
     ~BvhContactManager();
 
 
@@ -29,6 +38,8 @@ namespace nimble {
     bvh::collision_world m_world;
     bvh::collision_object *m_nodes;
     bvh::collision_object *m_faces;
+
+    std::vector< NarrowphaseResult > m_last_results;
   };
 }
 
