@@ -50,7 +50,6 @@
 #include "nimble_exodus_output.h"
 #include "nimble_exodus_output_manager.h"
 #include "nimble_boundary_condition_manager.h"
-#include "nimble.mpi.utils.h"
 #include "nimble_view.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_data_manager.h"
@@ -60,17 +59,28 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos.h"
 
+#ifdef NIMBLE_HAVE_MPI
+#include "nimble.mpi.utils.h"
+#endif
+
 #include <iostream>
 
 namespace nimble {
 
-NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+
+#ifdef NIMBLE_HAVE_MPI
   MPI_Init(&argc, &argv);
+#endif
+
+#ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
+#endif
 
+  NimbleInitData init_data;
+
+#ifdef NIMBLE_HAVE_MPI
   int mpi_err;
-  NimbleMPIInitData init_data;
-
   mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &init_data.num_mpi_ranks);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n");
@@ -79,7 +89,11 @@ NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
   }
-
+#else
+  init_data.num_mpi_ranks = 1;
+  init_data.my_mpi_rank = 0;
+#endif
+  
   // Banner
   if (init_data.my_mpi_rank == 0) {
     std::string nimble_have_kokkos("false");
@@ -100,7 +114,9 @@ NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
     if (argc != 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_Kokkos <input_deck.in>\n" << std::endl;
       Kokkos::finalize();
+#ifdef NIMBLE_HAVE_MPI
       MPI_Finalize();
+#endif
       exit(1);
     }
     std::cout << "NimbleSM_Kokkos initialized on " << init_data.num_mpi_ranks << " mpi rank(s)." << std::endl;
@@ -124,20 +140,27 @@ NimbleMPIInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   return init_data;
 }
 
-int NimbleKokkosFinalize(const NimbleMPIInitData& init_data) {
+int NimbleKokkosFinalize(const NimbleInitData& init_data) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
   }
 
+#ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
+#endif
+
+#ifdef NIMBLE_HAVE_MPI
   return MPI_Finalize();
+#else
+  return 0;
+#endif
 }
 
 void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleMPIInitData& init_data) {
+                     const NimbleInitData& init_data) {
   const int num_mpi_ranks = init_data.num_mpi_ranks;
   const int my_mpi_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
