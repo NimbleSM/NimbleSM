@@ -38,7 +38,9 @@ endif()
 
 if(NIMBLE_HAVE_KOKKOS)
   add_test(wave_in_bar_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck wave_in_bar.in --num-ranks 1)
-  add_test(wave_in_bar_kokkos_np3 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck wave_in_bar.in --num-ranks 3)
+  if(NIMBLE_HAVE_MPI)
+    add_test(wave_in_bar_kokkos_np3 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck wave_in_bar.in --num-ranks 3)
+  endif()
 endif()
 
 if(NIMBLE_HAVE_TRILINOS)

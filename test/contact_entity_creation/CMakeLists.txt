@@ -28,7 +28,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/contact_entity_creation.exodiff
 
 if(NIMBLE_HAVE_KOKKOS)
   add_test(contact_entity_creation_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 1)
-  add_test(contact_entity_creation_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 2)
-  add_test(contact_entity_creation_kokkos_np3 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 3)
-  add_test(contact_entity_creation_kokkos_np4 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 4)
+  if(NIMBLE_HAVE_MPI)
+    add_test(contact_entity_creation_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 2)
+    add_test(contact_entity_creation_kokkos_np3 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 3)
+    add_test(contact_entity_creation_kokkos_np4 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 4)
+  endif()
 endif()
