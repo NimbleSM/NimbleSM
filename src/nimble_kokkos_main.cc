@@ -50,7 +50,7 @@
 #include <nimble_parser.h>
 
 int main(int argc, char *argv[]) {
-  nimble::NimbleMPIInitData init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
+  nimble::NimbleInitData init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
 
   {
     std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory(new nimble_kokkos::MaterialFactory);
