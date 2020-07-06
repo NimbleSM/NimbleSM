@@ -47,7 +47,6 @@
 
 #ifdef NIMBLE_HAVE_MPI
   #include "mpi.h"
-  #include "mpi_buckets/src/CollisionManager.hpp"
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
