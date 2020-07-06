@@ -160,11 +160,6 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
 endif()
 
 include_directories(src)
-if (NIMBLE_HAVE_MPI)
-  include_directories(src/mpi_buckets/dist_hash)
-  include_directories(src/mpi_buckets/mock)
-  include_directories(src/mpi_buckets/src)
-endif()
 
 add_subdirectory(src)
 add_subdirectory(test)
