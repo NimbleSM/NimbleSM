@@ -32,6 +32,7 @@ option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
@@ -55,6 +56,34 @@ if (USE_PURE_MPI)
   target_link_libraries(nimble PUBLIC MPI::MPI_CXX)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
 endif()
+
+
+# Optional ArborX dependency
+if (HAVE_ARBORX)
+  ADD_DEFINITIONS(-DNIMBLE_HAVE_ARBORX)
+#  if (ARBORX_DEBUG_LEVEL)
+#    ADD_DEFINITIONS(-DARBORX_DEBUG_LEVEL=${ARBORX_DEBUG_LEVEL})
+#  endif()
+  set(NIMBLE_HAVE_ARBORX TRUE)
+  set(ArborX_DIR CACHE PATH "Path to ArborX install directory")
+  find_package(ArborX REQUIRED)
+  message(STATUS "Compiling with ArborX:")
+  message("       ARBORX_DIR: ${ArborX_DIR}")
+  if (NIMBLE_HAVE_MPI)
+    message("       Using parallel collision detection (NIMBLE_HAVE_MPI=ON)")
+  else()
+    message("       Using only serial collision detection (NIMBLE_HAVE_MPI=OFF)")
+  endif()
+
+  set(ArborX_LIBS ArborX::ArborX)
+
+else()
+  message(STATUS "ArborX is NOT enabled.")
+  SET(NIMBLE_HAVE_ARBORX FALSE)
+  set(ArborX_LIBS)
+endif()
+
+
 
 # Optional BVH dependency
 if (HAVE_BVH)
