@@ -87,8 +87,7 @@ class ContactInterface;
       FACE=2
     } PROJECTION_TYPE;
 
-    explicit ContactManager( std::shared_ptr<ContactInterface> interface,
-                             std::size_t dicing_factor = 1);
+    explicit ContactManager( std::shared_ptr<ContactInterface> interface );
 
     virtual ~ContactManager() {}
 
@@ -233,23 +232,22 @@ class ContactInterface;
                                 std::vector<ContactEntity::vertex>& closest_points,
                                 std::vector<PROJECTION_TYPE>& projection_types);
 
-#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-    using patch_collection = bvh::vt::collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
+    virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
-    void ComputeParallelContactForce(int step, bool is_output_step, bool visualize = false);
-#endif
-
-    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
-
-    void ContactVisualizationWriteStep(double time_current);
-
-#ifdef NIMBLE_HAVE_BVH
-    void VisualizeCollisionInfo(const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,
-                                const bvh::bvh_tree_26d::collision_query_result_type &collision_result,
-                                int step);
-#endif
+    virtual void ContactVisualizationWriteStep(double time_current);
 
   protected:
+
+    void InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
+                                            nimble::GenesisMesh &mesh,
+                                            nimble::ExodusOutput &out,
+                                            ContactEntity *faces, std::size_t nfaces,
+                                            ContactEntity *nodes, std::size_t nnodes);
+    void WriteVisualizationData( double t, nimble::GenesisMesh &mesh,
+                                 nimble::ExodusOutput &out,
+        ContactEntity *faces, std::size_t nfaces,
+        ContactEntity *nodes, std::size_t nnodes );
+
     bool contact_enabled_ = false;
     double penalty_parameter_;
 
@@ -276,16 +274,6 @@ class ContactInterface;
     // TODO remove this once enforcement is on device
     nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
     nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
-#endif
-
-    std::size_t dicing_factor_; ///< Patch dicing factor for overdecomposition
-
-#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-
-    bvh::vt::collision_world<bvh::patch<ContactEntity>, bvh::bvh_tree_26d>  collision_world_;
-
-    patch_collection face_patch_collection_;
-    patch_collection node_patch_collection_;
 #endif
 
     std::shared_ptr<ContactInterface> contact_interface;

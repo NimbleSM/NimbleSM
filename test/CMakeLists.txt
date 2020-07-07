@@ -23,6 +23,8 @@ add_subdirectory(brick_with_fibers)
 add_subdirectory(brick_with_fiber_periodic)
 add_subdirectory(quasistatic_tension)
 add_subdirectory(contact_entity_creation)
+add_subdirectory(bvh_two_body)
+add_subdirectory(bvh_fastcollide)
 
 if(NIMBLE_HAVE_UQ)
   add_subdirectory(uq_wave_in_bar)

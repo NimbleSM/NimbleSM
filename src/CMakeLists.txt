@@ -68,6 +68,8 @@ if(NIMBLE_HAVE_MPI)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.h)
 endif()
 
+add_subdirectory(contact)
+
 IF(NOT NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.cc)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS} ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.h)

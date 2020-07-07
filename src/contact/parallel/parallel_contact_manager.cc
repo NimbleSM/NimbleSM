@@ -1,4 +1,3 @@
-
 /*
 //@HEADER
 // ************************************************************************
@@ -42,28 +41,12 @@
 //@HEADER
 */
 
-#include "nimble_contact_entity.h"
+#include "parallel_contact_manager.h"
 
 namespace nimble {
-
-#ifdef NIMBLE_HAVE_BVH
-  // Free functions for accessing entity info for bvh
-  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity )
-  {
-    return _entity.Kdop();
+  ParallelContactManager::ParallelContactManager(std::shared_ptr<ContactInterface> interface)
+    : ContactManager{interface} {
+    MPI_Comm_rank( MPI_COMM_WORLD, &m_rank );
+    MPI_Comm_size( MPI_COMM_WORLD, &m_num_ranks );
   }
-
-  std::size_t get_entity_global_id( const ContactEntity &_entity )
-  {
-    return static_cast< std::size_t >( _entity.contact_entity_global_id() );
-  }
-
-  bvh::m::vec3d get_entity_centroid( const ContactEntity &_entity )
-  {
-    const auto centroid = _entity.centroid();
-
-    return bvh::m::vec3d{ centroid[0], centroid[1], centroid[2] };
-  }
-#endif
-
 }

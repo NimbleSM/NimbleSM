@@ -1,4 +1,3 @@
-
 /*
 //@HEADER
 // ************************************************************************
@@ -42,28 +41,18 @@
 //@HEADER
 */
 
-#include "nimble_contact_entity.h"
+#ifndef NIMBLE_KOKKOS_CONTACT_MANAGER_H
+#define NIMBLE_KOKKOS_CONTACT_MANAGER_H
+
+#include "../nimble_contact_manager.h"
 
 namespace nimble {
-
-#ifdef NIMBLE_HAVE_BVH
-  // Free functions for accessing entity info for bvh
-  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity )
+  class KokkosContactManager : public ContactManager
   {
-    return _entity.Kdop();
-  }
+  public:
 
-  std::size_t get_entity_global_id( const ContactEntity &_entity )
-  {
-    return static_cast< std::size_t >( _entity.contact_entity_global_id() );
-  }
 
-  bvh::m::vec3d get_entity_centroid( const ContactEntity &_entity )
-  {
-    const auto centroid = _entity.centroid();
-
-    return bvh::m::vec3d{ centroid[0], centroid[1], centroid[2] };
-  }
-#endif
-
+  };
 }
+
+#endif  // NIMBLE_KOKKOS_CONTACT_MANAGER_H
