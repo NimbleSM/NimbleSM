@@ -5,3 +5,5 @@ target_sources(nimble PRIVATE
 if (NIMBLE_HAVE_MPI)
     add_subdirectory(parallel)
 endif()
+
+add_subdirectory(serial)
