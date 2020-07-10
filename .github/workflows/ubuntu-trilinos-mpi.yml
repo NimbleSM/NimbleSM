@@ -27,7 +27,7 @@ jobs:
            sudo apt-get update -y -qq
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-           sudo apt-get install -y libtrilinos-tpetra-dev libtrilinos-kokkos-dev
+           sudo apt-get install -y trilinos-all-dev
            sudo apt-get install -y openmpi-bin libopenmpi-dev
            sudo apt-get install -y libmetis-dev
            sudo add-apt-repository ppa:nschloe/seacas-nightly
