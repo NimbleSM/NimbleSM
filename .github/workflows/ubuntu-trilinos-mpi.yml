@@ -1,0 +1,48 @@
+name: ubuntu-trilinos-mpi
+  
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:  
+#      - master
+      - feature/#20-create-ci
+  pull_request:
+    branches:
+#      - master
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CMAKE_BUILD_TYPE: release
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: bash
+      run: |
+           sudo apt-get update -y -qq
+           sudo apt-get install -y netcdf-bin libnetcdf-dev
+           sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
+           sudo apt-get install -y libtrilinos-tpetra-dev libtrilinos-kokkos-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
+           sudo apt-get install -y libmetis-dev
+           sudo add-apt-repository ppa:nschloe/seacas-nightly
+           sudo apt-get update -y -qq
+           sudo apt-get install -y seacas-bin libseacas-dev
+    - name: configure
+      run: |
+           mkdir build && cd build
+           export ACCESS=`pwd`
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" ..
+    - name: build
+      run: cmake --build build
+    - name: test
+      run: |
+           cd build
+           export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+           make test
+
