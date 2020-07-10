@@ -34,18 +34,11 @@ jobs:
            sudo apt-get install -y seacas-bin libseacas-dev
            dpkg -L libseacas-dev
            dpkg -L seacas-bin 
-    - name: exodus
-      run: |
-           git clone https://github.com/gsjaardema/seacas.git
-           cd seacas && export ACCESS=`pwd` && ./install-tpl.sh && cd $ACCESS
-           mkdir build && cd build
-           ${ACCESS}/cmake-exodus
-           make && make install
     - name: configure
       run: |
            mkdir build && cd build
            export ACCESS=`pwd`
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON -DSEACASExodus_DIR="${ACCESS}/../seacas/lib/cmake/SEACASExodus" ..
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib" ..
     - name: build
       run: cmake --build build
     - name: test
