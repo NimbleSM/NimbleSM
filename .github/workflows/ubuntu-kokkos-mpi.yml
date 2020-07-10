@@ -47,5 +47,8 @@ jobs:
     - name: build
       run: cmake --build build
     - name: test
-      run: cd build && make test
+      run: |
+           alias exodiff="${ACCESS}/bin/exodiff"
+           alias epu="${ACCESS}/bin/epu"
+           cd build && make test
 
