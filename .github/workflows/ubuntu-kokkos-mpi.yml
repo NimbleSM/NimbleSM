@@ -51,4 +51,5 @@ jobs:
            alias exodiff="${ACCESS}/bin/exodiff"
            alias epu="${ACCESS}/bin/epu"
            cd build && make test
+           cat Testing/Temporary/LastTest.log
 
