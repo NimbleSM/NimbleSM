@@ -1,0 +1,51 @@
+name: ubuntu-kokkos-mpi
+  
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:  
+#      - master
+      - feature/#20-create-ci
+  pull_request:
+    branches:
+#      - master
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CMAKE_BUILD_TYPE: release
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: bash
+      run: |
+           sudo apt-get update -y -qq
+           sudo apt-get install -y netcdf-bin libhdf5-serial-dev libhdf5-mpich-dev
+           sudo apt-get install -y libtrilinos-tpetra-dev libtrilinos-kokkos-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
+           sudo apt-get install -y libmetis-dev
+#           sudo add-apt-repository ppa:nschloe/seacas-nightly
+#           sudo apt-get update -y -qq
+#           sudo apt-get install -y seacas-bin libseacas-dev
+    - name: exodus
+      run: |
+           git clone https://github.com/gsjaardema/seacas.git
+           cd seacas && export ACCESS=`pwd` && ./install-tpl.sh && cd $ACCESS
+           mkdir build && cd build
+           ${ACCESS}/cmake-exodus
+           make && make install
+    - name: configure
+      run: |
+           mkdir build && cd build
+           export ACCESS=`pwd`
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON -DSEACASExodus_DIR="${ACCESS}/../seacas/lib/cmake/SEACASExodus" ..
+    - name: build
+      run: cmake --build build
+    - name: test
+      run: cd build && make test
+
