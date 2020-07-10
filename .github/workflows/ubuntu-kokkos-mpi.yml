@@ -39,12 +39,13 @@ jobs:
       run: |
            mkdir build && cd build
            export ACCESS=`pwd`
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib" ..
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" ..
     - name: build
       run: cmake --build build
     - name: test
       run: |
-           cd build && ln -s ${ACCESS}/bin/exodiff exodiff && ln -s ${ACCESS}/bin/epu epu
+           cd build
+           export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
            make test
            cat Testing/Temporary/LastTest.log
 
