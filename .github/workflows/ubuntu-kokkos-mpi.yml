@@ -29,9 +29,11 @@ jobs:
            sudo apt-get install -y libtrilinos-tpetra-dev libtrilinos-kokkos-dev
            sudo apt-get install -y openmpi-bin libopenmpi-dev
            sudo apt-get install -y libmetis-dev
-#           sudo add-apt-repository ppa:nschloe/seacas-nightly
-#           sudo apt-get update -y -qq
-#           sudo apt-get install -y seacas-bin libseacas-dev
+           sudo add-apt-repository ppa:nschloe/seacas-nightly
+           sudo apt-get update -y -qq
+           sudo apt-get install -y seacas-bin libseacas-dev
+dpkg -L libseacas-dev
+dpkg -L seacas-bin 
     - name: exodus
       run: |
            git clone https://github.com/gsjaardema/seacas.git
@@ -48,8 +50,9 @@ jobs:
       run: cmake --build build
     - name: test
       run: |
-           alias exodiff="${ACCESS}/bin/exodiff"
-           alias epu="${ACCESS}/bin/epu"
-           cd build && make test
+#           alias exodiff="${ACCESS}/bin/exodiff"
+#           alias epu="${ACCESS}/bin/epu"
+           cd build && ln -s ${ACCESS}/bin/exodiff exodiff && ln -s ${ACCESS}/bin/epu epu
+           make test
            cat Testing/Temporary/LastTest.log
 
