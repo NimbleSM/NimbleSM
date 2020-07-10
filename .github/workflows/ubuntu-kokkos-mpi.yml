@@ -50,8 +50,6 @@ jobs:
       run: cmake --build build
     - name: test
       run: |
-#           alias exodiff="${ACCESS}/bin/exodiff"
-#           alias epu="${ACCESS}/bin/epu"
            cd build && ln -s ${ACCESS}/bin/exodiff exodiff && ln -s ${ACCESS}/bin/epu epu
            make test
            cat Testing/Temporary/LastTest.log
