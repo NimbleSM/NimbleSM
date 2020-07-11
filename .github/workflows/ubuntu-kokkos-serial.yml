@@ -39,6 +39,7 @@ jobs:
            cd kokkos
            mkdir build && mkdir install && cd build
            cmake .. -DCMAKE_INSTALL_PREFIX="${ACCESS}/kokkos/install"
+           cat CMakeCache.txt
            make && make install
     - name: configure
       run: |
