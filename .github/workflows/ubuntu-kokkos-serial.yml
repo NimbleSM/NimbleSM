@@ -34,23 +34,19 @@ jobs:
            sudo apt-get install -y seacas-bin libseacas-dev
     - name: kokkos
       run: |
-           export ACCESS=`pwd`
            git clone https://github.com/kokkos/kokkos.git
            cd kokkos
            mkdir build && mkdir install && cd build
-           cmake .. -DCMAKE_INSTALL_PREFIX="${ACCESS}/kokkos/install"
-           cat CMakeCache.txt
-           make && make install
+           cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
+           make && sudo make install
     - name: configure
       run: |
-           export ACCESS=`pwd`
            mkdir build && cd build
-           cmake -DCMAKE_CXX_FLAGS="-Werror -I${ACCESS}/kokkos/install/include/" \
+           cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON -DKokkos_DIR="${ACCESS}/kokkos/install/lib/cmake/Kokkos/" \
+                 -DHAVE_KOKKOS=ON \
                  ..
-           cat CMakeCache.txt
     - name: build
       run: cmake --build build
     - name: test
