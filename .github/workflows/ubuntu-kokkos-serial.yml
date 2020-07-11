@@ -45,11 +45,12 @@ jobs:
       run: |
            export ACCESS=`pwd`
            mkdir build && cd build
-           cmake -DCMAKE_CXX_FLAGS="-Werror" \
+           cmake -DCMAKE_CXX_FLAGS="-Werror -I${ACCESS}/kokkos/install/include/" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
                  -DHAVE_KOKKOS=ON -DKokkos_DIR="${ACCESS}/kokkos/install/lib/cmake/Kokkos/" \
                  ..
+           cat CMakeCache.txt
     - name: build
       run: cmake --build build
     - name: test
