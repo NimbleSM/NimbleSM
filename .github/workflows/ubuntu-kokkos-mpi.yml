@@ -46,7 +46,8 @@ jobs:
            cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON -DKokkos_ROOT="${ACCESS}/kokkos/install/" \
+                 -DHAVE_KOKKOS=ON -DKokkos_ROOT_DIR="${ACCESS}/kokkos/install/" \
+                 -DKokkos_INCLUDE_DIRS_RET="${ACCESS}/kokkos/install/include/" \
                  ..
     - name: build
       run: cmake --build build
