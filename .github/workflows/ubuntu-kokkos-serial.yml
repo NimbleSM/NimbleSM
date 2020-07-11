@@ -25,18 +25,29 @@ jobs:
       shell: bash
       run: |
            sudo apt-get update -y -qq
+           sudo apt-get install -y libmetis-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-           sudo apt-get install -y libtrilinos-tpetra-dev libtrilinos-kokkos-dev
-           sudo apt-get install -y libmetis-dev
            sudo add-apt-repository ppa:nschloe/seacas-nightly
            sudo apt-get update -y -qq
            sudo apt-get install -y seacas-bin libseacas-dev
+i    - name: kokkos
+      run: |
+           git clone https://github.com/kokkos/kokkos.git
+           cd kokkos && export ACCESS=`pwd`
+           mkdir build && mkdir install && cd build
+           cmake .. -DCMAKE_INSTALL_PREFIX="${ACCESS}/install"
+           make && make install
     - name: configure
       run: |
-           mkdir build && cd build
            export ACCESS=`pwd`
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_KOKKOS=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" ..
+           mkdir build && cd build
+           cmake -DCMAKE_CXX_FLAGS="-Werror" \
+                 -Dexodus_INCLUDE_DIR="/usr/include" \
+                 -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
+                 -DHAVE_KOKKOS=ON -DKokkos_ROOT="${ACCESS}/kokkos/install/" \
+                 ..
     - name: build
       run: cmake --build build
     - name: test
