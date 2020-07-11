@@ -32,7 +32,7 @@ jobs:
            sudo add-apt-repository ppa:nschloe/seacas-nightly
            sudo apt-get update -y -qq
            sudo apt-get install -y seacas-bin libseacas-dev
-i    - name: kokkos
+    - name: kokkos
       run: |
            git clone https://github.com/kokkos/kokkos.git
            cd kokkos && export ACCESS=`pwd`
