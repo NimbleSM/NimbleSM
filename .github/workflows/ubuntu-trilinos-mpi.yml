@@ -35,9 +35,12 @@ jobs:
            sudo apt-get install -y trilinos-all-dev
     - name: configure
       run: |
-           mkdir build && cd build
            export ACCESS=`pwd`
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" ..
+           mkdir build && cd build
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
+                 -Dexodus_INCLUDE_DIR="/usr/include" \
+                 -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
+                 ..
     - name: build
       run: cmake --build build
     - name: test
