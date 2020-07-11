@@ -44,7 +44,8 @@ jobs:
       run: |
            export ACCESS=`pwd`
            mkdir build && cd build
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DUSE_PURE_MPI=ON \
+           cmake -DCMAKE_CXX_FLAGS="-Werror -I${ACCESS}/kokkos/install/include/" \
+                 -DUSE_PURE_MPI=ON \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
                  -DHAVE_KOKKOS=ON -DKOKKOS_ROOT_DIR="${ACCESS}/kokkos/" \
