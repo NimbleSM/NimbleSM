@@ -56,32 +56,34 @@ if (USE_PURE_MPI)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
 endif()
 
-
 # Optional ArborX dependency
 if (HAVE_ARBORX)
-  ADD_DEFINITIONS(-DNIMBLE_HAVE_ARBORX)
-#  if (ARBORX_DEBUG_LEVEL)
-#    ADD_DEFINITIONS(-DARBORX_DEBUG_LEVEL=${ARBORX_DEBUG_LEVEL})
-#  endif()
+  add_definitions(-DNIMBLE_HAVE_ARBORX)
   set(NIMBLE_HAVE_ARBORX TRUE)
-  set(ArborX_DIR CACHE PATH "Path to ArborX install directory")
+  message(STATUS "Compiling with ArborX")
+
   find_package(ArborX REQUIRED)
+
+  target_link_libraries(nimble PRIVATE ArborX::ArborX)
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_ARBORX)
+
+  #  target_include_directories(nimble PRIVATE "~/nga/ArborX/include")
+  #  set(  ArborX_DIR CACHE PATH "Path to ArborX install directory")
+  #  set(ArborX_LIBS ArborX::ArborX)
+
   message(STATUS "Compiling with ArborX:")
-  message("       ARBORX_DIR: ${ArborX_DIR}")
+  message("       ArborX_DIR: ${ArborX_DIR}")
   if (NIMBLE_HAVE_MPI)
     message("       Using parallel collision detection (NIMBLE_HAVE_MPI=ON)")
   else()
     message("       Using only serial collision detection (NIMBLE_HAVE_MPI=OFF)")
   endif()
 
-  set(ArborX_LIBS ArborX::ArborX)
-
 else()
   message(STATUS "ArborX is NOT enabled.")
   SET(NIMBLE_HAVE_ARBORX FALSE)
   set(ArborX_LIBS)
 endif()
-
 
 
 # Optional BVH dependency

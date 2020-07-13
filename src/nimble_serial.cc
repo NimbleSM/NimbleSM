@@ -64,6 +64,11 @@
 #include "nimble_uq.h"
 #endif
 
+#ifdef NIMBLE_HAVE_ARBORX
+#include <ArborX.hpp>
+#endif
+
+
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
@@ -121,6 +126,11 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::Parser> parser,
                      const std::string& input_deck_name) {
   parser->Initialize(input_deck_name);
+
+#ifdef NIMBLE_HAVE_ARBORX
+  // Ensuring that ArborX is properly included and linked, and that objects can be instantiated
+  ArborX::Point test;
+#endif
 
   // Read the mesh
   std::string genesis_file_name = parser->GenesisFileName();
