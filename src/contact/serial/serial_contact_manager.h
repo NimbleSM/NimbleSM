@@ -45,7 +45,6 @@
 #define NIMBLE_SERIAL_CONTACT_MANAGER_H
 
 #include "../../nimble_contact_manager.h"
-#include "../../nimble_mpi.h"
 
 namespace nimble {
   class SerialContactManager : public ContactManager {
