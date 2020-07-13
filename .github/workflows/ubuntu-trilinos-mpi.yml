@@ -32,7 +32,19 @@ jobs:
            sudo add-apt-repository ppa:nschloe/seacas-nightly
            sudo apt-get update -y -qq
            sudo apt-get install -y seacas-bin libseacas-dev
-           sudo apt-get install -y trilinos-all-dev
+    - name: trilinos
+      run: |
+           git clone https://github.com/trilinos/Trilinos.git
+           cd Trilinos
+           mkdir build && cd build
+           cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
+                 -DTPL_ENABLE_MPI=ON \
+                 -DTrilinos_ENABLE_Tpetra=ON \
+                 -DTrilinos_ENABLE_Kokkos=ON \
+                 -DTrilinos_ENABLE_Fortran=OFF \
+                 -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON \
+                 ..
+           make -j4 && sudo make install
     - name: configure
       run: |
            export ACCESS=`pwd`
