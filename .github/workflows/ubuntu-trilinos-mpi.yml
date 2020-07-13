@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
 #      - master
+      - feature/#20-create-ci
 
 jobs:
 
