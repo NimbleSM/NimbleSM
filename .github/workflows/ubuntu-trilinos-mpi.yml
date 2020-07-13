@@ -30,9 +30,6 @@ jobs:
            sudo apt-get install -y libmetis-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-           sudo add-apt-repository ppa:nschloe/seacas-nightly
-           sudo apt-get update -y -qq
-           sudo apt-get install -y seacas-bin libseacas-dev
     - name: trilinos
       run: |
            git clone https://github.com/trilinos/Trilinos.git
@@ -43,7 +40,10 @@ jobs:
                  -DTrilinos_ENABLE_Tpetra=ON \
                  -DTrilinos_ENABLE_Kokkos=ON \
                  -DTrilinos_ENABLE_Fortran=OFF \
-                 -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON \
+                 -DTrilinos_ENABLE_Netcdf=ON \
+                 -DTrilinos_ENABLE_SEACASEpu=ON \
+                 -DTrilinos_ENABLE_SEACASExodiff=ON \
+                 -DTrilinos_ENABLE_SEACASExodus=ON \
                  ..
            make -j4 && sudo make install
     - name: configure
@@ -51,8 +51,6 @@ jobs:
            export ACCESS=`pwd`
            mkdir build && cd build
            cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
-                 -Dexodus_INCLUDE_DIR="/usr/include" \
-                 -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
                  ..
     - name: build
       run: cmake --build build
