@@ -7,8 +7,6 @@ on:
 #      - master
       - feature/#20-create-ci
   pull_request:
-    branches:
-#      - master
 
 jobs:
 
