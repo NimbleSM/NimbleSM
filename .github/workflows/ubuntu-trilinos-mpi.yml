@@ -1,0 +1,59 @@
+name: ubuntu-trilinos-mpi
+  
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:  
+      - master
+  pull_request:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CMAKE_BUILD_TYPE: release
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: bash
+      run: |
+           sudo apt-get update -y -qq
+           sudo apt-get install -y libblas-dev liblapack-dev
+           sudo apt-get install -y libmetis-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
+           sudo apt-get install -y netcdf-bin libnetcdf-dev
+           sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
+    - name: trilinos
+      run: |
+           git clone https://github.com/trilinos/Trilinos.git
+           cd Trilinos
+           mkdir build && cd build
+           cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
+                 -DTPL_ENABLE_MPI=ON \
+                 -DTrilinos_ENABLE_Tpetra=ON \
+                 -DTrilinos_ENABLE_Kokkos=ON \
+                 -DTrilinos_ENABLE_Fortran=OFF \
+                 -DTrilinos_ENABLE_Netcdf=ON \
+                 -DTrilinos_ENABLE_SEACASEpu=ON \
+                 -DTrilinos_ENABLE_SEACASExodiff=ON \
+                 -DTrilinos_ENABLE_SEACASExodus=ON \
+                 ..
+           make -j4 && sudo make install
+    - name: configure
+      run: |
+           export ACCESS=`pwd`
+           mkdir build && cd build
+           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
+                 ..
+    - name: build
+      run: cmake --build build
+    - name: test
+      run: |
+           cd build
+           export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+           make test
+
