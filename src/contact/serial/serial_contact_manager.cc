@@ -47,6 +47,5 @@ namespace nimble {
   SerialContactManager::SerialContactManager(std::shared_ptr<ContactInterface> interface)
     : ContactManager{interface} {
 
-
   }
 }
