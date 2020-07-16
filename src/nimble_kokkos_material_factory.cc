@@ -46,18 +46,19 @@
 #include <utility>
 #include <nimble_kokkos_defs.h>
 #include <nimble_kokkos_material_factory.h>
-#include <nimble_material_factory_util.h>
+#include <nimble_material.h>
 
 namespace nimble_kokkos {
 
 using nimble::Material;
 
 MaterialFactory::MaterialFactory()
-    : material_device(nullptr) {
+    : MaterialFactoryBase(),
+      material_device(nullptr) {
 }
 
 void MaterialFactory::parse_and_create(const std::string& mat_params, const int num_points) {
-  material_params = nimble::ParseMaterialParametersString(mat_params.c_str(), num_points);
+  material_params = ParseMaterialParametersString(mat_params.c_str(), num_points);
   create();
 }
 
