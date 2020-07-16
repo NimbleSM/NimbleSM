@@ -25,9 +25,6 @@ namespace nimble {
     BvhContactManager &operator=( const BvhContactManager &) = delete;
     BvhContactManager &operator=( BvhContactManager &&) noexcept;
 
-    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name) override {}
-    void ContactVisualizationWriteStep( double time ) override;
-
     ~BvhContactManager();
 
 

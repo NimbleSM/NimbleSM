@@ -58,6 +58,20 @@ namespace nimble {
     } );
 
     m_world.finish_iteration();
+
+    // Update contact entities
+    for ( auto &&face : contact_faces_ )
+    {
+      face.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
+                          [&face]( NarrowphaseResult &res ){ return res.second_global_id == face.contact_entity_global_id(); } ) > 0 );
+    }
+
+    for ( auto &&node : contact_nodes_ )
+    {
+      node.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
+                                              [&node]( NarrowphaseResult &res ){ return res.first_global_id == node.contact_entity_global_id(); } ) > 0 );
+    }
+
   }
   namespace
   {
@@ -226,54 +240,4 @@ namespace nimble {
       vis_file.close();
     }
   }
-
-  void
-  BvhContactManager::ContactVisualizationWriteStep( double time )
-  {
-    std::vector<ContactEntity> colliding_faces;
-    std::vector<ContactEntity> noncolliding_faces;
-    for ( auto &&face : contact_faces_ )
-    {
-      if ( std::count_if( m_last_results.begin(), m_last_results.end(),
-                          [&face]( NarrowphaseResult &res ){ return res.second_global_id == face.contact_entity_global_id(); } ) )
-      {
-        colliding_faces.push_back(face);
-      } else {
-        noncolliding_faces.push_back(face);
-      }
-    }
-
-    std::vector<ContactEntity> colliding_nodes;
-    std::vector<ContactEntity> noncolliding_nodes;
-    for ( auto &&node : contact_nodes_ )
-    {
-      if ( std::count_if( m_last_results.begin(), m_last_results.end(),
-                          [&node]( NarrowphaseResult &res ){ return res.first_global_id == node.contact_entity_global_id(); } ) )
-      {
-        colliding_nodes.push_back(node);
-      } else {
-        noncolliding_nodes.push_back(node);
-      }
-    }
-
-    static int step = 0;
-
-    std::stringstream node_colliding_out_name;
-    node_colliding_out_name << "nodes_colliding." << Rank() << '.';
-    std::stringstream face_colliding_out_name;
-    face_colliding_out_name << "faces_colliding." << Rank() << '.';
-
-    std::stringstream node_noncolliding_out_name;
-    node_noncolliding_out_name << "nodes_noncolliding." << Rank() << '.';
-    std::stringstream face_noncolliding_out_name;
-    face_noncolliding_out_name << "faces_noncolliding." << Rank() << '.';
-
-    WriteContactNodesToVTKFile(colliding_nodes, node_colliding_out_name.str(), step);
-    WriteContactFacesToVTKFile(colliding_faces, face_colliding_out_name.str(), step);
-    WriteContactNodesToVTKFile(noncolliding_nodes, node_noncolliding_out_name.str(), step);
-    WriteContactFacesToVTKFile(noncolliding_faces, face_noncolliding_out_name.str(), step);
-
-    ++step;
-  }
-
 }
