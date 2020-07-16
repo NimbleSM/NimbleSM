@@ -57,7 +57,89 @@
 
 namespace nimble {
 
-  void ParseContactCommand(std::string const & command,
+    void ContactManager::ApplyDisplacements(const double * const displacement) {
+      for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
+        int node_id = node_ids_[i_node];
+        for (int i=0 ; i<3 ; i++) {
+          coord_[3*i_node + i] = model_coord_[3*i_node + i] + displacement[3*node_id + i];
+        }
+      }
+      for (unsigned int i_face=0 ; i_face<contact_faces_.size() ; i_face++) {
+        contact_faces_[i_face].SetCoordinates(coord_.data());
+      }
+      for (unsigned int i_node=0 ; i_node<contact_nodes_.size() ; i_node++) {
+        contact_nodes_[i_node].SetCoordinates(coord_.data());
+      }
+    }
+
+    void ContactManager::GetForces(double * const contact_force) {
+        for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
+            int node_id = node_ids_[i_node];
+            for (int i=0 ; i<3 ; i++) {
+                contact_force[3*node_id + i] = force_[3*i_node + i];
+            }
+        }
+    }
+
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    void ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+
+        int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+
+        // circumvent lambda *this glitch
+        nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+        nimble_kokkos::DeviceScalarNodeView force = force_d_;
+
+        Kokkos::parallel_for("ContactManager::GetForces",
+                             num_nodes_in_contact_manager,
+                             KOKKOS_LAMBDA(const int i) {
+                                 int node_id = node_ids(i);
+                                 contact_force_d(node_id, 0) = force(3*i);
+                                 contact_force_d(node_id, 1) = force(3*i+1);
+                                 contact_force_d(node_id, 2) = force(3*i+2);
+                             });
+    }
+
+    void ContactManager::ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
+
+        int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+        int num_contact_node_entities = contact_nodes_d_.extent(0);
+        int num_contact_face_entities = contact_faces_d_.extent(0);
+
+        // circumvent lambda *this glitch
+        nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+        nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
+        nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
+        nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+        nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
+                             num_nodes_in_contact_manager,
+                             KOKKOS_LAMBDA(const int i) {
+                                 int node_id = node_ids(i);
+                                 coord(3*i)   = model_coord(3*i)   + displacement_d(node_id, 0);
+                                 coord(3*i+1) = model_coord(3*i+1) + displacement_d(node_id, 1);
+                                 coord(3*i+2) = model_coord(3*i+2) + displacement_d(node_id, 2);
+                             });
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
+                             num_contact_node_entities,
+                             KOKKOS_LAMBDA(const int i_node) {
+                                 contact_nodes(i_node).SetCoordinates(coord);
+                             });
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
+                             num_contact_face_entities,
+                             KOKKOS_LAMBDA(const int i_face) {
+                                 contact_faces(i_face).SetCoordinates(coord);
+                             });
+
+    }
+
+#endif // NIMBLE_HAVE_KOKKOS
+
+    void ParseContactCommand(std::string const & command,
                            std::vector<std::string> & master_block_names,
                            std::vector<std::string> & slave_block_names,
                            double & penalty_parameter) {
