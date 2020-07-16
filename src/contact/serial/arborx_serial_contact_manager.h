@@ -51,6 +51,8 @@
 
 #include "serial_contact_manager.h"
 
+#include <ArborX.hpp>
+
 namespace nimble {
 
 /// Structure from BVH contact manager
