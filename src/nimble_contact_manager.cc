@@ -83,6 +83,7 @@ namespace nimble {
 
 
 #ifdef NIMBLE_HAVE_KOKKOS
+    // Kokkos Versions of GetForces and ApplyDisplacements
     void ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
 
         int num_nodes_in_contact_manager = node_ids_d_.extent(0);

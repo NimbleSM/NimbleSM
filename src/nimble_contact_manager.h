@@ -74,9 +74,6 @@
 #endif
 
 namespace nimble {
-
-class ContactInterface;
-
   class ContactManager {
 
   public:
@@ -203,7 +200,7 @@ class ContactInterface;
 #endif
 
     std::shared_ptr<ContactInterface> contact_interface;
-};
+  };
 
 } // namespace nimble
 
