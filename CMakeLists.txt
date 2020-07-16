@@ -31,6 +31,7 @@ option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
 option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
@@ -161,6 +162,10 @@ include_directories(src)
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(examples)
+
+if(NIMBLE_ENABLE_UNIT_TESTS)
+  add_subdirectory(unit_tests)
+endif()
 
 install(TARGETS nimble EXPORT NimbleSMTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
