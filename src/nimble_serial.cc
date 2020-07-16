@@ -127,11 +127,6 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                      const std::string& input_deck_name) {
   parser->Initialize(input_deck_name);
 
-#ifdef NIMBLE_HAVE_ARBORX
-  // Ensuring that ArborX is properly included and linked, and that objects can be instantiated
-  ArborX::Point test;
-#endif
-
   // Read the mesh
   std::string genesis_file_name = parser->GenesisFileName();
   std::string rve_genesis_file_name = parser->RVEGenesisFileName();

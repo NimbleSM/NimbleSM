@@ -47,20 +47,15 @@
 #include "../../nimble_contact_manager.h"
 
 namespace nimble {
-  class SerialContactManager : public ContactManager {
+  class SerialContactManager: public ContactManager {
   public:
 
     SerialContactManager(std::shared_ptr<ContactInterface> interface);
 
     virtual void ComputeSerialContactForce(int step, bool debug_output) = 0;
 
-//    int Rank() const noexcept { return m_rank; }
-//    int NumRanks() const noexcept { return m_num_ranks; }
-
   private:
 
-//    int m_rank;
-//    int m_num_ranks;
   };
 }
 

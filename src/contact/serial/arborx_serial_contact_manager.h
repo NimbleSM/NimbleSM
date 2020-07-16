@@ -4,6 +4,8 @@
 #include "serial_contact_manager.h"
 #include <memory>
 
+#include <ArborX.hpp>
+
 namespace nimble {
 /*  struct NarrowphaseResult
   {
@@ -14,23 +16,25 @@ namespace nimble {
 
   class ArborXSerialContactManager: public SerialContactManager
   {
-/*  public:
-    ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface, std::size_t _overdecomposition);
+  public:
+    ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface);
     ArborXSerialContactManager(const ArborXSerialContactManager &) = delete;
     ArborXSerialContactManager(ArborXSerialContactManager &&) noexcept;
 
     ArborXSerialContactManager &operator=( const ArborXSerialContactManager &) = delete;
     ArborXSerialContactManager &operator=( ArborXSerialContactManager &&) noexcept;
 
-    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name) override {}
-    void ContactVisualizationWriteStep( double time ) override;
+//    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name) override {}
+//    void ContactVisualizationWriteStep( double time ) override;
 
     ~ArborXSerialContactManager();
 
-    void ComputeArborXSerialContactForce(int step, bool debug_output) override;
+//    void ComputeContactForce(int step, bool debug_output) override;
 
   private:
-    std::vector< NarrowphaseResult > m_last_results;
+      using bvh_type = ArborX::BVH< nimble_kokkos::kokkos_device_memory_space >;
+
+/*    std::vector< NarrowphaseResult > m_last_results;
 */
   };
 }
