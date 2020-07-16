@@ -59,36 +59,6 @@ if (USE_PURE_MPI)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
 endif()
 
-# Optional ArborX dependency
-if (HAVE_ARBORX)
-  add_definitions(-DNIMBLE_HAVE_ARBORX)
-  set(NIMBLE_HAVE_ARBORX TRUE)
-  message(STATUS "Compiling with ArborX")
-
-  find_package(ArborX REQUIRED)
-
-  target_link_libraries(nimble PRIVATE ArborX::ArborX Kokkos::kokkos)
-  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_ARBORX)
-
-  #  target_include_directories(nimble PRIVATE "~/nga/ArborX/include")
-  #  set(  ArborX_DIR CACHE PATH "Path to ArborX install directory")
-  #  set(ArborX_LIBS ArborX::ArborX)
-
-  message(STATUS "Compiling with ArborX:")
-  message("       ArborX_DIR: ${ArborX_DIR}")
-  if (NIMBLE_HAVE_MPI)
-    message("       Using parallel collision detection (NIMBLE_HAVE_MPI=ON)")
-  else()
-    message("       Using only serial collision detection (NIMBLE_HAVE_MPI=OFF)")
-  endif()
-
-else()
-  message(STATUS "ArborX is NOT enabled.")
-  SET(NIMBLE_HAVE_ARBORX FALSE)
-  set(ArborX_LIBS)
-endif()
-
-
 # Optional BVH dependency
 if (HAVE_BVH)
   ADD_DEFINITIONS(-DNIMBLE_HAVE_BVH)
@@ -188,6 +158,28 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
   if(CRAY)
     target_link_libraries(nimble PRIVATE hdf5_hl hdf5 z)
   endif()
+endif()
+
+# Optional ArborX dependency
+if (HAVE_ARBORX)
+  message(STATUS "Compiling with ArborX:")
+  find_package(ArborX REQUIRED)
+  #
+  add_definitions(-DNIMBLE_HAVE_ARBORX)
+  set(NIMBLE_HAVE_ARBORX TRUE)
+  target_link_libraries(nimble PRIVATE ArborX::ArborX)
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_ARBORX)
+  #
+  message("       ArborX_DIR: ${ArborX_DIR}")
+  if (NIMBLE_HAVE_MPI)
+    message("       Using parallel collision detection (NIMBLE_HAVE_MPI=ON)")
+  else()
+    message("       Using only serial collision detection (NIMBLE_HAVE_MPI=OFF)")
+  endif()
+else()
+  message(STATUS "ArborX is NOT enabled.")
+  SET(NIMBLE_HAVE_ARBORX FALSE)
+  set(ArborX_LIBS)
 endif()
 
 include_directories(src)
