@@ -75,7 +75,7 @@ IF(NOT NIMBLE_HAVE_KOKKOS)
 ENDIF()
 
 IF(NIMBLE_HAVE_UQ)
-  target_sources(nimble PRIVATE 
+  target_sources(nimble PRIVATE
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq.cc
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq_method.cc
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq_method_taylor_series.cc
@@ -97,7 +97,8 @@ IF (NIMBLE_HAVE_ARBORX)
   message("cmake: Linking ArborX")
   #  target_link_libraries(NimbleSM_Serial PRIVATE ArborX::ArborX)
   #  add_library(ArborX INTERFACE)
-  target_link_libraries(NimbleSM_Serial PRIVATE ArborX::ArborX)
+  add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
+  target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX Kokkos::kokkos)
 #  target_include_directories(NimbleSM_Serial PRIVATE "~/nga/ArborX/include")
 ENDIF()
 

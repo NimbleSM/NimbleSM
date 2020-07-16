@@ -59,6 +59,11 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos.h"
 
+#ifdef NIMBLE_HAVE_ARBORX
+#include "contact/serial/arborx_serial_contact_manager.h"
+#endif
+
+
 #ifdef NIMBLE_HAVE_MPI
 #include "nimble.mpi.utils.h"
 #endif
@@ -372,7 +377,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
 
+#ifdef NIMBLE_HAVE_ARBORX
+  nimble::ArborXSerialContactManager contact_manager(contact_interface);
+#else
   nimble::ContactManager contact_manager(contact_interface);
+#endif // NIMBLE_HAVE_ARBORX
+
   bool contact_enabled = parser->HasContact();
   bool contact_visualization = parser->ContactVisualization();
   if (contact_enabled) {

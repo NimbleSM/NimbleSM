@@ -145,7 +145,7 @@ namespace nimble {
     void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d);
 #endif
 
-    void ComputeContactForce(int step, bool debug_output);
+        virtual void ComputeContactForce(int step, bool debug_output);
 
     void BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
                                          std::vector<ContactEntity> const & triangles);
