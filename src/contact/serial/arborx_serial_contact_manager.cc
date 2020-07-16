@@ -211,7 +211,6 @@ namespace nimble {
       m_last_results.emplace_back( _res );
     } );
 */
-
   }
 
 }
