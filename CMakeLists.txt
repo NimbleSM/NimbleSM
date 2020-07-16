@@ -67,7 +67,7 @@ if (HAVE_ARBORX)
 
   find_package(ArborX REQUIRED)
 
-  target_link_libraries(nimble PRIVATE ArborX::ArborX)
+  target_link_libraries(nimble PRIVATE ArborX::ArborX Kokkos::kokkos)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_ARBORX)
 
   #  target_include_directories(nimble PRIVATE "~/nga/ArborX/include")
