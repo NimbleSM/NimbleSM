@@ -64,11 +64,6 @@
 #include "nimble_uq.h"
 #endif
 
-#ifdef NIMBLE_HAVE_ARBORX
-#include <ArborX.hpp>
-#endif
-
-
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
