@@ -104,6 +104,10 @@ namespace ArborX
     };
 } // namespace ArborX
 
+#include <ArborX.hpp>
+
+#include "arborx_serial_contact_manager.h"
+
 namespace nimble {
 
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
