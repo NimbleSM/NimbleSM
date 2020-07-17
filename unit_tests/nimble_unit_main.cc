@@ -1,4 +1,3 @@
-/*
 //@HEADER
 // ************************************************************************
 //
@@ -39,53 +38,13 @@
 //
 // ************************************************************************
 //@HEADER
-*/
 
-#include <stdexcept>
-#include <tuple>
-#include <utility>
-#include <nimble_kokkos_defs.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
+#include <gtest/gtest.h>
 
-namespace nimble_kokkos {
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
 
-using nimble::Material;
+  int err = RUN_ALL_TESTS();
 
-MaterialFactory::MaterialFactory()
-    : MaterialFactoryBase(),
-      material_device(nullptr) {
-}
-
-void MaterialFactory::parse_and_create(const std::string& mat_params, const int num_points) {
-  material_params = ParseMaterialParametersString(mat_params.c_str(), num_points);
-  create();
-}
-
-template <typename MatType>
-inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
-  auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  nimble::Material* pointer_that_lives_on_the_stack = mat_device;
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (pointer_that_lives_on_the_stack) MatType(mat_params_struct);
-  });
-  return std::make_pair(mat_host, mat_device);
-}
-
-void MaterialFactory::create() {
-  char name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  material_params->GetMaterialName(name, false);
-  std::string name_string(name);
-  if (nimble::StringsAreEqual(name_string.c_str(), "neohookean")) {
-    std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        *material_params);
-  } else if (nimble::StringsAreEqual(name_string.c_str(), "elastic")) {
-    std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        *material_params);
-  } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
-  }
-}
-
+  return err;
 }

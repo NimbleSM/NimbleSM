@@ -50,6 +50,8 @@
 namespace nimble {
 
 std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const char *material_parameters,
+                                                                          const std::vector<std::string>& valid_double_names,
+                                                                          const std::vector<std::string>& valid_string_names,
                                                                           const int num_material_points = 0);
 
 }

@@ -44,8 +44,10 @@
 #ifndef SRC_NIMBLE_MATERIAL_FACTORY_H_
 #define SRC_NIMBLE_MATERIAL_FACTORY_H_
 
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace nimble {
 class Material;
@@ -54,7 +56,38 @@ class MaterialParameters;
 
 namespace nimble {
 
-class MaterialFactory {
+class MaterialFactoryBase {
+ private:
+  static inline void find_or_insert_string_in_vector(const std::string &str, std::vector<std::string> &vec) {
+    if (std::find(vec.begin(), vec.end(), str) == vec.end()) {
+      vec.push_back(str);
+    }
+  }
+
+ public:
+  MaterialFactoryBase();
+  virtual ~MaterialFactoryBase() = default;
+
+  virtual void create() = 0;
+
+  inline void add_valid_double_parameter_name(const char *name) {
+    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
+  }
+
+  inline void add_valid_string_parameter_name(const char *name) {
+    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
+  }
+
+ protected:
+  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const char *material_parameters,
+                                                                            const int num_material_points = 0) const;
+
+ private:
+  std::vector<std::string> valid_double_parameter_names;
+  std::vector<std::string> valid_string_parameter_names;
+};
+
+class MaterialFactory : public MaterialFactoryBase {
  public:
   MaterialFactory();
   virtual ~MaterialFactory() = default;
@@ -64,7 +97,7 @@ class MaterialFactory {
   inline std::shared_ptr<Material> get_material() const { return material; }
 
  protected:
-  virtual void create();
+  virtual void create() override;
 
   std::shared_ptr<Material> material;
 

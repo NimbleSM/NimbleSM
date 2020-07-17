@@ -41,11 +41,18 @@
 //@HEADER
 */
 
+#include <nimble_material_factory.h>
 #include "nimble_material.h"
 #include "nimble_utils.h"
 #include <sstream>
 
 namespace nimble {
+
+void ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase& factory) {
+  factory.add_valid_double_parameter_name("bulk_modulus");
+  factory.add_valid_double_parameter_name("shear_modulus");
+  factory.add_valid_double_parameter_name("density");
+}
 
   ElasticMaterial::ElasticMaterial(MaterialParameters const & material_parameters)
     : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
@@ -219,6 +226,12 @@ namespace nimble {
       material_tangent[offset + 34] = 0.0;
       material_tangent[offset + 35] = mu;
     }
+  }
+
+  void NeohookeanMaterial::register_supported_material_parameters(MaterialFactoryBase& factory) {
+    factory.add_valid_double_parameter_name("bulk_modulus");
+    factory.add_valid_double_parameter_name("shear_modulus");
+    factory.add_valid_double_parameter_name("density");
   }
 
   NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const & material_parameters)
