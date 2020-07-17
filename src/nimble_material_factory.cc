@@ -49,6 +49,7 @@
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
 #include <stddef.h>
+#include <cassert>
 
 namespace nimble {
 
