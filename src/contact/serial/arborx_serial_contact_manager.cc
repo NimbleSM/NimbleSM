@@ -42,22 +42,71 @@
 */
 
 #ifdef NIMBLE_HAVE_ARBORX
-
-#include <fstream>
+#include "arborx_serial_contact_manager.h"
 
 #include <ArborX.hpp>
+#include <Kokkos_Core.hpp>
 
-#include "arborx_serial_contact_manager.h"
+#include <random>
+#include <vector>
+#include <iostream>
+
+namespace ArborX
+{
+    template <typename T, typename Tag>
+    struct AccessTraits<std::vector<T>, Tag>
+    {
+        static std::size_t size(std::vector<T> const &v) { return v.size(); }
+        KOKKOS_FUNCTION static T const &get(std::vector<T> const &v, std::size_t i)
+        {
+          // TODO ACCESS TRAIT, TO RETURN POINT OR BOX
+          return v[i];
+        }
+        using memory_space = Kokkos::HostSpace;
+    };
+} // namespace ArborX
 
 namespace nimble {
 
-  using bvh_type = ArborX::BVH< nimble_kokkos::kokkos_device_memory_space >;
+  using arborx_bvh_type = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
 
-  ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface):
-  SerialContactManager(interface)
+
+
+  /*!
+   * Contact Manager specific to ArborX library
+   *
+   * Global variables contact_faces_d_
+   *
+   * @param interface Contact Interface
+   */
+  ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
+        : SerialContactManager(interface)
   {
-      // Here will be initialisation stuffs
-      ArborX::Point point;
+      // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
+//      std::vector<ArborX::Point> points;
+//
+//      // Fill vector with random points in [-1, 1]^3
+//      std::uniform_real_distribution<float> dis{-1., 1.};
+//      std::default_random_engine gen;
+//      auto rd = [&]() { return dis(gen); };
+//      std::generate_n(std::back_inserter(points), 100, [&]() {
+//          return ArborX::Point{rd(), rd(), rd()};
+//      });
+//
+//      // Pass directly the vector of points to use the access traits defined above
+//      ArborX::BVH<Kokkos::HostSpace> bvh{Kokkos::DefaultHostExecutionSpace{},
+//                                         points};
+//
+//      // As a supported alternative, wrap the vector in an unmanaged View
+//      bvh = ArborX::BVH<Kokkos::HostSpace>{
+//              Kokkos::DefaultHostExecutionSpace{},
+//              Kokkos::View<ArborX::Point *, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>{
+//                      points.data(), points.size()}};
+      // /EXAMPLE
+
+      arborx_bvh_type bvh2{nimble_kokkos::kokkos_device_execution_space{},
+                           contact_nodes_d_};
+
   }
 
   void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {

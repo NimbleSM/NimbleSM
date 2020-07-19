@@ -6,6 +6,7 @@ else()
 endif()
 
 set(NimbleSM_Serial ${PROJECT_BINARY_DIR}/src/NimbleSM_Serial)
+set(NimbleSM_ArborX ${PROJECT_BINARY_DIR}/src/NimbleSM_ArborX)
 set(NimbleSM_MPI ${PROJECT_BINARY_DIR}/src/NimbleSM_MPI)
 set(NimbleSM_Kokkos ${PROJECT_BINARY_DIR}/src/NimbleSM_Kokkos)
 set(NimbleSM_Darma ${PROJECT_BINARY_DIR}/src/NimbleSM_Darma)
