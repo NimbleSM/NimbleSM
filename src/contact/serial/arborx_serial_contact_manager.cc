@@ -105,13 +105,31 @@ namespace ArborX
 } // namespace ArborX
 
 #include <ArborX.hpp>
+#include <Kokkos_Core.hpp>
 
-#include "arborx_serial_contact_manager.h"
+#include <random>
+#include <vector>
+#include <iostream>
+
+namespace ArborX
+{
+    template <typename T, typename Tag>
+    struct AccessTraits<std::vector<T>, Tag>
+    {
+        static std::size_t size(std::vector<T> const &v) { return v.size(); }
+        KOKKOS_FUNCTION static T const &get(std::vector<T> const &v, std::size_t i)
+        {
+          // TODO ACCESS TRAIT, TO RETURN POINT OR BOX
+          return v[i];
+        }
+        using memory_space = Kokkos::HostSpace;
+    };
+} // namespace ArborX
 
 namespace nimble {
 
-  using memory_space = nimble_kokkos::kokkos_device_memory_space;
-  using arborx_bvh = ArborX::BVH<memory_space>;
+  using arborx_bvh_type = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
+
 
   /*!
    * Contact Manager specific to ArborX library
@@ -123,8 +141,7 @@ namespace nimble {
   ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
         : SerialContactManager(interface)
   {
-
-// EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
+      // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
 //      std::vector<ArborX::Point> points;
 //
 //      // Fill vector with random points in [-1, 1]^3
