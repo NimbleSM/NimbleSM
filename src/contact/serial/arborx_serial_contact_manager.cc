@@ -53,24 +53,50 @@
 
 namespace ArborX
 {
-    template <typename T, typename Tag>
-    struct AccessTraits<std::vector<T>, Tag>
+    template <>
+    struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
     {
-        static std::size_t size(std::vector<T> const &v) { return v.size(); }
-        KOKKOS_FUNCTION static T const &get(std::vector<T> const &v, std::size_t i)
+        // size returns the number of elements in the View
+        static std::size_t size(nimble_kokkos::DeviceContactEntityArrayView const &v) { return v.size(); }
+
+        // Returns an ArborX::Box for each XXX within the nimble view
+        KOKKOS_FUNCTION static ArborX::Box get(nimble_kokkos::DeviceContactEntityArrayView const &v, std::size_t i)
         {
           // TODO ACCESS TRAIT, TO RETURN POINT OR BOX
-          return v[i];
+          nimble::ContactEntity &e = v(i);
+          ArborX::Point point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+          ArborX::Point point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+          ArborX::Box box(point1, point2);
+
+          return box;
         }
-        using memory_space = Kokkos::HostSpace;
+        using memory_space = nimble_kokkos::kokkos_device_memory_space;
+    };
+
+    template <>
+    struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView const, PredicatesTag>
+    {
+        static std::size_t size(nimble_kokkos::DeviceContactEntityArrayView const &v) { return v.size(); }
+
+        KOKKOS_FUNCTION static auto get(nimble_kokkos::DeviceContactEntityArrayView const &v, std::size_t i)
+        {
+          nimble::ContactEntity &e = v(i);
+          ArborX::Point point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+          ArborX::Point point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+          ArborX::Box box(point1, point2);
+
+
+          // JLP: /!\ To clarify. What does Intersects returns, how is it used afterwards?
+
+          return intersects(box);
+        }
+        using memory_space = nimble_kokkos::kokkos_device_memory_space;
     };
 } // namespace ArborX
 
 namespace nimble {
 
-  using arborx_bvh_type = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
-
-
+  using arborx_bvh = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
 
   /*!
    * Contact Manager specific to ArborX library
@@ -82,7 +108,7 @@ namespace nimble {
   ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
         : SerialContactManager(interface)
   {
-      // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
+// EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
 //      std::vector<ArborX::Point> points;
 //
 //      // Fill vector with random points in [-1, 1]^3
@@ -102,10 +128,19 @@ namespace nimble {
 //              Kokkos::DefaultHostExecutionSpace{},
 //              Kokkos::View<ArborX::Point *, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>{
 //                      points.data(), points.size()}};
-      // /EXAMPLE
+// /EXAMPLE
 
-      arborx_bvh_type bvh2{nimble_kokkos::kokkos_device_execution_space{},
+      // Setting-up the query. Example from https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_cuda_access_traits.cpp
+
+      // ArborX bounded volume hierarchy setup
+      // JLP:  /!\ Does contact_nodes_d_ contains all the information required for our contact search? contact_faces_d_ ?
+      arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
                            contact_nodes_d_};
+
+      // JLP: /!\ Indices and offsets?
+      // Kokkos::View<int *, device_type> indices("indices", 0);
+      // Kokkos::View<int *, device_type> offset("offset", 0);
+      // bhv.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_, indices, offset);
 
   }
 
