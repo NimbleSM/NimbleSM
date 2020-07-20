@@ -104,32 +104,9 @@ namespace ArborX
     };
 } // namespace ArborX
 
-#include <ArborX.hpp>
-#include <Kokkos_Core.hpp>
-
-#include <random>
-#include <vector>
-#include <iostream>
-
-namespace ArborX
-{
-    template <typename T, typename Tag>
-    struct AccessTraits<std::vector<T>, Tag>
-    {
-        static std::size_t size(std::vector<T> const &v) { return v.size(); }
-        KOKKOS_FUNCTION static T const &get(std::vector<T> const &v, std::size_t i)
-        {
-          // TODO ACCESS TRAIT, TO RETURN POINT OR BOX
-          return v[i];
-        }
-        using memory_space = Kokkos::HostSpace;
-    };
-} // namespace ArborX
-
 namespace nimble {
 
-  using arborx_bvh_type = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
-
+  using arborx_bvh = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
 
   /*!
    * Contact Manager specific to ArborX library
@@ -141,7 +118,7 @@ namespace nimble {
   ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
         : SerialContactManager(interface)
   {
-      // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
+// EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
 //      std::vector<ArborX::Point> points;
 //
 //      // Fill vector with random points in [-1, 1]^3
@@ -170,68 +147,14 @@ namespace nimble {
       arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
                            contact_faces_d_};
 
-      //
-      // indices : position of the primitives that satisfy the predicates.
-      // offsets : predicate offsets in indices.
-      //
-      // indices stores the indices of the objects that satisfy the predicates.
-      // offset stores the locations in the indices view that start a predicate, that is,
-      // predicates(q) is satisfied by indices(o) for primitives(q) <= o < primitives(q+1).
-      //
-      // Following the usual convention, offset(n) = nnz, where n is the number of queries
-      // that were performed and nnz is the total number of collisions.
-      //
-      // (From https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery )
-      //
-      Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
-      Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
-
-      // Define a copy of contact_nodes_d_ to View in ArborX
-      // Number of queries, n = size of contact_nodes_d
-      // Size of offset = n + 1
-      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
-                indices, offset);
-
-      ///--- For debugging purposes ---
-      for (int i = 0; i < offset.extent(0); ++i)
-        std::cout << " offset[" << i << "] = " << offset(i) << "\n";
-
-      for (int i = 0; i < indices.extent(0); ++i)
-        std::cout << " indices[" << i << "] = " << indices(i) << "\n";
-
-      for (int i = 0; i < offset.extent(0) - 1; ++i) {
-        for (int j = offset(i); j < offset(i + 1); ++j) {
-          std::cout << " i " << i << " offset " << offset(i) << " x " << offset(i+1)
-                    << " indices " << indices(j) 
-                    << std::endl;
-        }
-      }
-      //--------------------------------
+      // JLP: /!\ Indices and offsets?
+      // Kokkos::View<int *, device_type> indices("indices", 0);
+      // Kokkos::View<int *, device_type> offset("offset", 0);
+      // bhv.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_, indices, offset);
 
   }
 
   void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
-
-    // Update collision objects, this will build the trees
-//    for ( auto &&node : contact_nodes_ )
-//      node.RecomputeKdop();
-//    for ( auto &&face : contact_faces_ )
-//      face.RecomputeKdop();
-
-/*
-    //
-    // Extracted from BVH version
-    //
-    m_nodes->set_entity_data(contact_nodes_);
-    m_faces->set_entity_data(contact_faces_);
-
-    m_nodes->broadphase(*m_faces);
-
-    m_last_results.clear();
-    m_nodes->for_each_result< NarrowphaseResult >( [this]( const NarrowphaseResult &_res ){
-      m_last_results.emplace_back( _res );
-    } );
-*/
   }
 
 }
