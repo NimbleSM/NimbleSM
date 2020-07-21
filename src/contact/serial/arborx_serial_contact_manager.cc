@@ -106,7 +106,8 @@ namespace ArborX
 
 namespace nimble {
 
-  using arborx_bvh = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
+  using memory_space = nimble_kokkos::kokkos_device_memory_space;
+  using arborx_bvh = ArborX::BVH<memory_space>;
 
   /*!
    * Contact Manager specific to ArborX library
@@ -147,10 +148,20 @@ namespace nimble {
       arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
                            contact_faces_d_};
 
-      // JLP: /!\ Indices and offsets?
-      // Kokkos::View<int *, device_type> indices("indices", 0);
-      // Kokkos::View<int *, device_type> offset("offset", 0);
-      // bhv.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_, indices, offset);
+      //
+      // indices = contains the indices associated with the bounding boxes
+      // that satisfy the queries
+      // offsets = contains the offsets in indices associated with each query.
+      //
+      // Two Kokkos::Views are necessary as the number of results for each query may differ.
+      //
+      Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
+      Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+
+      // Define a copy of contact_nodes_d_ to View in ArborX
+      nimble_kokkos::DeviceContactEntityArrayView contact_nodes_a = contact_nodes_d_;
+      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_a,
+                indices, offset);
 
   }
 
