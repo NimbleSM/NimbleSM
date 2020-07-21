@@ -74,7 +74,7 @@ namespace ArborX
     };
 
     template <>
-    struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView const, PredicatesTag>
+    struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
     {
         static std::size_t size(nimble_kokkos::DeviceContactEntityArrayView const &v) { return v.size(); }
 
@@ -86,8 +86,14 @@ namespace ArborX
           ArborX::Box box(point1, point2);
 
 
-          // JLP: /!\ To clarify. What does Intersects returns, how is it used afterwards?
-
+          //
+          // What does Intersects returns, how is it used afterwards?
+          // The intent with the "unspecified" return type in the doc
+          // (https://github.com/arborx/ArborX/wiki/ArborX%3A%3Aintersects)
+          // is to consider the return type as an implementation detail.
+          //
+          // If needed, `decltype(ArborX::intersects(ArborX::Box{}))` spells out the type.
+          //
           return intersects(box);
         }
         using memory_space = nimble_kokkos::kokkos_device_memory_space;
@@ -96,7 +102,8 @@ namespace ArborX
 
 namespace nimble {
 
-  using arborx_bvh = ArborX::BVH<nimble_kokkos::kokkos_device_memory_space>;
+  using memory_space = nimble_kokkos::kokkos_device_memory_space;
+  using arborx_bvh = ArborX::BVH<memory_space>;
 
   /*!
    * Contact Manager specific to ArborX library
@@ -137,10 +144,20 @@ namespace nimble {
       arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
                            contact_nodes_d_};
 
-      // JLP: /!\ Indices and offsets?
-      // Kokkos::View<int *, device_type> indices("indices", 0);
-      // Kokkos::View<int *, device_type> offset("offset", 0);
-      // bhv.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_, indices, offset);
+      //
+      // indices = contains the indices associated with the bounding boxes
+      // that satisfy the queries
+      // offsets = contains the offsets in indices associated with each query.
+      //
+      // Two Kokkos::Views are necessary as the number of results for each query may differ.
+      //
+      Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
+      Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+
+      // Define a copy of contact_nodes_d_ to View in ArborX
+      nimble_kokkos::DeviceContactEntityArrayView contact_nodes_a = contact_nodes_d_;
+      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_a,
+                indices, offset);
 
   }
 
