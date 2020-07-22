@@ -59,7 +59,11 @@ namespace ArborX
         // size returns the number of elements in the View
         static std::size_t size(nimble_kokkos::DeviceContactEntityArrayView const &v) { return v.size(); }
 
-        // Returns an ArborX::Box for each XXX within the nimble view
+        /// Returns an ArborX::Box for each contact entity within the nimble view
+        ///
+        /// \param v
+        /// \param i
+        /// \return ArborX::Box
         KOKKOS_FUNCTION static ArborX::Box get(nimble_kokkos::DeviceContactEntityArrayView const &v, std::size_t i)
         {
           // TODO ACCESS TRAIT, TO RETURN POINT OR BOX
@@ -115,6 +119,7 @@ namespace nimble {
   ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
         : SerialContactManager(interface)
   {
+
 // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
 //      std::vector<ArborX::Point> points;
 //
@@ -142,7 +147,7 @@ namespace nimble {
       // ArborX bounded volume hierarchy setup
       // JLP:  /!\ Does contact_nodes_d_ contains all the information required for our contact search? contact_faces_d_ ?
       arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
-                           contact_nodes_d_};
+                           contact_faces_d_};
 
       //
       // indices : position of the primitives that satisfy the predicates.
@@ -161,8 +166,9 @@ namespace nimble {
       Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
 
       // Define a copy of contact_nodes_d_ to View in ArborX
-      nimble_kokkos::DeviceContactEntityArrayView contact_nodes_a = contact_nodes_d_;
-      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_a,
+      // Number of queries, n = size of contact_nodes_d
+      // Size of offset = n + 1
+      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
                 indices, offset);
 
       ///--- For debugging purposes ---
