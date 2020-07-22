@@ -52,6 +52,8 @@
 #include "serial_contact_manager.h"
 
 namespace nimble {
+
+/// Structure from BVH contact manager
 /*  struct NarrowphaseResult
   {
     std::size_t first_global_id;
@@ -81,8 +83,9 @@ namespace nimble {
 
   private:
 
-/*    std::vector< NarrowphaseResult > m_last_results;
-*/
+/// Member variable found in BVH contact manager
+//    std::vector< NarrowphaseResult > m_last_results;
+
   };
 }
 
