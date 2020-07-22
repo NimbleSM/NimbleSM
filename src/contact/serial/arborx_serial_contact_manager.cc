@@ -119,6 +119,7 @@ namespace nimble {
   ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
         : SerialContactManager(interface)
   {
+
 // EXAMPLE FROM https://github.com/arborx/ArborX/blob/eddb1d2ceacd8d4bd7bd313c9288ccc6c0840c0d/examples/access_traits/example_host_access_traits.cpp#L48
 //      std::vector<ArborX::Point> points;
 //
@@ -165,8 +166,9 @@ namespace nimble {
       Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
 
       // Define a copy of contact_nodes_d_ to View in ArborX
-      nimble_kokkos::DeviceContactEntityArrayView contact_nodes_a = contact_nodes_d_;
-      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_a,
+      // Number of queries, n = size of contact_nodes_d
+      // Size of offset = n + 1
+      bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
                 indices, offset);
 
       ///--- For debugging purposes ---
