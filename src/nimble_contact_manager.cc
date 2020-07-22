@@ -922,25 +922,26 @@ namespace nimble {
 
     // third block is the bounding box for this mpi rank
     mesh.Initialize("contact_visualization",
-                                                       node_global_id,
-                                                       node_x,
-                                                       node_y,
-                                                       node_z,
-                                                       elem_global_id,
-                                                       block_ids,
-                                                       block_names,
-                                                       block_elem_global_ids,
-                                                       block_num_nodes_per_elem,
-                                                       block_elem_connectivity);
+                    node_global_id,
+                    node_x,
+                    node_y,
+                    node_z,
+                    elem_global_id,
+                    block_ids,
+                    block_names,
+                    block_elem_global_ids,
+                    block_num_nodes_per_elem,
+                    block_elem_connectivity);
 
-    out.Initialize(contact_visualization_exodus_file_name,
-                                                        mesh);
+    out.Initialize(contact_visualization_exodus_file_name, mesh);
 
     std::vector<std::string> global_data_labels;
+    global_data_labels.push_back("num_contacts");
     std::vector<std::string> node_data_labels_for_output;
     node_data_labels_for_output.push_back("displacement_x");
     node_data_labels_for_output.push_back("displacement_y");
     node_data_labels_for_output.push_back("displacement_z");
+    node_data_labels_for_output.push_back("contact_status");
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
     std::map<int, std::vector<std::string> > derived_elem_data_labels;
     for (auto & block_id : block_ids) {
@@ -948,10 +949,10 @@ namespace nimble {
       derived_elem_data_labels[block_id] = std::vector<std::string>();
     }
     out.InitializeDatabase(mesh,
-                                                                global_data_labels,
-                                                                node_data_labels_for_output,
-                                                                elem_data_labels_for_output,
-                                                                derived_elem_data_labels);
+                           global_data_labels,
+                           node_data_labels_for_output,
+                           elem_data_labels_for_output,
+                           derived_elem_data_labels);
   }
 
   void
@@ -1281,11 +1282,21 @@ namespace nimble {
                                ContactEntity *nodes, std::size_t nnodes )
   {
     std::vector<double> global_data;
-    std::vector< std::vector<double> > node_data_for_output(3);
+    std::vector< std::vector<double> > node_data_for_output(4);
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
     std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
     std::map<int, std::vector<std::string> > derived_elem_data_labels;
     std::map<int, std::vector< std::vector<double> > > derived_elem_data;
+
+    // Get the number of contacts from one block
+    std::size_t num_contacts = 0;
+    for ( std::size_t i = 0; i < nfaces; ++i )
+    {
+      if ( faces[i].contact_status() )
+        ++num_contacts;
+    }
+
+    global_data.push_back( static_cast< double >( num_contacts ) );
 
     std::vector<int> const & block_ids = mesh.GetBlockIds();
     for (auto & block_id : block_ids) {
@@ -1298,6 +1309,7 @@ namespace nimble {
     node_data_for_output[0].resize(num_nodes);
     node_data_for_output[1].resize(num_nodes);
     node_data_for_output[2].resize(num_nodes);
+    node_data_for_output[3].resize(num_nodes);
     const double * model_coord_x = mesh.GetCoordinatesX();
     const double * model_coord_y = mesh.GetCoordinatesY();
     const double * model_coord_z = mesh.GetCoordinatesZ();
@@ -1305,17 +1317,21 @@ namespace nimble {
     int node_index(0);
     for (int i_face=0; i_face < nfaces; i_face++) {
       ContactEntity const & face = faces[i_face];
+      auto contact_status = static_cast< double >( face.contact_status() );
       node_data_for_output[0][node_index] = face.coord_1_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = face.coord_1_y_ - model_coord_y[node_index];
       node_data_for_output[2][node_index] = face.coord_1_z_ - model_coord_z[node_index];
+      node_data_for_output[3][node_index] = contact_status;
       node_index += 1;
       node_data_for_output[0][node_index] = face.coord_2_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = face.coord_2_y_ - model_coord_y[node_index];
       node_data_for_output[2][node_index] = face.coord_2_z_ - model_coord_z[node_index];
+      node_data_for_output[3][node_index] = contact_status;
       node_index += 1;
       node_data_for_output[0][node_index] = face.coord_3_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = face.coord_3_y_ - model_coord_y[node_index];
       node_data_for_output[2][node_index] = face.coord_3_z_ - model_coord_z[node_index];
+      node_data_for_output[3][node_index] = contact_status;
       node_index += 1;
     }
     for (int i_node=0 ; i_node< nnodes; i_node++) {
@@ -1323,6 +1339,7 @@ namespace nimble {
       node_data_for_output[0][node_index] = node.coord_1_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = node.coord_1_y_ - model_coord_y[node_index];
       node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
+      node_data_for_output[3][node_index] = static_cast< double >( node.contact_status() );
       node_index += 1;
     }
 

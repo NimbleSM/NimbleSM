@@ -251,6 +251,16 @@ namespace nimble {
       return centroid_;
     }
 
+    NIMBLE_INLINE_FUNCTION
+    bool contact_status() const noexcept {
+      return contact_status_;
+    }
+
+    NIMBLE_INLINE_FUNCTION
+    void set_contact_status( bool status ) noexcept {
+      contact_status_ = status;
+    }
+
 #ifdef NIMBLE_HAVE_BVH
     bvh::dop_26d kdop_;
 
@@ -436,6 +446,8 @@ namespace nimble {
     //   next 3 bits are the face ordinal (range is 1-6)
     //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
     int contact_entity_global_id_ = -1;
+
+    bool contact_status_ = false;
   };
 
   template <typename ArgT>
