@@ -5,7 +5,7 @@ on:
   push:
     branches:  
       - master
-      - feature/34-cache-trilinos
+
   pull_request:
 
 jobs:
@@ -66,11 +66,11 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
               ..
-    - name: build
+    - name: Build NimbleSM
       run: |
         cd build
         make -j4
-    - name: test
+    - name: Test NimbleSM
       run: |
         cd build
         export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
