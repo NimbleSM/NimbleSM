@@ -149,11 +149,17 @@ namespace nimble {
                            contact_faces_d_};
 
       //
-      // indices = contains the indices associated with the bounding boxes
-      // that satisfy the queries
-      // offsets = contains the offsets in indices associated with each query.
+      // indices : position of the primitives that satisfy the predicates.
+      // offsets : predicate offsets in indices.
       //
-      // Two Kokkos::Views are necessary as the number of results for each query may differ.
+      // indices stores the indices of the objects that satisfy the predicates.
+      // offset stores the locations in the indices view that start a predicate, that is,
+      // predicates(q) is satisfied by indices(o) for primitives(q) <= o < primitives(q+1).
+      //
+      // Following the usual convention, offset(n) = nnz, where n is the number of queries
+      // that were performed and nnz is the total number of collisions.
+      //
+      // (From https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery )
       //
       Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
       Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
@@ -163,9 +169,47 @@ namespace nimble {
       bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_a,
                 indices, offset);
 
+      ///--- For debugging purposes ---
+      for (int i = 0; i < offset.extent(0); ++i)
+        std::cout << " offset[" << i << "] = " << offset(i) << "\n";
+
+      for (int i = 0; i < indices.extent(0); ++i)
+        std::cout << " indices[" << i << "] = " << indices(i) << "\n";
+
+      for (int i = 0; i < offset.extent(0) - 1; ++i) {
+        for (int j = offset(i); j < offset(i + 1); ++j) {
+          std::cout << " i " << i << " offset " << offset(i) << " x " << offset(i+1)
+                    << " indices " << indices(j) 
+                    << std::endl;
+        }
+      }
+      //--------------------------------
+
   }
 
   void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
+
+    // Update collision objects, this will build the trees
+//    for ( auto &&node : contact_nodes_ )
+//      node.RecomputeKdop();
+//    for ( auto &&face : contact_faces_ )
+//      face.RecomputeKdop();
+
+/*
+    //
+    // Extracted from BVH version
+    //
+    m_nodes->set_entity_data(contact_nodes_);
+    m_faces->set_entity_data(contact_faces_);
+
+    m_nodes->broadphase(*m_faces);
+
+    m_last_results.clear();
+    m_nodes->for_each_result< NarrowphaseResult >( [this]( const NarrowphaseResult &_res ){
+      m_last_results.emplace_back( _res );
+    } );
+*/
+
   }
 
 }
