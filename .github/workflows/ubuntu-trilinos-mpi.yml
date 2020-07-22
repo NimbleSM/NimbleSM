@@ -5,6 +5,7 @@ on:
   push:
     branches:  
       - master
+
   pull_request:
 
 jobs:
@@ -27,33 +28,51 @@ jobs:
            sudo apt-get install -y openmpi-bin libopenmpi-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-    - name: trilinos
+    - name: Get Date
+      id: get-date
       run: |
-           git clone https://github.com/trilinos/Trilinos.git
-           cd Trilinos
-           mkdir build && cd build
-           cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
-                 -DTPL_ENABLE_MPI=ON \
-                 -DTrilinos_ENABLE_Tpetra=ON \
-                 -DTrilinos_ENABLE_Kokkos=ON \
-                 -DTrilinos_ENABLE_Fortran=OFF \
-                 -DTrilinos_ENABLE_Netcdf=ON \
-                 -DTrilinos_ENABLE_SEACASEpu=ON \
-                 -DTrilinos_ENABLE_SEACASExodiff=ON \
-                 -DTrilinos_ENABLE_SEACASExodus=ON \
-                 ..
-           make -j4 && sudo make install
-    - name: configure
+        echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+      shell: bash
+    - name: Cache Trilinos
+      id: cache-trilinos
+      uses: actions/cache@v2
+      with:
+        path: Trilinos/
+        key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-trilinos
+    - name: Build Trilinos
+      if: steps.cache-trilinos.outputs.cache-hit != 'true'
       run: |
-           export ACCESS=`pwd`
-           mkdir build && cd build
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
-                 ..
-    - name: build
-      run: cmake --build build
-    - name: test
+        git clone https://github.com/trilinos/Trilinos.git
+        cd Trilinos
+        mkdir build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
+              -DTPL_ENABLE_MPI=ON \
+              -DTrilinos_ENABLE_Tpetra=ON \
+              -DTrilinos_ENABLE_Kokkos=ON \
+              -DTrilinos_ENABLE_Fortran=OFF \
+              -DTrilinos_ENABLE_Netcdf=ON \
+              -DTrilinos_ENABLE_SEACASEpu=ON \
+              -DTrilinos_ENABLE_SEACASExodiff=ON \
+              -DTrilinos_ENABLE_SEACASExodus=ON \
+              ..
+        make -j4
+    - name: Install Trilinos
       run: |
-           cd build
-           export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
-           make test
+        cd Trilinos && cd build
+        sudo make install
+    - name: Configure NimbleSM
+      run: |
+        export ACCESS=`pwd`
+        mkdir build && cd build
+        cmake -DCMAKE_CXX_FLAGS="-Werror" -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
+              ..
+    - name: Build NimbleSM
+      run: |
+        cd build
+        make -j4
+    - name: Test NimbleSM
+      run: |
+        cd build
+        export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+        make test
 
