@@ -3,7 +3,8 @@ name: ubuntu-kokkos-serial
 # Trigger the workflow on push or pull request
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
 
   pull_request:
 
