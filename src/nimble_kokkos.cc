@@ -588,13 +588,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement_d);
-
+      //
       double x_min, x_max, y_min, y_max, z_min, z_max;
       contact_manager.BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-
-      contact_manager.ComputeContactForce(step+1, false);
+      //
+      contact_manager.ComputeContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
+      //
+      if (contact_visualization && is_output_step)
+        contact_manager.ContactVisualizationWriteStep(time_current);
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
