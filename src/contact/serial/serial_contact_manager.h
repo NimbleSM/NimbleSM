@@ -53,6 +53,10 @@ namespace nimble {
 
     SerialContactManager(std::shared_ptr<ContactInterface> interface);
 
+    void ComputeContactForce(int step, bool debug_output) override {
+      ComputeSerialContactForce(step, debug_output);
+    }
+
     virtual void ComputeSerialContactForce(int step, bool debug_output) = 0;
 
   private:
