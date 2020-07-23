@@ -881,13 +881,13 @@ namespace nimble {
   }
 
 
+  /*!
+   * Initialize Exodus file, and prepare it to contain Contact Visualization data
+   *
+   * @param contact_visualization_exodus_file_name
+   */
   void
-  ContactManager::InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
-                                          nimble::GenesisMesh &mesh,
-                                          nimble::ExodusOutput &out,
-                                          ContactEntity *faces, std::size_t nfaces,
-                                          ContactEntity *nodes, std::size_t nnodes)
-  {
+  ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
     // Exodus id convention for contact visualization:
     //
     // Both node and face contact entities have a unique, parallel-consistent id called contact_entity_global_id_.
@@ -920,16 +920,26 @@ namespace nimble {
     //                   3 * max_contact_entity_id + 8)
     //     element id max_contact_entity_id + 1
 
+
+    // Local constants for readability
+    const size_t nnodes = numContactNodes();
+    const size_t nfaces = numContactFaces();
+    nimble::GenesisMesh &mesh = genesis_mesh_for_contact_visualization_;
+    nimble::ExodusOutput &out = exodus_output_for_contact_visualization_;
+
+
     // determine the maximum contact entity global id over all MPI partitions
     int max_contact_entity_id = 0;
     for (int i_face=0 ; i_face < nfaces; i_face++) {
-      if (faces[i_face].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = faces[i_face].contact_entity_global_id_;
+      ContactEntity const & face = getContactFace(i_face);
+      if (face.contact_entity_global_id_ > max_contact_entity_id) {
+        max_contact_entity_id = face.contact_entity_global_id_;
       }
     }
     for (int i_node=0 ; i_node < nnodes ; i_node++) {
-      if (nodes[i_node].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = nodes[i_node].contact_entity_global_id_;
+      ContactEntity const & node = getContactNode(i_node);
+      if (node.contact_entity_global_id_ > max_contact_entity_id) {
+        max_contact_entity_id = node.contact_entity_global_id_;
       }
     }
 #ifdef NIMBLE_HAVE_MPI
@@ -962,7 +972,7 @@ namespace nimble {
 
     int node_index(0);
     for (int i_face=0 ; i_face < nfaces ; i_face++) {
-      ContactEntity const & face = faces[i_face];
+      ContactEntity const & face = getContactFace(i_face);
       int contact_entity_global_id = face.contact_entity_global_id_;
       node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 9);
       node_x.push_back(face.coord_1_x_);
@@ -991,7 +1001,7 @@ namespace nimble {
     block_elem_connectivity[block_id] = std::vector<int>();
 
     for (int i_node=0 ; i_node < nnodes; i_node++) {
-      ContactEntity const & node = nodes[i_node];
+      ContactEntity const & node = getContactNode(i_node);
       int contact_entity_global_id = node.contact_entity_global_id_;
       node_global_id.push_back(contact_entity_global_id);
       node_x.push_back(node.coord_1_x_);
@@ -1034,215 +1044,8 @@ namespace nimble {
                            node_data_labels_for_output,
                            elem_data_labels_for_output,
                            derived_elem_data_labels);
-  }
 
-  void
-  ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
 
-    // Exodus id convention for contact visualization:
-    //
-    // Both node and face contact entities have a unique, parallel-consistent id called contact_entity_global_id_.
-    // For faces, the contact_entity_global_id_ a bit-wise combination of the global exodus id of the parent element,
-    // plus the face ordinal (1-6), plus the triangle ordinal (1-4).
-    // For nodes, the contact_entity_global_id_ is the exodus global node id for the node in the original FEM mesh.
-    //
-    // For visualization output, we need unique, parallel-consistent node ids and element ids.  For the faces, the
-    // contact_entity_global_id_ is used as the element id, and the node ids are constructed here.  For nodes, the
-    // contact_entity_global_id_ is used for both the node id and the element id (sphere element containing a single node).
-    //
-    // For the MPI bounding boxes, both the node ids and the element id are constructed here.
-    //
-    //   contact faces:
-    //     node ids are (3 * contact_entity_global_id_ + max_contact_entity_id + 9,
-    //                   3 * contact_entity_global_id_ + max_contact_entity_id + 10,
-    //                   3 * contact_entity_global_id_ + max_contact_entity_id + 11)
-    //     element id is contact_entity_global_id_
-    //   contact nodes
-    //     node id is contact_entity_global_id_
-    //     element id contact_entity_global_id_
-    //   mpi partition bounding box:
-    //     nodes id are (3 * max_contact_entity_id + 1,
-    //                   3 * max_contact_entity_id + 2,
-    //                   3 * max_contact_entity_id + 3,
-    //                   3 * max_contact_entity_id + 4,
-    //                   3 * max_contact_entity_id + 5,
-    //                   3 * max_contact_entity_id + 6,
-    //                   3 * max_contact_entity_id + 7,
-    //                   3 * max_contact_entity_id + 8)
-    //     element id max_contact_entity_id + 1
-
-#if !defined(NIMBLE_HAVE_KOKKOS)
-    InitializeContactVisualizationImpl( contact_visualization_exodus_file_name,
-        genesis_mesh_for_contact_visualization_,
-        exodus_output_for_contact_visualization_,
-        contact_faces_.data(), contact_faces_.size(), contact_nodes_.data(),
-        contact_nodes_.size() );
-#else
-
-    // determine the maximum contact entity global id over all MPI partitions
-    int max_contact_entity_id = 0;
-    for (int i_face=0 ; i_face<contact_faces_h_.extent(0) ; i_face++) {
-      if (contact_faces_h_[i_face].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = contact_faces_h_[i_face].contact_entity_global_id_;
-      }
-    }
-    for (int i_node=0 ; i_node<contact_nodes_h_.extent(0) ; i_node++) {
-      if (contact_nodes_h_[i_node].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = contact_nodes_h_[i_node].contact_entity_global_id_;
-      }
-    }
-#ifdef NIMBLE_HAVE_MPI
-    int mpi_rank, num_ranks;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    int global_max_contact_entity_id = max_contact_entity_id;
-    MPI_Allreduce(&max_contact_entity_id, &global_max_contact_entity_id, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    max_contact_entity_id = global_max_contact_entity_id;
-#endif
-
-    std::vector<int> node_global_id;
-    std::vector<double> node_x;
-    std::vector<double> node_y;
-    std::vector<double> node_z;
-    std::vector<int> elem_global_id;
-    std::vector<int> block_ids;
-    std::map<int, std::string> block_names;
-    std::map<int, std::vector<int> > block_elem_global_ids;
-    std::map<int, int> block_num_nodes_per_elem;
-    std::map<int, std::vector<int> > block_elem_connectivity;
-
-    // first block contains the contact faces
-    int block_id = 1;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_faces";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 3;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    int node_index(0);
-    for (int i_face=0 ; i_face<contact_faces_h_.extent(0) ; i_face++) {
-      ContactEntity const & face = contact_faces_h_(i_face);
-      int contact_entity_global_id = face.contact_entity_global_id_;
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 9);
-      node_x.push_back(face.coord_1_x_);
-      node_y.push_back(face.coord_1_y_);
-      node_z.push_back(face.coord_1_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 10);
-      node_x.push_back(face.coord_2_x_);
-      node_y.push_back(face.coord_2_y_);
-      node_z.push_back(face.coord_2_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 11);
-      node_x.push_back(face.coord_3_x_);
-      node_y.push_back(face.coord_3_y_);
-      node_z.push_back(face.coord_3_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      elem_global_id.push_back(contact_entity_global_id);
-    }
-
-    // second block contains the contact nodes
-    block_id = 2;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_nodes";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 1;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    for (int i_node=0 ; i_node<contact_nodes_h_.extent(0) ; i_node++) {
-      ContactEntity const & node = contact_nodes_h_(i_node);
-      int contact_entity_global_id = node.contact_entity_global_id_;
-      node_global_id.push_back(contact_entity_global_id);
-      node_x.push_back(node.coord_1_x_);
-      node_y.push_back(node.coord_1_y_);
-      node_z.push_back(node.coord_1_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      elem_global_id.push_back(contact_entity_global_id);
-    }
-
-    // third block is the bounding box for this mpi rank
-    /**
-    block_id = 3;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_mpi_rank_bounding_box";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 8;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-    node_global_id.push_back(3 * max_contact_entity_id + 1);
-    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 2);
-    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 3);
-    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 4);
-    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 5);
-    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 6);
-    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 7);
-    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 8);
-    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    elem_global_id.push_back(max_contact_entity_id + 1);
-
-    // store the model coordinate bounding box
-    contact_visualization_model_coord_bounding_box_[0] = x_min;
-    contact_visualization_model_coord_bounding_box_[1] = x_max;
-    contact_visualization_model_coord_bounding_box_[2] = y_min;
-    contact_visualization_model_coord_bounding_box_[3] = y_max;
-    contact_visualization_model_coord_bounding_box_[4] = z_min;
-    contact_visualization_model_coord_bounding_box_[5] = z_max;
-    **/
-    genesis_mesh_for_contact_visualization_.Initialize("contact_visualization",
-                                                       node_global_id,
-                                                       node_x,
-                                                       node_y,
-                                                       node_z,
-                                                       elem_global_id,
-                                                       block_ids,
-                                                       block_names,
-                                                       block_elem_global_ids,
-                                                       block_num_nodes_per_elem,
-                                                       block_elem_connectivity);
-
-    exodus_output_for_contact_visualization_.Initialize(contact_visualization_exodus_file_name,
-                                                        genesis_mesh_for_contact_visualization_);
-
-    std::vector<std::string> global_data_labels;
-    //// UH
-    global_data_labels.push_back("num_contacts");
-    //// UH
-    std::vector<std::string> node_data_labels_for_output;
-    node_data_labels_for_output.push_back("displacement_x");
-    node_data_labels_for_output.push_back("displacement_y");
-    node_data_labels_for_output.push_back("displacement_z");
-    //// UH
-    node_data_labels_for_output.push_back("contact_status");
-    //// UH
-    std::map<int, std::vector<std::string> > elem_data_labels_for_output;
-    std::map<int, std::vector<std::string> > derived_elem_data_labels;
-    for (auto & block_id : block_ids) {
-      elem_data_labels_for_output[block_id] = std::vector<std::string>();
-      derived_elem_data_labels[block_id] = std::vector<std::string>();
-    }
-    exodus_output_for_contact_visualization_.InitializeDatabase(genesis_mesh_for_contact_visualization_,
-                                                                global_data_labels,
-                                                                node_data_labels_for_output,
-                                                                elem_data_labels_for_output,
-                                                                derived_elem_data_labels);
-#endif
   }
 
   void
