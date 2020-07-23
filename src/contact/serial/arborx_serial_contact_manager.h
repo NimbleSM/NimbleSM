@@ -53,14 +53,6 @@
 
 namespace nimble {
 
-/// Structure from BVH contact manager
-/*  struct NarrowphaseResult
-  {
-    std::size_t first_global_id;
-    std::size_t second_global_id;
-  };
-*/
-
   class ArborXSerialContactManager: public SerialContactManager
   {
   public:
@@ -83,8 +75,7 @@ namespace nimble {
 
   private:
 
-/// Member variable found in BVH contact manager
-//    std::vector< NarrowphaseResult > m_last_results;
+    void updateCollisionData();
 
   };
 }
