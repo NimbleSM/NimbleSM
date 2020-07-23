@@ -86,9 +86,9 @@ namespace nimble {
 
     explicit ContactManager( std::shared_ptr<ContactInterface> interface );
 
-    virtual ~ContactManager() {}
+    virtual ~ContactManager() = default;
 
-    bool ContactEnabled() { return contact_enabled_; }
+    bool ContactEnabled() const { return contact_enabled_; }
 
     void SkinBlocks(GenesisMesh const & mesh,
                     std::vector<int> const & block_ids,
@@ -136,8 +136,8 @@ namespace nimble {
 
     double BoundingBoxAverageCharacteristicLengthOverAllRanks() const ;
 
-    void ApplyDisplacements(const double * const displacement);
-    void GetForces(double * const contact_force);
+    void ApplyDisplacements(const double * displacement);
+    void GetForces(double * contact_force);
 
 #ifdef NIMBLE_HAVE_KOKKOS
     // Kokkos versions of ApplyDisplacements and GetForces
@@ -165,6 +165,11 @@ namespace nimble {
 
     virtual void ContactVisualizationWriteStep(double time_current);
 
+    /// Returns the number of contact faces "actively" in collision
+    ///
+    /// \return Number of active contact faces
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
     std::size_t numActiveContactFaces() const {
        std::size_t num_contacts = 0;
        for (size_t i = 0; i < numContactFaces(); ++i) {
@@ -174,6 +179,12 @@ namespace nimble {
        return num_contacts;
     }
 
+    /// Returns a read-only reference to contact face entity
+    ///
+    /// \param i_face Index of the contact face
+    /// \return Read-only reference to contact face entity
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
     const ContactEntity& getContactFace(size_t i_face) const {
 #ifdef NIMBLE_HAVE_KOKKOS
       return contact_faces_h_(i_face);
@@ -182,6 +193,11 @@ namespace nimble {
 #endif
     }
 
+    /// Returns the number of contact faces
+    ///
+    /// \return Number of contact faces
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
     size_t numContactFaces() const {
 #ifdef NIMBLE_HAVE_KOKKOS
     return contact_faces_h_.extent(0);
@@ -190,6 +206,12 @@ namespace nimble {
 #endif
     }
 
+    /// Returns a read-only reference to contact node entity
+    ///
+    /// \param i_node Index of the contact node
+    /// \return Read-only reference to contact node entity
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
     const ContactEntity& getContactNode(size_t i_node) const {
 #ifdef NIMBLE_HAVE_KOKKOS
       return contact_nodes_h_(i_node);
@@ -198,6 +220,11 @@ namespace nimble {
 #endif
     }
 
+    /// Returns the number of contact nodes
+    ///
+    /// \return Number of contact nodes
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
     size_t numContactNodes() const {
 #ifdef NIMBLE_HAVE_KOKKOS
       return contact_faces_h_.extent(0);
@@ -206,9 +233,6 @@ namespace nimble {
 #endif
   }
 
-  /// --- Placeholder for original version
-  void ContactVisualizationWriteStep_orig(double time_current);
-
 protected:
 
     void InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
@@ -216,12 +240,20 @@ protected:
                                             nimble::ExodusOutput &out,
                                             ContactEntity *faces, std::size_t nfaces,
                                             ContactEntity *nodes, std::size_t nnodes);
-    void WriteVisualizationData( double t, nimble::GenesisMesh &mesh,
-                                 nimble::ExodusOutput &out,
-        ContactEntity *faces, std::size_t nfaces,
-        ContactEntity *nodes, std::size_t nnodes );
+  /// JLP -> Define the following function
+  /// I would recommend that you start from InitializeContactVisualizationImpl
+  /// and modify it to use the member variables and the routines
+  /// getContactNode, getContactFace, ...
+  void InitializeContactVisualization();
 
+  /// Routine to write the contact data to Exodus file at time t
+  ///
+  /// \param t Time for the current data
+  ///
+  /// \note When using Kokkos, the data is extracted from the "host".
   void WriteVisualizationData(double t);
+
+  //--- Variables
 
   bool contact_enabled_ = false;
     double penalty_parameter_;
