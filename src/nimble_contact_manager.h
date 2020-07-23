@@ -145,7 +145,7 @@ namespace nimble {
     void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d);
 #endif
 
-        virtual void ComputeContactForce(int step, bool debug_output);
+    virtual void ComputeContactForce(int step, bool debug_output);
 
     void BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
                                          std::vector<ContactEntity> const & triangles);
@@ -165,7 +165,51 @@ namespace nimble {
 
     virtual void ContactVisualizationWriteStep(double time_current);
 
-  protected:
+    std::size_t numActiveContactFaces() const {
+       std::size_t num_contacts = 0;
+       for (size_t i = 0; i < numContactFaces(); ++i) {
+         auto myface = getContactFace(i);
+         num_contacts += static_cast<size_t>(myface.contact_status());
+       }
+       return num_contacts;
+    }
+
+    const ContactEntity& getContactFace(size_t i_face) const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_faces_h_(i_face);
+#else
+      return contact_faces_[i_face];
+#endif
+    }
+
+    size_t numContactFaces() const {
+#ifdef NIMBLE_HAVE_KOKKOS
+    return contact_faces_h_.extent(0);
+#else
+    return contact_faces_size();
+#endif
+    }
+
+    const ContactEntity& getContactNode(size_t i_node) const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_nodes_h_(i_node);
+#else
+      return contact_nodes_[i_node];
+#endif
+    }
+
+    size_t numContactNodes() const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_faces_h_.extent(0);
+#else
+      return contact_faces_size();
+#endif
+  }
+
+  /// --- Placeholder for original version
+  void ContactVisualizationWriteStep_orig(double time_current);
+
+protected:
 
     void InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
                                             nimble::GenesisMesh &mesh,
@@ -177,7 +221,9 @@ namespace nimble {
         ContactEntity *faces, std::size_t nfaces,
         ContactEntity *nodes, std::size_t nnodes );
 
-    bool contact_enabled_ = false;
+  void WriteVisualizationData(double t);
+
+  bool contact_enabled_ = false;
     double penalty_parameter_;
 
     std::vector<int> node_ids_;

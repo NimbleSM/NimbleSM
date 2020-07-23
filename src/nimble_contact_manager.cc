@@ -504,7 +504,7 @@ namespace nimble {
       }
     }
 
-    // create a list of ghosed nodes in the contact submodel
+    // create a list of ghosted nodes in the contact submodel
     std::vector<int> ghosted_contact_node_ids;
     for (auto node_id : ghosted_node_local_ids) {
       std::map<int, int>::iterator it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
@@ -530,9 +530,7 @@ namespace nimble {
     std::vector<int> slave_node_ids;
     std::vector<int> slave_node_entity_ids;
     std::map<int, double> slave_node_char_lens;
-    for (int i_face=0 ; i_face<slave_skin_faces.size(); i_face++) {
-
-      std::vector<int>& face = slave_skin_faces[i_face];
+    for (auto &face : slave_skin_faces) {
 
       int num_nodes_in_face = static_cast<int>(face.size());
       // determine a characteristic length based on max edge length
@@ -544,8 +542,8 @@ namespace nimble {
           node_id_2 = face[i+1];
         }
         double edge_length = sqrt( (coord_[3*node_id_2  ] - coord_[3*node_id_1  ])*(coord_[3*node_id_2  ] - coord_[3*node_id_1  ]) +
-                                   (coord_[3*node_id_2+1] - coord_[3*node_id_1+1])*(coord_[3*node_id_2+1] - coord_[3*node_id_1+1]) +
-                                   (coord_[3*node_id_2+2] - coord_[3*node_id_1+2])*(coord_[3*node_id_2+2] - coord_[3*node_id_1+2]) );
+                                  (coord_[3*node_id_2+1] - coord_[3*node_id_1+1])*(coord_[3*node_id_2+1] - coord_[3*node_id_1+1]) +
+                                  (coord_[3*node_id_2+2] - coord_[3*node_id_1+2])*(coord_[3*node_id_2+2] - coord_[3*node_id_1+2]) );
         if (edge_length > max_edge_length) {
           max_edge_length = edge_length;
         }
@@ -640,7 +638,7 @@ namespace nimble {
 
     int index = 0;
 
-    // convert master faces to trangular facets
+    // convert master faces to triangular facets
     for (unsigned int i_face=0 ; i_face < master_skin_faces.size() ; i_face++) {
 
       auto face = master_skin_faces[i_face];
@@ -1223,10 +1221,16 @@ namespace nimble {
                                                         genesis_mesh_for_contact_visualization_);
 
     std::vector<std::string> global_data_labels;
+    //// UH
+    global_data_labels.push_back("num_contacts");
+    //// UH
     std::vector<std::string> node_data_labels_for_output;
     node_data_labels_for_output.push_back("displacement_x");
     node_data_labels_for_output.push_back("displacement_y");
     node_data_labels_for_output.push_back("displacement_z");
+    //// UH
+    node_data_labels_for_output.push_back("contact_status");
+    //// UH
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
     std::map<int, std::vector<std::string> > derived_elem_data_labels;
     for (auto & block_id : block_ids) {
@@ -1242,7 +1246,17 @@ namespace nimble {
   }
 
   void
-  ContactManager::ContactVisualizationWriteStep(double time_current){
+  ContactManager::ContactVisualizationWriteStep(double time_current) {
+#ifdef NIMBLE_HAVE_KOKKOS
+    // copy contact entities from host to device
+    Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
+    Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
+#endif
+    WriteVisualizationData(time_current);
+  }
+
+  void
+  ContactManager::ContactVisualizationWriteStep_orig(double time_current){
 #if !defined(NIMBLE_HAVE_KOKKOS)
     WriteVisualizationData( time_current, genesis_mesh_for_contact_visualization_,
         exodus_output_for_contact_visualization_, contact_faces_.data(),
@@ -1434,6 +1448,79 @@ namespace nimble {
                    derived_elem_data_labels,
                    derived_elem_data);
   }
+
+void
+ContactManager::WriteVisualizationData(double t)
+{
+  nimble::GenesisMesh &mesh = genesis_mesh_for_contact_visualization_;
+  nimble::ExodusOutput &out = exodus_output_for_contact_visualization_;
+
+  std::vector<double> global_data;
+  std::vector< std::vector<double> > node_data_for_output(4);
+  std::map<int, std::vector<std::string> > elem_data_labels_for_output;
+  std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
+  std::map<int, std::vector<std::string> > derived_elem_data_labels;
+  std::map<int, std::vector< std::vector<double> > > derived_elem_data;
+
+  // Get the number of contacts from one block
+  auto num_contacts = numActiveContactFaces();
+  global_data.push_back( static_cast< double >( num_contacts ) );
+
+  std::vector<int> const & block_ids = mesh.GetBlockIds();
+  for (auto & block_id : block_ids) {
+    elem_data_labels_for_output[block_id] = std::vector<std::string>();
+    derived_elem_data_labels[block_id] = std::vector<std::string>();
+  }
+
+  // node_data_for_output contains displacement_x, displacement_y, displacement_z
+  int num_nodes = mesh.GetNumNodes();
+  for (auto &ndata : node_data_for_output)
+    ndata.resize(num_nodes);
+  const double * model_coord_x = mesh.GetCoordinatesX();
+  const double * model_coord_y = mesh.GetCoordinatesY();
+  const double * model_coord_z = mesh.GetCoordinatesZ();
+
+  size_t nfaces = numContactFaces();
+
+  int node_index(0);
+  for (size_t i_face=0; i_face < nfaces; i_face++) {
+    ContactEntity const & face = getContactFace(i_face);
+    auto contact_status = static_cast< double >( face.contact_status() );
+    node_data_for_output[0][node_index] = face.coord_1_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_1_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_1_z_ - model_coord_z[node_index];
+    node_data_for_output[3][node_index] = contact_status;
+    node_index += 1;
+    node_data_for_output[0][node_index] = face.coord_2_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_2_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_2_z_ - model_coord_z[node_index];
+    node_data_for_output[3][node_index] = contact_status;
+    node_index += 1;
+    node_data_for_output[0][node_index] = face.coord_3_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_3_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_3_z_ - model_coord_z[node_index];
+    node_data_for_output[3][node_index] = contact_status;
+    node_index += 1;
+  }
+
+  const size_t nnodes = numContactNodes();
+  for (size_t i_node=0 ; i_node< nnodes; i_node++) {
+    ContactEntity const & node = getContactNode(i_node);
+    node_data_for_output[0][node_index] = node.coord_1_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = node.coord_1_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
+    node_data_for_output[3][node_index] = static_cast< double >( node.contact_status() );
+    node_index += 1;
+  }
+
+  out.WriteStep(t,
+                global_data,
+                node_data_for_output,
+                elem_data_labels_for_output,
+                elem_data_for_output,
+                derived_elem_data_labels,
+                derived_elem_data);
+}
 
   void
   ContactManager::BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
@@ -1663,7 +1750,7 @@ namespace nimble {
     // 4) enforcement
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
+    contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
 #endif
   }
 }
