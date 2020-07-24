@@ -128,6 +128,9 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
     std::cout << "\nKokkos configuration:" << std::endl;
     std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
+#ifdef NIMBLE_HAVE_ARBORX
+    std::cout << "  NIMBLE_HAVE_ARBORX               true\n";
+#endif
     std::cout << "  KOKKOS_ENABLE_CUDA               " << kokkos_enable_cuda << std::endl;
     std::cout << "  KOKKOS_ENABLE_CUDA_UVM           " << kokkos_enable_cuda_uvm << std::endl;
     std::cout << "  kokkos_host_execution_space      " << typeid(nimble_kokkos::kokkos_host_execution_space).name() << std::endl;
