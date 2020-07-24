@@ -202,7 +202,7 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
     return contact_faces_h_.extent(0);
 #else
-    return contact_faces_size();
+    return contact_faces_.size();
 #endif
     }
 
@@ -229,7 +229,7 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
       return contact_nodes_h_.extent(0);
 #else
-      return contact_nodes_size();
+      return contact_nodes_.size();
 #endif
   }
 
