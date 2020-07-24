@@ -599,8 +599,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
       //
-      if (contact_visualization && is_output_step)
-        contact_manager.ContactVisualizationWriteStep(time_current);
+//      if (contact_visualization && is_output_step)
+//        contact_manager.ContactVisualizationWriteStep(time_current);
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
