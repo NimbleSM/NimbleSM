@@ -47,7 +47,7 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <float.h>
+#include <cfloat>
 #include <cmath>
 
 #include "nimble_contact_entity.h"
@@ -221,25 +221,14 @@ namespace nimble {
     /// \note When using Kokkos, the data is extracted from the "host".
     size_t numContactNodes() const {
 #ifdef NIMBLE_HAVE_KOKKOS
-      return contact_faces_h_.extent(0);
+      return contact_nodes_h_.extent(0);
 #else
-      return contact_faces_size();
+      return contact_nodes_size();
 #endif
   }
 
 protected:
-
-    void InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
-                                            nimble::GenesisMesh &mesh,
-                                            nimble::ExodusOutput &out,
-                                            ContactEntity *faces, std::size_t nfaces,
-                                            ContactEntity *nodes, std::size_t nnodes);
-  /// JLP -> Define the following function
-  /// I would recommend that you start from InitializeContactVisualizationImpl
-  /// and modify it to use the member variables and the routines
-  /// getContactNode, getContactFace, ...
-  void InitializeContactVisualization();
-
+  
   /// Routine to write the contact data to Exodus file at time t
   ///
   /// \param t Time for the current data
