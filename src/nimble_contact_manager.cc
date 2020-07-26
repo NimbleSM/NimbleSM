@@ -1027,17 +1027,17 @@ namespace nimble {
     out.Initialize(contact_visualization_exodus_file_name, mesh);
 
     std::vector<std::string> global_data_labels;
-    global_data_labels.push_back("num_contacts");
+    global_data_labels.emplace_back("num_contacts");
     std::vector<std::string> node_data_labels_for_output;
-    node_data_labels_for_output.push_back("displacement_x");
-    node_data_labels_for_output.push_back("displacement_y");
-    node_data_labels_for_output.push_back("displacement_z");
-    node_data_labels_for_output.push_back("contact_status");
+    node_data_labels_for_output.emplace_back("displacement_x");
+    node_data_labels_for_output.emplace_back("displacement_y");
+    node_data_labels_for_output.emplace_back("displacement_z");
+    node_data_labels_for_output.emplace_back("contact_status");
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
     std::map<int, std::vector<std::string> > derived_elem_data_labels;
-    for (auto & block_id : block_ids) {
-      elem_data_labels_for_output[block_id] = std::vector<std::string>();
-      derived_elem_data_labels[block_id] = std::vector<std::string>();
+    for (auto iblock : block_ids) {
+      elem_data_labels_for_output[iblock] = std::vector<std::string>();
+      derived_elem_data_labels[iblock] = std::vector<std::string>();
     }
     out.InitializeDatabase(mesh,
                            global_data_labels,
@@ -1082,7 +1082,7 @@ namespace nimble {
     }
 
     // node_data_for_output contains displacement_x, displacement_y, displacement_z
-    int num_nodes = mesh.GetNumNodes();
+    auto num_nodes = mesh.GetNumNodes();
     for (auto &ndata : node_data_for_output)
       ndata.resize(num_nodes);
     const double * model_coord_x = mesh.GetCoordinatesX();
