@@ -108,6 +108,11 @@ TEST(nimble_material_params, parse_double_parameters) {
   EXPECT_DOUBLE_EQ(params->GetParameterValue("bulk_modulus"), 1.0e6);
   EXPECT_DOUBLE_EQ(params->GetParameterValue("shear_modulus"), 5.e5);
   EXPECT_DOUBLE_EQ(params->GetParameterValue("density"), 1.0e3);
+
+  auto&& doubleParams = params->GetParameters();
+  auto&& stringParams = params->GetStringParameters();
+  ASSERT_GT(doubleParams.size(), 0u);
+  ASSERT_EQ(stringParams.size(), 0u);
 }
 
 TEST(nimble_material_params, register_new_test_property) {

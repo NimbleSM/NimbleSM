@@ -159,6 +159,18 @@ namespace nimble {
     }
 
     inline
+    const std::map<std::string, double>&
+    GetParameters() const {
+      return material_double_parameters_;
+    }
+
+    inline
+    const std::map<std::string, std::string>&
+    GetStringParameters() const {
+      return material_string_parameters_;
+    }
+
+    inline
     void Print() const {
       printf("\n--MaterialParameters\n");
       printf("  material name %s\n", material_name_.c_str());
