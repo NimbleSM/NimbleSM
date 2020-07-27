@@ -127,7 +127,6 @@ TEST(nimble_material_params, register_new_test_string_property) {
   auto params = fact.parse_string(material_string.c_str());
 
   ASSERT_TRUE(params->IsStringParameter("test_property"));
-  auto c = params->GetStringParameterValue("test_property");
   EXPECT_EQ(std::string(params->GetStringParameterValue("test_property")), "custom_property_val");
 }
 
