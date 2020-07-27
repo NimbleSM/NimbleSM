@@ -54,7 +54,7 @@ namespace nimble {
   RVE::RVE(std::map<int, std::string> const & material_parameters_string,
            GenesisMesh const & rve_mesh,
            std::string rve_boundary_condition_strategy)
-    : Material(MaterialParameters()), material_parameters_string_(material_parameters_string),
+    : Material(), material_parameters_string_(material_parameters_string),
       rve_mesh_(rve_mesh),
       boundary_condition_strategy_(PERIODIC_BC),
       origin_x_(0.), origin_y_(0.), origin_z_(0.),
