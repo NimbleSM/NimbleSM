@@ -45,6 +45,7 @@
 #define SRC_NIMBLE_PARSER_UTIL_H_
 
 #include <iostream>
+#include <sstream>
 #include <limits>
 #include <string>
 #include <vector>

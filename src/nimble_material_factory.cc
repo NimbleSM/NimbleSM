@@ -92,7 +92,8 @@ std::shared_ptr<MaterialParameters> MaterialFactoryBase::ParseMaterialParameters
     }
   }
 
-  return std::make_shared<MaterialParameters>(material_name, material_string_parameters, material_double_parameters, num_material_points);
+  return std::make_shared<MaterialParameters>(material_name, material_string_parameters, material_double_parameters,
+                                              num_material_points);
 }
 
 MaterialFactory::MaterialFactory()
