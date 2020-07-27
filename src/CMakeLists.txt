@@ -34,7 +34,6 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_genesis_mesh.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_util.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_interface.h
