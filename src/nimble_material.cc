@@ -55,11 +55,11 @@ void ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase
 }
 
   ElasticMaterial::ElasticMaterial(MaterialParameters const & material_parameters)
-    : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
+    : Material(), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
     dim_ = 3;
-    density_ = material_parameters_.GetParameterValue("density");
-    bulk_modulus_ =  material_parameters_.GetParameterValue("bulk_modulus");
-    shear_modulus_ =  material_parameters_.GetParameterValue("shear_modulus");
+    density_ = material_parameters.GetParameterValue("density");
+    bulk_modulus_ =  material_parameters.GetParameterValue("bulk_modulus");
+    shear_modulus_ =  material_parameters.GetParameterValue("shear_modulus");
   }
 
   void ElasticMaterial::GetStress(int elem_id,
@@ -234,13 +234,15 @@ void ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase
     factory.add_valid_double_parameter_name("density");
   }
 
-  NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const & material_parameters)
-    : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
-    dim_ = 3;
-    density_ = material_parameters_.GetParameterValue("density");
-    bulk_modulus_ =  material_parameters_.GetParameterValue("bulk_modulus");
-    shear_modulus_ =  material_parameters_.GetParameterValue("shear_modulus");
-  }
+NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const &material_parameters)
+    :
+    Material(),
+    num_state_variables_(0),
+    dim_(3),
+    density_(material_parameters.GetParameterValue("density")),
+    bulk_modulus_(material_parameters.GetParameterValue("bulk_modulus")),
+    shear_modulus_(material_parameters.GetParameterValue("shear_modulus")) {
+}
 
   void NeohookeanMaterial::GetStress(int elem_id,
                                      int num_pts,

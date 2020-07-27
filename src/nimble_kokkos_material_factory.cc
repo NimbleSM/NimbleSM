@@ -67,20 +67,19 @@ inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host
   auto mat_host = std::make_shared<MatType>(mat_params_struct);
   auto mat_device = static_cast<Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
   nimble::Material* pointer_that_lives_on_the_stack = mat_device;
+  MatType mat_host_copy = *mat_host;
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (pointer_that_lives_on_the_stack) MatType(mat_params_struct);
+    new (pointer_that_lives_on_the_stack) MatType(mat_host_copy);
   });
   return std::make_pair(mat_host, mat_device);
 }
 
 void MaterialFactory::create() {
-  char name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  material_params->GetMaterialName(name, false);
-  std::string name_string(name);
-  if (nimble::StringsAreEqual(name_string.c_str(), "neohookean")) {
+  auto name_string = material_params->GetMaterialName(false);
+  if (name_string == "neohookean") {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
         *material_params);
-  } else if (nimble::StringsAreEqual(name_string.c_str(), "elastic")) {
+  } else if (name_string == "elastic") {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
         *material_params);
   } else {
