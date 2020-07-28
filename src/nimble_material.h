@@ -46,6 +46,7 @@
 
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
+#include "nimble_utils.h"
 #include <string.h>
 
 namespace nimble {
@@ -102,6 +103,10 @@ namespace nimble {
       num_material_points_(num_material_points) {
   }
 
+  static inline void ConvertStringToUpperCase(std::string &s) {
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  }
+
     inline
     ~MaterialParameters() {}
 
@@ -145,12 +150,22 @@ namespace nimble {
 
     inline
     double GetParameterValue(const char* parameter_name) const {
-      return material_double_parameters_.at(parameter_name);
+      try {
+        return material_double_parameters_.at(parameter_name);
+      } catch(...) {
+        std::string errMsg = "Double parameter '" + std::string(parameter_name) + "' does not exist";
+        throw std::runtime_error(errMsg);
+      }
     }
 
     inline
     const std::string& GetStringParameterValue(const char* parameter_name) const {
-      return material_string_parameters_.at(parameter_name);
+      try {
+        return material_string_parameters_.at(parameter_name);
+      } catch(...) {
+        std::string errMsg = "String parameter '" + std::string(parameter_name) + "' does not exist";
+        throw std::runtime_error(errMsg);
+      }
     }
 
     inline
@@ -187,13 +202,6 @@ namespace nimble {
     }
 
   private:
-
-    inline void ConvertStringToUpperCase(std::string& s) const {
-      for(auto&& c : s) {
-        c = std::toupper(c);
-      }
-    }
-
     std::string material_name_;
 
     std::map<std::string, double> material_double_parameters_;
@@ -208,6 +216,9 @@ namespace nimble {
 
     NIMBLE_FUNCTION
     Material() {}
+
+    NIMBLE_FUNCTION
+    Material(const Material& mat) = default;
 
     NIMBLE_FUNCTION
     virtual ~Material() {}
@@ -260,7 +271,6 @@ namespace nimble {
                            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
                            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) = 0;
 #endif
-
     NIMBLE_FUNCTION
     virtual void GetTangent(int num_pts,
                             double* material_tangent) const = 0;
@@ -276,7 +286,6 @@ namespace nimble {
 #endif
 
   protected:
-
     const int K_S_XX_ = 0 ;
     const int K_S_YY_ = 1 ;
     const int K_S_ZZ_ = 2 ;
@@ -303,30 +312,31 @@ namespace nimble {
   public:
     static void register_supported_material_parameters(MaterialFactoryBase& factory);
 
+    NIMBLE_FUNCTION
     ElasticMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
-    virtual ~ElasticMaterial() {}
+    ElasticMaterial(const ElasticMaterial& mat) = default;
 
     NIMBLE_FUNCTION
-    int NumStateVariables() const { return num_state_variables_; };
+    int NumStateVariables() const override { return num_state_variables_; };
 
     NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override {
       printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableLabel().\n");
     }
 
     NIMBLE_FUNCTION
-    double GetStateVariableInitialValue(int index) const  {
+    double GetStateVariableInitialValue(int index) const  override {
       printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableInitialValue().\n");
       return 0.0;
     }
 
     NIMBLE_FUNCTION
-    double GetDensity() const { return density_; }
+    double GetDensity() const override { return density_; }
 
     NIMBLE_FUNCTION
-    double GetBulkModulus() const { return bulk_modulus_; }
+    double GetBulkModulus() const override { return bulk_modulus_; }
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,
@@ -340,21 +350,21 @@ namespace nimble {
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
-                   bool is_output_step);
+                   bool is_output_step) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     void GetStress(double time_previous,
                    double time_current,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
                    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1);
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
 #endif
 
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
-                    double* material_tangent) const ;
+                    double* material_tangent) const override;
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
@@ -363,7 +373,7 @@ namespace nimble {
                              const int & shear_mod_idx,
                              int num_pts,
                              const double * const deformation_gradient_np1,
-                             double* stress_np1);
+                             double* stress_np1) override;
 #endif
 
   private:
@@ -380,30 +390,31 @@ namespace nimble {
   public:
     static void register_supported_material_parameters(MaterialFactoryBase& factory);
 
+    NIMBLE_FUNCTION
+    NeohookeanMaterial(const NeohookeanMaterial& mat) = default;
+
+    NIMBLE_FUNCTION
     NeohookeanMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
-    virtual ~NeohookeanMaterial() {}
+    int NumStateVariables() const override { return num_state_variables_; };
 
     NIMBLE_FUNCTION
-    int NumStateVariables() const { return num_state_variables_; };
-
-    NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override {
       printf("\n**** Error, bad index in NeohookeanMaterial::GetStateVariableLabel().\n");
     }
 
     NIMBLE_FUNCTION
-    double GetStateVariableInitialValue(int index) const  {
+    double GetStateVariableInitialValue(int index) const  override {
       printf("\n**** Error, bad index in NeohookeanMaterial::GetStateVariableInitialValue().\n");
       return 0.0;
     }
 
     NIMBLE_FUNCTION
-    double GetDensity() const { return density_; }
+    double GetDensity() const  override { return density_; }
 
     NIMBLE_FUNCTION
-    double GetBulkModulus() const { return bulk_modulus_; }
+    double GetBulkModulus() const  override { return bulk_modulus_; }
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,
@@ -417,21 +428,21 @@ namespace nimble {
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
-                   bool is_output_step);
+                   bool is_output_step) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     void GetStress(double time_previous,
                    double time_current,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
                    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1);
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
 #endif
 
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
-                    double* material_tangent) const ;
+                    double* material_tangent) const  override;
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
@@ -440,7 +451,7 @@ namespace nimble {
                              const int & shear_mod_idx,
                              int num_pts,
                              const double * const deformation_gradient_np1,
-                             double* stress_np1);
+                             double* stress_np1) override;
 #endif
 
   private:
@@ -451,6 +462,122 @@ namespace nimble {
     double bulk_modulus_;
     double shear_modulus_;
   };
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  NIMBLE_FUNCTION
+  void ElasticMaterial::GetStress(double time_previous,
+                                  double time_current,
+                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
+
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = stress_np1;
+    double strain[6];
+    double trace_strain;
+
+    double two_mu = 2.0 * shear_modulus_;
+    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
+
+    strain[K_S_XX_] = def_grad[K_F_XX_] - 1.0;
+    strain[K_S_YY_] = def_grad[K_F_YY_] - 1.0;
+    strain[K_S_ZZ_] = def_grad[K_F_ZZ_] - 1.0;
+    strain[K_S_XY_] = 0.5*(def_grad[K_F_XY_] + def_grad[K_F_YX_]);
+    strain[K_S_YZ_] = 0.5*(def_grad[K_F_YZ_] + def_grad[K_F_ZY_]);
+    strain[K_S_ZX_] = 0.5*(def_grad[K_F_ZX_] + def_grad[K_F_XZ_]);
+
+    trace_strain = strain[K_S_XX_] + strain[K_S_YY_] + strain[K_S_ZZ_];
+
+    stress[K_S_XX_] = two_mu * strain[K_S_XX_] + lambda * trace_strain;
+    stress[K_S_YY_] = two_mu * strain[K_S_YY_] + lambda * trace_strain;
+    stress[K_S_ZZ_] = two_mu * strain[K_S_ZZ_] + lambda * trace_strain;
+    stress[K_S_XY_] = two_mu * strain[K_S_XY_];
+    stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
+    stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
+
+    // TODO rotate stress?
+  }
+
+  NIMBLE_FUNCTION
+  void NeohookeanMaterial::GetStress(double time_previous,
+                                     double time_current,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
+
+    double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
+    double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
+
+    // deformation gradient, left stretch, and rotation
+    double def_grad[9], v[6], r[9];
+    for (int i=0 ; i<9 ; i++) {
+      def_grad[i] = deformation_gradient_np1[i];
+    }
+
+    Polar_Decomp(def_grad, v, r);
+
+    CheckVectorSanity(9, def_grad, "neohookean deformation_gradient_np1");
+    CheckVectorSanity(6, v, "neohookean v");
+    CheckVectorSanity(9, r, "neohookean r");
+
+    xj =     v[K_S_XX_]*v[K_S_YY_]*v[K_S_ZZ_]
+       + 2.0*v[K_S_XY_]*v[K_S_YZ_]*v[K_S_ZX_]
+       -     v[K_S_XX_]*v[K_S_YZ_]*v[K_S_YZ_]
+       -     v[K_S_YY_]*v[K_S_ZX_]*v[K_S_ZX_]
+       -     v[K_S_ZZ_]*v[K_S_XY_]*v[K_S_XY_];
+
+    double cbrt_xj = std::cbrt(xj);
+    fac = 1.0 / (cbrt_xj * cbrt_xj);
+
+    pressure = 0.5*bulk_modulus_*(xj - 1.0/xj);
+
+    bxx = v[K_S_XX_]*v[K_S_XX_]
+        + v[K_S_XY_]*v[K_S_YX_]
+        + v[K_S_XZ_]*v[K_S_ZX_];
+
+    byy = v[K_S_YX_]*v[K_S_XY_]
+        + v[K_S_YY_]*v[K_S_YY_]
+        + v[K_S_YZ_]*v[K_S_ZY_];
+
+    bzz = v[K_S_ZX_]*v[K_S_XZ_]
+        + v[K_S_ZY_]*v[K_S_YZ_]
+        + v[K_S_ZZ_]*v[K_S_ZZ_];
+
+    bxy = v[K_S_XX_]*v[K_S_XY_]
+        + v[K_S_XY_]*v[K_S_YY_]
+        + v[K_S_XZ_]*v[K_S_ZY_];
+
+    byz = v[K_S_YX_]*v[K_S_XZ_]
+        + v[K_S_YY_]*v[K_S_YZ_]
+        + v[K_S_YZ_]*v[K_S_ZZ_];
+
+    bzx = v[K_S_ZX_]*v[K_S_XX_]
+        + v[K_S_ZY_]*v[K_S_YX_]
+        + v[K_S_ZZ_]*v[K_S_ZX_];
+
+    bxx = fac*bxx;
+    byy = fac*byy;
+    bzz = fac*bzz;
+    bxy = fac*bxy;
+    byz = fac*byz;
+    bzx = fac*bzx;
+
+    trace = bxx + byy + bzz;
+
+    bxx = bxx - trace/3.0;
+    byy = byy - trace/3.0;
+    bzz = bzz - trace/3.0;
+
+    stress_np1(K_S_XX_) = pressure + shear_modulus_*bxx/xj;
+    stress_np1(K_S_YY_) = pressure + shear_modulus_*byy/xj;
+    stress_np1(K_S_ZZ_) = pressure + shear_modulus_*bzz/xj;
+    stress_np1(K_S_XY_) =            shear_modulus_*bxy/xj;
+    stress_np1(K_S_YZ_) =            shear_modulus_*byz/xj;
+    stress_np1(K_S_ZX_) =            shear_modulus_*bzx/xj;
+  }
+#endif
 
 } // namespace nimble
 

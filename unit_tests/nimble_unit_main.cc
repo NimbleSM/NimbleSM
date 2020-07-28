@@ -41,10 +41,23 @@
 
 #include <gtest/gtest.h>
 
+#ifdef NIMBLE_HAVE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 int main(int argc, char** argv) {
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
+
   ::testing::InitGoogleTest(&argc, argv);
 
   int err = RUN_ALL_TESTS();
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::finalize_all();
+#endif
 
   return err;
 }
