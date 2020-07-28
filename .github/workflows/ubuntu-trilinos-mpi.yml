@@ -31,12 +31,17 @@ jobs:
            sudo apt-get install -y openmpi-bin libopenmpi-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y%m")"
+      shell: bash
     - name: Cache Trilinos
       id: cache-trilinos
       uses: actions/cache@v2
       with:
         path: Trilinos/
-        key: ${{ runner.os }}-trilinos
+        key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-trilinos
     - name: Build Trilinos
       if: steps.cache-trilinos.outputs.cache-hit != 'true'
       run: |
