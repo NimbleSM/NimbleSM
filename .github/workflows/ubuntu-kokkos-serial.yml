@@ -47,7 +47,7 @@ jobs:
            ls
            mkdir build && cd build
            ls
-           export DIR2 =`pwd`
+           export DIR2=`pwd`
            echo $DIR2
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
