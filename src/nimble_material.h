@@ -47,6 +47,7 @@
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
 #include "nimble_utils.h"
+#include <algorithm>
 #include <string.h>
 
 namespace nimble {
