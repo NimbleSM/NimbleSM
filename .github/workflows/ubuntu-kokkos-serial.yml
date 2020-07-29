@@ -38,14 +38,7 @@ jobs:
       - name: cmake
         shell: bash
         run: |
-           echo $ACCESS
-           export ACCESS=`pwd`
-           echo $ACCESS
-           ls >& TTTT && cat TTTT
            mkdir build && cd build
-           ls >& TTTT && cat TTTT
-           export DIR2=`pwd`
-           echo $DIR2
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
@@ -58,4 +51,3 @@ jobs:
            cd build
            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
            make test
-           cat test/rigid_body_motion/rigid_body_motion.kokkos.np1.log

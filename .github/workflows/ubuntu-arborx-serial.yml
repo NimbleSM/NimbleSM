@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - master
-      - feature/arborx/fix-yml
 
   pull_request:
 
@@ -45,14 +44,7 @@ jobs:
       - name: cmake
         shell: bash
         run: |
-           echo $ACCESS
-           export ACCESS=`pwd`
-           echo $ACCESS
-           ls >& TTTT && cat TTTT
            mkdir build && cd build
-           ls >& TTTT && cat TTTT
-           export DIR2=`pwd`
-           echo $DIR2
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
