@@ -338,7 +338,6 @@ namespace nimble {
       }
     }
 
-    return;
   }
 
   void
@@ -359,8 +358,8 @@ namespace nimble {
     const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> face_global_ids;
     for (auto& face : faces) {
-      for (int i=0 ; i<face.size() ; i++) {
-        face_global_ids.push_back(genesis_node_global_ids[face[i]]);
+      for (int i : face) {
+        face_global_ids.push_back(genesis_node_global_ids[i]);
       }
     }
 
@@ -383,7 +382,7 @@ namespace nimble {
         for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
 
           for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
-            std::vector<int> face_global_ids = faces[i_face];
+            face_global_ids = faces[i_face];
             // DJL INEFFICIENT HANDLING OF GLOBAL IDS
             for (int i=0; i<face_global_ids.size() ; i++) {
               face_global_ids[i] = genesis_node_global_ids[face_global_ids[i]];
@@ -491,23 +490,23 @@ namespace nimble {
 
     // replace the node ids that correspond to the genesis mesh
     // with node ids that correspond to the contact submodel
-    for (unsigned int i_face=0 ; i_face<master_skin_faces.size() ; ++i_face) {
-      for (unsigned int i_node=0 ; i_node<master_skin_faces[i_face].size() ; ++i_node) {
-        int genesis_mesh_node_id = master_skin_faces[i_face][i_node];
-        master_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+    for (auto & master_skin_face : master_skin_faces) {
+      for (int & i_node : master_skin_face) {
+        int genesis_mesh_node_id = i_node;
+        i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
-    for (unsigned int i_face=0 ; i_face<slave_skin_faces.size() ; ++i_face) {
-      for (unsigned int i_node=0 ; i_node<slave_skin_faces[i_face].size() ; ++i_node) {
-        int genesis_mesh_node_id = slave_skin_faces[i_face][i_node];
-        slave_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+    for (auto & slave_skin_face : slave_skin_faces) {
+      for (int & i_node : slave_skin_face) {
+        int genesis_mesh_node_id = i_node;
+        i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
 
     // create a list of ghosted nodes in the contact submodel
     std::vector<int> ghosted_contact_node_ids;
     for (auto node_id : ghosted_node_local_ids) {
-      std::map<int, int>::iterator it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
+      auto it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
       if (it != genesis_mesh_node_id_to_contact_submodel_id.end()) {
         ghosted_contact_node_ids.push_back(it->second);
       }
