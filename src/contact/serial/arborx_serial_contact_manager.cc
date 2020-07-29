@@ -154,7 +154,7 @@ namespace nimble {
 
     // Reset the contact_status flags
     for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
-      contact_faces_d_[jj].set_contact_status(false);
+      contact_faces_d_(jj).set_contact_status(false);
 
     //
     // The next loop does not track which node is in contact with which face
@@ -162,17 +162,9 @@ namespace nimble {
     //
     for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
       for (int j = offset(inode); j < offset(inode+1); ++j) {
-        contact_faces_d_[indices(j)].set_contact_status(true);
+        contact_faces_d_(indices(j)).set_contact_status(true);
       }
     }
-
-    ///--- For debugging purposes ---
-    std::cout << " offset size " << offset.extent(0)
-              << " nnz " << offset(contact_nodes_d_.extent(0))
-              << "\n";
-
-    std::cout << " indices size " << indices.extent(0) << "\n";
-    //--------------------------------
   }
 
   void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
