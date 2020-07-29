@@ -227,10 +227,16 @@ class ContactInterface;
     void BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
                                          std::vector<ContactEntity> const & triangles);
 
-    void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
-                                std::vector<ContactEntity> const & triangles,
-                                std::vector<ContactEntity::vertex>& closest_points,
-                                std::vector<PROJECTION_TYPE>& projection_types);
+    void ClosestPointProjection(const ContactEntity *nodes,
+                                const ContactEntity *triangles,
+                                ContactEntity::vertex *closest_points,
+                                PROJECTION_TYPE *projection_types,
+                                std::size_t num_elements);
+    void ClosestPointProjectionSingle( const ContactEntity &node,
+        const ContactEntity &tri,
+        ContactEntity::vertex *closest_point,
+        PROJECTION_TYPE *projection_type,
+        double tolerance);
 
     virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
