@@ -18,7 +18,9 @@ jobs:
       CMAKE_BUILD_TYPE: release
     steps:
       - uses: actions/checkout@v1
-      - run: |
+      - name: install dependencies
+        shell: bash
+        run: |
              sudo apt-get update -y -qq
              sudo apt-get install -y libblas-dev liblapack-dev
              sudo apt-get install -y libmetis-dev
@@ -27,21 +29,17 @@ jobs:
              sudo add-apt-repository ppa:nschloe/seacas-nightly
              sudo apt-get update -y -qq
              sudo apt-get install -y seacas-bin libseacas-dev
-  build-kokkos:
+             git clone https://github.com/kokkos/kokkos.git
+             cd kokkos
+             mkdir build && mkdir install && cd build
+             cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
+             make && sudo make install
+  build-nimble-kokkos:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - run: |
-           git clone https://github.com/kokkos/kokkos.git
-           cd kokkos
-           mkdir build && mkdir install && cd build
-           cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
-           make && sudo make install
-  build-nimble-kokkos:
-    needs: build-kokkos
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
+      - name: cmake
+        run: |
            mkdir build && cd build
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
