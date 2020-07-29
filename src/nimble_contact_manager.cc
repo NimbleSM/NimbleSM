@@ -382,16 +382,16 @@ namespace nimble {
         for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
 
           for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
-            face_global_ids = faces[i_face];
+            std::vector<int> faceGlobalIDs = faces[i_face];
             // DJL INEFFICIENT HANDLING OF GLOBAL IDS
-            for (int i=0; i<face_global_ids.size() ; i++) {
-              face_global_ids[i] = genesis_node_global_ids[face_global_ids[i]];
+            for (int i=0; i<faceGlobalIDs.size() ; i++) {
+              faceGlobalIDs[i] = genesis_node_global_ids[faceGlobalIDs[i]];
             }
             // DJL INCORRECTLY SEARCHING EMPTY ENTRIES AT THE END OF mpi_buffer
-            if (std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != face_global_ids.end()) {
+            if (std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != faceGlobalIDs.end()) {
               face_iterator_t face_it = faces.begin() + i_face;
               face_id_iterator_t face_id_it = entity_ids.begin() + i_face;
               faces.erase(face_it);
