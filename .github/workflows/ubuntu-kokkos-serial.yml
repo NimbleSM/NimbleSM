@@ -17,6 +17,7 @@ jobs:
     env:
       CMAKE_BUILD_TYPE: release
     steps:
+      - uses: actions/checkout@v1
       - name: install dependencies
         shell: bash
         run: |
@@ -33,11 +34,6 @@ jobs:
              mkdir build && mkdir install && cd build
              cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
-  build-nimble-kokkos:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
       - name: cmake
         shell: bash
         run: |
