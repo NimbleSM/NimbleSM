@@ -1,0 +1,10 @@
+Input FEM file                   = sphere_plate_contact.g
+LB file                          = sphere_plate_contact.g.nem
+Parallel Results File Base Name  = sphere_plate_contact
+File Extension for Spread Files  = .g
+Number of Processors             = 2 
+------------------------------------------------------------
+                Parallel I/O section
+------------------------------------------------------------
+Parallel Disk Info= number=1, offset=1, zeros, nosubdirectory
+Parallel file location = root=/home/rjones/NimbleSM-Contact/test/sphere_plate_contact/, subdir=.
