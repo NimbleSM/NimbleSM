@@ -79,7 +79,7 @@ class MaterialFactoryBase {
   }
 
  protected:
-  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const char *material_parameters,
+  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const std::string& material_parameters,
                                                                             const int num_material_points = 0) const;
 
  private:

@@ -42,7 +42,6 @@
 #include <gtest/gtest.h>
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
-#include <nimble_material_factory_util.h>
 #include <memory>
 #include <string>
 
@@ -94,10 +93,8 @@ TEST(nimble_material_params, parse_double_parameters) {
   const std::string material_string = "neohookean bulk_modulus 1.0e6 shear_modulus 5.e5 density 1.0e3";
   auto params = TestMaterialFactory().parse_string(material_string.c_str());
 
-  char matName[64];
-  params->GetMaterialName(matName, false);
-  std::string stringMatName(matName);
-  ASSERT_EQ(stringMatName, "neohookean");
+  auto matName = params->GetMaterialName(false);
+  ASSERT_EQ(matName, "neohookean");
 
   ASSERT_EQ(params->GetNumParameters(), 3);
   ASSERT_EQ(params->GetNumStringParameters(), 0);
@@ -111,6 +108,11 @@ TEST(nimble_material_params, parse_double_parameters) {
   EXPECT_DOUBLE_EQ(params->GetParameterValue("bulk_modulus"), 1.0e6);
   EXPECT_DOUBLE_EQ(params->GetParameterValue("shear_modulus"), 5.e5);
   EXPECT_DOUBLE_EQ(params->GetParameterValue("density"), 1.0e3);
+
+  auto&& doubleParams = params->GetParameters();
+  auto&& stringParams = params->GetStringParameters();
+  ASSERT_GT(doubleParams.size(), 0u);
+  ASSERT_EQ(stringParams.size(), 0u);
 }
 
 TEST(nimble_material_params, register_new_test_property) {
@@ -130,7 +132,6 @@ TEST(nimble_material_params, register_new_test_string_property) {
   auto params = fact.parse_string(material_string.c_str());
 
   ASSERT_TRUE(params->IsStringParameter("test_property"));
-  auto c = params->GetStringParameterValue("test_property");
   EXPECT_EQ(std::string(params->GetStringParameterValue("test_property")), "custom_property_val");
 }
 
