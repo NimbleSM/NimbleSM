@@ -36,7 +36,11 @@ if(NIMBLE_HAVE_MPI)
   add_test(wave_in_bar_mpi_np3 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck wave_in_bar.in --num-ranks 3)
 endif()
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_ARBORX)
+  add_test(wave_in_bar_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck wave_in_bar.in --num-ranks 1)
+endif()
+
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
   add_test(wave_in_bar_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck wave_in_bar.in --num-ranks 1)
   if(NIMBLE_HAVE_MPI)
     add_test(wave_in_bar_kokkos_np3 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck wave_in_bar.in --num-ranks 3)

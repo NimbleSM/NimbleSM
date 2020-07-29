@@ -26,7 +26,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/contact_entity_creation.gold.e
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/contact_entity_creation.exodiff
                ${CMAKE_CURRENT_BINARY_DIR}/contact_entity_creation.exodiff COPYONLY)
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_ARBORX)
+  add_test(contact_entity_creation_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck contact_entity_creation.in --num-ranks 1)
+endif()
+
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
   add_test(contact_entity_creation_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 1)
   if(NIMBLE_HAVE_MPI)
     add_test(contact_entity_creation_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck contact_entity_creation.in --num-ranks 2)

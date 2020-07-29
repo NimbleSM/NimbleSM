@@ -24,7 +24,11 @@ if(NIMBLE_HAVE_MPI)
   add_test(brick_with_fibers_mpi_np2 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck brick_with_fibers.in --num-ranks 2)
 endif()
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_ARBORX)
+  add_test(brick_with_fibers_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck brick_with_fibers.in --num-ranks 1)
+endif()
+
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
   add_test(brick_with_fibers_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck brick_with_fibers.in --num-ranks 1)
   if(NIMBLE_HAVE_MPI)
     add_test(brick_with_fibers_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck brick_with_fibers.in --num-ranks 2)

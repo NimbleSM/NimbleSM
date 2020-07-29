@@ -184,7 +184,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   if (rve_genesis_file_name != "none") {
     rve_mesh.ReadFile(rve_genesis_file_name);
   }
+#ifdef NIMBLE_HAVE_ARBORX
+  std::string tag = "arborx";
+#else
   std::string tag = "kokkos";
+#endif
   std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
@@ -406,7 +410,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
+#ifdef NIMBLE_HAVE_ARBORX
+      std::string tag = "arborx";
+#else
       std::string tag = "kokkos";
+#endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser->ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
