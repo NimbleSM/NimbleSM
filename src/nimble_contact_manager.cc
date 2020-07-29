@@ -1552,6 +1552,62 @@ namespace nimble {
     }
   }
 
+  void
+  ContactManager::SimpleClosestPointProjectionSingle(const ContactEntity &node,
+                                     const ContactEntity &tri,
+                                     ContactEntity::vertex *closest_point,
+                                     PROJECTION_TYPE *projection_type,
+                                     double tol) {
+    // node
+    double p[3];
+    p[0] = node.coord_1_x_;
+    p[1] = node.coord_1_y_;
+    p[2] = node.coord_1_z_;
+    // facet
+    double p1[3];
+    p1[0] = tri.coord_1_x_;
+    p1[1] = tri.coord_1_y_;
+    p1[2] = tri.coord_1_z_;
+    double p2[3];
+    p2[0] = tri.coord_2_x_;
+    p2[1] = tri.coord_2_y_;
+    p2[2] = tri.coord_2_z_;
+    double p3[3];
+    p3[0] = tri.coord_3_x_;
+    p3[1] = tri.coord_3_y_;
+    p3[2] = tri.coord_3_z_;
+    // u: edge, v: edge, w: vertex to edge
+    double u[3], v[3], w[3];
+    for (int i=0 ; i<3 ; i++) {
+      u[i] = p2[i] - p1[i];
+      v[i] = p3[i] - p1[i];
+      w[i] = p[i]  - p1[i];
+    }
+    // n: outward non-unit normal
+    double n[3];
+    CrossProduct(u, v, n);
+    double n_squared = n[0]*n[0] + n[1]*n[1] + n[2]*n[2]; // 4 A
+    // baricentric coordinates on facet  [ u, w + a n, n ] = [ u, w, n]
+    double cross[3];
+    CrossProduct(u, w, cross);
+    double alpha3 = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+    CrossProduct(w, v, cross);
+    double alpha2 = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+    double alpha1 = 1.0 - alpha2 - alpha3;
+    // check inside 
+    double tol2 = 1.0 + tol;
+    bool a1 = (alpha1 > -tol && alpha1 < tol2);
+    bool a2 = (alpha2 > -tol && alpha2 < tol2);
+    bool a3 = (alpha3 > -tol && alpha3 < tol2);
+    *projection_type = PROJECTION_TYPE::UNKNOWN; // indicates outside
+    if (a1 && a2 && a3) {
+      closest_point->coords_[0] = alpha1*p1[0] + alpha2*p2[0] + alpha3*p3[0];
+      closest_point->coords_[1] = alpha1*p1[1] + alpha2*p2[1] + alpha3*p3[1];
+      closest_point->coords_[2] = alpha1*p1[2] + alpha2*p2[2] + alpha3*p3[2];
+      *projection_type = PROJECTION_TYPE::FACE;
+    }
+  }
+
   void ContactManager::ComputeContactForce(int step, bool debug_output) {
 
     if (penalty_parameter_ <= 0.0) {

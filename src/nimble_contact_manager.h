@@ -237,6 +237,11 @@ class ContactInterface;
         ContactEntity::vertex *closest_point,
         PROJECTION_TYPE *projection_type,
         double tolerance);
+    void SimpleClosestPointProjectionSingle( const ContactEntity &node,
+        const ContactEntity &tri,
+        ContactEntity::vertex *closest_point,
+        PROJECTION_TYPE *projection_type,
+        double tolerance);
 
     virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
