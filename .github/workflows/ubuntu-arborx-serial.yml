@@ -1,10 +1,11 @@
-name: ubuntu-kokkos-serial
+name: ubuntu-arborx-serial
   
 # Trigger the workflow on push or pull request
 on:
   push:
     branches:
       - master
+      - feature/arborx/fix-yml
 
   pull_request:
 
@@ -34,6 +35,12 @@ jobs:
              mkdir build && cd build
              cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
+             cd ../..
+             git clone https://github.com/arborx/arborx.git
+             cd arborx
+             mkdir build && cd build
+             cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
+             make && sudo make install
       - name: cmake
         shell: bash
         run: |
@@ -48,7 +55,7 @@ jobs:
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON \
+                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=OFF \
                  ..
       - name: compile
         run: cmake --build build
@@ -57,4 +64,4 @@ jobs:
            cd build
            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
            make test
-           cat test/rigid_body_motion/rigid_body_motion.kokkos.np1.log
+
