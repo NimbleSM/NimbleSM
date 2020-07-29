@@ -35,9 +35,9 @@ jobs:
              make && sudo make install
   build-nimble-kokkos:
     needs: setup
-    uses: actions/checkout@v1
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
       - name: cmake
         shell: bash
         run: |
