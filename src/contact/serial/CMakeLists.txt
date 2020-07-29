@@ -1,3 +1,4 @@
+
 set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/serial_contact_manager.h
     )
