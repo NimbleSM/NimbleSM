@@ -30,8 +30,6 @@ jobs:
              sudo apt-get update -y -qq
              sudo apt-get install -y seacas-bin libseacas-dev
              git clone https://github.com/kokkos/kokkos.git
-             export ACCESS=`pwd`
-             echo $ACCESS
              cd kokkos
              mkdir build && mkdir install && cd build
              cmake .. -DCMAKE_INSTALL_PREFIX="/usr/"
@@ -41,11 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: cmake
+        shell: bash
         run: |
            echo $ACCESS
            export ACCESS=`pwd`
            echo $ACCESS
+           ls
            mkdir build && cd build
+           ls
+           export DIR2 =`pwd`
+           echo $DIR2
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
