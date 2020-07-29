@@ -22,9 +22,12 @@ add_subdirectory(notched_plate)
 add_subdirectory(brick_with_fibers)
 add_subdirectory(brick_with_fiber_periodic)
 add_subdirectory(quasistatic_tension)
+
+# contact
 add_subdirectory(contact_entity_creation)
 add_subdirectory(bvh_two_body)
 add_subdirectory(bvh_fastcollide)
+add_subdirectory(sphere_plate_contact)
 
 if(NIMBLE_HAVE_UQ)
   add_subdirectory(uq_wave_in_bar)
