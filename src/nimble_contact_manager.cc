@@ -1366,177 +1366,188 @@ namespace nimble {
   }
 
   void
-  ContactManager::ClosestPointProjection(std::vector<ContactEntity> const & nodes,
-                                         std::vector<ContactEntity> const & triangles,
-                                         std::vector<ContactEntity::vertex>& closest_points,
-                                         std::vector<ContactManager::PROJECTION_TYPE>& projection_types) {
+  ContactManager::ClosestPointProjection(const ContactEntity *nodes,
+                                         const ContactEntity *triangles,
+                                         ContactEntity::vertex *closest_points,
+                                         PROJECTION_TYPE *projection_types,
+                                         std::size_t num_elements) {
 
     // Wolfgang Heidrich, 2005, Computing the Barycentric Coordinates of a Projected Point, Journal of Graphics Tools, pp 9-12, 10(3).
 
     double tol = 1.0e-16;
 
-    for (unsigned int i_proj=0 ; i_proj<nodes.size() ; i_proj++) {
-
+    for (unsigned int i_proj=0 ; i_proj < num_elements; i_proj++) {
       ContactEntity const & node = nodes[i_proj];
       ContactEntity const & tri = triangles[i_proj];
 
-      double p[3];
-      p[0] = node.coord_1_x_;
-      p[1] = node.coord_1_y_;
-      p[2] = node.coord_1_z_;
+      ClosestPointProjectionSingle(node, tri, &closest_points[i_proj],
+          &projection_types[i_proj], tol);
+    }
+  }
 
-      double p1[3];
-      p1[0] = tri.coord_1_x_;
-      p1[1] = tri.coord_1_y_;
-      p1[2] = tri.coord_1_z_;
+  void
+  ContactManager::ClosestPointProjectionSingle(const ContactEntity &node,
+                                     const ContactEntity &tri,
+                                     ContactEntity::vertex *closest_point,
+                                     PROJECTION_TYPE *projection_type,
+                                     double tol) {
 
-      double p2[3];
-      p2[0] = tri.coord_2_x_;
-      p2[1] = tri.coord_2_y_;
-      p2[2] = tri.coord_2_z_;
+    double p[3];
+    p[0] = node.coord_1_x_;
+    p[1] = node.coord_1_y_;
+    p[2] = node.coord_1_z_;
 
-      double p3[3];
-      p3[0] = tri.coord_3_x_;
-      p3[1] = tri.coord_3_y_;
-      p3[2] = tri.coord_3_z_;
+    double p1[3];
+    p1[0] = tri.coord_1_x_;
+    p1[1] = tri.coord_1_y_;
+    p1[2] = tri.coord_1_z_;
 
-      double u[3], v[3], w[3];
-      for (int i=0 ; i<3 ; i++) {
-        u[i] = p2[i] - p1[i];
-        v[i] = p3[i] - p1[i];
-        w[i] = p[i]  - p1[i];
-      }
+    double p2[3];
+    p2[0] = tri.coord_2_x_;
+    p2[1] = tri.coord_2_y_;
+    p2[2] = tri.coord_2_z_;
 
-      double n[3];
-      CrossProduct(u, v, n);
+    double p3[3];
+    p3[0] = tri.coord_3_x_;
+    p3[1] = tri.coord_3_y_;
+    p3[2] = tri.coord_3_z_;
 
-      double n_squared = n[0]*n[0] + n[1]*n[1] + n[2]*n[2];
+    double u[3], v[3], w[3];
+    for (int i=0 ; i<3 ; i++) {
+      u[i] = p2[i] - p1[i];
+      v[i] = p3[i] - p1[i];
+      w[i] = p[i]  - p1[i];
+    }
 
-      double cross[3];
-      CrossProduct(u, w, cross);
-      double gamma = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+    double n[3];
+    CrossProduct(u, v, n);
 
-      CrossProduct(w, v, cross);
-      double beta = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
+    double n_squared = n[0]*n[0] + n[1]*n[1] + n[2]*n[2];
 
-      double alpha = 1 - gamma - beta;
+    double cross[3];
+    CrossProduct(u, w, cross);
+    double gamma = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
 
-      bool alpha_is_zero, alpha_in_range;
-      (alpha > -tol && alpha < tol) ? alpha_is_zero = true : alpha_is_zero = false;
-      (alpha > -tol && alpha < 1.0 + tol) ? alpha_in_range = true : alpha_in_range = false;
+    CrossProduct(w, v, cross);
+    double beta = (cross[0]*n[0] + cross[1]*n[1] + cross[2]*n[2]) / n_squared;
 
-      bool beta_is_zero, beta_in_range;
-      (beta > -tol && beta < tol) ? beta_is_zero = true : beta_is_zero = false;
-      (beta > -tol && beta < 1.0 + tol) ? beta_in_range = true : beta_in_range = false;
+    double alpha = 1 - gamma - beta;
 
-      bool gamma_is_zero, gamma_in_range;
-      (gamma > -tol && gamma < tol) ? gamma_is_zero = true : gamma_is_zero = false;
-      (gamma > -tol && gamma < 1.0 + tol) ? gamma_in_range = true : gamma_in_range = false;
+    bool alpha_is_zero, alpha_in_range;
+    (alpha > -tol && alpha < tol) ? alpha_is_zero = true : alpha_is_zero = false;
+    (alpha > -tol && alpha < 1.0 + tol) ? alpha_in_range = true : alpha_in_range = false;
 
-      if (alpha_in_range && beta_in_range && gamma_in_range) {
-        closest_points[i_proj].coords_[0] = alpha*p1[0] + beta*p2[0] + gamma*p3[0];
-        closest_points[i_proj].coords_[1] = alpha*p1[1] + beta*p2[1] + gamma*p3[1];
-        closest_points[i_proj].coords_[2] = alpha*p1[2] + beta*p2[2] + gamma*p3[2];
-        if (alpha_is_zero || beta_is_zero || gamma_is_zero) {
-          projection_types[i_proj] = PROJECTION_TYPE::NODE_OR_EDGE;
-        }
-        else {
-          projection_types[i_proj] = PROJECTION_TYPE::FACE;
-        }
+    bool beta_is_zero, beta_in_range;
+    (beta > -tol && beta < tol) ? beta_is_zero = true : beta_is_zero = false;
+    (beta > -tol && beta < 1.0 + tol) ? beta_in_range = true : beta_in_range = false;
+
+    bool gamma_is_zero, gamma_in_range;
+    (gamma > -tol && gamma < tol) ? gamma_is_zero = true : gamma_is_zero = false;
+    (gamma > -tol && gamma < 1.0 + tol) ? gamma_in_range = true : gamma_in_range = false;
+
+    if (alpha_in_range && beta_in_range && gamma_in_range) {
+      closest_point->coords_[0] = alpha*p1[0] + beta*p2[0] + gamma*p3[0];
+      closest_point->coords_[1] = alpha*p1[1] + beta*p2[1] + gamma*p3[1];
+      closest_point->coords_[2] = alpha*p1[2] + beta*p2[2] + gamma*p3[2];
+      if (alpha_is_zero || beta_is_zero || gamma_is_zero) {
+        *projection_type = PROJECTION_TYPE::NODE_OR_EDGE;
       }
       else {
+        *projection_type = PROJECTION_TYPE::FACE;
+      }
+    }
+    else {
 
-        projection_types[i_proj] = PROJECTION_TYPE::NODE_OR_EDGE;
+      *projection_type = PROJECTION_TYPE::NODE_OR_EDGE;
 
-        double x = p1[0] - p[0];
-        double y = p1[1] - p[1];
-        double z = p1[2] - p[2];
-        double distance_squared = x*x + y*y + z*z;
+      double x = p1[0] - p[0];
+      double y = p1[1] - p[1];
+      double z = p1[2] - p[2];
+      double distance_squared = x*x + y*y + z*z;
 
-        double min_distance_squared = distance_squared;
-        double min_distance_squared_t;
-        int min_case = 1;
+      double min_distance_squared = distance_squared;
+      double min_distance_squared_t;
+      int min_case = 1;
 
-        x = p2[0] - p[0];
-        y = p2[1] - p[1];
-        z = p2[2] - p[2];
-        distance_squared = x*x + y*y + z*z;
+      x = p2[0] - p[0];
+      y = p2[1] - p[1];
+      z = p2[2] - p[2];
+      distance_squared = x*x + y*y + z*z;
+      if (distance_squared < min_distance_squared) {
+        min_distance_squared = distance_squared;
+        min_case = 2;
+      }
+
+      x = p3[0] - p[0];
+      y = p3[1] - p[1];
+      z = p3[2] - p[2];
+      distance_squared = x*x + y*y + z*z;
+      if (distance_squared < min_distance_squared) {
+        min_distance_squared = distance_squared;
+        min_case = 3;
+      }
+
+      double t = PointEdgeClosestPointFindT(p1, p2, p);
+      if (t > 0.0 && t < 1.0) {
+        distance_squared = PointEdgeClosestPointFindDistanceSquared(p1, p2, p, t);
         if (distance_squared < min_distance_squared) {
           min_distance_squared = distance_squared;
-          min_case = 2;
+          min_distance_squared_t = t;
+          min_case = 4;
         }
+      }
 
-        x = p3[0] - p[0];
-        y = p3[1] - p[1];
-        z = p3[2] - p[2];
-        distance_squared = x*x + y*y + z*z;
+      t = PointEdgeClosestPointFindT(p2, p3, p);
+      if (t > 0.0 && t < 1.0) {
+        distance_squared = PointEdgeClosestPointFindDistanceSquared(p2, p3, p, t);
         if (distance_squared < min_distance_squared) {
           min_distance_squared = distance_squared;
-          min_case = 3;
+          min_distance_squared_t = t;
+          min_case = 5;
         }
+      }
 
-        double t = PointEdgeClosestPointFindT(p1, p2, p);
-        if (t > 0.0 && t < 1.0) {
-          distance_squared = PointEdgeClosestPointFindDistanceSquared(p1, p2, p, t);
-          if (distance_squared < min_distance_squared) {
-            min_distance_squared = distance_squared;
-            min_distance_squared_t = t;
-            min_case = 4;
-          }
+      t = PointEdgeClosestPointFindT(p3, p1, p);
+      if (t > 0.0 && t < 1.0) {
+        distance_squared = PointEdgeClosestPointFindDistanceSquared(p3, p1, p, t);
+        if (distance_squared < min_distance_squared) {
+          min_distance_squared = distance_squared;
+          min_distance_squared_t = t;
+          min_case = 6;
         }
+      }
 
-        t = PointEdgeClosestPointFindT(p2, p3, p);
-        if (t > 0.0 && t < 1.0) {
-          distance_squared = PointEdgeClosestPointFindDistanceSquared(p2, p3, p, t);
-          if (distance_squared < min_distance_squared) {
-            min_distance_squared = distance_squared;
-            min_distance_squared_t = t;
-            min_case = 5;
-          }
-        }
-
-        t = PointEdgeClosestPointFindT(p3, p1, p);
-        if (t > 0.0 && t < 1.0) {
-          distance_squared = PointEdgeClosestPointFindDistanceSquared(p3, p1, p, t);
-          if (distance_squared < min_distance_squared) {
-            min_distance_squared = distance_squared;
-            min_distance_squared_t = t;
-            min_case = 6;
-          }
-        }
-
-        switch (min_case) {
+      switch (min_case) {
         case 1:
-          closest_points[i_proj].coords_[0] = p1[0];
-          closest_points[i_proj].coords_[1] = p1[1];
-          closest_points[i_proj].coords_[2] = p1[2];
+          closest_point->coords_[0] = p1[0];
+          closest_point->coords_[1] = p1[1];
+          closest_point->coords_[2] = p1[2];
           break;
         case 2:
-          closest_points[i_proj].coords_[0] = p2[0];
-          closest_points[i_proj].coords_[1] = p2[1];
-          closest_points[i_proj].coords_[2] = p2[2];
+          closest_point->coords_[0] = p2[0];
+          closest_point->coords_[1] = p2[1];
+          closest_point->coords_[2] = p2[2];
           break;
         case 3:
-          closest_points[i_proj].coords_[0] = p3[0];
-          closest_points[i_proj].coords_[1] = p3[1];
-          closest_points[i_proj].coords_[2] = p3[2];
+          closest_point->coords_[0] = p3[0];
+          closest_point->coords_[1] = p3[1];
+          closest_point->coords_[2] = p3[2];
           break;
         case 4:
-          closest_points[i_proj].coords_[0] = p1[0] + (p2[0] - p1[0])*min_distance_squared_t;
-          closest_points[i_proj].coords_[1] = p1[1] + (p2[1] - p1[1])*min_distance_squared_t;
-          closest_points[i_proj].coords_[2] = p1[2] + (p2[2] - p1[2])*min_distance_squared_t;
+          closest_point->coords_[0] = p1[0] + (p2[0] - p1[0])*min_distance_squared_t;
+          closest_point->coords_[1] = p1[1] + (p2[1] - p1[1])*min_distance_squared_t;
+          closest_point->coords_[2] = p1[2] + (p2[2] - p1[2])*min_distance_squared_t;
           break;
         case 5:
-          closest_points[i_proj].coords_[0] = p2[0] + (p3[0] - p2[0])*min_distance_squared_t;
-          closest_points[i_proj].coords_[1] = p2[1] + (p3[1] - p2[1])*min_distance_squared_t;
-          closest_points[i_proj].coords_[2] = p2[2] + (p3[2] - p2[2])*min_distance_squared_t;
+          closest_point->coords_[0] = p2[0] + (p3[0] - p2[0])*min_distance_squared_t;
+          closest_point->coords_[1] = p2[1] + (p3[1] - p2[1])*min_distance_squared_t;
+          closest_point->coords_[2] = p2[2] + (p3[2] - p2[2])*min_distance_squared_t;
           break;
         case 6:
-          closest_points[i_proj].coords_[0] = p3[0] + (p1[0] - p3[0])*min_distance_squared_t;
-          closest_points[i_proj].coords_[1] = p3[1] + (p1[1] - p3[1])*min_distance_squared_t;
-          closest_points[i_proj].coords_[2] = p3[2] + (p1[2] - p3[2])*min_distance_squared_t;
+          closest_point->coords_[0] = p3[0] + (p1[0] - p3[0])*min_distance_squared_t;
+          closest_point->coords_[1] = p3[1] + (p1[1] - p3[1])*min_distance_squared_t;
+          closest_point->coords_[2] = p3[2] + (p1[2] - p3[2])*min_distance_squared_t;
           break;
-        }
       }
     }
   }

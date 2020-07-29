@@ -5,21 +5,43 @@
 namespace nimble {
 
   struct NarrowphaseFunc {
+    explicit NarrowphaseFunc( BvhContactManager *cm )
+      : contact_manager{cm}
+    {}
+
     bvh::narrowphase_result operator()(const bvh::broadphase_collision< ContactEntity > &_a,
         const bvh::broadphase_collision< ContactEntity > &_b )
     {
       auto res = bvh::typed_narrowphase_result< NarrowphaseResult >();
-      auto tree = build_snapshot_tree_top_down( _b.elements );
+      auto tree = build_snapshot_tree_top_down( _a.elements );
 
-      for ( auto &&el : _a.elements )
-        query_tree( tree, el, [&_a, &_b, &res]( std::size_t _ai, std::size_t _bi ) {
-          auto &entry = res.emplace_back();
-          entry.first_global_id = _ai;
-          entry.second_global_id = _bi;
+      for ( auto &&elb : _b.elements )
+        query_tree_local( tree, elb, [&_a, &_b, &elb, &res, this]( std::size_t _i ) {
+          const auto &face = _a.elements[_i];
+          const auto &node = elb;
+          ContactEntity::vertex closest_point;
+          ContactManager::PROJECTION_TYPE proj_type;
+          contact_manager->ClosestPointProjectionSingle( node, face, &closest_point, &proj_type,
+              1.0e-16 );
+
+          // Compute distance
+          double dx = node.coord_1_x_ - closest_point[0];
+          double dy = node.coord_1_y_ - closest_point[1];
+          double dz = node.coord_1_z_ - closest_point[2];
+          double gap = std::sqrt( dx * dx + dy * dy + dz * dz );
+
+          if ( gap <= 0.15 * ( node.char_len_ + face.char_len_ ) ) {
+            auto &entry = res.emplace_back();
+            entry.first_global_id = face.contact_entity_global_id();
+            entry.second_global_id = node.contact_entity_global_id();
+            entry.gap = gap;
+          }
         } );
 
       return res;
     }
+
+    BvhContactManager *contact_manager;
   };
 
   BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface, std::size_t _overdecomposition)
@@ -28,7 +50,7 @@ namespace nimble {
       m_nodes{&m_world.create_collision_object()},
       m_faces{&m_world.create_collision_object()}
   {
-    m_world.set_narrowphase_functor< ContactEntity >( NarrowphaseFunc{} );
+    m_world.set_narrowphase_functor< ContactEntity >( NarrowphaseFunc{ this } );
   }
 
   BvhContactManager::BvhContactManager(BvhContactManager &&) noexcept = default;
@@ -50,10 +72,10 @@ namespace nimble {
     m_nodes->set_entity_data(contact_nodes_);
     m_faces->set_entity_data(contact_faces_);
 
-    m_nodes->broadphase(*m_faces);
+    m_faces->broadphase(*m_nodes);
 
     m_last_results.clear();
-    m_nodes->for_each_result< NarrowphaseResult >( [this]( const NarrowphaseResult &_res ){
+    m_faces->for_each_result< NarrowphaseResult >( [this]( const NarrowphaseResult &_res ){
       m_last_results.emplace_back( _res );
     } );
 
@@ -63,13 +85,13 @@ namespace nimble {
     for ( auto &&face : contact_faces_ )
     {
       face.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
-                          [&face]( NarrowphaseResult &res ){ return res.second_global_id == face.contact_entity_global_id(); } ) > 0 );
+                          [&face]( NarrowphaseResult &res ){ return res.first_global_id == face.contact_entity_global_id(); } ) > 0 );
     }
 
     for ( auto &&node : contact_nodes_ )
     {
       node.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
-                                              [&node]( NarrowphaseResult &res ){ return res.first_global_id == node.contact_entity_global_id(); } ) > 0 );
+                                              [&node]( NarrowphaseResult &res ){ return res.second_global_id == node.contact_entity_global_id(); } ) > 0 );
     }
 
   }

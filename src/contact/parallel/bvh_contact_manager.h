@@ -12,6 +12,7 @@ namespace nimble {
   {
     std::size_t first_global_id;
     std::size_t second_global_id;
+    double gap;
   };
 
   class BvhContactManager : public ParallelContactManager
