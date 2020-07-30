@@ -69,7 +69,7 @@ if(NIMBLE_HAVE_MPI)
  add_test(notched_plate_native_neohookean_mpi_np6 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck notched_plate_native_neohookean.in --num-ranks 6)
 endif()
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
  add_test(notched_plate_native_hypoelastic_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck notched_plate_native_hypoelastic.in --num-ranks 1)
  if(NIMBLE_HAVE_MPI)
    add_test(notched_plate_native_hypoelastic_kokkos_np6 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck notched_plate_native_hypoelastic.in --num-ranks 6)
@@ -78,6 +78,14 @@ if(NIMBLE_HAVE_KOKKOS)
  if(NIMBLE_HAVE_MPI)
    add_test(notched_plate_native_neohookean_kokkos_np6 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck notched_plate_native_neohookean.in --num-ranks 6)
  endif()
+endif()
+
+if(NIMBLE_HAVE_ARBORX)
+ add_test(notched_plate_native_hypoelastic_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck notched_plate_native_hypoelastic.in --num-ranks 1)
+ add_test(notched_plate_native_neohookean_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck notched_plate_native_neohookean.in --num-ranks 1)
+
+ add_test(notched_plate_native_hypoelastic_serial python ../run_exodiff_test.py --executable "${NimbleSM_Serial}" --input-deck notched_plate_native_hypoelastic.in)
+ add_test(notched_plate_native_neohookean_serial python ../run_exodiff_test.py --executable "${NimbleSM_Serial}" --input-deck notched_plate_native_neohookean.in)
 endif()
 
 # DEACTIVATED UNTIL ROTATED/UNROTATED STRESS BUG IS FIXED

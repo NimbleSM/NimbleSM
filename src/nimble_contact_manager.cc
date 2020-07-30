@@ -57,7 +57,90 @@
 
 namespace nimble {
 
-  void ParseContactCommand(std::string const & command,
+    void ContactManager::ApplyDisplacements(const double * displacement) {
+      for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
+        int node_id = node_ids_[i_node];
+        for (int i=0 ; i<3 ; i++) {
+          coord_[3*i_node + i] = model_coord_[3*i_node + i] + displacement[3*node_id + i];
+        }
+      }
+      for (unsigned int i_face=0 ; i_face<contact_faces_.size() ; i_face++) {
+        contact_faces_[i_face].SetCoordinates(coord_.data());
+      }
+      for (unsigned int i_node=0 ; i_node<contact_nodes_.size() ; i_node++) {
+        contact_nodes_[i_node].SetCoordinates(coord_.data());
+      }
+    }
+
+    void ContactManager::GetForces(double * contact_force) {
+        for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
+            int node_id = node_ids_[i_node];
+            for (int i=0 ; i<3 ; i++) {
+                contact_force[3*node_id + i] = force_[3*i_node + i];
+            }
+        }
+    }
+
+
+#ifdef NIMBLE_HAVE_KOKKOS
+    // Kokkos Versions of GetForces and ApplyDisplacements
+    void ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+
+        int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+
+        // circumvent lambda *this glitch
+        nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+        nimble_kokkos::DeviceScalarNodeView force = force_d_;
+
+        Kokkos::parallel_for("ContactManager::GetForces",
+                             num_nodes_in_contact_manager,
+                             KOKKOS_LAMBDA(const int i) {
+                                 int node_id = node_ids(i);
+                                 contact_force_d(node_id, 0) = force(3*i);
+                                 contact_force_d(node_id, 1) = force(3*i+1);
+                                 contact_force_d(node_id, 2) = force(3*i+2);
+                             });
+    }
+
+    void ContactManager::ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
+
+        int num_nodes_in_contact_manager = node_ids_d_.extent(0);
+        int num_contact_node_entities = contact_nodes_d_.extent(0);
+        int num_contact_face_entities = contact_faces_d_.extent(0);
+
+        // circumvent lambda *this glitch
+        nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
+        nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
+        nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
+        nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+        nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
+                             num_nodes_in_contact_manager,
+                             KOKKOS_LAMBDA(const int i) {
+                                 int node_id = node_ids(i);
+                                 coord(3*i)   = model_coord(3*i)   + displacement_d(node_id, 0);
+                                 coord(3*i+1) = model_coord(3*i+1) + displacement_d(node_id, 1);
+                                 coord(3*i+2) = model_coord(3*i+2) + displacement_d(node_id, 2);
+                             });
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
+                             num_contact_node_entities,
+                             KOKKOS_LAMBDA(const int i_node) {
+                                 contact_nodes(i_node).SetCoordinates(coord);
+                             });
+
+        Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
+                             num_contact_face_entities,
+                             KOKKOS_LAMBDA(const int i_face) {
+                                 contact_faces(i_face).SetCoordinates(coord);
+                             });
+
+    }
+
+#endif // NIMBLE_HAVE_KOKKOS
+
+    void ParseContactCommand(std::string const & command,
                            std::vector<std::string> & master_block_names,
                            std::vector<std::string> & slave_block_names,
                            double & penalty_parameter) {
@@ -255,7 +338,6 @@ namespace nimble {
       }
     }
 
-    return;
   }
 
   void
@@ -276,8 +358,8 @@ namespace nimble {
     const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> face_global_ids;
     for (auto& face : faces) {
-      for (int i=0 ; i<face.size() ; i++) {
-        face_global_ids.push_back(genesis_node_global_ids[face[i]]);
+      for (int i : face) {
+        face_global_ids.push_back(genesis_node_global_ids[i]);
       }
     }
 
@@ -300,16 +382,16 @@ namespace nimble {
         for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
 
           for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
-            std::vector<int> face_global_ids = faces[i_face];
+            std::vector<int> faceGlobalIDs = faces[i_face];
             // DJL INEFFICIENT HANDLING OF GLOBAL IDS
-            for (int i=0; i<face_global_ids.size() ; i++) {
-              face_global_ids[i] = genesis_node_global_ids[face_global_ids[i]];
+            for (int i=0; i<faceGlobalIDs.size() ; i++) {
+              faceGlobalIDs[i] = genesis_node_global_ids[faceGlobalIDs[i]];
             }
             // DJL INCORRECTLY SEARCHING EMPTY ENTRIES AT THE END OF mpi_buffer
-            if (std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != face_global_ids.end() &&
-                std::find(face_global_ids.begin(), face_global_ids.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != face_global_ids.end()) {
+            if (std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != faceGlobalIDs.end() &&
+                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != faceGlobalIDs.end()) {
               face_iterator_t face_it = faces.begin() + i_face;
               face_id_iterator_t face_id_it = entity_ids.begin() + i_face;
               faces.erase(face_it);
@@ -408,23 +490,23 @@ namespace nimble {
 
     // replace the node ids that correspond to the genesis mesh
     // with node ids that correspond to the contact submodel
-    for (unsigned int i_face=0 ; i_face<master_skin_faces.size() ; ++i_face) {
-      for (unsigned int i_node=0 ; i_node<master_skin_faces[i_face].size() ; ++i_node) {
-        int genesis_mesh_node_id = master_skin_faces[i_face][i_node];
-        master_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+    for (auto & master_skin_face : master_skin_faces) {
+      for (int & i_node : master_skin_face) {
+        int genesis_mesh_node_id = i_node;
+        i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
-    for (unsigned int i_face=0 ; i_face<slave_skin_faces.size() ; ++i_face) {
-      for (unsigned int i_node=0 ; i_node<slave_skin_faces[i_face].size() ; ++i_node) {
-        int genesis_mesh_node_id = slave_skin_faces[i_face][i_node];
-        slave_skin_faces[i_face][i_node] = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+    for (auto & slave_skin_face : slave_skin_faces) {
+      for (int & i_node : slave_skin_face) {
+        int genesis_mesh_node_id = i_node;
+        i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
 
-    // create a list of ghosed nodes in the contact submodel
+    // create a list of ghosted nodes in the contact submodel
     std::vector<int> ghosted_contact_node_ids;
     for (auto node_id : ghosted_node_local_ids) {
-      std::map<int, int>::iterator it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
+      auto it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
       if (it != genesis_mesh_node_id_to_contact_submodel_id.end()) {
         ghosted_contact_node_ids.push_back(it->second);
       }
@@ -447,9 +529,7 @@ namespace nimble {
     std::vector<int> slave_node_ids;
     std::vector<int> slave_node_entity_ids;
     std::map<int, double> slave_node_char_lens;
-    for (int i_face=0 ; i_face<slave_skin_faces.size(); i_face++) {
-
-      std::vector<int>& face = slave_skin_faces[i_face];
+    for (auto &face : slave_skin_faces) {
 
       int num_nodes_in_face = static_cast<int>(face.size());
       // determine a characteristic length based on max edge length
@@ -461,8 +541,8 @@ namespace nimble {
           node_id_2 = face[i+1];
         }
         double edge_length = sqrt( (coord_[3*node_id_2  ] - coord_[3*node_id_1  ])*(coord_[3*node_id_2  ] - coord_[3*node_id_1  ]) +
-                                   (coord_[3*node_id_2+1] - coord_[3*node_id_1+1])*(coord_[3*node_id_2+1] - coord_[3*node_id_1+1]) +
-                                   (coord_[3*node_id_2+2] - coord_[3*node_id_1+2])*(coord_[3*node_id_2+2] - coord_[3*node_id_1+2]) );
+                                  (coord_[3*node_id_2+1] - coord_[3*node_id_1+1])*(coord_[3*node_id_2+1] - coord_[3*node_id_1+1]) +
+                                  (coord_[3*node_id_2+2] - coord_[3*node_id_1+2])*(coord_[3*node_id_2+2] - coord_[3*node_id_1+2]) );
         if (edge_length > max_edge_length) {
           max_edge_length = edge_length;
         }
@@ -557,7 +637,7 @@ namespace nimble {
 
     int index = 0;
 
-    // convert master faces to trangular facets
+    // convert master faces to triangular facets
     for (unsigned int i_face=0 ; i_face < master_skin_faces.size() ; i_face++) {
 
       auto face = master_skin_faces[i_face];
@@ -800,13 +880,13 @@ namespace nimble {
   }
 
 
+  /*!
+   * Initialize Exodus file, and prepare it to contain Contact Visualization data
+   *
+   * @param contact_visualization_exodus_file_name
+   */
   void
-  ContactManager::InitializeContactVisualizationImpl(std::string const & contact_visualization_exodus_file_name,
-                                          nimble::GenesisMesh &mesh,
-                                          nimble::ExodusOutput &out,
-                                          ContactEntity *faces, std::size_t nfaces,
-                                          ContactEntity *nodes, std::size_t nnodes)
-  {
+  ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
     // Exodus id convention for contact visualization:
     //
     // Both node and face contact entities have a unique, parallel-consistent id called contact_entity_global_id_.
@@ -839,16 +919,26 @@ namespace nimble {
     //                   3 * max_contact_entity_id + 8)
     //     element id max_contact_entity_id + 1
 
+
+    // Local constants for readability
+    const size_t nnodes = numContactNodes();
+    const size_t nfaces = numContactFaces();
+    nimble::GenesisMesh &mesh = genesis_mesh_for_contact_visualization_;
+    nimble::ExodusOutput &out = exodus_output_for_contact_visualization_;
+
+
     // determine the maximum contact entity global id over all MPI partitions
     int max_contact_entity_id = 0;
     for (int i_face=0 ; i_face < nfaces; i_face++) {
-      if (faces[i_face].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = faces[i_face].contact_entity_global_id_;
+      ContactEntity const & face = getContactFace(i_face);
+      if (face.contact_entity_global_id_ > max_contact_entity_id) {
+        max_contact_entity_id = face.contact_entity_global_id_;
       }
     }
     for (int i_node=0 ; i_node < nnodes ; i_node++) {
-      if (nodes[i_node].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = nodes[i_node].contact_entity_global_id_;
+      ContactEntity const & node = getContactNode(i_node);
+      if (node.contact_entity_global_id_ > max_contact_entity_id) {
+        max_contact_entity_id = node.contact_entity_global_id_;
       }
     }
 #ifdef NIMBLE_HAVE_MPI
@@ -881,7 +971,7 @@ namespace nimble {
 
     int node_index(0);
     for (int i_face=0 ; i_face < nfaces ; i_face++) {
-      ContactEntity const & face = faces[i_face];
+      ContactEntity const & face = getContactFace(i_face);
       int contact_entity_global_id = face.contact_entity_global_id_;
       node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 9);
       node_x.push_back(face.coord_1_x_);
@@ -910,7 +1000,7 @@ namespace nimble {
     block_elem_connectivity[block_id] = std::vector<int>();
 
     for (int i_node=0 ; i_node < nnodes; i_node++) {
-      ContactEntity const & node = nodes[i_node];
+      ContactEntity const & node = getContactNode(i_node);
       int contact_entity_global_id = node.contact_entity_global_id_;
       node_global_id.push_back(contact_entity_global_id);
       node_x.push_back(node.coord_1_x_);
@@ -936,351 +1026,43 @@ namespace nimble {
     out.Initialize(contact_visualization_exodus_file_name, mesh);
 
     std::vector<std::string> global_data_labels;
-    global_data_labels.push_back("num_contacts");
+    global_data_labels.emplace_back("num_contacts");
     std::vector<std::string> node_data_labels_for_output;
-    node_data_labels_for_output.push_back("displacement_x");
-    node_data_labels_for_output.push_back("displacement_y");
-    node_data_labels_for_output.push_back("displacement_z");
-    node_data_labels_for_output.push_back("contact_status");
+    node_data_labels_for_output.emplace_back("displacement_x");
+    node_data_labels_for_output.emplace_back("displacement_y");
+    node_data_labels_for_output.emplace_back("displacement_z");
+    node_data_labels_for_output.emplace_back("contact_status");
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
     std::map<int, std::vector<std::string> > derived_elem_data_labels;
-    for (auto & block_id : block_ids) {
-      elem_data_labels_for_output[block_id] = std::vector<std::string>();
-      derived_elem_data_labels[block_id] = std::vector<std::string>();
+    for (auto iblock : block_ids) {
+      elem_data_labels_for_output[iblock] = std::vector<std::string>();
+      derived_elem_data_labels[iblock] = std::vector<std::string>();
     }
     out.InitializeDatabase(mesh,
                            global_data_labels,
                            node_data_labels_for_output,
                            elem_data_labels_for_output,
                            derived_elem_data_labels);
+
+
   }
 
   void
-  ContactManager::InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name){
-
-    // Exodus id convention for contact visualization:
-    //
-    // Both node and face contact entities have a unique, parallel-consistent id called contact_entity_global_id_.
-    // For faces, the contact_entity_global_id_ a bit-wise combination of the global exodus id of the parent element,
-    // plus the face ordinal (1-6), plus the triangle ordinal (1-4).
-    // For nodes, the contact_entity_global_id_ is the exodus global node id for the node in the original FEM mesh.
-    //
-    // For visualization output, we need unique, parallel-consistent node ids and element ids.  For the faces, the
-    // contact_entity_global_id_ is used as the element id, and the node ids are constructed here.  For nodes, the
-    // contact_entity_global_id_ is used for both the node id and the element id (sphere element containing a single node).
-    //
-    // For the MPI bounding boxes, both the node ids and the element id are constructed here.
-    //
-    //   contact faces:
-    //     node ids are (3 * contact_entity_global_id_ + max_contact_entity_id + 9,
-    //                   3 * contact_entity_global_id_ + max_contact_entity_id + 10,
-    //                   3 * contact_entity_global_id_ + max_contact_entity_id + 11)
-    //     element id is contact_entity_global_id_
-    //   contact nodes
-    //     node id is contact_entity_global_id_
-    //     element id contact_entity_global_id_
-    //   mpi partition bounding box:
-    //     nodes id are (3 * max_contact_entity_id + 1,
-    //                   3 * max_contact_entity_id + 2,
-    //                   3 * max_contact_entity_id + 3,
-    //                   3 * max_contact_entity_id + 4,
-    //                   3 * max_contact_entity_id + 5,
-    //                   3 * max_contact_entity_id + 6,
-    //                   3 * max_contact_entity_id + 7,
-    //                   3 * max_contact_entity_id + 8)
-    //     element id max_contact_entity_id + 1
-
-#if !defined(NIMBLE_HAVE_KOKKOS)
-    InitializeContactVisualizationImpl( contact_visualization_exodus_file_name,
-        genesis_mesh_for_contact_visualization_,
-        exodus_output_for_contact_visualization_,
-        contact_faces_.data(), contact_faces_.size(), contact_nodes_.data(),
-        contact_nodes_.size() );
-#else
-
-    // determine the maximum contact entity global id over all MPI partitions
-    int max_contact_entity_id = 0;
-    for (int i_face=0 ; i_face<contact_faces_h_.extent(0) ; i_face++) {
-      if (contact_faces_h_[i_face].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = contact_faces_h_[i_face].contact_entity_global_id_;
-      }
-    }
-    for (int i_node=0 ; i_node<contact_nodes_h_.extent(0) ; i_node++) {
-      if (contact_nodes_h_[i_node].contact_entity_global_id_ > max_contact_entity_id) {
-        max_contact_entity_id = contact_nodes_h_[i_node].contact_entity_global_id_;
-      }
-    }
-#ifdef NIMBLE_HAVE_MPI
-    int mpi_rank, num_ranks;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    int global_max_contact_entity_id = max_contact_entity_id;
-    MPI_Allreduce(&max_contact_entity_id, &global_max_contact_entity_id, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    max_contact_entity_id = global_max_contact_entity_id;
-#endif
-
-    std::vector<int> node_global_id;
-    std::vector<double> node_x;
-    std::vector<double> node_y;
-    std::vector<double> node_z;
-    std::vector<int> elem_global_id;
-    std::vector<int> block_ids;
-    std::map<int, std::string> block_names;
-    std::map<int, std::vector<int> > block_elem_global_ids;
-    std::map<int, int> block_num_nodes_per_elem;
-    std::map<int, std::vector<int> > block_elem_connectivity;
-
-    // first block contains the contact faces
-    int block_id = 1;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_faces";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 3;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    int node_index(0);
-    for (int i_face=0 ; i_face<contact_faces_h_.extent(0) ; i_face++) {
-      ContactEntity const & face = contact_faces_h_(i_face);
-      int contact_entity_global_id = face.contact_entity_global_id_;
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 9);
-      node_x.push_back(face.coord_1_x_);
-      node_y.push_back(face.coord_1_y_);
-      node_z.push_back(face.coord_1_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 10);
-      node_x.push_back(face.coord_2_x_);
-      node_y.push_back(face.coord_2_y_);
-      node_z.push_back(face.coord_2_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 11);
-      node_x.push_back(face.coord_3_x_);
-      node_y.push_back(face.coord_3_y_);
-      node_z.push_back(face.coord_3_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      elem_global_id.push_back(contact_entity_global_id);
-    }
-
-    // second block contains the contact nodes
-    block_id = 2;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_nodes";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 1;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    for (int i_node=0 ; i_node<contact_nodes_h_.extent(0) ; i_node++) {
-      ContactEntity const & node = contact_nodes_h_(i_node);
-      int contact_entity_global_id = node.contact_entity_global_id_;
-      node_global_id.push_back(contact_entity_global_id);
-      node_x.push_back(node.coord_1_x_);
-      node_y.push_back(node.coord_1_y_);
-      node_z.push_back(node.coord_1_z_);
-      block_elem_connectivity[block_id].push_back(node_index++);
-      elem_global_id.push_back(contact_entity_global_id);
-    }
-
-    // third block is the bounding box for this mpi rank
-    /**
-    block_id = 3;
-    block_ids.push_back(block_id);
-    block_names[block_id] = "contact_mpi_rank_bounding_box";
-    block_elem_global_ids[block_id] = std::vector<int>();
-    block_num_nodes_per_elem[block_id] = 8;
-    block_elem_connectivity[block_id] = std::vector<int>();
-
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-    node_global_id.push_back(3 * max_contact_entity_id + 1);
-    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 2);
-    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 3);
-    node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 4);
-    node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 5);
-    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 6);
-    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_max);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 7);
-    node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(3 * max_contact_entity_id + 8);
-    node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_min);
-    block_elem_connectivity[block_id].push_back(node_index++);
-    elem_global_id.push_back(max_contact_entity_id + 1);
-
-    // store the model coordinate bounding box
-    contact_visualization_model_coord_bounding_box_[0] = x_min;
-    contact_visualization_model_coord_bounding_box_[1] = x_max;
-    contact_visualization_model_coord_bounding_box_[2] = y_min;
-    contact_visualization_model_coord_bounding_box_[3] = y_max;
-    contact_visualization_model_coord_bounding_box_[4] = z_min;
-    contact_visualization_model_coord_bounding_box_[5] = z_max;
-    **/
-    genesis_mesh_for_contact_visualization_.Initialize("contact_visualization",
-                                                       node_global_id,
-                                                       node_x,
-                                                       node_y,
-                                                       node_z,
-                                                       elem_global_id,
-                                                       block_ids,
-                                                       block_names,
-                                                       block_elem_global_ids,
-                                                       block_num_nodes_per_elem,
-                                                       block_elem_connectivity);
-
-    exodus_output_for_contact_visualization_.Initialize(contact_visualization_exodus_file_name,
-                                                        genesis_mesh_for_contact_visualization_);
-
-    std::vector<std::string> global_data_labels;
-    std::vector<std::string> node_data_labels_for_output;
-    node_data_labels_for_output.push_back("displacement_x");
-    node_data_labels_for_output.push_back("displacement_y");
-    node_data_labels_for_output.push_back("displacement_z");
-    std::map<int, std::vector<std::string> > elem_data_labels_for_output;
-    std::map<int, std::vector<std::string> > derived_elem_data_labels;
-    for (auto & block_id : block_ids) {
-      elem_data_labels_for_output[block_id] = std::vector<std::string>();
-      derived_elem_data_labels[block_id] = std::vector<std::string>();
-    }
-    exodus_output_for_contact_visualization_.InitializeDatabase(genesis_mesh_for_contact_visualization_,
-                                                                global_data_labels,
-                                                                node_data_labels_for_output,
-                                                                elem_data_labels_for_output,
-                                                                derived_elem_data_labels);
-#endif
-  }
-
-  void
-  ContactManager::ContactVisualizationWriteStep(double time_current){
-#if !defined(NIMBLE_HAVE_KOKKOS)
-    WriteVisualizationData( time_current, genesis_mesh_for_contact_visualization_,
-        exodus_output_for_contact_visualization_, contact_faces_.data(),
-        contact_faces_.size(), contact_nodes_.data(), contact_nodes_.size() );
-#else
+  ContactManager::ContactVisualizationWriteStep(double time_current) {
+#ifdef NIMBLE_HAVE_KOKKOS
     // copy contact entities from host to device
     Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
     Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
-
-    std::vector<double> global_data;
-    std::vector< std::vector<double> > node_data_for_output(3);
-    std::map<int, std::vector<std::string> > elem_data_labels_for_output;
-    std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
-    std::map<int, std::vector<std::string> > derived_elem_data_labels;
-    std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-
-    std::vector<int> const & block_ids = genesis_mesh_for_contact_visualization_.GetBlockIds();
-    for (auto & block_id : block_ids) {
-      elem_data_labels_for_output[block_id] = std::vector<std::string>();
-      derived_elem_data_labels[block_id] = std::vector<std::string>();
-    }
-
-    // node_data_for_output contains displacement_x, displacement_y, displacement_z
-    int num_nodes = genesis_mesh_for_contact_visualization_.GetNumNodes();
-    node_data_for_output[0].resize(num_nodes);
-    node_data_for_output[1].resize(num_nodes);
-    node_data_for_output[2].resize(num_nodes);
-    const double * model_coord_x = genesis_mesh_for_contact_visualization_.GetCoordinatesX();
-    const double * model_coord_y = genesis_mesh_for_contact_visualization_.GetCoordinatesY();
-    const double * model_coord_z = genesis_mesh_for_contact_visualization_.GetCoordinatesZ();
-
-    int node_index(0);
-    for (int i_face=0 ; i_face<contact_faces_h_.extent(0) ; i_face++) {
-      ContactEntity const & face = contact_faces_h_[i_face];
-      node_data_for_output[0][node_index] = face.coord_1_x_ - model_coord_x[node_index];
-      node_data_for_output[1][node_index] = face.coord_1_y_ - model_coord_y[node_index];
-      node_data_for_output[2][node_index] = face.coord_1_z_ - model_coord_z[node_index];
-      node_index += 1;
-      node_data_for_output[0][node_index] = face.coord_2_x_ - model_coord_x[node_index];
-      node_data_for_output[1][node_index] = face.coord_2_y_ - model_coord_y[node_index];
-      node_data_for_output[2][node_index] = face.coord_2_z_ - model_coord_z[node_index];
-      node_index += 1;
-      node_data_for_output[0][node_index] = face.coord_3_x_ - model_coord_x[node_index];
-      node_data_for_output[1][node_index] = face.coord_3_y_ - model_coord_y[node_index];
-      node_data_for_output[2][node_index] = face.coord_3_z_ - model_coord_z[node_index];
-      node_index += 1;
-    }
-    for (int i_node=0 ; i_node<contact_nodes_h_.extent(0) ; i_node++) {
-      ContactEntity const & node = contact_nodes_h_(i_node);
-      node_data_for_output[0][node_index] = node.coord_1_x_ - model_coord_x[node_index];
-      node_data_for_output[1][node_index] = node.coord_1_y_ - model_coord_y[node_index];
-      node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
-      node_index += 1;
-    }
-    /*
-    double x_min_model_coord = contact_visualization_model_coord_bounding_box_[0];
-    double x_max_model_coord = contact_visualization_model_coord_bounding_box_[1];
-    double y_min_model_coord = contact_visualization_model_coord_bounding_box_[2];
-    double y_max_model_coord = contact_visualization_model_coord_bounding_box_[3];
-    double z_min_model_coord = contact_visualization_model_coord_bounding_box_[4];
-    double z_max_model_coord = contact_visualization_model_coord_bounding_box_[5];
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-    BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-    // node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_max);
-    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
-    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
-    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_max);
-    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
-    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
-    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_max); node_y.push_back(y_min); node_z.push_back(z_min);
-    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
-    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
-    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_min); node_y.push_back(y_min); node_z.push_back(z_min);
-    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
-    node_data_for_output[1][node_index] = y_min - y_min_model_coord;
-    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_max);
-    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
-    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
-    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_max);
-    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
-    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
-    node_data_for_output[2][node_index] = z_max - z_max_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_max); node_y.push_back(y_max); node_z.push_back(z_min);
-    node_data_for_output[0][node_index] = x_max - x_max_model_coord;
-    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
-    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
-    node_index += 1;
-    // node_x.push_back(x_min); node_y.push_back(y_max); node_z.push_back(z_min);
-    node_data_for_output[0][node_index] = x_min - x_min_model_coord;
-    node_data_for_output[1][node_index] = y_max - y_max_model_coord;
-    node_data_for_output[2][node_index] = z_min - z_min_model_coord;
-    node_index += 1;
-    */
-    exodus_output_for_contact_visualization_.WriteStep(time_current,
-                                                       global_data,
-                                                       node_data_for_output,
-                                                       elem_data_labels_for_output,
-                                                       elem_data_for_output,
-                                                       derived_elem_data_labels,
-                                                       derived_elem_data);
 #endif
+    WriteVisualizationData(time_current);
   }
 
-
   void
-  ContactManager::WriteVisualizationData( double t, nimble::GenesisMesh &mesh,
-                               nimble::ExodusOutput &out,
-                               ContactEntity *faces, std::size_t nfaces,
-                               ContactEntity *nodes, std::size_t nnodes )
+  ContactManager::WriteVisualizationData(double t)
   {
+    nimble::GenesisMesh &mesh = genesis_mesh_for_contact_visualization_;
+    nimble::ExodusOutput &out = exodus_output_for_contact_visualization_;
+
     std::vector<double> global_data;
     std::vector< std::vector<double> > node_data_for_output(4);
     std::map<int, std::vector<std::string> > elem_data_labels_for_output;
@@ -1289,13 +1071,7 @@ namespace nimble {
     std::map<int, std::vector< std::vector<double> > > derived_elem_data;
 
     // Get the number of contacts from one block
-    std::size_t num_contacts = 0;
-    for ( std::size_t i = 0; i < nfaces; ++i )
-    {
-      if ( faces[i].contact_status() )
-        ++num_contacts;
-    }
-
+    auto num_contacts = numActiveContactFaces();
     global_data.push_back( static_cast< double >( num_contacts ) );
 
     std::vector<int> const & block_ids = mesh.GetBlockIds();
@@ -1305,18 +1081,18 @@ namespace nimble {
     }
 
     // node_data_for_output contains displacement_x, displacement_y, displacement_z
-    int num_nodes = mesh.GetNumNodes();
-    node_data_for_output[0].resize(num_nodes);
-    node_data_for_output[1].resize(num_nodes);
-    node_data_for_output[2].resize(num_nodes);
-    node_data_for_output[3].resize(num_nodes);
+    auto num_nodes = mesh.GetNumNodes();
+    for (auto &ndata : node_data_for_output)
+      ndata.resize(num_nodes);
     const double * model_coord_x = mesh.GetCoordinatesX();
     const double * model_coord_y = mesh.GetCoordinatesY();
     const double * model_coord_z = mesh.GetCoordinatesZ();
 
+    size_t nfaces = numContactFaces();
+
     int node_index(0);
-    for (int i_face=0; i_face < nfaces; i_face++) {
-      ContactEntity const & face = faces[i_face];
+    for (size_t i_face=0; i_face < nfaces; i_face++) {
+      ContactEntity const & face = getContactFace(i_face);
       auto contact_status = static_cast< double >( face.contact_status() );
       node_data_for_output[0][node_index] = face.coord_1_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = face.coord_1_y_ - model_coord_y[node_index];
@@ -1334,8 +1110,10 @@ namespace nimble {
       node_data_for_output[3][node_index] = contact_status;
       node_index += 1;
     }
-    for (int i_node=0 ; i_node< nnodes; i_node++) {
-      ContactEntity const & node = nodes[i_node];
+
+    const size_t nnodes = numContactNodes();
+    for (size_t i_node=0 ; i_node< nnodes; i_node++) {
+      ContactEntity const & node = getContactNode(i_node);
       node_data_for_output[0][node_index] = node.coord_1_x_ - model_coord_x[node_index];
       node_data_for_output[1][node_index] = node.coord_1_y_ - model_coord_y[node_index];
       node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
@@ -1344,12 +1122,12 @@ namespace nimble {
     }
 
     out.WriteStep(t,
-                   global_data,
-                   node_data_for_output,
-                   elem_data_labels_for_output,
-                   elem_data_for_output,
-                   derived_elem_data_labels,
-                   derived_elem_data);
+                  global_data,
+                  node_data_for_output,
+                  elem_data_labels_for_output,
+                  elem_data_for_output,
+                  derived_elem_data_labels,
+                  derived_elem_data);
   }
 
   void
@@ -1636,7 +1414,7 @@ namespace nimble {
     // 4) enforcement
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
+    contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
 #endif
   }
 }

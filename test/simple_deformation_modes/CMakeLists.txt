@@ -18,7 +18,11 @@ if(NIMBLE_HAVE_MPI)
   add_test(simple_deformation_modes_mpi_np1 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck simple_deformation_modes.in --num-ranks 1)
 endif()
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_ARBORX)
+  add_test(simple_deformation_modes_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck simple_deformation_modes.in --num-ranks 1)
+endif()
+
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
   add_test(simple_deformation_modes_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck simple_deformation_modes.in --num-ranks 1)
 endif()
 

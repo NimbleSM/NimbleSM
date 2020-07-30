@@ -1,3 +1,4 @@
+message("src/CMakeLists.txt")
 
 target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
@@ -75,7 +76,7 @@ IF(NOT NIMBLE_HAVE_KOKKOS)
 ENDIF()
 
 IF(NIMBLE_HAVE_UQ)
-  target_sources(nimble PRIVATE 
+  target_sources(nimble PRIVATE
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq.cc
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq_method.cc
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq_method_taylor_series.cc
@@ -137,15 +138,22 @@ IF(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.h)
 
-  add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
-  if (NIMBLE_HAVE_TRILINOS)
-    target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
+  IF (NIMBLE_HAVE_ARBORX)
+    message("Executable = NimbleSM_ArborX")
+    add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
+    target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX Kokkos::kokkos)
   ELSE()
-    if (NIMBLE_HAVE_MPI)
-      target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos MPI::MPI_CXX)
-    else()
-      target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos)
-    endif()
+    message("Executable = NimbleSM_Kokkos")
+    add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
+    if (NIMBLE_HAVE_TRILINOS)
+      target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
+    ELSE()
+      if (NIMBLE_HAVE_MPI)
+        target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos MPI::MPI_CXX)
+      else()
+        target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos)
+      endif()
+    ENDIF()
   ENDIF()
 ENDIF()
 

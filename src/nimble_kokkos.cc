@@ -59,6 +59,11 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos.h"
 
+#ifdef NIMBLE_HAVE_ARBORX
+#include "contact/serial/arborx_serial_contact_manager.h"
+#endif
+
+
 #ifdef NIMBLE_HAVE_MPI
 #include "nimble.mpi.utils.h"
 #endif
@@ -123,6 +128,9 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
     std::cout << "\nKokkos configuration:" << std::endl;
     std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
+#ifdef NIMBLE_HAVE_ARBORX
+    std::cout << "  NIMBLE_HAVE_ARBORX               true\n";
+#endif
     std::cout << "  KOKKOS_ENABLE_CUDA               " << kokkos_enable_cuda << std::endl;
     std::cout << "  KOKKOS_ENABLE_CUDA_UVM           " << kokkos_enable_cuda_uvm << std::endl;
     std::cout << "  kokkos_host_execution_space      " << typeid(nimble_kokkos::kokkos_host_execution_space).name() << std::endl;
@@ -176,7 +184,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   if (rve_genesis_file_name != "none") {
     rve_mesh.ReadFile(rve_genesis_file_name);
   }
+#ifdef NIMBLE_HAVE_ARBORX
+  std::string tag = "arborx";
+#else
   std::string tag = "kokkos";
+#endif
   std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
@@ -372,7 +384,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
   int mpi_vector_dimension = 3;
 
+#ifdef NIMBLE_HAVE_ARBORX
+  nimble::ArborXSerialContactManager contact_manager(contact_interface);
+#else
   nimble::ContactManager contact_manager(contact_interface);
+#endif // NIMBLE_HAVE_ARBORX
+
   bool contact_enabled = parser->HasContact();
   bool contact_visualization = parser->ContactVisualization();
   if (contact_enabled) {
@@ -393,7 +410,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
+#ifdef NIMBLE_HAVE_ARBORX
+      std::string tag = "arborx";
+#else
       std::string tag = "kokkos";
+#endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser->ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
@@ -578,13 +599,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // Evaluate the contact force
     if (contact_enabled) {
       contact_manager.ApplyDisplacements(displacement_d);
-
+      //
       double x_min, x_max, y_min, y_max, z_min, z_max;
       contact_manager.BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-
-      contact_manager.ComputeContactForce(step+1, false);
+      //
+      contact_manager.ComputeContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
+      //
+//      if (contact_visualization && is_output_step)
+//        contact_manager.ContactVisualizationWriteStep(time_current);
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )

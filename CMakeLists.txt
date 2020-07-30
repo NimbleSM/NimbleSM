@@ -2,6 +2,8 @@
 # CMakeLists.txt file for NimbleSM
 #
 
+message("CMakeLists.txt - NimbleSM")
+
 cmake_minimum_required(VERSION 3.12)
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
@@ -29,6 +31,7 @@ option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
@@ -47,7 +50,7 @@ endif()
 # Optional dependency for pure MPI build (no Trilinos)
 if (USE_PURE_MPI)
   set(NIMBLE_HAVE_MPI TRUE)
-  message(STATUS "Compiling with MPI")
+    message(STATUS "Compiling with MPI")
   find_package(MPI REQUIRED)
   target_link_libraries(nimble PUBLIC MPI::MPI_CXX)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
@@ -152,6 +155,28 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
   if(CRAY)
     target_link_libraries(nimble PRIVATE hdf5_hl hdf5 z)
   endif()
+endif()
+
+# Optional ArborX dependency
+if (HAVE_ARBORX)
+  message(STATUS "Compiling with ArborX:")
+  find_package(ArborX REQUIRED)
+  #
+  add_definitions(-DNIMBLE_HAVE_ARBORX)
+  set(NIMBLE_HAVE_ARBORX TRUE)
+  target_link_libraries(nimble PRIVATE ArborX::ArborX)
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_ARBORX)
+  #
+  message("       ArborX_DIR: ${ArborX_DIR}")
+  if (NIMBLE_HAVE_MPI)
+    message("       Using parallel collision detection (NIMBLE_HAVE_MPI=ON)")
+  else()
+    message("       Using only serial collision detection (NIMBLE_HAVE_MPI=OFF)")
+  endif()
+else()
+  message(STATUS "ArborX is NOT enabled.")
+  SET(NIMBLE_HAVE_ARBORX FALSE)
+  set(ArborX_LIBS)
 endif()
 
 include_directories(src)
