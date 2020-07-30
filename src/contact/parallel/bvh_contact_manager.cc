@@ -1,6 +1,7 @@
 #include "bvh_contact_manager.h"
 #include <vt/transport.h>
 #include <fstream>
+#include <iomanip>
 
 namespace nimble {
 
@@ -53,10 +54,10 @@ namespace nimble {
     m_world.set_narrowphase_functor< ContactEntity >( NarrowphaseFunc{ this } );
   }
 
-  BvhContactManager::BvhContactManager(BvhContactManager &&) noexcept = default;
+  BvhContactManager::BvhContactManager(BvhContactManager &&) = default;
 
   BvhContactManager &
-  BvhContactManager::operator=( BvhContactManager &&) noexcept = default;
+  BvhContactManager::operator=( BvhContactManager &&) = default;
 
   BvhContactManager::~BvhContactManager() = default;
 
