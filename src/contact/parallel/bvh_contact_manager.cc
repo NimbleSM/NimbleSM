@@ -19,23 +19,20 @@ namespace nimble {
         query_tree_local( tree, elb, [&_a, &_b, &elb, &res, this]( std::size_t _i ) {
           const auto &face = _a.elements[_i];
           const auto &node = elb;
-          ContactEntity::vertex closest_point;
           ContactManager::PROJECTION_TYPE proj_type;
-          contact_manager->ClosestPointProjectionSingle( node, face, &closest_point, &proj_type,
-              1.0e-16 );
-
-          // Compute distance
-          double dx = node.coord_1_x_ - closest_point[0];
-          double dy = node.coord_1_y_ - closest_point[1];
-          double dz = node.coord_1_z_ - closest_point[2];
-          double gap = std::sqrt( dx * dx + dy * dy + dz * dz );
-
-          if ( gap <= 0.15 * ( node.char_len_ + face.char_len_ ) ) {
-            auto &entry = res.emplace_back();
-            entry.first_global_id = face.contact_entity_global_id();
-            entry.second_global_id = node.contact_entity_global_id();
-            entry.gap = gap;
-          }
+          ContactEntity::vertex closest_point;
+          double gap;
+          double normal[3];
+          contact_manager->ClosestPointProjectionSingle( node, face, 
+            &proj_type, &closest_point, gap, &normal);
+          if ( proj_type != ContactManager::PROJECTION_TYPE::UNKNOWN ) {
+            if ( gap <= 0.15 * ( node.char_len_ + face.char_len_ ) ) {
+              auto &entry = res.emplace_back();
+              entry.first_global_id = face.contact_entity_global_id();
+              entry.second_global_id = node.contact_entity_global_id();
+              entry.gap = gap;
+            }
+          };
         } );
 
       return res;

@@ -1163,6 +1163,7 @@ namespace nimble {
     }
   }
 
+
   void
   ContactManager::ClosestPointProjectionSingle(const ContactEntity &node,
                                      const ContactEntity &tri,
@@ -1331,11 +1332,14 @@ namespace nimble {
   }
 
   void
-  ContactManager::SimpleClosestPointProjectionSingle(const ContactEntity &node,
-                                     const ContactEntity &tri,
-                                     ContactEntity::vertex *closest_point,
-                                     PROJECTION_TYPE *projection_type,
-                                     double tol) {
+  ContactManager::SimpleClosestPointProjectionSingle(
+        const ContactEntity &node,
+        const ContactEntity &tri,
+        PROJECTION_TYPE *projection_type,
+        ContactEntity::vertex *closest_point,
+        double &gap,
+        double *normal,
+        double tol) {
     // node
     double p[3];
     p[0] = node.coord_1_x_;
@@ -1379,10 +1383,21 @@ namespace nimble {
     bool a3 = (alpha3 > -tol && alpha3 < tol2);
     *projection_type = PROJECTION_TYPE::UNKNOWN; // indicates outside
     if (a1 && a2 && a3) {
-      closest_point->coords_[0] = alpha1*p1[0] + alpha2*p2[0] + alpha3*p3[0];
-      closest_point->coords_[1] = alpha1*p1[1] + alpha2*p2[1] + alpha3*p3[1];
-      closest_point->coords_[2] = alpha1*p1[2] + alpha2*p2[2] + alpha3*p3[2];
       *projection_type = PROJECTION_TYPE::FACE;
+      double xp = alpha1*p1[0] + alpha2*p2[0] + alpha3*p3[0];
+      double yp = alpha1*p1[1] + alpha2*p2[1] + alpha3*p3[1];
+      double zp = alpha1*p1[2] + alpha2*p2[2] + alpha3*p3[2];
+      closest_point->coords_[0] = xp;
+      closest_point->coords_[1] = yp;
+      closest_point->coords_[2] = zp;
+      double dx = node.coord_1_x_ - xp;
+      double dy = node.coord_1_y_ - yp;
+      double dz = node.coord_1_z_ - zp;
+      double s = 1.0/std::sqrt(n_squared);
+      normal[0] = n[0]*s;
+      normal[1] = n[1]*s;
+      normal[2] = n[2]*s;
+      gap = dx*normal[0] + dy*normal[1] + dz*normal[2];
     }
   }
 

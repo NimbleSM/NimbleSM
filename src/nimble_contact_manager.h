@@ -160,11 +160,14 @@ namespace nimble {
         ContactEntity::vertex *closest_point,
         PROJECTION_TYPE *projection_type,
         double tolerance);
+
     void SimpleClosestPointProjectionSingle( const ContactEntity &node,
         const ContactEntity &tri,
-        ContactEntity::vertex *closest_point,
         PROJECTION_TYPE *projection_type,
-        double tolerance);
+        ContactEntity::vertex *closest_point,
+        double &gap,
+        double *normal,
+        double tolerance = 1.e-8);
 
     virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
