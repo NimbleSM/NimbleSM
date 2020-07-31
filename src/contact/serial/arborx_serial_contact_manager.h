@@ -47,7 +47,6 @@
 #ifdef NIMBLE_HAVE_ARBORX
 
 #include <memory>
-#include <vector>
 
 #include "serial_contact_manager.h"
 
@@ -62,10 +61,6 @@ namespace nimble {
     ArborXSerialContactManager(ArborXSerialContactManager &&) noexcept = default;
 
 //    ArborXSerialContactManager &operator=( const ArborXSerialContactManager &) = delete;
-//    ArborXSerialContactManager &operator=( ArborXSerialContactManager &&) noexcept;
-
-//    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name) override {}
-//    void ContactVisualizationWriteStep( double time ) override;
 
     ArborXSerialContactManager & operator=( ArborXSerialContactManager &&) noexcept = default;
 
