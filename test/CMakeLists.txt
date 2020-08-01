@@ -1,41 +1,138 @@
+#if(NIMBLE_HAVE_CHARM)
+#  set(charmrun ${PROJECT_BINARY_DIR}/src/charmrun)
+#else()
+#  set(charmrun "not available")
+#endif()
+#
 
-if(NIMBLE_HAVE_CHARM)
-  set(charmrun ${PROJECT_BINARY_DIR}/src/charmrun)
-else()
-  set(charmrun "not available")
-endif()
+message(STATUS "### TESTS ###")
 
-set(NimbleSM_Serial ${PROJECT_BINARY_DIR}/src/NimbleSM_Serial)
-set(NimbleSM_ArborX ${PROJECT_BINARY_DIR}/src/NimbleSM_ArborX)
-set(NimbleSM_MPI ${PROJECT_BINARY_DIR}/src/NimbleSM_MPI)
-set(NimbleSM_Kokkos ${PROJECT_BINARY_DIR}/src/NimbleSM_Kokkos)
-set(NimbleSM_Darma ${PROJECT_BINARY_DIR}/src/NimbleSM_Darma)
-set(NimbleSM_Qthreads ${PROJECT_BINARY_DIR}/src/NimbleSM_Qthreads)
-set(NimbleSM_Tpetra ${PROJECT_BINARY_DIR}/src/NimbleSM_Tpetra)
+# Defines all versions of NimbleSM to be tested
+###### MISSING #if(NIMBLE_HAVE_XXXXX) to define which tests should be run
+list(APPEND lstVersions
+        Serial
+        ArborX
+#        MPI
+#        Kokkos
+#        Darma
+#        Qthreads
+#        Tpetra
+        )
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_exodiff_test.py
-               ${CMAKE_CURRENT_BINARY_DIR}/run_exodiff_test.py COPYONLY)
+# Generate paths to executables
+foreach(version IN LISTS lstVersions)
+    set(${version}_Path ${PROJECT_BINARY_DIR}/src/NimbleSM_${version})
+    message(STATUS "${version} version's path: ${${version}_Path}")
+endforeach()
 
-add_subdirectory(rigid_body_motion)
-add_subdirectory(simple_deformation_modes)
-add_subdirectory(wave_in_bar)
-add_subdirectory(notched_plate)
-add_subdirectory(brick_with_fibers)
-add_subdirectory(brick_with_fiber_periodic)
-add_subdirectory(quasistatic_tension)
 
-# contact
-add_subdirectory(contact_entity_creation)
-add_subdirectory(bvh_two_body)
-add_subdirectory(bvh_fastcollide)
-add_subdirectory(sphere_plate_contact)
-
-if(NIMBLE_HAVE_UQ)
-  add_subdirectory(uq_wave_in_bar)
-  add_subdirectory(uq_notch)
-endif()
+# List of available tests
 
 # NOTE failing
 #add_subdirectory(cylinder_with_hole_multiblock_rve)
 #add_subdirectory(plate_with_hole_rve)
 #add_subdirectory(tiny_fe_squared)
+
+list(APPEND lstTests
+        brick_with_fiber_periodic
+        brick_with_fibers
+        contact_entity_creation
+#        cylinder_with_hole
+#        notched_plate_native_hypoelastic
+#        notched_plate_native_neohookean
+#        plate_with_hole_rve
+        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+#        single_elem_complex_displacement
+#        tiny_fe_squared
+        uq_notch
+        uq_wave_in_bar
+        wave_in_bar
+        )
+
+message(STATUS "### Copying all files necessary for testing to binary dir (extensions .in, .g, .gold.e, .exodiff)")
+
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_exodiff_test.py
+        ${CMAKE_CURRENT_BINARY_DIR}/run_exodiff_test.py
+        COPYONLY)
+
+foreach(test IN LISTS lstTests)
+    message(STATUS " * ${test}")
+    foreach(ext in g gold.e exodiff)
+        configure_file(
+                ${CMAKE_CURRENT_SOURCE_DIR}/${test}/${test}.${ext}
+                ${CMAKE_CURRENT_BINARY_DIR}/${test}/${test}.${ext}
+                COPYONLY)
+    endforeach()
+endforeach()
+
+list(APPEND lstTestsCLI_Serial
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_"
+        )
+
+### Defines tests to be run for each version of NimbleSM ###
+
+list(APPEND lstTests_Serial
+        brick_with_fiber_periodic
+        brick_with_fibers
+#        contact_entity_creation
+#        cylinder_with_hole
+#        plate_with_hole_rve
+        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+#        single_elem_complex_displacement
+#        tiny_fe_squared
+#        uq_notch
+#        uq_wave_in_bar
+        wave_in_bar
+        )
+
+
+### Main loop ###
+message(STATUS "## Adding tests to CMAKE: ##")
+# Go through each version of NimbleSM
+foreach(version IN LISTS lstVersions)
+    message(STATUS " * Version: ${version}")
+
+    # For each version, go through each test to run
+    foreach(test IN LISTS lstTests_${version})
+
+        # Determines the number of Command Line variants to run for that version of NimbleSM
+        list(LENGTH lstTestsCLI_${version} count)
+        math(EXPR count "${count}-1")
+
+        # For each test, go through each Command Line variant
+        foreach(i RANGE ${count})
+            # Set the Command Line, test name and working directory for the current test
+            list(GET lstTestsCLI_${version} ${i} cli)
+            set(test_name ${test}_${version}_${i})
+            set(working_dir ${CMAKE_CURRENT_BINARY_DIR}/${test})
+
+            # Expand the command line by replacing "_EXECUTABLE_" and "_INPUT_DECK_" with variables
+            string(REPLACE _EXECUTABLE_
+            ${${version}_Path} cli
+            ${cli}
+            )
+
+            string(REPLACE _INPUT_DECK_
+            ${test}.in cli
+            ${cli}
+            )
+
+            message(STATUS "  - ${test_name}: python ${cli} (work.dir: ${working_dir})")
+
+            # Change cli from string to list (list required by add_test)
+            separate_arguments(cli)
+
+            # Add the test
+            add_test(NAME ${test_name}
+                    COMMAND python ${cli}
+                    WORKING_DIRECTORY ${working_dir}
+                    )
+
+        endforeach() # CLI variant
+    endforeach() # Test
+endforeach() # NimbleSM Version
