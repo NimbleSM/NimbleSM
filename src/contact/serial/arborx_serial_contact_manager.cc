@@ -117,11 +117,17 @@ ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactIn
       : SerialContactManager(interface)
 {
   /// TODO Ask NM & RJ whether this is needed at constructor time
-  updateCollisionData();
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+  updateCollisionData(indices, offset);
 }
 
 
-void ArborXSerialContactManager::updateCollisionData() {
+void ArborXSerialContactManager::updateCollisionData(
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset
+)
+{
 
   //
   // primitives are faces
@@ -142,13 +148,37 @@ void ArborXSerialContactManager::updateCollisionData() {
   //
   // (From https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery )
   //
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
 
   // Number of queries, n = size of contact_nodes_d
   // Size of offset = n + 1
   bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
             indices, offset);
+
+}
+
+void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
+
+  //--- Constraint per ContactManager::ComputeContactForce
+  if (penalty_parameter_ <= 0.0) {
+      throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+  }
+
+  // Steps per (DJL)
+  // entities are stored in contact_nodes_d, contact_nodes_h
+  // 1) box box search
+  // 2) node-face projection
+  // 3) culling
+  // 4) enforcement
+
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
+  Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+
+  //--- Update the geometric collision information
+  updateCollisionData(indices, offset);
+
+  //--- Set vector to store force
+  Kokkos::deep_copy(force_d_, 0.0);
+  contact_interface->SetContactForce(force_d_);
 
   // Reset the contact_status flags
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
@@ -172,21 +202,16 @@ void ArborXSerialContactManager::updateCollisionData() {
       //--- Determine whether the node is projected inside the triangular face
       ContactManager::SimpleClosestPointProjectionSingle(myNode, myFace,
           &flag, &projected, gap, &normal[0]);
-      if (flag != UNKNOWN) {
+      if ((flag != UNKNOWN) && (gap < 0.0)) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
+/////
+        contact_interface->enforcement.EnforceContact(myNode, myFace, 3, gap, normal, projected.coords_);
+/////
       }
     }
   }
 
-}
-
-void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
-  //--- Update the geometric collision information
-  updateCollisionData();
-  //---
-  // Compute enforcement?
-  //---
 }
 
 }
