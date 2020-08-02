@@ -1331,6 +1331,7 @@ namespace nimble {
     }
   }
 
+// static
   void
   ContactManager::SimpleClosestPointProjectionSingle(
         const ContactEntity &node,
