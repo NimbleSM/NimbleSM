@@ -1,3 +1,19 @@
+# ********************************************************************************************************************
+#                                                      NimbleSM
+#                                                VALIDATION TESTING
+#
+# Requirements:
+# 1/ NimbleSM executables shall be named NimbleSM_XXXX with XXXX being a specific version (Serial, Kokkos, ...)
+# 2/ Convention over configuration: Each test shall be stored in a separate folder. The name of the folder and the
+#    files it contains must be identical.
+#    Example: test/example1/example1.in example1.g example1.gold.e example1.exodiff
+# 3/ All tests are run using the default python interpreter in the current environment
+# 4/ A typical test contains 4 files:
+#      .g       the model
+#      .in      details of the simulation
+#      .exodiff tolerances between gold.e file and generated .e file
+#      .gold.e
+
 # Remove below?
 #if(NIMBLE_HAVE_CHARM)
 #  set(charmrun ${PROJECT_BINARY_DIR}/src/charmrun)
