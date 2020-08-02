@@ -177,7 +177,7 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
   updateCollisionData(indices, offset);
 
   //--- Set vector to store force
-  Kokkos::deep_copy(force_d_, 0.0);
+  ContactManager::zeroContactForce();
   contact_interface->SetContactForce(force_d_);
 
   // Reset the contact_status flags
@@ -205,9 +205,7 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
       if ((flag != UNKNOWN) && (gap < 0.0)) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
-/////
-        contact_interface->enforcement.EnforceContact(myNode, myFace, 3, gap, normal, projected.coords_);
-/////
+        contact_interface->EnforceNodeFaceInteraction(myNode, myFace, 3, gap, normal, projected.coords_);
       }
     }
   }

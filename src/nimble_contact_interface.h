@@ -117,8 +117,6 @@ class ContactInterface {
     std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
 
-// protected:
-
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceNodeFaceInteraction(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
                                   const double direction[3], const double closest_pt[3]) const {
@@ -127,7 +125,8 @@ class ContactInterface {
     }
   }
 
-// private:
+protected:
+
   PenaltyContactEnforcement enforcement;
 #endif
 };

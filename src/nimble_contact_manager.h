@@ -74,9 +74,10 @@
 #endif
 
 namespace nimble {
-  class ContactManager {
 
-  public:
+class ContactManager {
+
+public:
 
     typedef enum ProjectionType {
       UNKNOWN=0,
@@ -173,7 +174,7 @@ namespace nimble {
 
     virtual void ContactVisualizationWriteStep(double time_current);
 
-    /// Returns the number of contact faces "actively" in collision
+    /// \brief Returns the number of contact faces "actively" in collision
     ///
     /// \return Number of active contact faces
     ///
@@ -187,7 +188,7 @@ namespace nimble {
        return num_contacts;
     }
 
-    /// Returns a read-only reference to contact face entity
+    /// \brief Returns a read-only reference to contact face entity
     ///
     /// \param i_face Index of the contact face
     /// \return Read-only reference to contact face entity
@@ -201,7 +202,7 @@ namespace nimble {
 #endif
     }
 
-    /// Returns the number of contact faces
+    /// \brief Returns the number of contact faces
     ///
     /// \return Number of contact faces
     ///
@@ -214,7 +215,7 @@ namespace nimble {
 #endif
     }
 
-    /// Returns a read-only reference to contact node entity
+    /// \brief Returns a read-only reference to contact node entity
     ///
     /// \param i_node Index of the contact node
     /// \return Read-only reference to contact node entity
@@ -228,7 +229,7 @@ namespace nimble {
 #endif
     }
 
-    /// Returns the number of contact nodes
+    /// \brief Returns the number of contact nodes
     ///
     /// \return Number of contact nodes
     ///
@@ -239,7 +240,10 @@ namespace nimble {
 #else
       return contact_nodes_.size();
 #endif
-  }
+    }
+
+    /// \brief Zero the contact forces
+    void zeroContactForce();
 
 protected:
   
@@ -253,35 +257,35 @@ protected:
   //--- Variables
 
   bool contact_enabled_ = false;
-    double penalty_parameter_;
+  double penalty_parameter_;
 
-    std::vector<int> node_ids_;
-    std::vector<double> model_coord_;
-    std::vector<double> coord_;
-    std::vector<double> force_;
-    std::vector<ContactEntity> contact_faces_;
-    std::vector<ContactEntity> contact_nodes_;
+  std::vector<int> node_ids_;
+  std::vector<double> model_coord_;
+  std::vector<double> coord_;
+  std::vector<double> force_;
+  std::vector<ContactEntity> contact_faces_;
+  std::vector<ContactEntity> contact_nodes_;
 
-    double contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
-    nimble::ExodusOutput exodus_output_for_contact_visualization_;
+  double contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
+  nimble::ExodusOutput exodus_output_for_contact_visualization_;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
-    nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
-    nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
-    nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
+  nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
+  nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
 
-    nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
-    nimble_kokkos::DeviceContactEntityArrayView contact_nodes_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_nodes_d", 1);
+  nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
+  nimble_kokkos::DeviceContactEntityArrayView contact_nodes_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_nodes_d", 1);
 
-    // TODO remove this once enforcement is on device
-    nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
-    nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
+  // TODO remove this once enforcement is on device
+  nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
+  nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
 #endif
 
-    std::shared_ptr<ContactInterface> contact_interface;
-  };
+  std::shared_ptr<ContactInterface> contact_interface;
+};
 
 } // namespace nimble
 
