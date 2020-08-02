@@ -1,3 +1,4 @@
+# Remove below?
 #if(NIMBLE_HAVE_CHARM)
 #  set(charmrun ${PROJECT_BINARY_DIR}/src/charmrun)
 #else()
@@ -36,16 +37,16 @@ list(APPEND lstTestsCLI_Serial
 list(APPEND lstTests_Serial
         brick_with_fiber_periodic
         brick_with_fibers
-        #        contact_entity_creation
-        #        cylinder_with_hole
-        #        plate_with_hole_rve
+#        contact_entity_creation
+#        cylinder_with_hole
+#        plate_with_hole_rve
         quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-        #        single_elem_complex_displacement
-        #        tiny_fe_squared
-        #        uq_notch
-        #        uq_wave_in_bar
+#        single_elem_complex_displacement
+#        tiny_fe_squared
+#        uq_notch
+#        uq_wave_in_bar
         wave_in_bar
         )
 
@@ -57,20 +58,20 @@ list(APPEND lstTestsCLI_ArborX
         )
 
 list(APPEND lstTests_ArborX
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
         contact_entity_creation
-        #        cylinder_with_hole
-        #        notched_plate_native_hypoelastic
-        #        notched_plate_native_neohookean
-        plate_with_hole_rve
-        quasistatic_tension
+#        cylinder_with_hole
+#        notched_plate_native_hypoelastic
+#        notched_plate_native_neohookean
+#        plate_with_hole_rve
+#        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-        #        single_elem_complex_displacement
-        tiny_fe_squared
-        uq_notch
-        uq_wave_in_bar
+#        single_elem_complex_displacement
+#        tiny_fe_squared
+#        uq_notch
+#        uq_wave_in_bar
         wave_in_bar
         )
 
