@@ -25,39 +25,96 @@ foreach(version IN LISTS lstVersions)
     message(STATUS "${version} version's path: ${${version}_Path}")
 endforeach()
 
+### Defines tests to be run for each version of NimbleSM ###
 
-# List of available tests
+### SERIAL ###
 
-# NOTE failing
-#add_subdirectory(cylinder_with_hole_multiblock_rve)
-#add_subdirectory(plate_with_hole_rve)
-#add_subdirectory(tiny_fe_squared)
+list(APPEND lstTestsCLI_Serial
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_"
+        )
 
-list(APPEND lstTests
+list(APPEND lstTests_Serial
         brick_with_fiber_periodic
         brick_with_fibers
-        contact_entity_creation
-#        cylinder_with_hole
-#        notched_plate_native_hypoelastic
-#        notched_plate_native_neohookean
-#        plate_with_hole_rve
+        #        contact_entity_creation
+        #        cylinder_with_hole
+        #        plate_with_hole_rve
         quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-#        single_elem_complex_displacement
-#        tiny_fe_squared
+        #        single_elem_complex_displacement
+        #        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+### ARBORX ###
+# Currently only supports Serial version of ArborX
+
+list(APPEND lstTestsCLI_ArborX
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+list(APPEND lstTests_ArborX
+        brick_with_fiber_periodic
+        brick_with_fibers
+        contact_entity_creation
+        #        cylinder_with_hole
+        #        notched_plate_native_hypoelastic
+        #        notched_plate_native_neohookean
+        plate_with_hole_rve
+        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        #        single_elem_complex_displacement
+        tiny_fe_squared
         uq_notch
         uq_wave_in_bar
         wave_in_bar
         )
 
+# Build list of available tests (appending tests selected for each version of NimbleSM and removing duplicates)
+foreach (version IN LISTS lstVersions)
+    list(APPEND lstTests
+            ${lstTests_${version}})
+endforeach ()
+
+list(REMOVE_DUPLICATES lstTests)
+
+# NOTE failing
+#add_subdirectory(cylinder_with_hole_multiblock_rve)
+#add_subdirectory(plate_with_hole_rve)
+#add_subdirectory(tiny_fe_squared)
+#
+#list(APPEND lstTests
+#        brick_with_fiber_periodic
+#        brick_with_fibers
+#        contact_entity_creation
+#        cylinder_with_hole
+#        notched_plate_native_hypoelastic
+#        notched_plate_native_neohookean
+#        plate_with_hole_rve
+#        quasistatic_tension
+#        rigid_body_motion
+#        simple_deformation_modes
+#        single_elem_complex_displacement
+#        tiny_fe_squared
+#        uq_notch
+#        uq_wave_in_bar
+#        wave_in_bar
+#        )
+
+
 message(STATUS "### Copying all files necessary for testing to binary dir (extensions .in, .g, .gold.e, .exodiff)")
 
+# Copy run_exodiff_test.py
 configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/run_exodiff_test.py
         ${CMAKE_CURRENT_BINARY_DIR}/run_exodiff_test.py
         COPYONLY)
 
+# copy all other files
 foreach(test IN LISTS lstTests)
     message(STATUS " * ${test}")
     foreach(ext in g gold.e exodiff)
@@ -67,28 +124,6 @@ foreach(test IN LISTS lstTests)
                 COPYONLY)
     endforeach()
 endforeach()
-
-list(APPEND lstTestsCLI_Serial
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_"
-        )
-
-### Defines tests to be run for each version of NimbleSM ###
-
-list(APPEND lstTests_Serial
-        brick_with_fiber_periodic
-        brick_with_fibers
-#        contact_entity_creation
-#        cylinder_with_hole
-#        plate_with_hole_rve
-        quasistatic_tension
-        rigid_body_motion
-        simple_deformation_modes
-#        single_elem_complex_displacement
-#        tiny_fe_squared
-#        uq_notch
-#        uq_wave_in_bar
-        wave_in_bar
-        )
 
 
 ### Main loop ###
