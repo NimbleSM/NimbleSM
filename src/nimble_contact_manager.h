@@ -161,7 +161,17 @@ namespace nimble {
         PROJECTION_TYPE *projection_type,
         double tolerance);
 
-    void SimpleClosestPointProjectionSingle( const ContactEntity &node,
+    /// \brief Compute the projection of a point onto a triangular face
+    ///
+    /// \param[in] node Node to project
+    /// \param[in] tri Face to project onto
+    /// \param[out] projection_type Result of projection (FACE: success,
+    ///             UNKNOWN: point projects outside the face)
+    /// \param[out] closest_point Projection
+    /// \param[out] gap Normal distance when the point projects onto the face
+    /// \param[out] normal Unit normal vector outside of face
+    /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+    static void SimpleClosestPointProjectionSingle( const ContactEntity &node,
         const ContactEntity &tri,
         PROJECTION_TYPE *projection_type,
         ContactEntity::vertex *closest_point,

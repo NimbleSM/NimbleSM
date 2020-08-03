@@ -54,6 +54,7 @@
 #include <sstream>
 #include <algorithm>
 #include <set>
+#include <utility>
 
 namespace nimble {
 
@@ -64,11 +65,11 @@ namespace nimble {
           coord_[3*i_node + i] = model_coord_[3*i_node + i] + displacement[3*node_id + i];
         }
       }
-      for (unsigned int i_face=0 ; i_face<contact_faces_.size() ; i_face++) {
-        contact_faces_[i_face].SetCoordinates(coord_.data());
+      for (auto & contact_face : contact_faces_) {
+        contact_face.SetCoordinates(coord_.data());
       }
-      for (unsigned int i_node=0 ; i_node<contact_nodes_.size() ; i_node++) {
-        contact_nodes_[i_node].SetCoordinates(coord_.data());
+      for (auto & contact_node : contact_nodes_) {
+        contact_node.SetCoordinates(coord_.data());
       }
     }
 
@@ -392,8 +393,8 @@ namespace nimble {
                 std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != faceGlobalIDs.end() &&
                 std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != faceGlobalIDs.end() &&
                 std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != faceGlobalIDs.end()) {
-              face_iterator_t face_it = faces.begin() + i_face;
-              face_id_iterator_t face_id_it = entity_ids.begin() + i_face;
+              auto face_it = faces.begin() + i_face;
+              auto face_id_it = entity_ids.begin() + i_face;
               faces.erase(face_it);
               entity_ids.erase(face_id_it);
               break;
@@ -408,7 +409,7 @@ namespace nimble {
 
   ContactManager::ContactManager(std::shared_ptr<ContactInterface> interface)
     : penalty_parameter_(0.0)
-  , contact_interface(interface)
+  , contact_interface(std::move(interface))
   {
   }
 
@@ -672,8 +673,8 @@ namespace nimble {
           fictitious_node[j] += coord_[3*node_id+j];
         }
       }
-      for (int j=0 ; j<3 ; j++) {
-        fictitious_node[j] /= num_nodes_in_face;
+      for (double & j : fictitious_node) {
+        j /= num_nodes_in_face;
       }
 
       // Create a map for transfering displacements and contact forces from the nodes on the
@@ -1331,6 +1332,7 @@ namespace nimble {
     }
   }
 
+// static
   void
   ContactManager::SimpleClosestPointProjectionSingle(
         const ContactEntity &node,

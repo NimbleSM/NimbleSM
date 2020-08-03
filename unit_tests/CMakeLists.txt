@@ -3,7 +3,9 @@ include(CTest)
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-set(NIMBLE_UNIT_SOURCES test_nimble_material_params.cc nimble_unit_main.cc)
+set(NIMBLE_UNIT_SOURCES test_nimble_material_params.cc nimble_unit_main.cc
+     projection_node_to_face.cc
+   )
 
 if (NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_UNIT_SOURCES ${NIMBLE_UNIT_SOURCES} test_nimble_kokkos_material.cc)

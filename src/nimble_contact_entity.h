@@ -50,6 +50,7 @@
 #include <cfloat>
 #include <math.h>
 #include "nimble_kokkos_defs.h"
+#include "nimble_utils.h"
 
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
@@ -68,10 +69,8 @@ namespace nimble {
     b[0] = pt_3_x - pt_1_x;
     b[1] = pt_3_y - pt_1_y;
     b[2] = pt_3_z - pt_1_z;
-    cross[0] = b[1]*a[2] - b[2]*a[1];
-    cross[1] = b[2]*a[0] - b[0]*a[2];
-    cross[2] = b[0]*a[1] - b[1]*a[0];
-    area = 0.5 * sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
+    CrossProduct(b, a, cross);
+    area = 0.5 * std::sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
     return area;
   }
 
@@ -126,7 +125,7 @@ namespace nimble {
     };
 
     NIMBLE_INLINE_FUNCTION
-    ContactEntity() {}
+    ContactEntity() = default;
 
     NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
@@ -135,7 +134,7 @@ namespace nimble {
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
-                  int node_ids_for_fictitious_node[4] = 0)
+                  const int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
         char_len_(characteristic_length),
         contact_entity_global_id_(contact_entity_global_id){
@@ -172,7 +171,7 @@ namespace nimble {
         }
 
     NIMBLE_INLINE_FUNCTION
-    ~ContactEntity() {}
+    ~ContactEntity() = default;
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
@@ -266,7 +265,7 @@ namespace nimble {
 
     void RecomputeKdop()
     {
-      const double inflation_length = 0.15 * char_len_;
+      const double inflation_length = inflation_factor * char_len_;
       if (entity_type_ == NODE) {
         vertex v;
         v[0] = coord_1_x_;
@@ -345,7 +344,7 @@ namespace nimble {
       centroid_[1] /= num_nodes_;
       centroid_[2] /= num_nodes_;
 
-      double inflation_length = 0.15 * char_len_;
+      double inflation_length = inflation_factor * char_len_;
 
       bounding_box_x_min_ -= inflation_length;
       bounding_box_x_max_ += inflation_length;
@@ -414,6 +413,11 @@ namespace nimble {
     double force_3_x_ = 0.0;
     double force_3_y_ = 0.0;
     double force_3_z_ = 0.0;
+
+    /// \brief Factor multiplying characteristic length to inflate bounding box
+    ///
+    /// \note Empirical default value 0.15
+    double inflation_factor = 0.15;
 
     double char_len_ = 0.0;
 
