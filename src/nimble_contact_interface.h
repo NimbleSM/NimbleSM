@@ -109,7 +109,7 @@ class ContactInterface {
 
   virtual void DoSearchAndEnforcement(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
                                       nimble_kokkos::DeviceContactEntityArrayView contact_faces,
-                                      PenaltyContactEnforcement enforcement) {
+                                      PenaltyContactEnforcement contact_enforcement) {
     std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
 
