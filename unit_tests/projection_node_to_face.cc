@@ -71,14 +71,56 @@ TEST(UnitTest, Projection) {
   double gap = 0.0;
   double normal[3] = {0.0, 0.0, 0.0};
 
-  ContactManager::SimpleClosestPointProjectionSingle(node, face, 
-     &flag, &projectedPoint, gap, normal);
+  double tol = 1.0e-08;
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
+
+  EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
 
   EXPECT_DOUBLE_EQ(projectedPoint.coords_[0], nCoord[0]);
   EXPECT_DOUBLE_EQ(projectedPoint.coords_[1], nCoord[1]);
   EXPECT_DOUBLE_EQ(projectedPoint.coords_[2], 0.0);
 
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
+
+  //----
+
+  nCoord[0] = 1.0; nCoord[1] = 0.0; nCoord[2] = -1.23;
+  node.SetCoordinates(nCoord);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
+
+  EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
+
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[0], nCoord[0]);
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[1], nCoord[1]);
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[2], 0.0);
+
+  EXPECT_DOUBLE_EQ(gap, nCoord[2]);
+
+  //----
+
+  nCoord[0] = 1.0; nCoord[1] = 0.5 * tol; nCoord[2] = 0.777;
+  node.SetCoordinates(nCoord);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
+
+  EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
+
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[0], nCoord[0]);
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[1], nCoord[1]);
+  EXPECT_DOUBLE_EQ(projectedPoint.coords_[2], 0.0);
+
+  EXPECT_DOUBLE_EQ(gap, nCoord[2]);
+
+  //----
+
+  nCoord[0] = 1.0; nCoord[1] = 1.11; nCoord[2] = -1.23;
+  node.SetCoordinates(nCoord);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
+
+  EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::UNKNOWN);
 
 }
 
