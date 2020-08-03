@@ -118,7 +118,7 @@ void ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase
     double strain[6];
     double trace_strain;
 
-    double two_mu = 2.0 * shear_modulus_;
+    double two_mu = 2.0 * shear_mod;
     double lambda = bulk_mod - 2.0*shear_mod/3.0;
 
     for (int pt = 0 ; pt < num_pts ; pt++, def_grad+=9, stress+=6){
