@@ -21,10 +21,10 @@ namespace nimble {
 
     BvhContactManager(std::shared_ptr<ContactInterface> interface, std::size_t _overdecomposition);
     BvhContactManager(const BvhContactManager &) = delete;
-    BvhContactManager(BvhContactManager &&) noexcept;
+    BvhContactManager(BvhContactManager &&);
 
     BvhContactManager &operator=( const BvhContactManager &) = delete;
-    BvhContactManager &operator=( BvhContactManager &&) noexcept;
+    BvhContactManager &operator=( BvhContactManager &&);
 
     ~BvhContactManager();
 
