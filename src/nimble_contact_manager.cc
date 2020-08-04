@@ -1403,6 +1403,15 @@ namespace nimble {
     }
   }
 
+
+  void ContactManager::zeroContactForce() {
+    for (auto &fval : force_)
+      fval = 0.0;
+  #ifdef NIMBLE_HAVE_KOKKOS
+    Kokkos::deep_copy(force_d_, 0.0);
+  #endif
+  }
+
   void ContactManager::ComputeContactForce(int step, bool debug_output) {
 
     if (penalty_parameter_ <= 0.0) {

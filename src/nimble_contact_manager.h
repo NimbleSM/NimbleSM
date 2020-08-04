@@ -251,6 +251,9 @@ namespace nimble {
 #endif
   }
 
+  /// \brief Zero the contact forces
+  void zeroContactForce();
+
 protected:
   
   /// Routine to write the contact data to Exodus file at time t
