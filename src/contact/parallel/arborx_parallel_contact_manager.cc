@@ -121,31 +121,44 @@ namespace nimble {
   ArborXParallelContactManager::ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface)
         : ParallelContactManager(interface)
   {
-    updateCollisionData();
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> ranks("ranks", 0);
+    updateCollisionData(indices, offset, ranks);
   }
 
-  void ArborXParallelContactManager::updateCollisionData() {
+  void ArborXParallelContactManager::updateCollisionData(
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset,
+    Kokkos::View<int *, nimble_kokkos::kokkos_device> &ranks
+  ) {
 
     auto comm = MPI_COMM_WORLD;
     ArborX::DistributedSearchTree<memory_space> dtree(comm, kokkos_device::execution_space{}, contact_faces_d_);
 
-    Kokkos::View<int *, kokkos_device> offset("offset", 0);
-    Kokkos::View<int *, kokkos_device> indices("indices", 0);
-    Kokkos::View<int *, kokkos_device> ranks("ranks", 0);
-
     dtree.query(kokkos_device::execution_space{}, contact_nodes_d_,
                 indices, offset, ranks);
+
+  }
+
+  void ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_output) {
+
+    //--- Constraint per ContactManager::ComputeContactForce
+    if (penalty_parameter_ <= 0.0) {
+        throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+    }
+
+    Kokkos::View<int *, kokkos_device> indices("indices", 0);
+    Kokkos::View<int *, kokkos_device> offset("offset", 0);
+    Kokkos::View<int *, kokkos_device> ranks("ranks", 0);
+
+    //--- Update the geometric collision information
+    updateCollisionData(indices, offset, ranks);
 
     // Reset the contact_status flags
     for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
       contact_faces_d_(jj).set_contact_status(false);
 
-  }
-
-  void ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_output) {
-    //--- Update the geometric collision information
-    updateCollisionData();
-    //---
   }
 
 }
