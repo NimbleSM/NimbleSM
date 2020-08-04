@@ -278,9 +278,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    virtual void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                                     const int & bulk_mod_idx,
-                                     const int & shear_mod_idx,
+    virtual void GetOffNominalStress(const double & bulk_mod,
+                                     const double & shear_mod,
                                      int num_pts,
                                      const double * const deformation_gradient_np1,
                                      double* stress_np1) = 0;
@@ -369,9 +368,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                             const int & bulk_mod_idx,
-                             const int & shear_mod_idx,
+    void GetOffNominalStress(const double & bulk_mod,
+                             const double & shear_mod,
                              int num_pts,
                              const double * const deformation_gradient_np1,
                              double* stress_np1) override;
@@ -447,9 +445,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                             const int & bulk_mod_idx,
-                             const int & shear_mod_idx,
+    void GetOffNominalStress(const double & bulk_mod,
+                             const double & shear_mod,
                              int num_pts,
                              const double * const deformation_gradient_np1,
                              double* stress_np1) override;

@@ -294,7 +294,8 @@ namespace nimble {
                                    DataManager& data_manager,
                                    bool is_output_step,
 #ifdef NIMBLE_HAVE_UQ
-                                   UqModel* uq_model,
+                                   const bool & is_off_nominal,
+                                   std::vector<double> const & uq_params_this_sample, 
 #endif
                                    bool compute_stress_only) const {
 
@@ -314,24 +315,6 @@ namespace nimble {
     double cauchy_stress_n[sym_tensor_size*num_int_pt_per_elem];
     double cauchy_stress_np1[sym_tensor_size*num_int_pt_per_elem];
     double force[vector_size*num_node_per_elem];
-
-#ifdef NIMBLE_HAVE_UQ
-    // Allocate
-    int num_sensitivities = 0; 
-    std::vector<std::vector<double>> def_grad_sensitivities(0);
-    std::vector<double> disp_sens(0), def_grad_this_sample(0);
-    double cauchy_stress_this_sample[sym_tensor_size*num_int_pt_per_elem];
-    std::vector<double*> & offnominal_displacements = uq_model->Displacements();
-    std::vector<double*> & offnominal_internal_forces = uq_model->Forces();
-    std::vector<double*> & displacement_sensitivities = uq_model->DisplacementSensitivities();
-    if(uq_model->Initialized()) {
-      num_sensitivities = uq_model->GetNumSensitivities();
-      def_grad_sensitivities.resize(num_sensitivities);
-      for(int np=0; np<num_sensitivities; np++) def_grad_sensitivities[np].resize(full_tensor_size*num_int_pt_per_elem, 0.0);
-      disp_sens.resize(vector_size*num_node_per_elem, 0.0);
-      def_grad_this_sample.resize(full_tensor_size*num_int_pt_per_elem, 0.0);
-    }
-#endif
 
     double* state_data_n(0);
     double* state_data_np1(0);
@@ -364,28 +347,6 @@ namespace nimble {
                                             cur_coord,
                                             def_grad_np1);
 
-#ifdef NIMBLE_HAVE_UQ
-      // Calculate grad del_lambda u
-      if(uq_model->Initialized()) {
-        //Loop over sensitivities, compute deformation_gradient_sensitivity
-        //"sensitivity" implies derivative w.r.t. uncertain parameter \lambda
-        //"gradient" implies derivative w.r.t reference coordinate \Xb
-        //IMPORTANT DETAIL: deformation_gradient_sensitivity = displacement_sensitivity_gradient (Go Figure)
-        for(int s=0; s<num_sensitivities; s++){
-          //Copy from global nodal vector to vector for nodes of this element
-          for (int node=0 ; node<num_node_per_elem ; node++) {
-            int node_id = elem_conn[elem*num_node_per_elem + node];
-            for (int i=0 ; i<vector_size ; i++) {
-              disp_sens[node*vector_size + i] = displacement_sensitivities[s][vector_size*node_id + i];
-            }
-          }
-          element_->ComputeDeformationGradients(ref_coord,
-            &(disp_sens[0]),
-            &(def_grad_sensitivities[s][0]) );
-        }
-      }
-#endif
-
       // Add in the macroscale displacement gradient (nonzero only for multiscale RVE problems)
       for (int i_ipt = 0 ; i_ipt < num_int_pt_per_elem ; i_ipt++) {
         for (int i_component = 0 ; i_component < full_tensor_size ; i_component++) {
@@ -393,6 +354,9 @@ namespace nimble {
         }
       }
 
+#ifdef NIMBLE_HAVE_UQ
+      if(!is_off_nominal) { //Execute below only for the nominal solution
+#endif
       // Copy data from the global data containers
       for (int i_ipt = 0 ; i_ipt < num_int_pt_per_elem ; i_ipt++) {
         for (int i_component = 0 ; i_component < full_tensor_size ; i_component++) {
@@ -439,6 +403,16 @@ namespace nimble {
         }
       }
 
+#ifdef NIMBLE_HAVE_UQ
+      } else { //For off-nominal solutions
+        material_->GetOffNominalStress(uq_params_this_sample[bulk_modulus_uq_index_],
+                                       uq_params_this_sample[shear_modulus_uq_index_],
+                                       num_int_pt_per_elem,
+                                       def_grad_np1,
+                                       cauchy_stress_np1);
+      }
+#endif
+
       if (!compute_stress_only) {
 
         // Compute element contribution to nodal force
@@ -455,48 +429,6 @@ namespace nimble {
         }
       }
 
-#ifdef NIMBLE_HAVE_UQ
-      if(uq_model->Initialized()) {
-//      printf("DEBUG idx bulk %d shear %d\n",bulk_modulus_uq_index_,shear_modulus_uq_index_);
-        //---START MAIN LOOP OVER NUMBER OF UQ OFFNOMINAL SAMPLES--//
-        // Compute F_I = int B_I P(Grad u) dV
-        //   where u = u0 + partial_lambda u dlambda
-        for(int sample=0; sample < uq_model->GetNumSamples(); sample++) {
-          //--STEP 1: Apply Taylor's series closure for deformation gradient of THIS sample
-          uq_model->ApplyGradientClosure(sample,
-            full_tensor_size*num_int_pt_per_elem,
-            def_grad_np1,
-            def_grad_sensitivities,
-            def_grad_this_sample );
-          //--STEP 2: Apply Material Model to Compute Stress of THIS sample
-          material_->GetOffNominalStress(uq_model->GetParameters(sample),
-            bulk_modulus_uq_index_,
-            shear_modulus_uq_index_,
-            num_int_pt_per_elem,
-            &(def_grad_this_sample[0]),
-            cauchy_stress_this_sample);
-          //--STEP 3: Perform assembly of stresses into nodal forces for THIS sample
-          //  f = int grad N . P(grad u_lambda, lambda) dV
-          double * displacement_this_sample = offnominal_displacements[sample];
-          for (int node=0 ; node<num_node_per_elem ; node++) {
-            int node_id = elem_conn[elem*num_node_per_elem + node];
-            for (int i=0 ; i<vector_size ; i++) {
-              cur_coord[node*vector_size + i] = reference_coordinates[vector_size*node_id + i] + displacement_this_sample[vector_size*node_id + i];
-            }
-          }
-          element_->ComputeNodalForces(cur_coord,
-                                       cauchy_stress_this_sample,
-                                       force);
-          double * internal_force_this_sample = offnominal_internal_forces[sample];
-          for (int node=0 ; node<num_node_per_elem ; node++) {
-            int node_id = elem_conn[elem*num_node_per_elem + node];
-            for (int i=0 ; i<vector_size ; i++) {
-              internal_force_this_sample[vector_size*node_id + i] += force[node*vector_size + i];
-            }
-          }
-        }
-      }
-#endif
     }
   }
 

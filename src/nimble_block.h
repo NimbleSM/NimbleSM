@@ -172,7 +172,8 @@ namespace nimble {
                               DataManager& data_manager,
                               bool is_output_step,
 #ifdef NIMBLE_HAVE_UQ
-                              UqModel* uq_model,
+                              const bool & is_off_nominal,
+                              std::vector<double> const & uq_params_this_sample, 
 #endif
                               bool compute_stress_only = false) const ;
 

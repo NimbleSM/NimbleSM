@@ -347,13 +347,13 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 #ifdef NIMBLE_HAVE_UQ
   std::vector<Viewify> bc_offnom_velocity_views(0);
   if(uq_model.Initialized()) {
+    uq_model.Setup();
 /// FOR CALL TO BCS ===================
     int num_samples = uq_model.GetNumSamples();
     for(int nuq=0; nuq<num_samples; nuq++){
-       double * v =  macroscale_data.GetNodeData(macroscale_data.GetFieldId("off_nom_velocity_"+std::to_string(nuq)));
+       double * v = uq_model.Velocities()[nuq];
        bc_offnom_velocity_views.push_back( Viewify(v,3) );
     }
-    uq_model.Setup();
   } 
 #endif
 
@@ -473,8 +473,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
 
 #ifdef NIMBLE_HAVE_UQ
-   // 1st half step: update velocities for approximate trajectories
-   uq_model.UpdateVelocity(half_delta_time);
+    // 1st half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
 #endif
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
@@ -511,6 +511,37 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       nimble::Block& block = block_it->second;
       std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
+#ifdef NIMBLE_HAVE_UQ
+      int num_exact_samples = uq_model.GetNumExactSamples();
+      for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
+        //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
+        bool is_off_nominal = (ntraj > 0);
+        double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
+        double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
+        double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
+        std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
+        block.ComputeInternalForce(reference_coordinate,
+                                   disp_ptr,
+                                   vel_ptr,
+                                   rve_macroscale_deformation_gradient.data(),
+                                   internal_force_ptr,
+                                   time_previous,
+                                   time_current,
+                                   num_elem_in_block,
+                                   elem_conn,
+                                   elem_global_ids.data(),
+                                   elem_data_labels.at(block_id),
+                                   elem_data_n,
+                                   elem_data_np1,
+                                   data_manager,
+                                   is_output_step,
+                                   is_off_nominal,
+                                   params_this_sample
+                                   );
+      }
+      //Now apply closure to estimate approximate sample forces from the exact samples
+      uq_model.ApplyClosure();
+#else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
                                  velocity,
@@ -526,10 +557,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  elem_data_np1,
                                  data_manager,
                                  is_output_step
-#ifdef NIMBLE_HAVE_UQ
-                                 ,&uq_model 
-#endif
                                  );
+#endif
     }
 
     // Evaluate the contact force
@@ -549,8 +578,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       velocity[i] += half_delta_time * acceleration[i];
     }
 #ifdef NIMBLE_HAVE_UQ
-   // 2nd half step: update velocities for approximate trajectories
-   uq_model.UpdateVelocity(half_delta_time);
+    // 2nd half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
 #endif
 
     if (is_output_step) {
@@ -1000,9 +1029,7 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
 #ifdef NIMBLE_HAVE_UQ
 // HACK 
   nimble::UqModel uq_model(dim,num_nodes);
-  std::vector<double*> offnominal_displacements(0), 
-                       offnominal_internal_forces(0), 
-                       displacement_sensitivities(0);
+  std::vector<double> uq_params(0); 
 #endif
 
   for (int i=0 ; i<num_unknowns ; ++i) {
@@ -1032,7 +1059,8 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                data_manager,
                                is_output_step
 #ifdef NIMBLE_HAVE_UQ
-                              ,&uq_model
+                              ,false,
+                               uq_params
 #endif
                                );
   }
