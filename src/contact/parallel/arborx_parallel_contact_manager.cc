@@ -41,8 +41,10 @@
 //@HEADER
 */
 
-#ifdef NIMBLE_HAVE_ARBORX
-#include "arborx_serial_contact_manager.h"
+#if defined(NIMBLE_HAVE_ARBORX) && defined(NIMBLE_HAVE_MPI)
+
+#include "arborx_parallel_contact_manager.h"
+#include "nimble_kokkos_defs.h"
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
@@ -107,65 +109,40 @@ namespace ArborX
 namespace nimble {
 
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
-  using arborx_bvh = ArborX::BVH<memory_space>;
+  using kokkos_device = Kokkos::Device< nimble_kokkos::kokkos_device_execution_space, nimble_kokkos::kokkos_device_memory_space>;
 
   /*!
    * Contact Manager specific to ArborX library
    *
+   * Global variables contact_faces_d_
+   *
    * @param interface Contact Interface
    */
-  ArborXSerialContactManager::ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface)
-        : SerialContactManager(interface)
+  ArborXParallelContactManager::ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface)
+        : ParallelContactManager(interface)
   {
-    /// TODO Asj NM & RJ whether this is needed at constructor time
     updateCollisionData();
   }
 
-  void ArborXSerialContactManager::updateCollisionData() {
+  void ArborXParallelContactManager::updateCollisionData() {
 
-    //
-    // primitives are faces
-    //
-    arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
-                   contact_faces_d_};
+    auto comm = MPI_COMM_WORLD;
+    ArborX::DistributedSearchTree<memory_space> dtree(comm, kokkos_device::execution_space{}, contact_faces_d_);
 
-    //
-    // indices : position of the primitives that satisfy the predicates.
-    // offsets : predicate offsets in indices.
-    //
-    // indices stores the indices of the objects that satisfy the predicates.
-    // offset stores the locations in the indices view that start a predicate, that is,
-    // predicates(q) is satisfied by indices(o) for primitives(q) <= o < primitives(q+1).
-    //
-    // Following the usual convention, offset(n) = nnz, where n is the number of queries
-    // that were performed and nnz is the total number of collisions.
-    //
-    // (From https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery )
-    //
-    Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
-    Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+    Kokkos::View<int *, kokkos_device> offset("offset", 0);
+    Kokkos::View<int *, kokkos_device> indices("indices", 0);
+    Kokkos::View<int *, kokkos_device> ranks("ranks", 0);
 
-    // Number of queries, n = size of contact_nodes_d
-    // Size of offset = n + 1
-    bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
-              indices, offset);
+    dtree.query(kokkos_device::execution_space{}, contact_nodes_d_,
+                indices, offset, ranks);
 
     // Reset the contact_status flags
     for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
       contact_faces_d_(jj).set_contact_status(false);
 
-    //
-    // The next loop does not track which node is in contact with which face
-    // In theory, we could simply loop on the entries in indices.
-    //
-    for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
-      for (int j = offset(inode); j < offset(inode+1); ++j) {
-        contact_faces_d_(indices(j)).set_contact_status(true);
-      }
-    }
   }
 
-  void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
+  void ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_output) {
     //--- Update the geometric collision information
     updateCollisionData();
     //---
