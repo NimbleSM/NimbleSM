@@ -159,6 +159,12 @@ namespace nimble {
     for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
       contact_faces_d_(jj).set_contact_status(false);
 
+    for (size_t ijk = 0; ijk < contact_nodes_d_.extent(0); ++ijk) {
+      for (int j = offset(ijk); j < offset(ijk+1); ++j) {
+        contact_faces_d_(indices(j)).set_contact_status(true);
+      }
+    }
+
   }
 
 }
