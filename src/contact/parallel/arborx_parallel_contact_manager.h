@@ -69,7 +69,12 @@ namespace nimble {
 
   protected:
 
-    void updateCollisionData();
+    void updateCollisionData(
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset,
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &ranks
+         );
+
 
   };
 }
