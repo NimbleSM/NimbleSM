@@ -74,7 +74,6 @@ namespace nimble {
          Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset,
          Kokkos::View<int *, nimble_kokkos::kokkos_device> &ranks
          );
-
   };
 }
 
