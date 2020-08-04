@@ -114,8 +114,6 @@ namespace nimble {
   /*!
    * Contact Manager specific to ArborX library
    *
-   * Global variables contact_faces_d_
-   *
    * @param interface Contact Interface
    */
   ArborXParallelContactManager::ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface)
@@ -155,14 +153,41 @@ namespace nimble {
     //--- Update the geometric collision information
     updateCollisionData(indices, offset, ranks);
 
+    //--- Set vector to store force
+    ContactManager::zeroContactForce();
+    contact_interface->SetContactForce(force_d_);
+
     // Reset the contact_status flags
     for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
       contact_faces_d_(jj).set_contact_status(false);
 
-    for (size_t ijk = 0; ijk < contact_nodes_d_.extent(0); ++ijk) {
-      for (int j = offset(ijk); j < offset(ijk+1); ++j) {
-        if (ranks(j) == m_rank)
+    for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj)
+      contact_nodes_d_(jj).set_contact_status(false);
+
+    //
+    // The next loop does not track which node is in contact with which face
+    // In theory, we could simply loop on the entries in indices.
+    //
+    double gap = 0.0;
+    double normal[3] = {0., 0., 0.};
+    ContactManager::PROJECTION_TYPE flag = UNKNOWN;
+    ContactEntity::vertex projected;
+    for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
+      auto &myNode = contact_nodes_d_(inode);
+      for (int j = offset(inode); j < offset(inode+1); ++j) {
+        if (ranks(j) != m_rank)
+          continue;
+        //
+        //--- Determine whether the node is projected inside the triangular face
+        //
+        auto &myFace = contact_faces_d_(indices(j));
+        ContactManager::SimpleClosestPointProjectionSingle(myNode, myFace,
+            &flag, &projected, gap, &normal[0]);
+        if ((flag != UNKNOWN) && (gap < 0.0)) {
           contact_faces_d_(indices(j)).set_contact_status(true);
+          contact_nodes_d_(inode).set_contact_status(true);
+          contact_interface->EnforceNodeFaceInteraction(myNode, myFace, 3, gap, normal, projected.coords_);
+        }
       }
     }
 

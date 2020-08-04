@@ -130,6 +130,7 @@ protected:
 protected:
 
   KokkosPenaltyContactEnforcement enforcement;
+
 #endif
 };
 
