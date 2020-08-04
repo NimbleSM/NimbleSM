@@ -134,6 +134,7 @@ protected:
 protected:
 
   PenaltyContactEnforcement enforcement;
+
 #endif
 };
 
