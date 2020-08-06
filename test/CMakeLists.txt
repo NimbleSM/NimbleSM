@@ -155,7 +155,7 @@ list(APPEND lstTestsCLI_MPI
         )
 
 list(APPEND lstTests_MPI
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
 #        contact_entity_creation
         cylinder_with_hole
@@ -186,18 +186,18 @@ IF(NIMBLE_HAVE_MPI)
 ENDIF()
 
 list(APPEND lstTests_Kokkos
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
         contact_entity_creation
-        cylinder_with_hole
+#        cylinder_with_hole
         notched_plate_native_hypoelastic
         notched_plate_native_neohookean
-        plate_with_hole_rve
+#        plate_with_hole_rve
         #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
         single_elem_complex_displacement
-        tiny_fe_squared
+#        tiny_fe_squared
         #        uq_notch
         #        uq_wave_in_bar
         wave_in_bar
@@ -211,7 +211,7 @@ list(APPEND lstTestsCLI_Darma
         )
 
 list(APPEND lstTests_Darma
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
         #        contact_entity_creation
         cylinder_with_hole
@@ -236,7 +236,7 @@ list(APPEND lstTestsCLI_Qthreads
         )
 
 list(APPEND lstTestsCLI_Qthreads
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
         #        contact_entity_creation
         cylinder_with_hole
