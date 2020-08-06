@@ -16,16 +16,16 @@ namespace nimble {
       auto res = bvh::typed_narrowphase_result< NarrowphaseResult >();
       auto tree = build_snapshot_tree_top_down( _a.elements );
 
-      for ( auto &&elb : _b.elements )
-        query_tree_local( tree, elb, [&_a, &_b, &elb, &res, this]( std::size_t _i ) {
+      for ( auto &&elb : _b.elements ) {
+        query_tree_local(tree, elb, [&_a, &_b, &elb, &res, this](std::size_t _i) {
           const auto &face = _a.elements[_i];
           const auto &node = elb;
           ContactManager::PROJECTION_TYPE proj_type;
           ContactEntity::vertex closest_point;
           double gap;
           double normal[3];
-          contact_manager->ClosestPointProjectionSingle( node, face, 
-            &proj_type, &closest_point, gap, &normal);
+          contact_manager->SimpleClosestPointProjectionSingle(node, face,
+                                                              &proj_type, &closest_point, gap, normal);
           if ( proj_type != ContactManager::PROJECTION_TYPE::UNKNOWN ) {
             if ( gap <= 0.15 * ( node.char_len_ + face.char_len_ ) ) {
               auto &entry = res.emplace_back();
@@ -35,6 +35,7 @@ namespace nimble {
             }
           };
         } );
+      }
 
       return res;
     }
@@ -80,10 +81,14 @@ namespace nimble {
     m_world.finish_iteration();
 
     // Update contact entities
+    std::size_t fcount = 0;
     for ( auto &&face : contact_faces_ )
     {
-      face.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
-                          [&face]( NarrowphaseResult &res ){ return res.first_global_id == face.contact_entity_global_id(); } ) > 0 );
+      bool hit = std::count_if( m_last_results.begin(), m_last_results.end(),
+                                [&face]( NarrowphaseResult &res ){ return res.first_global_id == face.contact_entity_global_id(); } ) > 0;
+      face.set_contact_status( hit );
+      if ( hit )
+        ++fcount;
     }
 
     for ( auto &&node : contact_nodes_ )
