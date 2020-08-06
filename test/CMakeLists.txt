@@ -25,16 +25,47 @@
 message(STATUS "### TESTS ###")
 
 # Defines all versions of NimbleSM to be tested
-###### MISSING #if(NIMBLE_HAVE_XXXXX) to define which tests should be run
 list(APPEND lstVersions
         Serial
-        ArborX
-#        MPI
-#        Kokkos
-#        Darma
-#        Qthreads
-#        Tpetra
         )
+
+IF(NIMBLE_HAVE_ARBORX)
+    list(APPEND lstVersions
+            ArborX
+            )
+ENDIF()
+
+IF(NIMBLE_HAVE_TRILINOS)
+    list(APPEND lstVersions
+            Tpetra
+            )
+ENDIF()
+
+IF(NIMBLE_HAVE_MPI)
+    list(APPEND lstVersions
+            MPI
+            )
+ENDIF()
+
+
+IF(NIMBLE_HAVE_KOKKOS)
+    list(APPEND lstVersions
+            Kokkos
+            )
+ENDIF()
+
+if(NIMBLE_HAVE_DARMA)
+    list(APPEND lstVersions
+            Darma
+            )
+endif()
+
+if(NIMBLE_HAVE_QTHREADS)
+    list(APPEND lstVersions
+            Qthreads
+            )
+endif()
+
 
 # Generate paths to executables
 foreach(version IN LISTS lstVersions)
@@ -59,7 +90,7 @@ list(APPEND lstTests_Serial
         quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-#        single_elem_complex_displacement
+        single_elem_complex_displacement
 #        tiny_fe_squared
 #        uq_notch
 #        uq_wave_in_bar
@@ -84,12 +115,145 @@ list(APPEND lstTests_ArborX
 #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-#        single_elem_complex_displacement
+        single_elem_complex_displacement
 #        tiny_fe_squared
 #        uq_notch
 #        uq_wave_in_bar
         wave_in_bar
         )
+
+### TRILINOS ###
+
+list(APPEND lstTestsCLI_Tpetra
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1",
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+        )
+
+list(APPEND lstTests_Tpetra
+        brick_with_fiber_periodic
+        brick_with_fibers
+#        contact_entity_creation
+        cylinder_with_hole
+        notched_plate_native_hypoelastic
+        notched_plate_native_neohookean
+        plate_with_hole_rve
+        #        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        single_elem_complex_displacement
+        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+### MPI ###
+
+list(APPEND lstTestsCLI_MPI
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1",
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+        )
+
+list(APPEND lstTests_MPI
+        brick_with_fiber_periodic
+        brick_with_fibers
+#        contact_entity_creation
+        cylinder_with_hole
+        notched_plate_native_hypoelastic
+        notched_plate_native_neohookean
+        plate_with_hole_rve
+        #        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        single_elem_complex_displacement
+        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+### KOKKOS ###
+
+list(APPEND lstTestsCLI_Kokkos
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+# Add multi-rank testing to Kokkos if MPI is enabled
+IF(NIMBLE_HAVE_MPI)
+    list(APPEND lstTestsCLI_Kokkos
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+            )
+ENDIF()
+
+list(APPEND lstTests_Kokkos
+        brick_with_fiber_periodic
+        brick_with_fibers
+        contact_entity_creation
+        cylinder_with_hole
+        notched_plate_native_hypoelastic
+        notched_plate_native_neohookean
+        plate_with_hole_rve
+        #        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        single_elem_complex_displacement
+        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+### Darma ###
+
+list(APPEND lstTestsCLI_Darma
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --num-virtual-ranks 1",
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4 --num-virtual-ranks 8"
+        )
+
+list(APPEND lstTests_Darma
+        brick_with_fiber_periodic
+        brick_with_fibers
+        #        contact_entity_creation
+        cylinder_with_hole
+        notched_plate_native_hypoelastic
+        notched_plate_native_neohookean
+        plate_with_hole_rve
+        #        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        single_elem_complex_displacement
+        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+### Qthreads ###
+
+list(APPEND lstTestsCLI_Qthreads
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --qthreads-num-shepherds 1 --qthreads-num-workers-per-shepherd 1",
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2 --qthreads-num-shepherds 2 --qthreads-num-workers-per-shepherd 1"
+        )
+
+list(APPEND lstTestsCLI_Qthreads
+        brick_with_fiber_periodic
+        brick_with_fibers
+        #        contact_entity_creation
+        cylinder_with_hole
+        notched_plate_native_hypoelastic
+        notched_plate_native_neohookean
+        plate_with_hole_rve
+        #        quasistatic_tension
+        rigid_body_motion
+        simple_deformation_modes
+        single_elem_complex_displacement
+        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
+        wave_in_bar
+        )
+
+
 
 # Build list of available tests (appending tests selected for each version of NimbleSM and removing duplicates)
 foreach (version IN LISTS lstVersions)
@@ -104,7 +268,7 @@ list(REMOVE_DUPLICATES lstTests)
 #add_subdirectory(plate_with_hole_rve)
 #add_subdirectory(tiny_fe_squared)
 #
-#list(APPEND lstTests
+#list(APPEND lstTests_XXXXX
 #        brick_with_fiber_periodic
 #        brick_with_fibers
 #        contact_entity_creation
