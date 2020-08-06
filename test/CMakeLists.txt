@@ -48,7 +48,7 @@ IF(NIMBLE_HAVE_MPI)
 ENDIF()
 
 
-IF(NIMBLE_HAVE_KOKKOS)
+IF(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
     list(APPEND lstVersions
             Kokkos
             )
