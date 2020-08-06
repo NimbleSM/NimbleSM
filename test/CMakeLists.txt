@@ -352,3 +352,5 @@ foreach(version IN LISTS lstVersions)
         endforeach() # CLI variant
     endforeach() # Test
 endforeach() # NimbleSM Version
+
+message(STATUS "### TESTS CONFIGURATION COMPLETED ###")
