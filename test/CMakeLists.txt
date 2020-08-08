@@ -48,7 +48,6 @@ IF(NIMBLE_HAVE_MPI)
             )
 ENDIF()
 
-
 IF(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
     list(APPEND lstVersions
             Kokkos
@@ -140,20 +139,20 @@ IF(NIMBLE_HAVE_MPI)
 ENDIF()
 
 list(APPEND lstTests_Kokkos
-        #        brick_with_fiber_periodic
+#        brick_with_fiber_periodic
         brick_with_fibers
         contact_entity_creation
-        #        cylinder_with_hole
+#        cylinder_with_hole
         notched_plate_native_hypoelastic
         notched_plate_native_neohookean
-        #        plate_with_hole_rve
-        #        quasistatic_tension
+#        plate_with_hole_rve
+#        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
         single_elem_complex_displacement
-        tiny_fe_squared
-        #        uq_notch
-        #        uq_wave_in_bar
+#        tiny_fe_squared
+#        uq_notch
+#        uq_wave_in_bar
         wave_in_bar
         )
 
