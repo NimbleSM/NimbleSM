@@ -43,4 +43,9 @@ jobs:
            cd build
            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
            make test
-
+    - name: Upload log files
+      uses: actions/upload-artifacts@v2
+      with:
+        name: log-files
+        path: ./**/*.log
+  
