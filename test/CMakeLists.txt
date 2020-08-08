@@ -157,31 +157,6 @@ list(APPEND lstTests_Kokkos
         wave_in_bar
         )
 
-### TRILINOS ###
-
-list(APPEND lstTestsCLI_Tpetra
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
-        )
-
-list(APPEND lstTests_Tpetra
-        brick_with_fiber_periodic
-        brick_with_fibers
-#        contact_entity_creation
-        cylinder_with_hole
-        notched_plate_native_hypoelastic
-        notched_plate_native_neohookean
-        plate_with_hole_rve
-#        quasistatic_tension
-        rigid_body_motion
-        simple_deformation_modes
-        single_elem_complex_displacement
-        tiny_fe_squared
-#        uq_notch
-#        uq_wave_in_bar
-        wave_in_bar
-        )
-
 ### MPI ###
 
 list(APPEND lstTestsCLI_MPI
@@ -190,24 +165,38 @@ list(APPEND lstTestsCLI_MPI
         )
 
 list(APPEND lstTests_MPI
-#        brick_with_fiber_periodic
+        #        brick_with_fiber_periodic
         brick_with_fibers
-#        contact_entity_creation
-        cylinder_with_hole
+        #        contact_entity_creation
+        #        cylinder_with_hole
         notched_plate_native_hypoelastic
         notched_plate_native_neohookean
-        plate_with_hole_rve
-#        quasistatic_tension
+        #        plate_with_hole_rve
+        #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
         single_elem_complex_displacement
-        tiny_fe_squared
-#        uq_notch
-#        uq_wave_in_bar
+        #        tiny_fe_squared
+        #        uq_notch
+        #        uq_wave_in_bar
         wave_in_bar
         )
 
+### TRILINOS ###
+# Same tests as MPI + brick_with_fiber_periodic
+
+list(APPEND lstTestsCLI_Tpetra
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+        )
+
+list(APPEND lstTests_Tpetra
+        brick_with_fiber_periodic
+        lstTests_MPI
+        )
+
 ### Darma ###
+# Same tests as MPI
 
 list(APPEND lstTestsCLI_Darma
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --num-virtual-ranks 1"
@@ -219,6 +208,7 @@ list(APPEND lstTests_Darma
         )
 
 ### Qthreads ###
+# Same tests as MPI
 
 list(APPEND lstTestsCLI_Qthreads
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --qthreads-num-shepherds 1 --qthreads-num-workers-per-shepherd 1"
