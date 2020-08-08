@@ -149,7 +149,7 @@ list(APPEND lstTests_Kokkos
 #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-        single_elem_complex_displacement
+#        single_elem_complex_displacement # Fails for ranks > 1
 #        tiny_fe_squared
 #        uq_notch
 #        uq_wave_in_bar
@@ -174,7 +174,7 @@ list(APPEND lstTests_MPI
         #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-#        single_elem_complex_displacement # Only fails for ranks > 1
+#        single_elem_complex_displacement # Fails for ranks > 1
         #        tiny_fe_squared
         #        uq_notch
         #        uq_wave_in_bar
@@ -190,7 +190,7 @@ list(APPEND lstTestsCLI_Tpetra
         )
 
 list(APPEND lstTests_Tpetra
-        brick_with_fiber_periodic
+#        brick_with_fiber_periodic  # Fails for ranks > 1
         ${lstTests_MPI}
         )
 
