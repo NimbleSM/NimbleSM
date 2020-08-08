@@ -134,7 +134,7 @@ list(APPEND lstTestsCLI_Kokkos
 # Add multi-rank testing to Kokkos if MPI is enabled
 IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_Kokkos
-            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
             )
 ENDIF()
 
@@ -160,7 +160,7 @@ list(APPEND lstTests_Kokkos
 
 list(APPEND lstTestsCLI_MPI
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
         )
 
 list(APPEND lstTests_MPI
@@ -186,7 +186,7 @@ list(APPEND lstTests_MPI
 
 list(APPEND lstTestsCLI_Tpetra
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
         )
 
 list(APPEND lstTests_Tpetra
