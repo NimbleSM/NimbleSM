@@ -1,4 +1,4 @@
-genesis input file:               notched_plate.g
+genesis input file:               notched_plate_native_neohookean.g
 exodus output file:               notched_plate_native_neohookean.e
 final time:                       2.0e-6
 number of load steps:             150
