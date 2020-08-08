@@ -191,7 +191,7 @@ list(APPEND lstTestsCLI_Tpetra
 
 list(APPEND lstTests_Tpetra
         brick_with_fiber_periodic
-        lstTests_MPI
+        ${lstTests_MPI}
         )
 
 ### Darma ###
@@ -203,7 +203,7 @@ list(APPEND lstTestsCLI_Darma
         )
 
 list(APPEND lstTests_Darma
-        lstTests_MPI
+        ${lstTests_MPI}
         )
 
 ### Qthreads ###
@@ -215,7 +215,7 @@ list(APPEND lstTestsCLI_Qthreads
         )
 
 list(APPEND lstTestsCLI_Qthreads
-        lstTests_MPI
+        ${lstTests_MPI}
         )
 
 
