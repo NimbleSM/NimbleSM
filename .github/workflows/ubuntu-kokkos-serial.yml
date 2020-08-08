@@ -52,6 +52,7 @@ jobs:
            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
            make test
       - name: Upload log files
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
           name: log-files
