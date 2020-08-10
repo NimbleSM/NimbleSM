@@ -95,6 +95,10 @@ class ContactInterface {
   }
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Set the contact force manager to a specific Kokkos::View
+  void SetContactForce(nimble_kokkos::DeviceScalarNodeView contact_manager_force)
+  { enforcement.contact_manager_force = contact_manager_force; }
+
   void ComputeContact(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
                       nimble_kokkos::DeviceContactEntityArrayView contact_faces,
                       nimble_kokkos::DeviceScalarNodeView contact_manager_force) {
@@ -113,7 +117,12 @@ class ContactInterface {
     std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
 
- protected:
+#ifdef NIMBLE_HAVE_ARBORX
+public:
+#else
+protected:
+#endif
+
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceNodeFaceInteraction(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
                                   const double direction[3], const double closest_pt[3]) const {
@@ -122,7 +131,8 @@ class ContactInterface {
     }
   }
 
- private:
+protected:
+
   PenaltyContactEnforcement enforcement;
 #endif
 };
