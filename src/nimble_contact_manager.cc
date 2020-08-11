@@ -1404,10 +1404,10 @@ namespace nimble {
   }
 
   void
-  ContactManager::SimpleClosestPointProjection(
+  ContactManager::Projection(
         const ContactEntity &node,
         const ContactEntity &tri,
-        PROJECTION_TYPE *projection_type,
+        bool   &in,
         double &gap,
         double *normal,
         double *barycentric_coordinates,
@@ -1453,9 +1453,8 @@ namespace nimble {
     bool a1 = (alpha1 > -tol && alpha1 < tol2);
     bool a2 = (alpha2 > -tol && alpha2 < tol2);
     bool a3 = (alpha3 > -tol && alpha3 < tol2);
-    *projection_type = PROJECTION_TYPE::UNKNOWN; // indicates outside
+    in = false;
     if (a1 && a2 && a3) {
-      *projection_type = PROJECTION_TYPE::FACE;
       double xp = alpha1*p1[0] + alpha2*p2[0] + alpha3*p3[0];
       double yp = alpha1*p1[1] + alpha2*p2[1] + alpha3*p3[1];
       double zp = alpha1*p1[2] + alpha2*p2[2] + alpha3*p3[2];
@@ -1470,9 +1469,11 @@ namespace nimble {
       barycentric_coordinates[0] = alpha1;
       barycentric_coordinates[1] = alpha2;
       barycentric_coordinates[2] = alpha3;
+      if ((gap < 0.0) && (gap > -tri.char_len_)) { // inside but not through
+        in = true;
+      }
     }
   }
-
 
   void ContactManager::zeroContactForce() {
     for (auto &fval : force_)

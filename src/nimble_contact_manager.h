@@ -78,6 +78,7 @@ namespace nimble {
 struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
+// TODO generalize from kokkos dependence
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceContact(ContactEntity &node, 
                       ContactEntity &face, 
@@ -186,6 +187,8 @@ public:
         PROJECTION_TYPE *projection_type,
         double tolerance);
 
+
+// DEPRECATED
     /// \brief Compute the projection of a point onto a triangular face
     ///
     /// \param[in] node Node to project
@@ -208,15 +211,14 @@ public:
     ///
     /// \param[in] node Node to project
     /// \param[in] tri Face to project onto
-    /// \param[out] projection_type Result of projection (FACE: success,
-    ///             UNKNOWN: point projects outside the face)
-    /// \param[out] closest_point Projection
+    /// \param[out] in True if node is inside the facet 
     /// \param[out] gap Normal distance when the point projects onto the face
     /// \param[out] normal Unit normal vector outside of face
+    /// \param[out] barycentric_coordinates Projection of node on facet
     /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
-    static void SimpleClosestPointProjection( const ContactEntity &node,
+    static void Projection( const ContactEntity &node,
         const ContactEntity &tri,
-        PROJECTION_TYPE *projection_type,
+        bool   &in,
         double &gap,
         double *normal,
         double *barycentric_coordinates,

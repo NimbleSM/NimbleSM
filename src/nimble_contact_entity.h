@@ -375,6 +375,7 @@ namespace nimble {
       }
     }
 
+// DEPRECATED
     NIMBLE_INLINE_FUNCTION
     void ComputeNodalContactForces(const double * const contact_force,
                                    const double * const closest_point_projection) {

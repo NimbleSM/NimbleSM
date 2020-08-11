@@ -119,6 +119,7 @@ list(APPEND lstTests_ArborX
         rigid_body_motion
         simple_deformation_modes
         single_elem_complex_displacement
+        sphere_plate_contact
 #        tiny_fe_squared
 #        uq_notch
 #        uq_wave_in_bar

@@ -193,16 +193,16 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
   //
   double gap = 0.0;
   double normal[3] = {0., 0., 0.};
-  ContactManager::PROJECTION_TYPE flag = UNKNOWN;
+  bool inside = false;
   double facet_coordinates[3] = {0., 0., 0.};
   for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
     auto &myNode = contact_nodes_d_(inode);
     for (int j = offset(inode); j < offset(inode+1); ++j) {
       auto &myFace = contact_faces_d_(indices(j));
       //--- Determine whether the node is projected inside the triangular face
-      ContactManager::SimpleClosestPointProjection(myNode, myFace,
-          &flag,gap, &normal[0], &facet_coordinates[0]);
-      if ((flag != UNKNOWN) && (gap < 0.0)) {
+      ContactManager::Projection(myNode, myFace,
+          inside, gap, &normal[0], &facet_coordinates[0]);
+      if (inside) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
         EnforceNodeFaceInteraction(myNode, myFace, gap, normal, facet_coordinates); 
