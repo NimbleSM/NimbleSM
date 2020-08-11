@@ -300,12 +300,6 @@ public:
     /// \brief Zero the contact forces
     void zeroContactForce();
 
-  /// \brief Zero the contact forces
-  void zeroContactForce();
-
-  /// \brief Zero the contact forces
-  void zeroContactForce();
-
 protected:
  
   PenaltyContactEnforcement enforcement;
