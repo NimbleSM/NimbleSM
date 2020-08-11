@@ -178,7 +178,6 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
 
   //--- Set vector to store force
   ContactManager::zeroContactForce();
-  enforcement.contact_manager_force = force_d_;
 
   // Reset the contact_status flags
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
@@ -205,7 +204,7 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
       if (inside) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
-        EnforceNodeFaceInteraction(myNode, myFace, gap, normal, facet_coordinates); 
+        EnforceNodeFaceInteraction(myNode, myFace, gap, normal, facet_coordinates, force_d_); 
       }
     }
   }
