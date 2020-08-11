@@ -78,8 +78,10 @@ namespace nimble {
 struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
+#ifdef NIMBLE_HAVE_KOKKOS
 // TODO generalize from kokkos dependence
   KOKKOS_FORCEINLINE_FUNCTION
+#endif
   void EnforceContact(ContactEntity &node, 
                       ContactEntity &face, 
                       const double gap,
