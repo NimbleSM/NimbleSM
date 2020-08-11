@@ -78,31 +78,25 @@ namespace nimble {
 struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
-#ifdef NIMBLE_HAVE_KOKKOS
-// TODO generalize from kokkos dependence
-  KOKKOS_FORCEINLINE_FUNCTION
-#endif
+  template < typename VecType >
   void EnforceContact(ContactEntity &node, 
                       ContactEntity &face, 
                       const double gap,
                       const double normal[3], 
-                      const double barycentric_coordinates[3]) const {
+                      const double barycentric_coordinates[3],
+                      VecType &full_contact_force) const {
       int numNodeFaces = 3 ; // NOTE for compatibilty only
       const double scale = penalty * gap / numNodeFaces;
       double contact_force[3] { };
       for (int i = 0; i < 3; ++i) { contact_force[i] = scale * normal[i]; }
       face.SetNodalContactForces(contact_force, barycentric_coordinates);
       node.SetNodalContactForces(contact_force);
-      node.ScatterForceToContactManagerForceVector(contact_manager_force);
-      face.ScatterForceToContactManagerForceVector(contact_manager_force);
+      node.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
+      face.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
   }
 
   double penalty;
-#ifdef NIMBLE_HAVE_KOKKOS
-  nimble_kokkos::DeviceScalarNodeView contact_manager_force;
-#else
-  double * contact_manager_force; // HACK
-#endif
+
 };
 
 class ContactManager {
@@ -309,16 +303,18 @@ protected:
  
   PenaltyContactEnforcement enforcement;
 
+  template< typename VecType>
   void EnforceNodeFaceInteraction(
       ContactEntity &node, 
       ContactEntity &face, 
       const double gap,
       const double direction[3], 
-      const double facet_coordinates[3]) const {
-    enforcement.EnforceContact(node, face, gap, direction, facet_coordinates);
+      const double facet_coordinates[3],
+      VecType &full_contact_force) const {
+    enforcement.EnforceContact<VecType>(node, face, gap, direction, facet_coordinates, 
+                full_contact_force);
   }
 
-  
   /// Routine to write the contact data to Exodus file at time t
   ///
   /// \param t Time for the current data
