@@ -79,6 +79,7 @@ struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
   template < typename VecType >
+  NIMBLE_INLINE_FUNCTION
   void EnforceContact(ContactEntity &node, 
                       ContactEntity &face, 
                       const double gap,
