@@ -81,24 +81,17 @@ struct PenaltyContactEnforcement {
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceContact(ContactEntity &node, 
                       ContactEntity &face, 
-                      int numNodeFaces, 
                       const double gap,
-                      const double direction[3], 
-                      const double closest_pt[3]) const {
-    if (gap < 0.0) {
-      double contact_force[3] { };
+                      const double normal[3], 
+                      const double barycentric_coordinates[3]) const {
+      int numNodeFaces = 3 ; // NOTE for compatibilty only
       const double scale = penalty * gap / numNodeFaces;
-      for (int i = 0; i < 3; ++i) {
-        contact_force[i] = scale * direction[i];
-      }
-      face.ComputeNodalContactForces(contact_force, closest_pt);
-      for (int i = 0; i < 3; ++i) {
-        contact_force[i] *= -1.0;
-      }
-      node.ComputeNodalContactForces(contact_force, closest_pt);
+      double contact_force[3] { };
+      for (int i = 0; i < 3; ++i) { contact_force[i] = scale * normal[i]; }
+      face.SetNodalContactForces(contact_force, barycentric_coordinates);
+      node.SetNodalContactForces(contact_force);
       node.ScatterForceToContactManagerForceVector(contact_manager_force);
       face.ScatterForceToContactManagerForceVector(contact_manager_force);
-    }
   }
 
   double penalty;
@@ -211,6 +204,24 @@ public:
         double *normal,
         double tolerance = 1.e-8);
 
+    /// \brief Compute the projection of a point onto a triangular face
+    ///
+    /// \param[in] node Node to project
+    /// \param[in] tri Face to project onto
+    /// \param[out] projection_type Result of projection (FACE: success,
+    ///             UNKNOWN: point projects outside the face)
+    /// \param[out] closest_point Projection
+    /// \param[out] gap Normal distance when the point projects onto the face
+    /// \param[out] normal Unit normal vector outside of face
+    /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+    static void SimpleClosestPointProjection( const ContactEntity &node,
+        const ContactEntity &tri,
+        PROJECTION_TYPE *projection_type,
+        double &gap,
+        double *normal,
+        double *barycentric_coordinates,
+        double tolerance = 1.e-8);
+
     virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
 
     virtual void ContactVisualizationWriteStep(double time_current);
@@ -293,13 +304,10 @@ protected:
   void EnforceNodeFaceInteraction(
       ContactEntity &node, 
       ContactEntity &face, 
-      int numNodeFaces, 
       const double gap,
       const double direction[3], 
-      const double closest_pt[3]) const {
-    if (gap < 0.0) {
-      enforcement.EnforceContact(node, face, numNodeFaces, gap, direction, closest_pt);
-    }
+      const double facet_coordinates[3]) const {
+    enforcement.EnforceContact(node, face, gap, direction, facet_coordinates);
   }
 
   
