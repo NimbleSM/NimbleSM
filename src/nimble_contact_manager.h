@@ -98,7 +98,11 @@ struct PenaltyContactEnforcement {
   }
 
   double penalty;
+#ifdef NIMBLE_HAVE_KOKKOS
   nimble_kokkos::DeviceScalarNodeView contact_manager_force;
+#else
+  double * contact_manager_force; // HACK
+#endif
 };
 
 class ContactManager {
