@@ -178,7 +178,7 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
 
   //--- Set vector to store force
   ContactManager::zeroContactForce();
-  contact_interface->SetContactForce(force_d_);
+  enforcement.contact_manager_force = force_d_;
 
   // Reset the contact_status flags
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
@@ -193,19 +193,19 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
   //
   double gap = 0.0;
   double normal[3] = {0., 0., 0.};
-  ContactManager::PROJECTION_TYPE flag = UNKNOWN;
-  ContactEntity::vertex projected;
+  bool inside = false;
+  double facet_coordinates[3] = {0., 0., 0.};
   for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
     auto &myNode = contact_nodes_d_(inode);
     for (int j = offset(inode); j < offset(inode+1); ++j) {
       auto &myFace = contact_faces_d_(indices(j));
       //--- Determine whether the node is projected inside the triangular face
-      ContactManager::SimpleClosestPointProjectionSingle(myNode, myFace,
-          &flag, &projected, gap, &normal[0]);
-      if ((flag != UNKNOWN) && (gap < 0.0)) {
+      ContactManager::Projection(myNode, myFace,
+          inside, gap, &normal[0], &facet_coordinates[0]);
+      if (inside) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
-        contact_interface->EnforceNodeFaceInteraction(myNode, myFace, 3, gap, normal, projected.coords_);
+        EnforceNodeFaceInteraction(myNode, myFace, gap, normal, facet_coordinates); 
       }
     }
   }

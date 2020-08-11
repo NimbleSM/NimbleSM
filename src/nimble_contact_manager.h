@@ -75,6 +75,36 @@
 
 namespace nimble {
 
+struct PenaltyContactEnforcement {
+  PenaltyContactEnforcement() : penalty(0.0) {}
+
+#ifdef NIMBLE_HAVE_KOKKOS
+// TODO generalize from kokkos dependence
+  KOKKOS_FORCEINLINE_FUNCTION
+#endif
+  void EnforceContact(ContactEntity &node, 
+                      ContactEntity &face, 
+                      const double gap,
+                      const double normal[3], 
+                      const double barycentric_coordinates[3]) const {
+      int numNodeFaces = 3 ; // NOTE for compatibilty only
+      const double scale = penalty * gap / numNodeFaces;
+      double contact_force[3] { };
+      for (int i = 0; i < 3; ++i) { contact_force[i] = scale * normal[i]; }
+      face.SetNodalContactForces(contact_force, barycentric_coordinates);
+      node.SetNodalContactForces(contact_force);
+      node.ScatterForceToContactManagerForceVector(contact_manager_force);
+      face.ScatterForceToContactManagerForceVector(contact_manager_force);
+  }
+
+  double penalty;
+#ifdef NIMBLE_HAVE_KOKKOS
+  nimble_kokkos::DeviceScalarNodeView contact_manager_force;
+#else
+  double * contact_manager_force; // HACK
+#endif
+};
+
 class ContactManager {
 
 public:
@@ -103,6 +133,7 @@ public:
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
+      enforcement.penalty = penalty_parameter_;
       contact_interface->SetUpPenaltyEnforcement(penalty_parameter_);
     }
 
@@ -162,6 +193,8 @@ public:
         PROJECTION_TYPE *projection_type,
         double tolerance);
 
+
+// DEPRECATED
     /// \brief Compute the projection of a point onto a triangular face
     ///
     /// \param[in] node Node to project
@@ -178,6 +211,23 @@ public:
         ContactEntity::vertex *closest_point,
         double &gap,
         double *normal,
+        double tolerance = 1.e-8);
+
+    /// \brief Compute the projection of a point onto a triangular face
+    ///
+    /// \param[in] node Node to project
+    /// \param[in] tri Face to project onto
+    /// \param[out] in True if node is inside the facet 
+    /// \param[out] gap Normal distance when the point projects onto the face
+    /// \param[out] normal Unit normal vector outside of face
+    /// \param[out] barycentric_coordinates Projection of node on facet
+    /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+    static void Projection( const ContactEntity &node,
+        const ContactEntity &tri,
+        bool   &in,
+        double &gap,
+        double *normal,
+        double *barycentric_coordinates,
         double tolerance = 1.e-8);
 
     virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
@@ -256,6 +306,18 @@ public:
     void zeroContactForce();
 
 protected:
+ 
+  PenaltyContactEnforcement enforcement;
+
+  void EnforceNodeFaceInteraction(
+      ContactEntity &node, 
+      ContactEntity &face, 
+      const double gap,
+      const double direction[3], 
+      const double facet_coordinates[3]) const {
+    enforcement.EnforceContact(node, face, gap, direction, facet_coordinates);
+  }
+
   
   /// Routine to write the contact data to Exodus file at time t
   ///

@@ -55,8 +55,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
 
-struct PenaltyContactEnforcement {
-  PenaltyContactEnforcement() : penalty(0.0) {}
+struct KokkosPenaltyContactEnforcement {
+  KokkosPenaltyContactEnforcement() : penalty(0.0) {}
 
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceContact(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
@@ -113,15 +113,11 @@ class ContactInterface {
 
   virtual void DoSearchAndEnforcement(nimble_kokkos::DeviceContactEntityArrayView contact_nodes,
                                       nimble_kokkos::DeviceContactEntityArrayView contact_faces,
-                                      PenaltyContactEnforcement contact_enforcement) {
+                                      KokkosPenaltyContactEnforcement contact_enforcement) {
     std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
 
-#ifdef NIMBLE_HAVE_ARBORX
-public:
-#else
 protected:
-#endif
 
   KOKKOS_FORCEINLINE_FUNCTION
   void EnforceNodeFaceInteraction(ContactEntity &node, ContactEntity &face, int numNodeFaces, const double gap,
@@ -133,7 +129,7 @@ protected:
 
 protected:
 
-  PenaltyContactEnforcement enforcement;
+  KokkosPenaltyContactEnforcement enforcement;
 #endif
 };
 
