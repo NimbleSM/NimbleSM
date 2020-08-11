@@ -255,12 +255,6 @@ public:
     /// \brief Zero the contact forces
     void zeroContactForce();
 
-  /// \brief Zero the contact forces
-  void zeroContactForce();
-
-  /// \brief Zero the contact forces
-  void zeroContactForce();
-
 protected:
   
   /// Routine to write the contact data to Exodus file at time t
