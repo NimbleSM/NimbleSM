@@ -75,6 +75,36 @@
 
 namespace nimble {
 
+struct PenaltyContactEnforcement {
+  PenaltyContactEnforcement() : penalty(0.0) {}
+
+  KOKKOS_FORCEINLINE_FUNCTION
+  void EnforceContact(ContactEntity &node, 
+                      ContactEntity &face, 
+                      int numNodeFaces, 
+                      const double gap,
+                      const double direction[3], 
+                      const double closest_pt[3]) const {
+    if (gap < 0.0) {
+      double contact_force[3] { };
+      const double scale = penalty * gap / numNodeFaces;
+      for (int i = 0; i < 3; ++i) {
+        contact_force[i] = scale * direction[i];
+      }
+      face.ComputeNodalContactForces(contact_force, closest_pt);
+      for (int i = 0; i < 3; ++i) {
+        contact_force[i] *= -1.0;
+      }
+      node.ComputeNodalContactForces(contact_force, closest_pt);
+      node.ScatterForceToContactManagerForceVector(contact_manager_force);
+      face.ScatterForceToContactManagerForceVector(contact_manager_force);
+    }
+  }
+
+  double penalty;
+  nimble_kokkos::DeviceScalarNodeView contact_manager_force;
+};
+
 class ContactManager {
 
 public:
@@ -103,6 +133,7 @@ public:
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
+      enforcement.penalty = penalty_parameter_;
       contact_interface->SetUpPenaltyEnforcement(penalty_parameter_);
     }
 
@@ -256,6 +287,21 @@ public:
     void zeroContactForce();
 
 protected:
+ 
+  PenaltyContactEnforcement enforcement;
+
+  void EnforceNodeFaceInteraction(
+      ContactEntity &node, 
+      ContactEntity &face, 
+      int numNodeFaces, 
+      const double gap,
+      const double direction[3], 
+      const double closest_pt[3]) const {
+    if (gap < 0.0) {
+      enforcement.EnforceContact(node, face, numNodeFaces, gap, direction, closest_pt);
+    }
+  }
+
   
   /// Routine to write the contact data to Exodus file at time t
   ///

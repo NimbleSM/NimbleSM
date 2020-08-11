@@ -1,6 +1,6 @@
 create brick x 0.1 y 0.5 z 0.5
 create sphere radius 0.2
-volume 2 move x -0.28 y 0.0 z 0.0
+volume 2 move x -0.26 y 0.0 z 0.0
 block 1 volume 1
 block 2 volume 2
 nodeset 1 volume 1
