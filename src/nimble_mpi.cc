@@ -518,6 +518,27 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       nimble::Block& block = block_it->second;
       std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+#ifdef NIMBLE_HAVE_UQ
+      std::vector<double> params_this_sample(0);
+      block.ComputeInternalForce(reference_coordinate,
+                                 displacement,
+                                 velocity,
+                                 rve_macroscale_deformation_gradient.data(),
+                                 internal_force,
+                                 time_previous,
+                                 time_current,
+                                 num_elem_in_block,
+                                 elem_conn,
+                                 elem_global_ids.data(),
+                                 elem_data_labels.at(block_id),
+                                 elem_data_n,
+                                 elem_data_np1,
+                                 data_manager,
+                                 is_output_step,
+                                 false,
+                                 params_this_sample
+                                );
+#else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
                                  velocity,
@@ -533,10 +554,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  elem_data_np1,
                                  data_manager,
                                  is_output_step
-#ifdef NIMBLE_HAVE_UQ
-                                 ,&uq_model
+                                ); 
 #endif
-                                 );
     }
 
     // Evaluate the contact force
