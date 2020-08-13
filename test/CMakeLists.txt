@@ -235,8 +235,12 @@ list(APPEND lstTestsCLI_Qthreads
 
 # Build list of available tests (appending tests selected for each version of NimbleSM and removing duplicates)
 foreach (version IN LISTS lstVersions)
-    list(APPEND lstTests
-            ${lstTests_${version}})
+    foreach(listID in "" "_A" "_B" "_C")
+        if(DEFINED lstTests_${version}${listID})
+            list(APPEND lstTests
+                    ${lstTests_${version}${listID}})
+        endif()
+    endforeach()
 endforeach ()
 
 list(REMOVE_DUPLICATES lstTests)
