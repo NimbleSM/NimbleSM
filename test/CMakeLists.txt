@@ -120,26 +120,24 @@ list(APPEND lstTests_ArborX
         simple_deformation_modes
         single_elem_complex_displacement
 #        tiny_fe_squared
-#        uq_notch
-#        uq_wave_in_bar
         wave_in_bar
         )
 
 ### KOKKOS ###
 
-list(APPEND lstTestsCLI_Kokkos
+# "A" Test list for tests that can work both in Serial and MPI modes
+list(APPEND lstTestsCLI_Kokkos_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
 
 # Add multi-rank testing to Kokkos if MPI is enabled
 IF(NIMBLE_HAVE_MPI)
-    list(APPEND lstTestsCLI_Kokkos
+    list(APPEND lstTestsCLI_Kokkos_A
             "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
             )
 ENDIF()
 
-list(APPEND lstTests_Kokkos
-#        brick_with_fiber_periodic
+list(APPEND lstTests_Kokkos_A
         brick_with_fibers
         contact_entity_creation
 #        cylinder_with_hole
@@ -149,11 +147,18 @@ list(APPEND lstTests_Kokkos
 #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-#        single_elem_complex_displacement # Fails for ranks > 1
 #        tiny_fe_squared
-#        uq_notch
-#        uq_wave_in_bar
         wave_in_bar
+        )
+
+# "B" test list for tests that can only work in Serial
+list(APPEND lstTestsCLI_Kokkos_B
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+list(APPEND lstTests_Kokkos_B
+        brick_with_fiber_periodic
+        single_elem_complex_displacement
         )
 
 ### MPI ###
@@ -271,44 +276,50 @@ message(STATUS "## Adding tests to CMAKE: ##")
 foreach(version IN LISTS lstVersions)
     message(STATUS " * Version: ${version}")
 
-    # For each version, go through each test to run
-    foreach(test IN LISTS lstTests_${version})
+    # Go through each test list
+    foreach(listID in "" "_A" "_B" "_C")
+        # For each version, go through each test to run
+        foreach(test IN LISTS lstTests_${version}${listID})
+            if(DEFINED lstTestsCLI_${version}${listID})
+                set(lstCLI lstTestsCLI_${version}${listID})
 
-        # Determines the number of Command Line variants to run for that version of NimbleSM
-        list(LENGTH lstTestsCLI_${version} count)
-        math(EXPR count "${count}-1")
+                # Determines the number of Command Line variants to run for that version of NimbleSM
+                list(LENGTH ${lstCLI} count)
+                math(EXPR count "${count}-1")
 
-        # For each test, go through each Command Line variant
-        foreach(i RANGE ${count})
-            # Set the Command Line, test name and working directory for the current test
-            list(GET lstTestsCLI_${version} ${i} cli)
-            set(test_name ${test}_${version}_${i})
-            set(working_dir ${CMAKE_CURRENT_BINARY_DIR}/${test})
+                # For each test, go through each Command Line variant
+                foreach(i RANGE ${count})
+                    # Set the Command Line, test name and working directory for the current test
+                    list(GET ${lstCLI} ${i} cli)
+                    set(test_name ${test}_${version}${listID}_${i})
+                    set(working_dir ${CMAKE_CURRENT_BINARY_DIR}/${test})
 
-            # Expand the command line by replacing "_EXECUTABLE_" and "_INPUT_DECK_" with variables
-            string(REPLACE _EXECUTABLE_
-            ${${version}_Path} cli
-            ${cli}
-            )
-
-            string(REPLACE _INPUT_DECK_
-            ${test}.in cli
-            ${cli}
-            )
-
-            message(STATUS "  - ${test_name}: python ${cli} (work.dir: ${working_dir})")
-
-            # Change cli from string to list (list required by add_test)
-            separate_arguments(cli)
-
-            # Add the test
-            add_test(NAME ${test_name}
-                    COMMAND python ${cli}
-                    WORKING_DIRECTORY ${working_dir}
+                    # Expand the command line by replacing "_EXECUTABLE_" and "_INPUT_DECK_" with variables
+                    string(REPLACE _EXECUTABLE_
+                    ${${version}_Path} cli
+                    ${cli}
                     )
 
-        endforeach() # CLI variant
-    endforeach() # Test
+                    string(REPLACE _INPUT_DECK_
+                    ${test}.in cli
+                    ${cli}
+                    )
+
+                    message(STATUS "  - ${test_name}: python ${cli} (work.dir: ${working_dir})")
+
+                    # Change cli from string to list (list required by add_test)
+                    separate_arguments(cli)
+
+                    # Add the test
+                    add_test(NAME ${test_name}
+                            COMMAND python ${cli}
+                            WORKING_DIRECTORY ${working_dir}
+                            )
+
+                endforeach() # CLI variant
+            endif()
+        endforeach() # Test
+    endforeach() # Test list
 endforeach() # NimbleSM Version
 
 message(STATUS "### TESTS CONFIGURATION COMPLETED ###")
