@@ -11,6 +11,9 @@ mesh volume all
 # z split
 block 1 volume 1 2 3 4 
 block 2 volume 5 6 7 8
+nodeset 100 volume 1 2 3 4
+nodeset 200 volume 5 6 7 8
+nodeset 300 volume all
 nodeset 1 surface with x_coord < -3.9999
 nodeset 2 surface with x_coord >  3.9999
 nodeset 3 surface with y_coord < -3.9999
