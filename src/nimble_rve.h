@@ -101,6 +101,9 @@ namespace nimble {
     double GetBulkModulus() const override;
 
     NIMBLE_FUNCTION
+    double GetShearModulus() const override;
+
+    NIMBLE_FUNCTION
     void InitializeRVE(int elem_global_id,
                        int integration_point_id,
                        DataManager& data_manager,
@@ -137,9 +140,8 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                             const int & bulk_mod_idx,
-                             const int & shear_mod_idx,
+    void GetOffNominalStress(const double & bulk_mod,
+                             const double & shear_mod,
                              int num_pts,
                              const double * const deformation_gradient_np1,
                              double* stress_np1) {}

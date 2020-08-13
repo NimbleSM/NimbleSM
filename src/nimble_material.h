@@ -243,6 +243,9 @@ namespace nimble {
     virtual double GetBulkModulus() const = 0;
 
     NIMBLE_FUNCTION
+    virtual double GetShearModulus() const = 0;
+
+    NIMBLE_FUNCTION
     virtual void InitializeRVE(int elem_global_id,
                                int integration_point_id,
                                DataManager& data_manager,
@@ -339,6 +342,9 @@ namespace nimble {
     double GetBulkModulus() const override { return bulk_modulus_; }
 
     NIMBLE_FUNCTION
+    double GetShearModulus() const override { return shear_modulus_; }
+
+    NIMBLE_FUNCTION
     void GetStress(int elem_id,
                    int num_pts,
                    double time_previous,
@@ -414,6 +420,9 @@ namespace nimble {
 
     NIMBLE_FUNCTION
     double GetBulkModulus() const  override { return bulk_modulus_; }
+
+    NIMBLE_FUNCTION
+    double GetShearModulus() const override { return shear_modulus_; }
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,

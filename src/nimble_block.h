@@ -136,6 +136,10 @@ namespace nimble {
       return material_->GetBulkModulus();
     }
 
+    double GetShearModulus() const {
+      return material_->GetShearModulus();
+    }
+
     void ComputeLumpedMassMatrix(const double * const reference_coordinates,
                                  int num_elem,
                                  const int * const elem_conn,

@@ -116,6 +116,20 @@ namespace nimble {
     return max_bulk_modulus;
   }
 
+  double RVE::GetShearModulus() const {
+    // Return the maximum shear modulus of any material in the RVE
+    // CURRENTLY IMPLEMENTED FOR COMPILE CORRECTNESS 
+    double max_shear_modulus = 0.0;
+    for (auto const & entry : material_parameters_string_) {
+      std::map<std::string, double> material_parameters = ParseParametersString(entry.second);
+      double shear_modulus = material_parameters.at("shear_modulus");
+      if (shear_modulus > max_shear_modulus) {
+        max_shear_modulus = shear_modulus;
+      }
+    }
+    return max_shear_modulus;
+  }
+
   void RVE::InitializeRVE(int elem_global_id,
                           int integration_point_id,
                           DataManager& data_manager,
@@ -396,6 +410,8 @@ namespace nimble {
           std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
           Block& block = id_block_pair.second;
           bool compute_stress_only = true;
+#ifdef NIMBLE_HAVE_UQ
+          std::vector<double> params_this_sample(0);
           block.ComputeInternalForce(coord,
                                      displacement,
                                      velocity,
@@ -411,10 +427,28 @@ namespace nimble {
                                      elem_data_np1,
                                      data_manager,
                                      compute_stress_only,
-#ifdef NIMBLE_HAVE_UQ
-                                     nullptr, // HACK
+                                     false,
+                                     params_this_sample
+                                    );
+#else
+          block.ComputeInternalForce(coord,
+                                     displacement,
+                                     velocity,
+                                     identity.data(),
+                                     internal_force,
+                                     time_previous,
+                                     time_current,
+                                     num_elem_in_block,
+                                     elem_conn,
+                                     elem_global_ids.data(),
+                                     elem_data_labels.at(block_id),
+                                     elem_data_n,
+                                     elem_data_np1,
+                                     data_manager,
+                                     compute_stress_only,
+                                     false
+                                    );
 #endif
-                                     false);
         }
         CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
       }
@@ -444,6 +478,28 @@ namespace nimble {
           nimble::Block& block = block_it.second;
           std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
           std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+#ifdef NIMBLE_HAVE_UQ
+          std::vector<double> params_this_sample(0);
+          block.ComputeInternalForce(coord,
+                                     displacement,
+                                     velocity,
+                                     identity.data(),
+                                     internal_force,
+                                     time_previous,
+                                     time_current,
+                                     num_elem_in_block,
+                                     elem_conn,
+                                     elem_global_ids.data(),
+                                     elem_data_labels.at(block_id),
+                                     elem_data_n,
+                                     elem_data_np1,
+                                     data_manager,
+                                     false, 
+                                     false,
+                                     params_this_sample
+                                    );
+
+#else
           block.ComputeInternalForce(coord,
                                      displacement,
                                      velocity,
@@ -459,10 +515,8 @@ namespace nimble {
                                      elem_data_np1,
                                      data_manager,
                                      false
-#ifdef NIMBLE_HAVE_UQ
-                                    ,nullptr // HACK
+                                    );
 #endif
-);
         }
         CheckVectorSanity(num_unknowns, internal_force, "RVE internal force, initial residual calculation");
 
@@ -595,6 +649,28 @@ namespace nimble {
             nimble::Block& block = block_it.second;
             std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
             std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+#ifdef NIMBLE_HAVE_UQ
+          std::vector<double> params_this_sample(0);
+          block.ComputeInternalForce(coord,
+                                     displacement,
+                                     velocity,
+                                     identity.data(),
+                                     internal_force,
+                                     time_previous,
+                                     time_current,
+                                     num_elem_in_block,
+                                     elem_conn,
+                                     elem_global_ids.data(),
+                                     elem_data_labels.at(block_id),
+                                     elem_data_n,
+                                     elem_data_np1,
+                                     data_manager,
+                                     false, 
+                                     false,
+                                     params_this_sample
+                                    );
+
+#else
             block.ComputeInternalForce(coord,
                                        displacement,
                                        velocity,
@@ -610,10 +686,8 @@ namespace nimble {
                                        elem_data_np1,
                                        data_manager,
                                        false
-#ifdef NIMBLE_HAVE_UQ
-                                      ,nullptr // HACK
-#endif
                                       );
+#endif
           }
           CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
           for (int i=0 ; i<linear_system_num_nodes*dim ; i++) {
