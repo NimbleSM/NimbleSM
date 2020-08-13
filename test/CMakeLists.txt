@@ -103,11 +103,12 @@ list(APPEND lstTests_Serial
 ### ARBORX ###
 # Currently only supports Serial version of ArborX
 
-list(APPEND lstTestsCLI_ArborX
+# "A" Test list for tests that can work both in Serial and MPI modes
+list(APPEND lstTestsCLI_ArborX_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
 
-list(APPEND lstTests_ArborX
+list(APPEND lstTests_ArborX_A
 #        brick_with_fiber_periodic
         brick_with_fibers
         contact_entity_creation
@@ -118,10 +119,19 @@ list(APPEND lstTests_ArborX
 #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-        single_elem_complex_displacement
 #        tiny_fe_squared
         wave_in_bar
         )
+
+# "B" test list for tests that can only work in Serial
+list(APPEND lstTestsCLI_ArborX_B
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+list(APPEND lstTests_ArborX_B
+        single_elem_complex_displacement
+        )
+
 
 ### KOKKOS ###
 
@@ -157,7 +167,6 @@ list(APPEND lstTestsCLI_Kokkos_B
         )
 
 list(APPEND lstTests_Kokkos_B
-        brick_with_fiber_periodic
         single_elem_complex_displacement
         )
 
