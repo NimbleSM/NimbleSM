@@ -355,6 +355,28 @@ namespace nimble {
     }
 
     NIMBLE_INLINE_FUNCTION
+    void SetNodalContactForces(const double * const contact_force,
+                               const double * const N = NULL) {
+      if (entity_type_ == NODE) {
+        force_1_x_ = -contact_force[0];
+        force_1_y_ = -contact_force[1];
+        force_1_z_ = -contact_force[2];
+      }
+      else if (entity_type_ == TRIANGLE) {
+        force_1_x_ = N[0] * contact_force[0];
+        force_1_y_ = N[0] * contact_force[1];
+        force_1_z_ = N[0] * contact_force[2];
+        force_2_x_ = N[1] * contact_force[0];
+        force_2_y_ = N[1] * contact_force[1];
+        force_2_z_ = N[1] * contact_force[2];
+        force_3_x_ = N[2] * contact_force[0];
+        force_3_y_ = N[2] * contact_force[1];
+        force_3_z_ = N[2] * contact_force[2];
+      }
+    }
+
+// DEPRECATED
+    NIMBLE_INLINE_FUNCTION
     void ComputeNodalContactForces(const double * const contact_force,
                                    const double * const closest_point_projection) {
 
