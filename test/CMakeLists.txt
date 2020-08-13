@@ -164,6 +164,7 @@ list(APPEND lstTestsCLI_ArborX_B
 
 list(APPEND lstTests_ArborX_B
         single_elem_complex_displacement
+        sphere_plate_contact
         )
 
 

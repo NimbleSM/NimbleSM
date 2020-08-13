@@ -1,0 +1,20 @@
+create brick x 8 y 8 z 8 
+webcut volume all with xplane
+webcut volume all with yplane
+webcut volume all with zplane
+volume 1 size 1
+volume 2 size 2
+volume 3 size 4
+volume 4 size 0.5
+volume 5 6 7 8 size 1
+mesh volume all
+# z split
+block 1 volume 1 2 3 4 
+block 2 volume 5 6 7 8
+nodeset 1 surface with x_coord < -3.9999
+nodeset 2 surface with x_coord >  3.9999
+nodeset 3 surface with y_coord < -3.9999
+nodeset 4 surface with y_coord >  3.9999
+nodeset 5 surface with z_coord < -3.9999
+nodeset 6 surface with z_coord >  3.9999
+export genesis "cubes_contact.g" overwrite

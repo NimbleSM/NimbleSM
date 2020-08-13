@@ -31,6 +31,7 @@ option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(HAVE_QTHREADS "Whether to use QThreads" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+option(TIME_CONTACT "Whether to time contact" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 add_library(nimble)
@@ -45,6 +46,13 @@ if (HAVE_UQ)
   set(NIMBLE_HAVE_UQ TRUE)
   message(STATUS "Compiling with UQ")
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_UQ)
+endif()
+
+# Optional functionality for contact
+if (TIME_CONTACT)
+  set(NIMBLE_TIME_CONTACT TRUE)
+  message(STATUS "Compiling with contact timing")
+  target_compile_definitions(nimble PUBLIC NIMBLE_TIME_CONTACT)
 endif()
 
 # Optional dependency for pure MPI build (no Trilinos)

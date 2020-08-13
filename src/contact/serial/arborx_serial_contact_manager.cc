@@ -43,6 +43,7 @@
 
 #ifdef NIMBLE_HAVE_ARBORX
 #include "arborx_serial_contact_manager.h"
+#include "nimble_timer.h"
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
@@ -158,6 +159,11 @@ void ArborXSerialContactManager::updateCollisionData(
 
 void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
 
+#ifdef NIMBLE_TIME_CONTACT
+  nimble::Timer t = Timer();
+  t.Start("arborx");
+#endif
+
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
       throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
@@ -209,6 +215,11 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
     }
   }
 
+#ifdef NIMBLE_TIME_CONTACT
+  t.Stop("arborx");
+  double time = t.ElapsedTime("arborx");
+  std::cout << " arborx " << time  << "\n";
+#endif
 }
 
 }
