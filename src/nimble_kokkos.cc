@@ -615,6 +615,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
       //
+      // Perform a reduction to obtain correct values on MPI boundaries
+      mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+      //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);
     }

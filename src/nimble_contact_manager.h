@@ -75,6 +75,23 @@
 
 namespace nimble {
 
+namespace details {
+
+inline
+void getContactForce(
+    const double penalty,
+    const double gap,
+    const double normal[3],
+    double contact_force[3]
+)
+{
+  const double scale = penalty * gap;
+  for (int i = 0; i < 3; ++i)
+    contact_force[i] = scale * normal[i];
+}
+
+}
+
 struct PenaltyContactEnforcement {
   PenaltyContactEnforcement() : penalty(0.0) {}
 
@@ -86,12 +103,13 @@ struct PenaltyContactEnforcement {
                       const double normal[3], 
                       const double barycentric_coordinates[3],
                       VecType &full_contact_force) const {
-      int numNodeFaces = 3 ; // NOTE for compatibilty only
-      const double scale = penalty * gap / numNodeFaces;
+      const int numNodeFaces = 3 ; // NOTE for compatibilty only
       double contact_force[3] { };
-      for (int i = 0; i < 3; ++i) { contact_force[i] = scale * normal[i]; }
+      details::getContactForce(penalty / numNodeFaces, gap, normal, contact_force);
+      //
       face.SetNodalContactForces(contact_force, barycentric_coordinates);
       node.SetNodalContactForces(contact_force);
+      //
       node.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
       face.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
   }
@@ -116,13 +134,13 @@ public:
 
     bool ContactEnabled() const { return contact_enabled_; }
 
-    void SkinBlocks(GenesisMesh const & mesh,
+    static void SkinBlocks(GenesisMesh const & mesh,
                     std::vector<int> const & block_ids,
                     int entity_id_offset,
                     std::vector< std::vector<int> > & skin_faces,
                     std::vector<int> & entity_ids);
 
-    void RemoveInternalSkinFaces(GenesisMesh const & mesh,
+    static void RemoveInternalSkinFaces(GenesisMesh const & mesh,
                                  std::vector< std::vector<int> >& faces,
                                  std::vector<int>& entity_ids);
 
@@ -164,12 +182,12 @@ public:
     double BoundingBoxAverageCharacteristicLengthOverAllRanks() const ;
 
     void ApplyDisplacements(const double * displacement);
-    void GetForces(double * contact_force);
+    void GetForces(double * contact_force) const;
 
 #ifdef NIMBLE_HAVE_KOKKOS
     // Kokkos versions of ApplyDisplacements and GetForces
     void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d);
-    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d);
+    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const;
 #endif
 
     virtual void ComputeContactForce(int step, bool debug_output);
@@ -237,7 +255,7 @@ public:
     std::size_t numActiveContactFaces() const {
        std::size_t num_contacts = 0;
        for (size_t i = 0; i < numContactFaces(); ++i) {
-         auto myface = getContactFace(i);
+         const auto &myface = getContactFace(i);
          num_contacts += static_cast<size_t>(myface.contact_status());
        }
        return num_contacts;
