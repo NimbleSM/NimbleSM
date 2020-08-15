@@ -101,11 +101,17 @@ list(APPEND lstTests_Serial
 
 
 ### ARBORX ###
-# Currently only supports Serial version of ArborX
 
 list(APPEND lstTestsCLI_ArborX
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
+
+# Add multi-rank testing to Kokkos if MPI is enabled
+IF(NIMBLE_HAVE_MPI)
+    list(APPEND lstTestsCLI_ArborX
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+            )
+ENDIF()
 
 list(APPEND lstTests_ArborX
 #        brick_with_fiber_periodic
@@ -118,7 +124,7 @@ list(APPEND lstTests_ArborX
 #        quasistatic_tension
         rigid_body_motion
         simple_deformation_modes
-        single_elem_complex_displacement
+#        single_elem_complex_displacement
         sphere_plate_contact
 #        tiny_fe_squared
 #        uq_notch

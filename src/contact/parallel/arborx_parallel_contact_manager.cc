@@ -73,8 +73,25 @@ struct OutputData
   int index_;
   int rank_;
   double coord_[dim];
-  bool has_force;
-  double force_node[dim];
+  bool has_force_;
+  double force_node_[dim];
+};
+
+struct PairData
+{
+  int pred_rank_ = 0;
+  int pred_index_ = -1;
+  int prim_rank_ = 0;
+  int prim_index_ = -1;
+  //
+  PairData(int r_, int i_, int f_r_, int f_i_)
+      : pred_rank_(r_), pred_index_(i_), prim_rank_(f_r_), prim_index_(f_i_)
+  {}
+  //
+  bool operator<(const PairData &rhs) const {
+    return (std::tie(pred_rank_, pred_index_, prim_rank_, prim_index_)
+            < std::tie(rhs.pred_rank_, rhs.pred_index_, rhs.prim_rank_, rhs.prim_index_));
+  }
 };
 
 struct ContactCallback
@@ -82,6 +99,7 @@ struct ContactCallback
   const int rank_;
   nimble_kokkos::DeviceContactEntityArrayView &faces_;
   const double penalty_;
+  std::set< PairData > &list_;
   //
   template <typename Predicate, typename OutputFunctor>
   KOKKOS_FUNCTION void operator()(Predicate const &pred, int f_primitive,
@@ -112,7 +130,8 @@ struct ContactCallback
       ///
       details::getContactForce(penalty_ / static_cast<double>(3), gap, normal, force);
       //
-      if (!faces_(f_primitive).hasContactWith(p_data.rank_, p_data.index_)) {
+      if (list_.count(PairData{p_data.rank_, p_data.index_, rank_, f_primitive}) == 0) {
+        list_.insert(PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
         myFace.SetNodalContactForces(force, &facet_coordinates[0]);
         faces_(f_primitive).set_contact_status(true);
         faces_(f_primitive).force_1_x_ += myFace.force_1_x_;
@@ -124,7 +143,6 @@ struct ContactCallback
         faces_(f_primitive).force_3_x_ += myFace.force_3_x_;
         faces_(f_primitive).force_3_y_ += myFace.force_3_y_;
         faces_(f_primitive).force_3_z_ += myFace.force_3_z_;
-        faces_(f_primitive).insertContactWith(p_data.rank_, p_data.index_);
       }
     }
     //
@@ -213,6 +231,7 @@ namespace nimble {
 
     Kokkos::View<details::OutputData *, kokkos_device> results("results", 0);
     Kokkos::View<int *, kokkos_device> offset("offset", 0);
+    std::set< details::PairData > list_;
 
     auto comm = MPI_COMM_WORLD;
     ArborX::DistributedSearchTree<memory_space> dtree(comm,
@@ -221,20 +240,20 @@ namespace nimble {
 
     dtree.query(kokkos_device::execution_space{},
                 details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
-                details::ContactCallback{m_rank, contact_faces_d_, penalty_parameter_},
+                details::ContactCallback{m_rank, contact_faces_d_, penalty_parameter_, list_},
                 results, offset);
 
     for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
       auto &myNode = contact_nodes_d_(inode);
       for (int j = offset(inode); j < offset(inode+1); ++j) {
         auto tmpOutput = results(j);
-        if (!tmpOutput.has_force)
+        if (!tmpOutput.has_force_)
           continue;
         //
         contact_nodes_d_(inode).set_contact_status(true);
-        myNode.force_1_x_ = tmpOutput.force_node[0];
-        myNode.force_1_y_ = tmpOutput.force_node[1];
-        myNode.force_1_z_ = tmpOutput.force_node[2];
+        myNode.force_1_x_ = tmpOutput.force_node_[0];
+        myNode.force_1_y_ = tmpOutput.force_node_[1];
+        myNode.force_1_z_ = tmpOutput.force_node_[2];
         //
         myNode.ScatterForceToContactManagerForceVector(force_d_);
         //
