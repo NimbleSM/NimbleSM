@@ -72,6 +72,7 @@ struct OutputData
 {
   int index_;
   int rank_;
+  double coord_[dim];
   bool has_force;
   double force_node[dim];
 };
@@ -89,14 +90,10 @@ struct ContactCallback
     auto const& p_data = getData(pred);  // <- type OutputData
     auto const& p_geometry = getGeometry(pred); // <- type Box
     //
-    double p_coord[dim];
-    for (int ii = 0; ii < dim; ++ii)
-      p_coord[ii] = 0.5 * (p_geometry.minCorner()[ii] + p_geometry.maxCorner()[ii]);
-    //
     //--- Define copy contact entity
     //--- For the node, we only store the coordinates.
     //
-    ContactEntity myNode(ContactEntity::ContactEntityType::NODE, 0, p_coord, 0.0, 0);
+    ContactEntity myNode(ContactEntity::ContactEntityType::NODE, 0, p_data.coord_, 0.0, 0);
     ContactEntity myFace;
     faces_(f_primitive).ExportGeometryInto(myFace);
     //
@@ -110,12 +107,10 @@ struct ContactCallback
     //
     double force[dim] = {0., 0., 0.};
     if (inside) {
-      details::getContactForce(penalty_, gap, normal, force);
       ///
       /// TODO Check the factor 3 with RJ and NM
       ///
-      for (int ii = 0; ii < dim; ++ii)
-        force[ii] = force[ii] / static_cast<double>(3);
+      details::getContactForce(penalty_ / static_cast<double>(3), gap, normal, force);
       //
       if (!faces_(f_primitive).hasContactWith(p_data.rank_, p_data.index_)) {
         myFace.SetNodalContactForces(force, &facet_coordinates[0]);
@@ -133,7 +128,8 @@ struct ContactCallback
       }
     }
     //
-    out({f_primitive, rank_, inside, {-force[0], -force[1], -force[2]}});
+    out({f_primitive, rank_, {p_data.coord_[0], p_data.coord_[1], p_data.coord_[2]},
+         inside, {-force[0], -force[1], -force[2]}});
   }
 };
 
@@ -176,7 +172,9 @@ namespace ArborX
           ArborX::Box box(point1, point2);
           //
           return attach(intersects(box),
-                        nimble::details::OutputData{static_cast<int>(i), v.rank_, false, {0, 0, 0}});
+                        nimble::details::OutputData{static_cast<int>(i), v.rank_,
+                                                    {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_},
+                                                    false, {0, 0, 0}});
         }
         using memory_space = nimble_kokkos::kokkos_device_memory_space;
     };
