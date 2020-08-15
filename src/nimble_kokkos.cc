@@ -62,9 +62,8 @@
 #ifdef NIMBLE_HAVE_ARBORX
   #ifdef NIMBLE_HAVE_MPI
     #include "contact/parallel/arborx_parallel_contact_manager.h"
-  #else
-    #include "contact/serial/arborx_serial_contact_manager.h"
   #endif
+    #include "contact/serial/arborx_serial_contact_manager.h"
 #endif
 
 
