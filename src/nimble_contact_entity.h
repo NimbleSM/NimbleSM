@@ -390,17 +390,8 @@ namespace nimble {
       }
     }
 
-    bool hasContactWith(int rank, int index) const {
-      return (contact_pair_id_.count(PairRankID{rank, index}) > 0);
-    }
-
-    void insertContactWith(int rank, int index) {
-      contact_pair_id_.emplace(rank, index);
-    }
-
     void ResetContactData() {
       contact_status_ = false;
-      contact_pair_id_.clear();
     }
 
   protected:
@@ -481,22 +472,6 @@ public:
     int contact_entity_global_id_ = -1;
 
   protected:
-
-    class PairRankID {
-    public:
-      int rank_ = 0;
-      int index_ = -1;
-      //
-      PairRankID(int r, int id) : rank_(r), index_(id) {};
-      //
-      bool operator<(const PairRankID &rhs) const {
-        return (std::tie(rank_, index_) < std::tie(rhs.rank_, rhs.index_));
-      }
-    };
-
-    /// \brief Set of pairs (rank, entity) in contact
-    /// \note This set is only used with a face contact entity.
-    std::set< PairRankID > contact_pair_id_ = {};
 
     bool contact_status_ = false;
 
