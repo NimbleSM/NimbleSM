@@ -34,7 +34,7 @@ jobs:
              git clone https://github.com/kokkos/kokkos.git
              cd kokkos
              mkdir build && cd build
-             cmake .. -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON \
+             cmake .. -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=OFF \
                    -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
              cd ../..
