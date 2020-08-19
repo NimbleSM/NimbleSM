@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - feature/arborx-mpi
 
   pull_request:
 
