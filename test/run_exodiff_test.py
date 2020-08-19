@@ -74,6 +74,16 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
             epu_output_extension = ".e"
             epu_exodus_output_name = base_name + ".arborx.e"
         epu_ranks_string = str(num_ranks)
+    if "NimbleSM_MPI" in executable_name:
+        nimble_output_name = base_name + ".mpi"
+        log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"
+        if num_ranks > 1:
+            epu_output_extension = "np" + str(num_ranks) + ".e"
+            epu_exodus_output_name = base_name + ".mpi." + epu_output_extension
+        else:
+            epu_output_extension = ".e"
+            epu_exodus_output_name = base_name + ".mpi.e"
+        epu_ranks_string = str(num_ranks)
     if "NimbleSM_Kokkos" in executable_name:
         nimble_output_name = base_name + ".kokkos"
         log_file_name = base_name + ".kokkos.np" + str(num_ranks) + ".log"
