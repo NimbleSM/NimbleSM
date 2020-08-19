@@ -130,8 +130,8 @@ struct ContactCallback
       ///
       details::getContactForce(penalty_ / static_cast<double>(3), gap, normal, force);
       //
-      if (list_.count(PairData{p_data.rank_, p_data.index_, rank_, f_primitive}) == 0) {
-        list_.insert(PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
+      auto result = list_.insert(PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
+      if (result.second) { // if the insertion took place
         myFace.SetNodalContactForces(force, &facet_coordinates[0]);
         faces_(f_primitive).set_contact_status(true);
         faces_(f_primitive).force_1_x_ += myFace.force_1_x_;
