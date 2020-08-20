@@ -41,32 +41,42 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_PARALLEL_CONTACT_MANAGER_H
-#define NIMBLE_PARALLEL_CONTACT_MANAGER_H
+#ifndef NIMBLE_ARBORX_PARALLEL_CONTACT_MANAGER_H
+#define NIMBLE_ARBORX_PARALLEL_CONTACT_MANAGER_H
 
-#include "../../nimble_contact_manager.h"
-#include "../../nimble_mpi.h"
+#if defined(NIMBLE_HAVE_ARBORX) && defined(NIMBLE_HAVE_MPI)
+
+#include <memory>
+#include <vector>
+
+#include "parallel_contact_manager.h"
 
 namespace nimble {
-  class ParallelContactManager : public ContactManager {
+
+  class ArborXParallelContactManager: public ParallelContactManager
+  {
   public:
 
-    ParallelContactManager(std::shared_ptr<ContactInterface> interface);
+    explicit ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface);
+    ArborXParallelContactManager(const ArborXParallelContactManager &) = delete;
+    ArborXParallelContactManager(ArborXParallelContactManager &&) noexcept = default;
 
-    void ComputeContactForce(int step, bool debug_output) override {
-      ComputeParallelContactForce(step, debug_output);
-    }
+    ArborXParallelContactManager & operator=( ArborXParallelContactManager &&) noexcept = default;
 
-    virtual void ComputeParallelContactForce(int step, bool debug_output) = 0;
+    ~ArborXParallelContactManager() override = default;
 
-    int Rank() const noexcept { return m_rank; }
-    int NumRanks() const noexcept { return m_num_ranks; }
+    void ComputeParallelContactForce(int step, bool debug_output) override;
 
   protected:
 
-    int m_rank = 0;
-    int m_num_ranks = 1;
+    void updateCollisionData(
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset,
+         Kokkos::View<int *, nimble_kokkos::kokkos_device> &ranks
+         );
   };
 }
 
-#endif  // NIMBLE_PARALLEL_CONTACT_MANAGER_H
+#endif // defined(NIMBLE_HAVE_ARBORX) && defined(NIMBLE_HAVE_MPI)
+
+#endif // NIMBLE_ARBORX_PARALLEL_CONTACT_MANAGER_H

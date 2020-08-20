@@ -50,8 +50,6 @@
 #endif
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <algorithm>
 #include <set>
 #include <utility>
@@ -73,7 +71,7 @@ namespace nimble {
       }
     }
 
-    void ContactManager::GetForces(double * contact_force) {
+    void ContactManager::GetForces(double * contact_force) const {
         for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
             int node_id = node_ids_[i_node];
             for (int i=0 ; i<3 ; i++) {
@@ -85,7 +83,7 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_KOKKOS
     // Kokkos Versions of GetForces and ApplyDisplacements
-    void ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
+    void ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const {
 
         int num_nodes_in_contact_manager = node_ids_d_.extent(0);
 
@@ -193,6 +191,7 @@ namespace nimble {
     ss >> penalty_parameter;
   }
 
+  //static
   void
   ContactManager::SkinBlocks(GenesisMesh const & mesh,
                              std::vector<int> const & block_ids,
@@ -341,6 +340,7 @@ namespace nimble {
 
   }
 
+  //static
   void
   ContactManager::RemoveInternalSkinFaces(GenesisMesh const & mesh,
                                           std::vector< std::vector<int> >& faces,
@@ -385,8 +385,8 @@ namespace nimble {
           for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
             std::vector<int> faceGlobalIDs = faces[i_face];
             // DJL INEFFICIENT HANDLING OF GLOBAL IDS
-            for (int i=0; i<faceGlobalIDs.size() ; i++) {
-              faceGlobalIDs[i] = genesis_node_global_ids[faceGlobalIDs[i]];
+            for (int & faceGlobalID : faceGlobalIDs) {
+              faceGlobalID = genesis_node_global_ids[faceGlobalID];
             }
             // DJL INCORRECTLY SEARCHING EMPTY ENTRIES AT THE END OF mpi_buffer
             if (std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != faceGlobalIDs.end() &&
@@ -809,7 +809,7 @@ namespace nimble {
     Kokkos::deep_copy(contact_bounding_box_d, contact_bounding_box_h);
 
     nimble_kokkos::DeviceScalarNodeView coord_d = coord_d_;
-    int contact_vector_size = coord_d.extent(0) / 3;
+    auto contact_vector_size = static_cast<int>(coord_d.extent(0) / 3);
 
     Kokkos::parallel_for("Contact Bounding Box",
                          contact_vector_size,
@@ -1403,6 +1403,18 @@ namespace nimble {
     }
   }
 
+  /// \brief Projection of node on the plane defined by the triangular face
+  ///
+  /// \param[in] node Node to project
+  /// \param[in] tri Triangular face defining the plane
+  /// \param[out] in Boolean flag whether projection is inside the triangular face
+  /// \param[out] gap
+  /// \param[out] normal Unit outer normal to the triangular face
+  /// \param[out] barycentric_coordinates Barycentric coordinates of projection
+  /// \param[in] tol Tolerance
+  ///
+  /// \note Only the coordinates of ContactEntity node are accessed.
+  ///
   void
   ContactManager::Projection(
         const ContactEntity &node,
@@ -1480,6 +1492,24 @@ namespace nimble {
       fval = 0.0;
 #ifdef NIMBLE_HAVE_KOKKOS
     Kokkos::deep_copy(force_d_, 0.0);
+    //
+    for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
+      contact_faces_d_(iface).force_1_x_ = 0.0;
+      contact_faces_d_(iface).force_1_y_ = 0.0;
+      contact_faces_d_(iface).force_1_z_ = 0.0;
+      contact_faces_d_(iface).force_2_x_ = 0.0;
+      contact_faces_d_(iface).force_2_y_ = 0.0;
+      contact_faces_d_(iface).force_2_z_ = 0.0;
+      contact_faces_d_(iface).force_3_x_ = 0.0;
+      contact_faces_d_(iface).force_3_y_ = 0.0;
+      contact_faces_d_(iface).force_3_z_ = 0.0;
+    }
+    //
+    for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
+      contact_nodes_d_(inode).force_1_x_ = 0.0;
+      contact_nodes_d_(inode).force_1_y_ = 0.0;
+      contact_nodes_d_(inode).force_1_z_ = 0.0;
+    }
 #endif
   }
 

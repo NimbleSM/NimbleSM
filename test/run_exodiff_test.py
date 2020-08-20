@@ -23,9 +23,7 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
     epu_required = False
     if "NimbleSM_Serial" in executable_name:
         command.append(executable_name)
-    if "NimbleSM_ArborX" in executable_name:
-        command.append(executable_name)
-    if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name:
+    if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name or "NimbleSM_ArborX" in executable_name:
         command.append("mpirun")
         command.append("-np")
         if num_ranks:
@@ -67,9 +65,15 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         log_file_name = base_name + ".serial.log"
         epu_exodus_output_name = base_name + ".serial.e"
     if "NimbleSM_ArborX" in executable_name:
-        nimble_output_name = base_name
-        log_file_name = base_name + ".arborx.log"
-        epu_exodus_output_name = base_name + ".arborx.e"
+        nimble_output_name = base_name + ".arborx"
+        log_file_name = base_name + ".arborx.np" + str(num_ranks) + ".log"
+        if num_ranks > 1:
+            epu_output_extension = "np" + str(num_ranks) + ".e"
+            epu_exodus_output_name = base_name + ".arborx." + epu_output_extension
+        else:
+            epu_output_extension = ".e"
+            epu_exodus_output_name = base_name + ".arborx.e"
+        epu_ranks_string = str(num_ranks)
     if "NimbleSM_MPI" in executable_name:
         nimble_output_name = base_name + ".mpi"
         log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"

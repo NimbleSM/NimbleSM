@@ -60,7 +60,10 @@
 #include "nimble_kokkos.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
-#include "contact/serial/arborx_serial_contact_manager.h"
+  #ifdef NIMBLE_HAVE_MPI
+    #include "contact/parallel/arborx_parallel_contact_manager.h"
+  #endif
+    #include "contact/serial/arborx_serial_contact_manager.h"
 #endif
 
 
@@ -385,7 +388,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   int mpi_vector_dimension = 3;
 
 #ifdef NIMBLE_HAVE_ARBORX
-  nimble::ArborXSerialContactManager contact_manager(contact_interface);
+  #ifdef NIMBLE_HAVE_MPI
+    nimble::ArborXParallelContactManager contact_manager(contact_interface);
+  #else
+    nimble::ArborXSerialContactManager contact_manager(contact_interface);
+  #endif // NIMBLE_HAVE_MPI
 #else
   nimble::ContactManager contact_manager(contact_interface);
 #endif // NIMBLE_HAVE_ARBORX
@@ -606,6 +613,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       contact_manager.ComputeContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
+      //
+      // Perform a reduction to obtain correct values on MPI boundaries
+      mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
       //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);

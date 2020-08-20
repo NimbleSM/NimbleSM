@@ -1,4 +1,4 @@
-name: ubuntu-kokkos-serial
+name: ubuntu-arborx-mpi
   
 # Trigger the workflow on push or pull request
 on:
@@ -23,8 +23,8 @@ jobs:
              sudo apt-get update -y -qq
              sudo apt-get install -y libblas-dev liblapack-dev
              sudo apt-get install -y libmetis-dev
-             sudo apt-get install -y netcdf-bin libnetcdf-dev
              sudo apt-get install -y openmpi-bin libopenmpi-dev
+             sudo apt-get install -y netcdf-bin libnetcdf-dev
              sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
              sudo add-apt-repository ppa:nschloe/seacas-nightly
              sudo apt-get update -y -qq
@@ -35,6 +35,12 @@ jobs:
              cmake .. -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=OFF \
                    -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
+             cd ../..
+             git clone https://github.com/arborx/arborx.git
+             cd arborx
+             mkdir build && cd build
+             cmake .. -DARBORX_ENABLE_MPI=ON -DCMAKE_INSTALL_PREFIX="/usr/"
+             make && sudo make install
       - name: cmake
         shell: bash
         run: |
@@ -42,7 +48,7 @@ jobs:
            cmake -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON \
+                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=ON \
                  ..
       - name: compile
         run: cmake --build build
