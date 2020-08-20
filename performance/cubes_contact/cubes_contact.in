@@ -1,0 +1,22 @@
+genesis input file:               cubes_contact.g
+exodus output file:               cubes_contact.e
+final time:                       1.0e-5
+number of load steps:             100
+output frequency:                 10
+output fields:                    displacement velocity internal_force contact_force deformation_gradient stress
+material parameters:              material_1 neohookean density 7.8e3 bulk_modulus 1.6e11 shear_modulus 0.8e11
+# z split 1:hi, 2:lo
+macroscale block:                 block_1 material_1
+macroscale block:                 block_2 material_1
+boundary condition:               prescribed_velocity nodelist_1 x 0.0
+boundary condition:               prescribed_velocity nodelist_2 x 0.0
+boundary condition:               prescribed_velocity nodelist_3 y 0.0
+boundary condition:               prescribed_velocity nodelist_4 y 0.0
+boundary condition:               prescribed_velocity nodelist_5 z 1.0
+boundary condition:               prescribed_velocity nodelist_6 z 0.0
+boundary condition:               initial_velocity    nodelist_200 z 1.0
+# make it easy by only allowing normal motion
+boundary condition:               prescribed_velocity nodelist_300 x 0.0
+boundary condition:               prescribed_velocity nodelist_300 y 0.0
+contact:                          master_blocks block_2 slave_blocks block_1 penalty_parameter 1.0e12
+contact visualization:            visualize_contact_entities on visualize_bounding_boxes on file_name vis.e
