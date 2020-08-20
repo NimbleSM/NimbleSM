@@ -24,8 +24,19 @@
 # 2/ Command lines for each binary
 # For each binary, one or more command lines shall be specified. Such command lines are stored as string lists
 # in variables named lstTestCLI_BINARY, with BINARY being one of the suffixes mentioned above.
-# eg. list(APPEND lstTestsCLI_Serial
-#        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_"
+# eg. list(APPEND lstTestsCLI_Kokkos
+#        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --ranks 1"
+#        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --ranks 2"
+#        )
+#
+# Each command line will generate a new test. By default, the name of each test is suffixed by a number
+# incremented (0,1,2...) for each different CLI.
+# It is possible to OPTIONALLY specify strings of text as custom suffixes by adding an optional variable named
+# the same as the above list, with _Suffixes added at the end.
+#
+# eg. list(APPEND lstTestsCLI_Kokkos_Suffixes
+#        "np1"
+#        "np2"
 #        )
 #
 # 3/ Tests to be run
@@ -45,8 +56,10 @@
 # In such case, additional CLI/Test lists might be provided for that given binary.
 # eg. Kokkos have two test lists:
 #   lstTestsCLI_Kokkos_A --> Command lines for both Serial and Parallel executions
+#   lstTestsCLI_Kokkos_A_Suffixes --> Suffixes for each test
 #   lstTests_Kokkos_A --> Tests that can be run both in Serial and Parallel
 #   lstTestsCLI_Kokkos_B --> Command line for Serial ONLY
+#   lstTestsCLI_Kokkos_B_Suffixes --> Suffixes for each test
 #   lstTests_Kokkos_B --> Tests that can be run in Serial ONLY
 # The naming convention is the same as in 2/ and 3/, except that a suffix "_A", "_B" or "_C" is added
 # to the variable names.
@@ -141,10 +154,21 @@ list(APPEND lstTestsCLI_ArborX_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
 
+# Optional *_Suffixes variable specifies how tests names should be suffixed. Each suffix
+#  corresponds to on of the above command lines. It should have as many suffixes as there are
+#  command lines for a given binary & test set (A, B, C).
+list(APPEND lstTestsCLI_ArborX_A_Suffixes
+        "np1"
+        )
+
+
 # Add multi-rank testing to Kokkos if MPI is enabled
 IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_ArborX_A
             "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+            )
+    list(APPEND lstTestsCLI_ArborX_A_Suffixes
+            "np2"
             )
 ENDIF()
 
@@ -170,6 +194,10 @@ list(APPEND lstTestsCLI_ArborX_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
 
+list(APPEND lstTestsCLI_ArborX_B_Suffixes
+        "serial-only"
+        )
+
 list(APPEND lstTests_ArborX_B
         single_elem_complex_displacement
         cubes_contact
@@ -183,10 +211,18 @@ list(APPEND lstTestsCLI_Kokkos_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
 
+list(APPEND lstTestsCLI_Kokkos_A_Suffixes
+        "np1"
+        )
+
 # Add multi-rank testing to Kokkos if MPI is enabled
 IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_Kokkos_A
             "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+            )
+
+    list(APPEND lstTestsCLI_Kokkos_A_Suffixes
+            "np2"
             )
 ENDIF()
 
@@ -207,6 +243,10 @@ list(APPEND lstTests_Kokkos_A
 # "B" test list for tests that can only work in Serial
 list(APPEND lstTestsCLI_Kokkos_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+list(APPEND lstTestsCLI_Kokkos_B_Suffixes
+        "np1"
         )
 
 list(APPEND lstTests_Kokkos_B
@@ -377,7 +417,15 @@ foreach(version IN LISTS lstVersions)
                 foreach(i RANGE ${count})
                     # Set the Command Line, test name and working directory for the current test
                     list(GET ${lstCLI} ${i} cli)
-                    set(test_name ${test}_${version}${listID}_${i})
+
+                    # Check if a specific suffix was defined. If not, suffix will be set to ${i}
+                    if(DEFINED lstTestsCLI_${version}${listID}_Suffixes)
+                        list(GET lstTestsCLI_${version}${listID}_Suffixes ${i} suffix )
+                    else()
+                        set(suffix ${i})
+                    endif()
+
+                    set(test_name ${test}_${version}${listID}_${suffix})
                     set(working_dir ${CMAKE_CURRENT_BINARY_DIR}/${test})
 
                     # Expand the command line by replacing "_EXECUTABLE_" and "_INPUT_DECK_" with variables
