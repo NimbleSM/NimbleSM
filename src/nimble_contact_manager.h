@@ -103,9 +103,8 @@ struct PenaltyContactEnforcement {
                       const double normal[3], 
                       const double barycentric_coordinates[3],
                       VecType &full_contact_force) const {
-      const int numNodeFaces = 3 ; // NOTE for compatibilty only
       double contact_force[3] { };
-      details::getContactForce(penalty / numNodeFaces, gap, normal, contact_force);
+      details::getContactForce(penalty, gap, normal, contact_force);
       //
       face.SetNodalContactForces(contact_force, barycentric_coordinates);
       node.SetNodalContactForces(contact_force);
