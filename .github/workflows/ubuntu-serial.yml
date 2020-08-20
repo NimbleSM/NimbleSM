@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CMAKE_BUILD_TYPE: release
+      CMAKE_BUILD_TYPE: Release
 
     steps:
     - uses: actions/checkout@v1
@@ -35,7 +35,10 @@ jobs:
       run: |
            mkdir build && cd build
            export ACCESS=`pwd`
-           cmake -DCMAKE_CXX_FLAGS="-Werror" -Dexodus_INCLUDE_DIR="/usr/include" -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" ..
+           cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
+                 -Dexodus_INCLUDE_DIR="/usr/include" \
+                 -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
+                 ..
     - name: build
       run: cmake --build build
     - name: test
