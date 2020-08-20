@@ -18,5 +18,5 @@ boundary condition:               initial_velocity    nodelist_200 z 1.0
 # make it easy by only allowing normal motion
 boundary condition:               prescribed_velocity nodelist_300 x 0.0
 boundary condition:               prescribed_velocity nodelist_300 y 0.0
-contact:                          master_blocks block_2 slave_blocks block_1 penalty_parameter 1.0e12
+contact:                          master_blocks block_2 slave_blocks block_1 penalty_parameter 0.33333333333333333333333333333e12
 contact visualization:            visualize_contact_entities on visualize_bounding_boxes on file_name vis.e

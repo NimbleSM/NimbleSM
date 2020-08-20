@@ -126,10 +126,7 @@ struct ContactCallback
     double force[dim] = {0., 0., 0.};
     if (inside) {
       //
-      // Factor 3 is related to `const int numNodeFaces = 3`
-      // in nimble::details::PenaltyContactEnforcement
-      //
-      details::getContactForce(penalty_ / static_cast<double>(3), gap, normal, force);
+      details::getContactForce(penalty_, gap, normal, force);
       //
       auto result = list_.insert(PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
       if (result.second) { // if the insertion took place
