@@ -64,14 +64,6 @@
 # The naming convention is the same as in 2/ and 3/, except that a suffix "_A", "_B" or "_C" is added
 # to the variable names.
 
-# Remove below?
-#if(NIMBLE_HAVE_CHARM)
-#  set(charmrun ${PROJECT_BINARY_DIR}/src/charmrun)
-#else()
-#  set(charmrun "not available")
-#endif()
-#
-
 message(STATUS "### TESTS CONFIGURATION STARTS ###")
 
 # Defines all versions of NimbleSM to be tested
