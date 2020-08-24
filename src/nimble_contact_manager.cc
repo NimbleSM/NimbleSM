@@ -140,36 +140,36 @@ namespace nimble {
 #endif // NIMBLE_HAVE_KOKKOS
 
     void ParseContactCommand(std::string const & command,
-                           std::vector<std::string> & master_block_names,
-                           std::vector<std::string> & slave_block_names,
+                           std::vector<std::string> & primary_block_names,
+                           std::vector<std::string> & secondary_block_names,
                            double & penalty_parameter) {
 
-    std::string contact_master_key;
-    std::string contact_slave_key;
+    std::string contact_primary_key;
+    std::string contact_secondary_key;
 
     std::stringstream ss(command);
 
-    ss >> contact_master_key;
-    if (contact_master_key != "master_blocks") {
+    ss >> contact_primary_key;
+    if ((contact_primary_key != "primary_blocks") && (contact_primary_key != "master_blocks")) {
       std::stringstream error_ss;
-      error_ss << "\n**** Error processing contact command, unknown key: " << contact_master_key << std::endl;
+      error_ss << "\n**** Error processing contact command, unknown key: " << contact_primary_key << std::endl;
       throw std::logic_error(error_ss.str());
     }
 
-    bool slave_key_found = false;
-    while (ss.good() && !slave_key_found) {
+    bool secondary_key_found = false;
+    while (ss.good() && !secondary_key_found) {
       std::string temp;
       ss >> temp;
-      if (temp == "slave_blocks") {
-        slave_key_found = true;
+      if ((temp == "secondary_blocks") || (temp == "slave_blocks")) {
+        secondary_key_found = true;
       }
       else {
-        master_block_names.push_back(temp);
+        primary_block_names.push_back(temp);
       }
     }
 
-    if (!slave_key_found) {
-      throw std::logic_error("\n**** Error processing contact command, expected \"slave_blocks\".\n");
+    if (!secondary_key_found) {
+      throw std::logic_error("\n**** Error processing contact command, expected \"secondary_blocks\" or \"slave_blocks\" (deprectated).\n");
     }
 
     bool penalty_parameter_key_found = false;
@@ -180,7 +180,7 @@ namespace nimble {
         penalty_parameter_key_found = true;
       }
       else {
-        slave_block_names.push_back(temp);
+        secondary_block_names.push_back(temp);
       }
     }
 
@@ -416,8 +416,8 @@ namespace nimble {
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
                                         nimble::MPIContainer & mpi_container,
-                                        std::vector<int> const & master_block_ids,
-                                        std::vector<int> const & slave_block_ids) {
+                                        std::vector<int> const & primary_block_ids,
+                                        std::vector<int> const & secondary_block_ids) {
 
     int mpi_rank = 0;
     int num_ranks = 1;
@@ -439,18 +439,18 @@ namespace nimble {
     max_node_global_id = global_max_node_global_id;
 #endif
 
-    // find all the element faces on the master and slave contact blocks
+    // find all the element faces on the primary and secondary contact blocks
     // the entity ids created here will be used downstream for the contact faces
     // the contact nodes will not use these entity ids, instead they will just use the exodus id of the node as the entity id
-    std::vector< std::vector<int> > master_skin_faces, slave_skin_faces;
-    std::vector<int> master_skin_entity_ids, slave_skin_entity_ids;
+    std::vector< std::vector<int> > primary_skin_faces, secondary_skin_faces;
+    std::vector<int> primary_skin_entity_ids, secondary_skin_entity_ids;
     int contact_entity_id_offset = max_node_global_id; // ensure that there are no duplicate entity ids between nodes and faces
-    SkinBlocks(mesh, master_block_ids, contact_entity_id_offset, master_skin_faces, master_skin_entity_ids);
-    SkinBlocks(mesh, slave_block_ids, contact_entity_id_offset, slave_skin_faces, slave_skin_entity_ids);
+    SkinBlocks(mesh, primary_block_ids, contact_entity_id_offset, primary_skin_faces, primary_skin_entity_ids);
+    SkinBlocks(mesh, secondary_block_ids, contact_entity_id_offset, secondary_skin_faces, secondary_skin_entity_ids);
 
     // remove faces that are along partition boundaries
-    RemoveInternalSkinFaces(mesh, master_skin_faces, master_skin_entity_ids);
-    RemoveInternalSkinFaces(mesh, slave_skin_faces, slave_skin_entity_ids);
+    RemoveInternalSkinFaces(mesh, primary_skin_faces, primary_skin_entity_ids);
+    RemoveInternalSkinFaces(mesh, secondary_skin_faces, secondary_skin_entity_ids);
 
     // create a list of ghosted nodes (e.g., nodes that are owned by a different processor)
     std::vector<int> partition_boundary_node_local_ids;
@@ -472,12 +472,12 @@ namespace nimble {
     // construct containers for the subset of the model that is involved with contact
     // this constitutes a submodel that is stored in the ContactManager
     std::set<int> node_ids_set;
-    for (auto const & face : master_skin_faces) {
+    for (auto const & face : primary_skin_faces) {
       for (auto const & id : face) {
         node_ids_set.insert(id);
       }
     }
-    for (auto const & face : slave_skin_faces) {
+    for (auto const & face : secondary_skin_faces) {
       for (auto const & id : face) {
         node_ids_set.insert(id);
       }
@@ -491,14 +491,14 @@ namespace nimble {
 
     // replace the node ids that correspond to the genesis mesh
     // with node ids that correspond to the contact submodel
-    for (auto & master_skin_face : master_skin_faces) {
-      for (int & i_node : master_skin_face) {
+    for (auto & primary_skin_face : primary_skin_faces) {
+      for (int & i_node : primary_skin_face) {
         int genesis_mesh_node_id = i_node;
         i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
     }
-    for (auto & slave_skin_face : slave_skin_faces) {
-      for (int & i_node : slave_skin_face) {
+    for (auto & secondary_skin_face : secondary_skin_faces) {
+      for (int & i_node : secondary_skin_face) {
         int genesis_mesh_node_id = i_node;
         i_node = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
       }
@@ -527,10 +527,10 @@ namespace nimble {
     // Store nodes in slave faces
     // Create a list of nodes and their characteristic lengths
     const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
-    std::vector<int> slave_node_ids;
-    std::vector<int> slave_node_entity_ids;
-    std::map<int, double> slave_node_char_lens;
-    for (auto &face : slave_skin_faces) {
+    std::vector<int> secondary_node_ids;
+    std::vector<int> secondary_node_entity_ids;
+    std::map<int, double> secondary_node_char_lens;
+    for (auto &face : secondary_skin_faces) {
 
       int num_nodes_in_face = static_cast<int>(face.size());
       // determine a characteristic length based on max edge length
@@ -553,27 +553,27 @@ namespace nimble {
         int node_id = face[i_node];
         // omit ghosted nodes
         if (std::find(ghosted_contact_node_ids.begin(), ghosted_contact_node_ids.end(), node_id) == ghosted_contact_node_ids.end()) {
-          if (std::find(slave_node_ids.begin(), slave_node_ids.end(), node_id) == slave_node_ids.end()) {
-            slave_node_ids.push_back(node_id);
+          if (std::find(secondary_node_ids.begin(), secondary_node_ids.end(), node_id) == secondary_node_ids.end()) {
+            secondary_node_ids.push_back(node_id);
             // note the mapping from contact manager local id to real FEM mesh local id to real FEM mesh global id
             int contact_node_entity_id = genesis_node_global_ids[node_ids_[node_id]] + 1;
-            slave_node_entity_ids.push_back(contact_node_entity_id);
-            slave_node_char_lens[node_id] = characteristic_length;
+            secondary_node_entity_ids.push_back(contact_node_entity_id);
+            secondary_node_char_lens[node_id] = characteristic_length;
           }
           else {
             // always use the maximum characteristic length
             // this requires a parallel sync
-            if (slave_node_char_lens[node_id] < characteristic_length) {
-              slave_node_char_lens[node_id] = characteristic_length;
+            if (secondary_node_char_lens[node_id] < characteristic_length) {
+              secondary_node_char_lens[node_id] = characteristic_length;
             }
           }
         }
       }
     }
 
-    contact_nodes_.resize(slave_node_ids.size());
-    contact_faces_.resize(4*master_skin_faces.size());
-    CreateContactNodesAndFaces(master_skin_faces, master_skin_entity_ids, slave_node_ids, slave_node_entity_ids, slave_node_char_lens, contact_nodes_, contact_faces_);
+    contact_nodes_.resize(secondary_node_ids.size());
+    contact_faces_.resize(4 * primary_skin_faces.size());
+    CreateContactNodesAndFaces(primary_skin_faces, primary_skin_entity_ids, secondary_node_ids, secondary_node_entity_ids, secondary_node_char_lens, contact_nodes_, contact_faces_);
 
 #ifdef NIMBLE_HAVE_KOKKOS
 
@@ -599,12 +599,12 @@ namespace nimble {
     Kokkos::deep_copy(coord_d_, model_coord_h);
     Kokkos::deep_copy(force_d_, 0.0);
 
-    Kokkos::resize(contact_nodes_h_, slave_node_ids.size());
-    Kokkos::resize(contact_faces_h_, 4*master_skin_faces.size());
-    CreateContactNodesAndFaces(master_skin_faces, master_skin_entity_ids, slave_node_ids, slave_node_entity_ids, slave_node_char_lens, contact_nodes_h_, contact_faces_h_);
+    Kokkos::resize(contact_nodes_h_, secondary_node_ids.size());
+    Kokkos::resize(contact_faces_h_, 4*primary_skin_faces.size());
+    CreateContactNodesAndFaces(primary_skin_faces, primary_skin_entity_ids, secondary_node_ids, secondary_node_entity_ids, secondary_node_char_lens, contact_nodes_h_, contact_faces_h_);
 
-    Kokkos::resize(contact_nodes_d_, slave_node_ids.size());
-    Kokkos::resize(contact_faces_d_, 4*master_skin_faces.size());
+    Kokkos::resize(contact_nodes_d_, secondary_node_ids.size());
+    Kokkos::resize(contact_faces_d_, 4*primary_skin_faces.size());
     Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
     Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
 #endif
@@ -622,26 +622,26 @@ namespace nimble {
 #endif
     if (mpi_rank == 0) {
       std::cout << "Contact initialization:" << std::endl;
-      std::cout << "  number of triangular contact facets (master blocks): " << num_contact_faces << std::endl;
-      std::cout << "  number of contact nodes (slave blocks): " << num_contact_nodes << "\n" << std::endl;
+      std::cout << "  number of triangular contact facets (primary blocks): " << num_contact_faces << std::endl;
+      std::cout << "  number of contact nodes (secondary blocks): " << num_contact_nodes << "\n" << std::endl;
     }
   }
 
   template <typename ArgT>
-  void ContactManager::CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
-                                                  std::vector<int> const & master_skin_entity_ids,
-                                                  std::vector<int> const & slave_node_ids,
-                                                  std::vector<int> const & slave_node_entity_ids,
-                                                  std::map<int, double> const & slave_node_char_lens,
+  void ContactManager::CreateContactNodesAndFaces(std::vector< std::vector<int> > const & primary_skin_faces,
+                                                  std::vector<int> const & primary_skin_entity_ids,
+                                                  std::vector<int> const & secondary_node_ids,
+                                                  std::vector<int> const & secondary_node_entity_ids,
+                                                  std::map<int, double> const & secondary_node_char_lens,
                                                   ArgT& contact_nodes,
                                                   ArgT& contact_faces) const {
 
     int index = 0;
 
-    // convert master faces to triangular facets
-    for (unsigned int i_face=0 ; i_face < master_skin_faces.size() ; i_face++) {
+    // convert primary faces to triangular facets
+    for (unsigned int i_face=0 ; i_face < primary_skin_faces.size() ; i_face++) {
 
-      auto face = master_skin_faces[i_face];
+      auto face = primary_skin_faces[i_face];
 
       int num_nodes_in_face = static_cast<int>(face.size());
       if (num_nodes_in_face != 4) {
@@ -699,7 +699,7 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      entity_id = master_skin_entity_ids[i_face];
+      entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 0; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
@@ -719,7 +719,7 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      entity_id = master_skin_entity_ids[i_face];
+      entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 1; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
@@ -739,7 +739,7 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      entity_id = master_skin_entity_ids[i_face];
+      entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 2; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
@@ -759,7 +759,7 @@ namespace nimble {
       model_coord[6] = fictitious_node[0];
       model_coord[7] = fictitious_node[1];
       model_coord[8] = fictitious_node[2];
-      entity_id = master_skin_entity_ids[i_face];
+      entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 3; // triangle ordinal
       contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
@@ -770,11 +770,11 @@ namespace nimble {
                                              node_ids_for_fictitious_node);
     }
 
-    // Slave node entities
-    for (unsigned int i_node=0 ; i_node < slave_node_ids.size() ; ++i_node) {
-      int node_id = slave_node_ids.at(i_node);
-      int entity_id = slave_node_entity_ids.at(i_node);
-      double characteristic_length = slave_node_char_lens.at(node_id);
+    // Secondary node entities
+    for (unsigned int i_node=0 ; i_node < secondary_node_ids.size() ; ++i_node) {
+      int node_id = secondary_node_ids.at(i_node);
+      int entity_id = secondary_node_entity_ids.at(i_node);
+      double characteristic_length = secondary_node_char_lens.at(node_id);
       double model_coord[3];
       for (int i=0 ; i<3 ; ++i) {
         model_coord[i] = coord_[3*node_id+i];

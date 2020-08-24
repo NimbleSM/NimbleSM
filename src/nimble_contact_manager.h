@@ -155,24 +155,24 @@ public:
     }
 
     void CreateContactEntities(GenesisMesh const & mesh,
-                               std::vector<int> const & master_block_ids,
-                               std::vector<int> const & slave_block_ids) {
+                               std::vector<int> const & primary_block_ids,
+                               std::vector<int> const & secondary_block_ids) {
       nimble::MPIContainer mpi_container;
-      CreateContactEntities(mesh, mpi_container, master_block_ids, slave_block_ids);
+      CreateContactEntities(mesh, mpi_container, primary_block_ids, secondary_block_ids);
     }
 
 
     void CreateContactEntities(GenesisMesh const & mesh,
                                nimble::MPIContainer & mpi_container,
-                               std::vector<int> const & master_block_ids,
-                               std::vector<int> const & slave_block_ids);
+                               std::vector<int> const & primary_block_ids,
+                               std::vector<int> const & secondary_block_ids);
 
     template <typename ArgT>
-    void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
-                                    std::vector<int> const & master_skin_entity_ids,
-                                    std::vector<int> const & slave_node_ids,
-                                    std::vector<int> const & slave_skin_entity_ids,
-                                    std::map<int, double> const & slave_node_char_lens,
+    void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & primary_skin_faces,
+                                    std::vector<int> const & primary_skin_entity_ids,
+                                    std::vector<int> const & secondary_node_ids,
+                                    std::vector<int> const & secondary_node_entity_ids,
+                                    std::map<int, double> const & secondary_node_char_lens,
                                     ArgT& contact_nodes,
                                     ArgT& contact_faces) const ;
 

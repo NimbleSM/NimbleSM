@@ -97,8 +97,8 @@ namespace nimble {
   }
 
   void ParseContactCommand(std::string const & command,
-                           std::vector<std::string> & master_block_names,
-                           std::vector<std::string> & slave_block_names,
+                           std::vector<std::string> & primary_block_names,
+                           std::vector<std::string> & secondary_block_names,
                            double & penalty_parameter);
 
   class ContactEntity {
