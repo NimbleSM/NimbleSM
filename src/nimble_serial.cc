@@ -541,7 +541,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                    );
       }
       //Now apply closure to estimate approximate sample forces from the exact samples
-      uq_model.ApplyClosure();
+      uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
 #else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
