@@ -149,6 +149,7 @@ namespace nimble {
     NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contact_entity_global_id,
+                  int contact_entity_local_id,
                   double const coord[],
                   double characteristic_length,
                   int node_id_for_node_1,
@@ -156,8 +157,9 @@ namespace nimble {
                   const int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
         char_len_(characteristic_length),
-        contact_entity_global_id_(contact_entity_global_id)
-    {
+        contact_entity_global_id_(contact_entity_global_id),
+        local_id_(contact_entity_local_id){
+
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
             num_nodes_ = 1;
@@ -175,7 +177,7 @@ namespace nimble {
           else{
             printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
           }
-          //
+
           coord_1_x_ = coord[0];
           coord_1_y_ = coord[1];
           coord_1_z_ = coord[2];
@@ -264,6 +266,9 @@ namespace nimble {
     // Functions for bvh contact search
     NIMBLE_INLINE_FUNCTION
     int contact_entity_global_id() const { return contact_entity_global_id_; }
+
+    NIMBLE_INLINE_FUNCTION
+    int local_id() const noexcept { return local_id_; }
 
     NIMBLE_INLINE_FUNCTION
     vertex centroid() const {
@@ -470,6 +475,8 @@ public:
     //   next 3 bits are the face ordinal (range is 1-6)
     //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
     int contact_entity_global_id_ = -1;
+
+    int local_id_ = -1;
 
   protected:
 

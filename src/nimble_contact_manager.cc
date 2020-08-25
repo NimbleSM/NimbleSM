@@ -701,13 +701,15 @@ namespace nimble {
       model_coord[8] = fictitious_node[2];
       entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 0; // triangle ordinal
-      contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
+      contact_faces[index] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
+                                             index,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
                                              node_ids_for_fictitious_node);
+      ++index;
 
       // triangle node_1, node_2, fictitious_node
       node_id_1 = face[1];
@@ -721,13 +723,15 @@ namespace nimble {
       model_coord[8] = fictitious_node[2];
       entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 1; // triangle ordinal
-      contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
+      contact_faces[index] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
+                                             index,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
                                              node_ids_for_fictitious_node);
+      ++index;
 
       // triangle node_2, node_3, fictitious_node
       node_id_1 = face[2];
@@ -741,13 +745,15 @@ namespace nimble {
       model_coord[8] = fictitious_node[2];
       entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 2; // triangle ordinal
-      contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
+      contact_faces[index] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
+                                             index,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
                                              node_ids_for_fictitious_node);
+      ++index;
 
       // triangle node_3, node_0, fictitious_node
       node_id_1 = face[3];
@@ -761,13 +767,15 @@ namespace nimble {
       model_coord[8] = fictitious_node[2];
       entity_id = primary_skin_entity_ids[i_face];
       entity_id |= 3; // triangle ordinal
-      contact_faces[index++] = ContactEntity(ContactEntity::TRIANGLE,
+      contact_faces[index] = ContactEntity(ContactEntity::TRIANGLE,
                                              entity_id,
+                                             index,
                                              model_coord,
                                              characteristic_length,
                                              node_id_1,
                                              node_id_2,
                                              node_ids_for_fictitious_node);
+      ++index;
     }
 
     // Secondary node entities
@@ -781,6 +789,7 @@ namespace nimble {
       }
       contact_nodes[i_node] = ContactEntity(ContactEntity::NODE,
                                             entity_id,
+                                            i_node,
                                             model_coord,
                                             characteristic_length,
                                             node_id);
