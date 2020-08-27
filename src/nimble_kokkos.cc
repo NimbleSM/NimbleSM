@@ -58,6 +58,7 @@
 #include "nimble_utils.h"
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos.h"
+#include "nimble_timer.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
   #ifdef NIMBLE_HAVE_MPI
@@ -464,6 +465,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     contact_manager.ContactVisualizationWriteStep(time_current);
   }
 
+  //--- Define timers
+  Kokkos::Timer watch_simulation, watch_internal;
+  //
+  double total_exodus_write_time = 0.0, total_contact_time = 0.0;
+  double total_internal_force_time = 0.0, total_update_avu_time = 0.0;
+  //
   for (int step = 0 ; step < num_load_steps ; ++step) {
 
     if (my_mpi_rank == 0) {
@@ -482,32 +489,36 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     half_delta_time = 0.5*delta_time;
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
+    watch_internal.reset();
     for (int i=0 ; i<num_nodes ; ++i) {
       velocity_h(i,0) += half_delta_time * acceleration_h(i,0);
       velocity_h(i,1) += half_delta_time * acceleration_h(i,1);
       velocity_h(i,2) += half_delta_time * acceleration_h(i,2);
     }
+    total_update_avu_time += watch_internal.seconds();
 
     // Apply kinematic boundary conditions
     boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
+    watch_internal.reset();
     for (int i=0 ; i<num_nodes ; ++i) {
       displacement_h(i,0) += delta_time * velocity_h(i,0);
       displacement_h(i,1) += delta_time * velocity_h(i,1);
       displacement_h(i,2) += delta_time * velocity_h(i,2);
     }
+    total_update_avu_time += watch_internal.seconds();
 
     // Copy the current displacement and velocity value to device memory
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
+
+    watch_internal.reset();
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
-    if (contact_enabled) {
-      Kokkos::deep_copy(contact_force_d, (double)(0.0));
-    }
 
     // Compute element-level kinematics
     for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
+      //
       int block_id = block_it->first;
       nimble_kokkos::Block& block = block_it->second;
       nimble::Element* element_d = block.GetDeviceElement();
@@ -549,9 +560,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     {
       // Compute stress
       std::vector<nimble_kokkos::BlockData> block_data;
-      for (auto &&block_it : blocks) {
-        int block_id = block_it.first;
-        nimble_kokkos::Block &block = block_it.second;
+      for (auto &&block_item : blocks) {
+        int block_id = block_item.first;
+        nimble_kokkos::Block &block = block_item.second;
         nimble::Material *material_d = block.GetDeviceMaterialModel();
         int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
@@ -599,59 +610,69 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     } // loop over blocks
 
     Kokkos::deep_copy(internal_force_h, internal_force_d);
-
     // Perform a reduction to obtain correct values on MPI boundaries
     mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
+    //
+    total_internal_force_time += watch_internal.seconds();
 
     // Evaluate the contact force
     if (contact_enabled) {
+      Kokkos::Timer watch_contact;
+      //
+      Kokkos::deep_copy(contact_force_d, (double)(0.0));
       contact_manager.ApplyDisplacements(displacement_d);
-      //
-      double x_min, x_max, y_min, y_max, z_min, z_max;
-      contact_manager.BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
-      //
       contact_manager.ComputeContactForce(step+1, is_output_step);
+      //
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
-      //
       // Perform a reduction to obtain correct values on MPI boundaries
       mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
       //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);
+      total_contact_time += watch_contact.seconds();
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
+    watch_internal.reset();
     for (int i=0 ; i<num_nodes ; ++i) {
       acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0) + contact_force_h(i,0));
       acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1) + contact_force_h(i,1));
       acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2) + contact_force_h(i,2));
     }
+    total_update_avu_time += watch_internal.seconds();
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
+    watch_internal.reset();
     for (int i=0 ; i<num_nodes ; ++i) {
       velocity_h(i,0) += half_delta_time * acceleration_h(i,0);
       velocity_h(i,1) += half_delta_time * acceleration_h(i,1);
       velocity_h(i,2) += half_delta_time * acceleration_h(i,2);
     }
+    total_update_avu_time += watch_internal.seconds();
 
     if (is_output_step) {
-
+      //
+      watch_internal.reset();
+      //
       boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
       Kokkos::deep_copy(displacement_d, displacement_h);
       Kokkos::deep_copy(velocity_d, velocity_h);
       exodus_output_manager.ComputeElementData(mesh, model_data, blocks, gathered_reference_coordinate_d, gathered_displacement_d);
-      std::vector<double> global_data;
-      std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
-      std::map<int, std::vector< std::vector<double> > > const & elem_data_for_output = exodus_output_manager.GetElementDataForOutput(model_data);
-      std::map<int, std::vector< std::vector<double> > > derived_elem_data;
+      std::vector<double> glbl_data;
+      std::vector< std::vector<double> > const &node_data_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+      std::map<int, std::vector< std::vector<double> > > const &elem_data_output = exodus_output_manager.GetElementDataForOutput(model_data);
+      std::map<int, std::vector< std::vector<double> > > drvd_elem_data;
       exodus_output.WriteStep(time_current,
-                              global_data,
-                              node_data_for_output,
+                              glbl_data,
+                              node_data_output,
                               elem_data_labels_for_output,
-                              elem_data_for_output,
+                              elem_data_output,
                               derived_elem_data_labels,
-                              derived_elem_data);
+                              drvd_elem_data);
+      //
+      total_exodus_write_time += watch_internal.seconds();
+      //
       if (contact_visualization) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
@@ -680,6 +701,23 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     }
 
   } // loop over time steps
+
+  double total_simulation_time = watch_simulation.seconds();
+
+  if (init_data.my_mpi_rank == 0) {
+    std::cout << " Total Simulation = " << total_simulation_time << "\n";
+    std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
+    if (contact_enabled) {
+      std::cout << " --- Contact Forces = " << total_contact_time << "\n";
+      auto list_timers = contact_manager.getTimers();
+      for (auto st_pair : list_timers)
+        std::cout << " --- >>> " << st_pair.first << " = " << st_pair.second
+                  << "\n";
+    }
+    std::cout << " --- Exodus Write " << total_exodus_write_time << "\n";
+    std::cout << " --- Update AVU " << total_update_avu_time << "\n";
+  }
+
 }
 
 }

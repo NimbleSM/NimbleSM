@@ -1544,4 +1544,28 @@ namespace nimble {
     contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
 #endif
   }
+
+  const std::unordered_map<std::string, double>& ContactManager::getTimers() {
+    timers_.clear();
+#ifdef NIMBLE_TIME_CONTACT
+    for (auto st_pair : watch_.timers_) {
+      auto name = st_pair.first;
+      timers_.insert(std::make_pair(name, st_pair.second.GetElapsedTime()));
+    }
+#endif
+    return timers_;
+  }
+
+  void ContactManager::startTimer(std::string str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Start(str_val);
+#endif
+  }
+
+  void ContactManager::stopTimer(std::string str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Stop(str_val);
+#endif
+  }
+
 }

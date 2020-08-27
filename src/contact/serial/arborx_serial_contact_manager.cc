@@ -159,11 +159,6 @@ void ArborXSerialContactManager::updateCollisionData(
 
 void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output) {
 
-#ifdef NIMBLE_TIME_CONTACT
-  nimble::Timer t = Timer();
-  t.Start("arborx");
-#endif
-
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
       throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
@@ -180,7 +175,9 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
   Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
 
   //--- Update the geometric collision information
+  this->startTimer("ArborX::Search");
   updateCollisionData(indices, offset);
+  this->stopTimer("ArborX::Search");
 
   //--- Set vector to store force
   ContactManager::zeroContactForce();
@@ -200,6 +197,7 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
   double normal[3] = {0., 0., 0.};
   bool inside = false;
   double facet_coordinates[3] = {0., 0., 0.};
+  this->startTimer("Contact::EnforceInteraction");
   for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
     auto &myNode = contact_nodes_d_(inode);
     for (int j = offset(inode); j < offset(inode+1); ++j) {
@@ -214,12 +212,8 @@ void ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_
       }
     }
   }
+  this->stopTimer("Contact::EnforceInteraction");
 
-#ifdef NIMBLE_TIME_CONTACT
-  t.Stop("arborx");
-  double time = t.ElapsedTime("arborx");
-  std::cout << " arborx " << time  << "\n";
-#endif
 }
 
 }

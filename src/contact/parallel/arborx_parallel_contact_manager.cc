@@ -230,7 +230,9 @@ namespace nimble {
     Kokkos::View<details::OutputData *, kokkos_device> results("results", 0);
     Kokkos::View<int *, kokkos_device> offset("offset", 0);
     std::set< details::PairData > list_;
+    double time_callback = 0.0;
 
+    this->startTimer("ArborX::Search");
     auto comm = MPI_COMM_WORLD;
     ArborX::DistributedSearchTree<memory_space> dtree(comm,
                                                       kokkos_device::execution_space{},
@@ -240,7 +242,9 @@ namespace nimble {
                 details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
                 details::ContactCallback{m_rank, contact_faces_d_, penalty_parameter_, list_},
                 results, offset);
+    this->stopTimer("ArborX::Search");
 
+    this->startTimer("Contact::EnforceInteraction");
     for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
       auto &myNode = contact_nodes_d_(inode);
       for (int j = offset(inode); j < offset(inode+1); ++j) {
@@ -263,6 +267,7 @@ namespace nimble {
       if (myFace.contact_status() > 0.0)
         myFace.ScatterForceToContactManagerForceVector(force_d_);
     }
+    this->stopTimer("Contact::EnforceInteraction");
 
   }
 

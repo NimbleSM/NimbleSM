@@ -67,13 +67,13 @@ namespace nimble {
     }
 
     void Start() {
-      start_time_ = clock.now();
+      start_time_ = std::chrono::high_resolution_clock::now();
     }
 
     void Stop() {
       using std::chrono::duration;
       using std::chrono::duration_cast;
-      end_time_ = clock.now();
+      end_time_ = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> time_increment(0.0);
       if (end_time_ > start_time_) {
         time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
@@ -87,7 +87,6 @@ namespace nimble {
 
   private:
 
-    std::chrono::high_resolution_clock clock;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
     std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
     double total_time_;
