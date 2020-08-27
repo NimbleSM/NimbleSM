@@ -726,7 +726,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     timing_writer.BinaryWrite();
   }
 
-  if (init_data.my_mpi_rank == 0) {
+  if (my_mpi_rank == 0) {
     std::cout << " Total Simulation = " << total_simulation_time << "\n";
     std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
     if (contact_enabled) {
@@ -736,8 +736,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
         std::cout << " --- >>> " << st_pair.first << " = " << st_pair.second
                   << "\n";
     }
-    std::cout << " --- Exodus Write " << total_exodus_write_time << "\n";
-    std::cout << " --- Update AVU " << total_update_avu_time << "\n";
+    std::cout << " --- Exodus Write = " << total_exodus_write_time << "\n";
+    std::cout << " --- Update AVU = " << total_update_avu_time << "\n";
+    std::cout << " --- Vector Reduction = " << total_vector_reduction_time << "\n";
   }
 
 }
