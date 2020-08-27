@@ -59,6 +59,8 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos.h"
 #include "nimble_timer.h"
+#include "nimble_timing_utils.h"
+#include "nimble.quanta.stopwatch.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
   #ifdef NIMBLE_HAVE_MPI
@@ -468,8 +470,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   //--- Define timers
   Kokkos::Timer watch_simulation, watch_internal;
   //
-  double total_exodus_write_time = 0.0, total_contact_time = 0.0;
-  double total_internal_force_time = 0.0, total_update_avu_time = 0.0;
+  double total_internal_force_time = 0.0, total_contact_time = 0.0;
+  double total_vector_reduction_time = 0.0;
+  double total_update_avu_time = 0.0;
+  double total_exodus_write_time = 0.0;
   //
   for (int step = 0 ; step < num_load_steps ; ++step) {
 
@@ -610,14 +614,17 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     } // loop over blocks
 
     Kokkos::deep_copy(internal_force_h, internal_force_d);
-    // Perform a reduction to obtain correct values on MPI boundaries
-    mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
-    //
     total_internal_force_time += watch_internal.seconds();
+
+    // Perform a reduction to obtain correct values on MPI boundaries
+    watch_internal.reset();
+    mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
+    total_vector_reduction_time += watch_internal.seconds();
+    //
 
     // Evaluate the contact force
     if (contact_enabled) {
-      Kokkos::Timer watch_contact;
+      watch_internal.reset();
       //
       Kokkos::deep_copy(contact_force_d, (double)(0.0));
       contact_manager.ApplyDisplacements(displacement_d);
@@ -625,12 +632,14 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       //
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
+      total_contact_time += watch_internal.seconds();
       // Perform a reduction to obtain correct values on MPI boundaries
+      watch_internal.reset();
       mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+      total_vector_reduction_time += watch_internal.seconds();
       //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);
-      total_contact_time += watch_contact.seconds();
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
@@ -704,13 +713,26 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   double total_simulation_time = watch_simulation.seconds();
 
+  if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
+    nimble::TimingInfo timing_writer{
+        num_mpi_ranks,
+        nimble::quanta::stopwatch::get_microsecond_timestamp(),
+        total_simulation_time,
+        total_internal_force_time,
+        total_contact_time,
+        total_exodus_write_time,
+        total_vector_reduction_time
+    };
+    timing_writer.BinaryWrite();
+  }
+
   if (init_data.my_mpi_rank == 0) {
     std::cout << " Total Simulation = " << total_simulation_time << "\n";
     std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
     if (contact_enabled) {
       std::cout << " --- Contact Forces = " << total_contact_time << "\n";
       auto list_timers = contact_manager.getTimers();
-      for (auto st_pair : list_timers)
+      for (const auto& st_pair : list_timers)
         std::cout << " --- >>> " << st_pair.first << " = " << st_pair.second
                   << "\n";
     }

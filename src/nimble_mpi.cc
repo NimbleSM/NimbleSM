@@ -52,6 +52,7 @@
 #include "nimble_mesh_utils.h"
 #include "nimble.mpi.utils.h"
 #include "nimble.quanta.stopwatch.h"
+#include "nimble_timing_utils.h"
 #include "nimble_view.h"
 #include "nimble_contact_manager.h"
 #include <nimble_contact_interface.h>
@@ -631,29 +632,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     model_data.SwapStates();
   }
   double total_simulation_time = main_simulation_timer.age();
-  if(my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
-	  std::string timingdatastr, timingfilenamestr;
-	  {
-		std::stringstream timinginfo;
-		timinginfo << num_mpi_ranks << "\t" << total_simulation_time << "\t" << total_exodus_write_time << "\t" << total_vector_reduction_time << "\n";
-		timingdatastr = timinginfo.str();
-	  }
-	  {
-		std::stringstream filename_stream;
-		filename_stream << "nimble_timing_data_n" << num_mpi_ranks << "_" <<  nimble::quanta::stopwatch::get_microsecond_timestamp() << ".log";
-		timingfilenamestr = filename_stream.str();
-		for(char& c : timingfilenamestr) {
-			if(c == ' ') c = '-';
-		}
-	  }
-	  std::fstream fs(timingfilenamestr, fs.binary | fs.trunc | fs.in | fs.out);
-	  if(!fs.is_open()) {
-		  std::cout << "Failed to open timing data file" << std::endl;
-	  } else {
-		  fs << timingdatastr;
-		  fs.flush();
-		  fs.close();
-	  }
+  if (my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
+    nimble::TimingInfo timing_writer{
+        num_mpi_ranks,
+        nimble::quanta::stopwatch::get_microsecond_timestamp(),
+        total_simulation_time,
+        0.0, 0.0,
+        total_exodus_write_time,
+        total_vector_reduction_time
+    };
+    timing_writer.BinaryWrite();
   }
   return status;
 }

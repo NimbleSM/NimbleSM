@@ -230,7 +230,6 @@ namespace nimble {
     Kokkos::View<details::OutputData *, kokkos_device> results("results", 0);
     Kokkos::View<int *, kokkos_device> offset("offset", 0);
     std::set< details::PairData > list_;
-    double time_callback = 0.0;
 
     this->startTimer("ArborX::Search");
     auto comm = MPI_COMM_WORLD;
