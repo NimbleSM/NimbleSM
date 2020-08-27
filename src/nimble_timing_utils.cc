@@ -41,86 +41,58 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_TIMER_H
-#define NIMBLE_TIMER_H
+#include "nimble_timing_utils.h"
 
-#include <chrono>
-
-#ifdef NIMBLE_HAVE_DARMA
-  #include <darma.h>
-#else
-  #include <string>
-  #include <map>
-#endif
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace nimble {
 
-  class TimeKeeper {
+TimingInfo::TimingInfo(int i, std::string basicString,
+                       double t_sim, double t_internal, double t_contact,
+                       double t_exodus, double t_reduce)
+    : num_ranks(i), time_stamp(std::move(basicString)),
+      total_simulation_time(t_sim),
+      total_internal_force_time(t_internal),
+      total_contact_time(t_contact),
+      total_exodus_write_time(t_exodus),
+      total_vector_reduction_time(t_reduce)
+    {}
 
-  public:
+void TimingInfo::BinaryWrite() const {
 
-    TimeKeeper() : total_time_(0.0) {}
+  std::stringstream timinginfo;
+  timinginfo << num_ranks << "\t" << total_simulation_time
+             << "\t" << total_internal_force_time
+             << "\t" << total_contact_time
+             << "\t" << total_exodus_write_time
+             << "\t" << total_vector_reduction_time
+             << "\n";
+  std::string timingdatastr = timinginfo.str();
 
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | total_time_;
-    }
+  std::stringstream filename_stream;
+  filename_stream << "nimble_timing_data_n" << num_ranks << "_"
+                  << time_stamp
+                  << ".log";
+  std::string timingfilenamestr = filename_stream.str();
+  for (char &c : timingfilenamestr) {
+    if (c == ' ')
+      c = '-';
+  }
 
-    inline void Start() {
-      start_time_ = std::chrono::high_resolution_clock::now();
-    }
+  std::fstream fs(timingfilenamestr, fs.binary | fs.trunc | fs.in | fs.out);
+  if (!fs.is_open()) {
+    std::cerr << "Failed to open timing data file" 
+              << " (" << timingfilenamestr << ") "
+              << std::endl;
+  } else {
+    fs << timingdatastr;
+    fs.flush();
+    fs.close();
+  }
 
-    inline void Stop() {
-      using std::chrono::duration;
-      using std::chrono::duration_cast;
-      end_time_ = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time_increment(0.0);
-      if (end_time_ > start_time_) {
-        time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-      }
-      total_time_ += time_increment.count();
-    }
+}
 
-    inline double GetElapsedTime() const {
-      return total_time_;
-    }
-
-  private:
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
-    double total_time_;
-  };
-
-  class Timer {
-
-  public:
-
-    Timer()= default;
-
-    ~Timer()= default;
-
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | timers_;
-    }
-
-    inline void Start(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Start();
-    }
-
-    inline void Stop(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Stop();
-    }
-
-    inline double ElapsedTime(const std::string& name) const {
-      return timers_.at(name).GetElapsedTime();
-    }
-
-    std::map<std::string, TimeKeeper> timers_;
-  };
 } // namespace nimble
 
-#endif // NIMBLE_TIMER_H
