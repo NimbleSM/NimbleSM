@@ -4,6 +4,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.cc
@@ -24,6 +25,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.h
