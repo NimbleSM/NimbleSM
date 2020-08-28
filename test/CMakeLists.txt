@@ -162,6 +162,12 @@ IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_ArborX_A_Suffixes
             "np2"
             )
+    list(APPEND lstTestsCLI_ArborX_A
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+            )
+    list(APPEND lstTestsCLI_ArborX_A_Suffixes
+            "np4"
+            )
 ENDIF()
 
 list(APPEND lstTests_ArborX_A
@@ -216,6 +222,13 @@ IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_Kokkos_A_Suffixes
             "np2"
             )
+#   list(APPEND lstTestsCLI_Kokkos_A
+#           "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+#           )
+
+#   list(APPEND lstTestsCLI_Kokkos_A_Suffixes
+#           "np4"
+#           )
 ENDIF()
 
 list(APPEND lstTests_Kokkos_A

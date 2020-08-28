@@ -63,8 +63,13 @@ namespace nimble {
     dim_ = genesis_mesh.GetDim();
     num_nodes_ = genesis_mesh.GetNumNodes();
     num_elements_ = genesis_mesh.GetNumElements();
+    num_global_blocks_ = genesis_mesh.GetNumGlobalBlocks();
     num_blocks_ = genesis_mesh.GetNumBlocks();
+    num_global_blocks_ = genesis_mesh.GetNumGlobalBlocks();
+    all_block_ids_ = genesis_mesh.GetAllBlockIds();
+//  for (auto & id : all_block_ids_) { std::cout << id << " ALL\n";}
     block_ids_ = genesis_mesh.GetBlockIds();
+//  for (auto & id :     block_ids_) { std::cout << id << " LOCAL\n";}
     num_node_sets_ = genesis_mesh.GetNumNodeSets();
   }
 
@@ -86,7 +91,8 @@ namespace nimble {
     if (exodus_file_id < 0) ReportExodusError(exodus_file_id, "InitializeDatabase", "ex_create");
 
     // Write the Quality Assurance (QA) record
-    int retval = ex_put_init(exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_blocks_, num_node_sets_, num_side_sets_);
+//  int retval = ex_put_init(exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_global_blocks_, num_node_sets_, num_side_sets_);
+    int retval = ex_put_init(exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_global_blocks_, num_node_sets_, num_side_sets_);
     if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_init");
     WriteQARecord(exodus_file_id);
 
@@ -112,10 +118,10 @@ namespace nimble {
     }
 
     // Write the block names
-    char **block_names = new char*[num_blocks_];
-    for(int i=0 ; i<num_blocks_ ; ++i){
+    char **block_names = new char*[num_global_blocks_];
+    for(int i=0 ; i<num_global_blocks_ ; ++i){
       block_names[i] = new char[MAX_STR_LENGTH+1];
-      int id = block_ids_[i];
+      int id = all_block_ids_[i];
       std::string block_name = genesis_mesh.GetBlockName(id);
       strcpy(block_names[i], block_name.c_str());
     }
@@ -138,7 +144,7 @@ namespace nimble {
         if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
       }
     }
-
+ 
     // Write global node number map (global node IDs)
     const int* node_global_ids = genesis_mesh.GetNodeGlobalIds();
     // Switch to 1-based indexing
