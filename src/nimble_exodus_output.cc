@@ -61,15 +61,12 @@ namespace nimble {
   void ExodusOutput::Initialize(std::string const & filename, GenesisMesh const & genesis_mesh) {
     filename_ = filename;
     dim_ = genesis_mesh.GetDim();
-    num_nodes_ = genesis_mesh.GetNumNodes();
-    num_elements_ = genesis_mesh.GetNumElements();
-    num_global_blocks_ = genesis_mesh.GetNumGlobalBlocks();
-    num_blocks_ = genesis_mesh.GetNumBlocks();
-    num_global_blocks_ = genesis_mesh.GetNumGlobalBlocks();
+    num_nodes_ = static_cast<int>( genesis_mesh.GetNumNodes() );
+    num_elements_ = static_cast<int>( genesis_mesh.GetNumElements() );
+    num_blocks_ = static_cast<int>( genesis_mesh.GetNumBlocks() );
+    num_global_blocks_ = static_cast<int>( genesis_mesh.GetNumGlobalBlocks() );
     all_block_ids_ = genesis_mesh.GetAllBlockIds();
-//  for (auto & id : all_block_ids_) { std::cout << id << " ALL\n";}
     block_ids_ = genesis_mesh.GetBlockIds();
-//  for (auto & id :     block_ids_) { std::cout << id << " LOCAL\n";}
     num_node_sets_ = genesis_mesh.GetNumNodeSets();
   }
 
@@ -91,7 +88,6 @@ namespace nimble {
     if (exodus_file_id < 0) ReportExodusError(exodus_file_id, "InitializeDatabase", "ex_create");
 
     // Write the Quality Assurance (QA) record
-//  int retval = ex_put_init(exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_global_blocks_, num_node_sets_, num_side_sets_);
     int retval = ex_put_init(exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_global_blocks_, num_node_sets_, num_side_sets_);
     if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_init");
     WriteQARecord(exodus_file_id);
@@ -105,15 +101,28 @@ namespace nimble {
     retval = ex_put_coord(exodus_file_id, genesis_mesh.GetCoordinatesX(), genesis_mesh.GetCoordinatesY(), genesis_mesh.GetCoordinatesZ());
     if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_coord");
 
-    // Write element block parameters and block names
-    std::vector<int> num_elem_in_block(num_blocks_);
-    std::vector<int> num_nodes_per_elem_in_block(num_blocks_);
-    for(int i=0 ; i<num_blocks_ ; ++i) {
-      int id = block_ids_[i];
-      int num_elem_in_block = genesis_mesh.GetNumElementsInBlock(id);
-      int num_nodes_per_elem = genesis_mesh.GetNumNodesPerElement(id);
-      std::string elem_type = genesis_mesh.GetElementType(id);
-      retval = ex_put_block(exodus_file_id, EX_ELEM_BLOCK, id, elem_type.c_str(), num_elem_in_block, num_nodes_per_elem, 0, 0, 0);
+    // Get the list of global IDs for element blocks
+    std::set<int> gid_list;
+    for(int i=0 ; i < num_blocks_ ; ++i)
+      gid_list.insert(block_ids_[i]);
+
+    // Write element block parameters
+    //
+    // Note: EPU expects to see all the global blocks in each file.
+    // It is allowed to have 0 elements in a block in a processor.
+    //
+    for(int i=0 ; i < num_global_blocks_ ; ++i) {
+      const auto &gblock_list = genesis_mesh.GetAllBlockIds();
+      int gid = gblock_list[i];
+      int num_elements_in_block = 0;
+      int num_nodes_per_elem = 0;
+      std::string elem_type;
+      if (gid_list.count(gid) > 0) {
+        num_elements_in_block = genesis_mesh.GetNumElementsInBlock(gid);
+        num_nodes_per_elem = genesis_mesh.GetNumNodesPerElement(gid);
+        elem_type = genesis_mesh.GetElementType(gid);
+      }
+      retval = ex_put_block(exodus_file_id, EX_ELEM_BLOCK, gid, elem_type.c_str(), num_elements_in_block, num_nodes_per_elem, 0, 0, 0);
       if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_block");
     }
 
@@ -121,8 +130,8 @@ namespace nimble {
     char **block_names = new char*[num_global_blocks_];
     for(int i=0 ; i<num_global_blocks_ ; ++i){
       block_names[i] = new char[MAX_STR_LENGTH+1];
-      int id = all_block_ids_[i];
-      std::string block_name = genesis_mesh.GetBlockName(id);
+      const int id = all_block_ids_[i];
+      const std::string block_name = genesis_mesh.GetBlockName(id);
       strcpy(block_names[i], block_name.c_str());
     }
     retval = ex_put_names(exodus_file_id, EX_ELEM_BLOCK, block_names);
@@ -131,16 +140,16 @@ namespace nimble {
     // Write element connectivity
     for(int i=0 ; i<num_blocks_ ; ++i){
       int id = block_ids_[i];
-      int num_elem_in_block = genesis_mesh.GetNumElementsInBlock(id);
-      if (num_elem_in_block > 0) {
+      int num_elements_in_block = genesis_mesh.GetNumElementsInBlock(id);
+      if (num_elements_in_block > 0) {
         const int* conn = genesis_mesh.GetConnectivity(id);
         // Switch from 0-based indexing to 1-based indexing
         int num_node_in_elem = genesis_mesh.GetNumNodesPerElement(id);
-        std::vector<int> exodus_conn(num_elem_in_block*num_node_in_elem);
-        for (int j=0 ; j<num_elem_in_block*num_node_in_elem ; j++) {
+        std::vector<int> exodus_conn(num_elements_in_block*num_node_in_elem);
+        for (int j=0 ; j<num_elements_in_block*num_node_in_elem ; j++) {
           exodus_conn[j] = conn[j] + 1;
         }
-        retval = ex_put_conn(exodus_file_id, EX_ELEM_BLOCK, id, &exodus_conn[0], 0, 0);
+        retval = ex_put_conn(exodus_file_id, EX_ELEM_BLOCK, id, &exodus_conn[0], nullptr, nullptr);
         if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
       }
     }
@@ -194,15 +203,14 @@ namespace nimble {
         int id = node_set_ids[i];
         node_sets_node_index[i] = node_index;
         node_sets_dist_index[i] = dist_index;
-        for (unsigned int j=0 ; j<node_sets[id].size() ; j++) {
+        for (const auto &n_set : node_sets[id]) {
           // Switch from 0-based indexing to 1-based indexing
-          node_sets_node_list[node_index++] = node_sets[id][j] + 1;
+          node_sets_node_list[node_index++] = n_set + 1;
         }
-        for (unsigned int j=0 ; j<distribution_factors[id].size() ; j++) {
-          node_sets_dist_fact[dist_index++] = distribution_factors[id][j];
+        for (const auto &j_factor : distribution_factors[id]) {
+          node_sets_dist_fact[dist_index++] = j_factor;
         }
       }
-
 
       ex_set_specs set_specs;
       set_specs.sets_ids = node_set_ids.data();
@@ -211,14 +219,14 @@ namespace nimble {
       set_specs.sets_entry_index = node_sets_node_index.data();
       set_specs.sets_dist_index = node_sets_dist_index.data();
       set_specs.sets_entry_list = node_sets_node_list.data();
-      set_specs.sets_extra_list = 0;
+      set_specs.sets_extra_list = nullptr;
       set_specs.sets_dist_fact = node_sets_dist_fact.data();
       retval = ex_put_concat_sets(exodus_file_id, EX_NODE_SET, &set_specs);
       if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_concat_sets");
     }
 
     // Write global data info
-    char **global_var_names = 0;
+    char **global_var_names = nullptr;
     if (num_global_data > 0) {
       global_var_names = new char*[num_global_data];
       for (int i=0 ; i<num_global_data ; i++) {
@@ -232,7 +240,7 @@ namespace nimble {
     }
 
     // Write node data info
-    char **node_var_names = 0;
+    char **node_var_names = nullptr;
     if (num_node_data > 0 && num_nodes_ > 0) {
       node_var_names = new char*[num_node_data];
       for (int i=0 ; i<num_node_data ; i++) {
@@ -249,11 +257,11 @@ namespace nimble {
     std::set<std::string> unique_elem_var_names;
     for (int i=0 ; i<num_blocks_ ; ++i){
       int id = block_ids_[i];
-      for (unsigned int j=0 ; j<elem_data_names.at(id).size() ; j++) {
-        unique_elem_var_names.insert(elem_data_names.at(id)[j]);
+      for (const auto & jname : elem_data_names.at(id)) {
+        unique_elem_var_names.insert(jname);
       }
-      for (unsigned int j=0 ; j<derived_elem_data_names.at(id).size() ; j++) {
-        unique_elem_var_names.insert(derived_elem_data_names.at(id)[j]);
+      for (const auto & jname : derived_elem_data_names.at(id)) {
+        unique_elem_var_names.insert(jname);
       }
     }
 
@@ -265,7 +273,7 @@ namespace nimble {
     }
 
     int num_element_vars = elem_var_names.size();
-    char **element_var_names = 0;
+    char **element_var_names = nullptr;
     if (num_element_vars > 0) {
       element_var_names = new char*[num_element_vars];
       for (int i=0 ; i<num_element_vars ; i++) {
@@ -285,25 +293,25 @@ namespace nimble {
     if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_close");
 
     // Clean up
-    if (block_names != 0) {
+    if (block_names != nullptr) {
       for (int i = num_blocks_; i>0 ; i--) {
         delete[] block_names[i-1];
       }
       delete[] block_names;
     }
-    if (global_var_names != 0) {
+    if (global_var_names != nullptr) {
       for (int i = num_global_data; i>0 ; i--) {
         delete[] global_var_names[i-1];
       }
       delete[] global_var_names;
     }
-    if (node_var_names != 0) {
+    if (node_var_names != nullptr) {
       for (int i = num_node_data; i>0 ; i--) {
         delete[] node_var_names[i-1];
       }
       delete[] node_var_names;
     }
-    if (element_var_names != 0) {
+    if (element_var_names != nullptr) {
       for (int i = num_element_vars; i>0 ; i--) {
         delete[] element_var_names[i-1];
       }
@@ -413,7 +421,7 @@ namespace nimble {
     }
 
     // Write the element blocks
-    for (int i_block=0 ; i_block<num_blocks_ ; ++i_block) {
+    for (int i_block=0 ; i_block<num_blocks_; ++i_block) {
       int block_id = block_ids_[i_block];
       std::string block_name = genesis_mesh.GetBlockName(block_id);
       int num_elem_in_block = genesis_mesh.GetNumElementsInBlock(block_id);
@@ -467,12 +475,10 @@ namespace nimble {
     std::set<std::string> unique_elem_var_names;
     for (int i=0 ; i<num_blocks_ ; ++i){
       int id = block_ids_[i];
-      for (unsigned int j=0 ; j<elem_data_names.at(id).size() ; j++) {
-        unique_elem_var_names.insert(elem_data_names.at(id)[j]);
-      }
-      for (unsigned int j=0 ; j<derived_elem_data_names.at(id).size() ; j++) {
-        unique_elem_var_names.insert(derived_elem_data_names.at(id)[j]);
-      }
+      for (const auto &my_name : elem_data_names.at(id))
+        unique_elem_var_names.insert(my_name);
+      for (const auto &my_name : derived_elem_data_names.at(id))
+          unique_elem_var_names.insert(my_name);
     }
     // Create map from data name to exodus element data index
     std::vector<std::string> elem_var_names;
