@@ -49,6 +49,7 @@
 #include <memory>
 #include <cfloat>
 #include <cmath>
+#include <unordered_map>
 
 #include "nimble_contact_entity.h"
 #include "nimble_contact_interface.h"
@@ -71,6 +72,10 @@
   #include <bvh/vt/helpers.hpp>
   #include <bvh/vt/collision_world.hpp>
 #endif
+#endif
+
+#ifdef NIMBLE_TIME_CONTACT
+#include "nimble_timer.h"
 #endif
 
 namespace nimble {
@@ -103,9 +108,8 @@ struct PenaltyContactEnforcement {
                       const double normal[3], 
                       const double barycentric_coordinates[3],
                       VecType &full_contact_force) const {
-      const int numNodeFaces = 3 ; // NOTE for compatibilty only
       double contact_force[3] { };
-      details::getContactForce(penalty / numNodeFaces, gap, normal, contact_force);
+      details::getContactForce(penalty, gap, normal, contact_force);
       //
       face.SetNodalContactForces(contact_force, barycentric_coordinates);
       node.SetNodalContactForces(contact_force);
@@ -318,6 +322,10 @@ public:
     /// \brief Zero the contact forces
     void zeroContactForce();
 
+    /// \brief Return timing information
+    /// \return Reference to map of strings to time value
+    const std::unordered_map<std::string, double>& getTimers();
+
 protected:
  
   PenaltyContactEnforcement enforcement;
@@ -371,7 +379,18 @@ protected:
   nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
 #endif
 
+  std::unordered_map<std::string, double> timers_;
+#ifdef NIMBLE_TIME_CONTACT
+  nimble::Timer watch_;
+#endif
+
   std::shared_ptr<ContactInterface> contact_interface;
+
+protected:
+
+  void startTimer(std::string str_val);
+  void stopTimer(std::string str_val);
+
 };
 
 } // namespace nimble

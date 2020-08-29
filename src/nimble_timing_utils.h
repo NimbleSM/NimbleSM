@@ -41,86 +41,37 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_TIMER_H
-#define NIMBLE_TIMER_H
+#ifndef NIMBLE_TIMING_UTILS_H
+#define NIMBLE_TIMING_UTILS_H
 
-#include <chrono>
-
-#ifdef NIMBLE_HAVE_DARMA
-  #include <darma.h>
-#else
-  #include <string>
-  #include <map>
-#endif
+#include <string>
 
 namespace nimble {
 
-  class TimeKeeper {
+struct TimingInfo {
 
-  public:
+  TimingInfo() = default;
+  TimingInfo(int i, std::string basicString,
+             double t_sim, double t_internal, double t_contact,
+             double t_exodus, double t_reduce);
 
-    TimeKeeper() : total_time_(0.0) {}
+  void BinaryWrite() const;
 
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | total_time_;
-    }
+  //
+  //--- Variables
+  //
 
-    inline void Start() {
-      start_time_ = std::chrono::high_resolution_clock::now();
-    }
+  int num_ranks = 1;
+  std::string time_stamp;
 
-    inline void Stop() {
-      using std::chrono::duration;
-      using std::chrono::duration_cast;
-      end_time_ = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time_increment(0.0);
-      if (end_time_ > start_time_) {
-        time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-      }
-      total_time_ += time_increment.count();
-    }
+  double total_simulation_time = 0.0;
+  double total_internal_force_time = 0.0;
+  double total_contact_time = 0.0;
+  double total_exodus_write_time = 0.0;
+  double total_vector_reduction_time = 0.0;
 
-    inline double GetElapsedTime() const {
-      return total_time_;
-    }
+};
 
-  private:
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
-    double total_time_;
-  };
-
-  class Timer {
-
-  public:
-
-    Timer()= default;
-
-    ~Timer()= default;
-
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | timers_;
-    }
-
-    inline void Start(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Start();
-    }
-
-    inline void Stop(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Stop();
-    }
-
-    inline double ElapsedTime(const std::string& name) const {
-      return timers_.at(name).GetElapsedTime();
-    }
-
-    std::map<std::string, TimeKeeper> timers_;
-  };
 } // namespace nimble
 
-#endif // NIMBLE_TIMER_H
+#endif // NIMBLE_TIMING_UTILS_H
