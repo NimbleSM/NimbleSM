@@ -54,7 +54,7 @@
 # For example, a test might be designed for Serial only, although a binary is being tested with two
 # different command lines, one for Serial and one for Parallel calculations.
 # In such case, additional CLI/Test lists might be provided for that given binary.
-# eg. Kokkos have two test lists:
+# eg. As an example, we can define two test lists for Kokkos, and arbitrarily define that:
 #   lstTestsCLI_Kokkos_A --> Command lines for both Serial and Parallel executions
 #   lstTestsCLI_Kokkos_A_Suffixes --> Suffixes for each test
 #   lstTests_Kokkos_A --> Tests that can be run both in Serial and Parallel
@@ -252,6 +252,11 @@ list(APPEND lstTestsCLI_MPI_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
         )
 
+list(APPEND lstTestsCLI_MPI_A_Suffixes
+        "np1"
+        "np2"
+        )
+
 list(APPEND lstTests_MPI_A
 #        brick_with_fiber_periodic
         brick_with_fibers
@@ -270,6 +275,11 @@ list(APPEND lstTests_MPI_A
 list(APPEND lstTestsCLI_MPI_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         )
+
+list(APPEND lstTestsCLI_MPI_B_Suffixes
+        "np1"
+        )
+
 list(APPEND lstTests_MPI_B
         single_elem_complex_displacement
         )
@@ -282,12 +292,21 @@ list(APPEND lstTestsCLI_Tpetra_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
         )
 
+list(APPEND lstTestsCLI_Tpetra_A_Suffixes
+        "np1"
+        "np2"
+        )
+
 list(APPEND lstTests_Tpetra_A
         ${lstTests_MPI_A}
         )
 
 list(APPEND lstTestsCLI_Tpetra_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+        )
+
+list(APPEND lstTestsCLI_Tpetra_B_Suffixes
+        "np1"
         )
 
 list(APPEND lstTests_Tpetra_B
@@ -304,12 +323,21 @@ list(APPEND lstTestsCLI_Darma_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4 --num-virtual-ranks 8"
         )
 
+list(APPEND lstTestsCLI_Darma_A_Suffixes
+        "np1"
+        "np2"
+        )
+
 list(APPEND lstTests_Darma_A
         ${lstTests_MPI_A}
         )
 
 list(APPEND lstTestsCLI_Darma_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --num-virtual-ranks 1"
+        )
+
+list(APPEND lstTestsCLI_Darma_B_Suffixes
+        "np1"
         )
 
 list(APPEND lstTests_Darma_B
@@ -325,12 +353,21 @@ list(APPEND lstTestsCLI_Qthreads_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2 --qthreads-num-shepherds 2 --qthreads-num-workers-per-shepherd 1"
         )
 
+list(APPEND lstTestsCLI_Qthreads_A_Suffixes
+        "np1"
+        "np2"
+        )
+
 list(APPEND lstTestsCLI_Qthreads_A
         ${lstTests_MPI_A}
         )
 
 list(APPEND lstTestsCLI_Qthreads_B
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1 --qthreads-num-shepherds 1 --qthreads-num-workers-per-shepherd 1"
+        )
+
+list(APPEND lstTestsCLI_Qthreads_B_Suffixes
+        "np1"
         )
 
 list(APPEND lstTestsCLI_Qthreads_B
