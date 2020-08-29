@@ -135,12 +135,7 @@ namespace nimble {
 
     int OutputFrequency() const { return output_frequency_; }
 
-    bool HasContact() const {
-      if (contact_string_.size() == 0)
-        return false;
-      else
-        return true;
-    }
+    bool HasContact() const { return (!contact_string_.empty()); }
 
     bool ContactVisualization() const {
       bool visualize_contact = visualize_contact_entities_ || visualize_contact_bounding_boxes_;
@@ -198,7 +193,7 @@ namespace nimble {
     std::vector<std::string> const & GetBoundaryConditionStrings() const { return boundary_condition_strings_; }
 
     std::string GetOutputFieldString() const {
-      if (output_field_string_.size() == 0) {
+      if (output_field_string_.empty()) {
         std::string msg = "\n**** Error in Parser::GetOutputFieldString(), output fields not found (possible input deck error?).";
         throw std::logic_error(msg);
       }
