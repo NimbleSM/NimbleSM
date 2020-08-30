@@ -120,6 +120,8 @@ namespace nimble {
     int num_nodes_;
     int num_elements_;
     int num_blocks_;
+    int num_global_blocks_;
+    std::vector<int> all_block_ids_;
     std::vector<int> block_ids_;
     int num_node_sets_;
     int num_side_sets_;

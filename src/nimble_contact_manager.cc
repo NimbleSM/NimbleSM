@@ -1044,8 +1044,6 @@ namespace nimble {
                            node_data_labels_for_output,
                            elem_data_labels_for_output,
                            derived_elem_data_labels);
-
-
   }
 
   void

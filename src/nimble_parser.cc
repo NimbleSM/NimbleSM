@@ -72,7 +72,7 @@ namespace nimble {
     if (pos != std::string::npos){
       file_name = file_name.substr(0, pos);
     }
-    if (label.size() > 0) {
+    if (!label.empty()) {
       file_name += "." + label;
     }
     file_name += "." + extension;

@@ -202,14 +202,7 @@ namespace nimble {
       if (num_elem_this_block > 0) {
         block_ids_.push_back(block_id);
       }
-    }
-    num_blocks = static_cast<int>(block_ids_.size());
-
-    int elem_local_index = 0;
-
-    for(int i_block=0 ; i_block<num_blocks ; i_block++){
-
-      int block_id = block_ids_.at(i_block);
+      all_block_ids_.push_back(block_id);
 
       // Get the block name, if there is one
       char exodus_block_name[MAX_STR_LENGTH+1];
@@ -222,7 +215,19 @@ namespace nimble {
         ss << "block_" << block_id;
         block_name = ss.str();
       }
-      block_names_[block_id] = block_name;
+      if (num_elem_this_block > 0) {
+        block_names_[block_id] = block_name;
+      }
+      all_block_names_[block_id] = block_name;
+    }
+
+    num_blocks = static_cast<int>(block_ids_.size());
+
+    int elem_local_index = 0;
+
+    for(int i_block=0 ; i_block<num_blocks ; i_block++){
+
+      int block_id = block_ids_.at(i_block);
 
       // Get the block parameters and the element connectivity
       int num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0), num_faces_per_elem(0), num_attributes(0);
@@ -391,7 +396,9 @@ namespace nimble {
     node_z_ = node_z;
     elem_global_id_ = elem_global_id;
     block_ids_ = block_ids;
+    all_block_ids_ = block_ids;
     block_names_ = block_names;
+    all_block_names_ = block_names;
     block_elem_global_ids_ = block_elem_global_ids;
     block_num_nodes_per_elem_ = block_num_nodes_per_elem;
     block_elem_connectivity_ = block_elem_connectivity;
