@@ -153,7 +153,7 @@ namespace nimble {
         if (retval!= 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
       }
     }
- 
+
     // Write global node number map (global node IDs)
     const int* node_global_ids = genesis_mesh.GetNodeGlobalIds();
     // Switch to 1-based indexing

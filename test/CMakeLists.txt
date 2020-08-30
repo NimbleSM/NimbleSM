@@ -182,7 +182,7 @@ list(APPEND lstTests_ArborX_A
         rigid_body_motion
         simple_deformation_modes
 #        single_elem_complex_displacement
-        sphere_plate_contact
+#        sphere_plate_contact
 #        tiny_fe_squared
         wave_in_bar
         )
@@ -200,6 +200,38 @@ list(APPEND lstTests_ArborX_B
         single_elem_complex_displacement
         cubes_contact
         )
+
+
+# "C" test list for tests running with 1, 2, 4, 8 processors
+IF(NIMBLE_HAVE_MPI)
+    list(APPEND lstTestsCLI_ArborX_C
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
+            )
+    list(APPEND lstTestsCLI_ArborX_C_Suffixes
+            "np1"
+            )
+    list(APPEND lstTestsCLI_ArborX_C
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+            )
+    list(APPEND lstTestsCLI_ArborX_C_Suffixes
+            "np2"
+            )
+    list(APPEND lstTestsCLI_ArborX_C
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
+            )
+    list(APPEND lstTestsCLI_ArborX_C_Suffixes
+            "np4"
+            )
+    list(APPEND lstTestsCLI_ArborX_C
+            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 8"
+            )
+    list(APPEND lstTestsCLI_ArborX_C_Suffixes
+            "np8"
+            )
+    list(APPEND lstTests_ArborX_C
+            sphere_plate_contact
+            )
+ENDIF()
 
 
 ### KOKKOS ###
