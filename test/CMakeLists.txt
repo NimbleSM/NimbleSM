@@ -222,12 +222,12 @@ IF(NIMBLE_HAVE_MPI)
     list(APPEND lstTestsCLI_ArborX_C_Suffixes
             "np4"
             )
-    list(APPEND lstTestsCLI_ArborX_C
-            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 8"
-            )
-    list(APPEND lstTestsCLI_ArborX_C_Suffixes
-            "np8"
-            )
+#    list(APPEND lstTestsCLI_ArborX_C
+#            "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 8"
+#            )
+#    list(APPEND lstTestsCLI_ArborX_C_Suffixes
+#            "np8"
+#            )
     list(APPEND lstTests_ArborX_C
             sphere_plate_contact
             )
