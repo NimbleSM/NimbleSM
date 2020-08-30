@@ -7,7 +7,7 @@ include(FetchContent)
 
 
 # Fetch Google Test
-set(GOOGLETEST_VERSION 1.8.0)
+set(GOOGLETEST_VERSION 1.10.0)
 set(GOOGLETEST_GIT_URL https://github.com/google/googletest.git)
 
 message("- Using FetchContent to get Google Test version ${GOOGLETEST_VERSION} from ${GOOGLETEST_GIT_URL}")
