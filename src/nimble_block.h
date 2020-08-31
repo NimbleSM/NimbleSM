@@ -201,6 +201,8 @@ namespace nimble {
 
     std::shared_ptr<Material> const GetMaterialPointer() const { return material_; }
 
+    std::shared_ptr<Element> const GetElementPointer() const { return element_; }
+
 #ifdef NIMBLE_HAVE_UQ
     // HACK specific to elastic models
     void SetUqParameters(const std::map<std::string,int> & param_indices) {

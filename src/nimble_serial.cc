@@ -260,6 +260,10 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     status = QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output);
   }
 
+#ifdef NIMBLE_HAVE_UQ
+  uq_model.Finalize();
+#endif
+
   return status;
 }
 
@@ -620,6 +624,20 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
     }
+
+#ifdef NIMBLE_HAVE_UQ
+    if (is_output_step) {
+      for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
+        int block_id = block_it->first;
+        int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+        int const * elem_conn = mesh.GetConnectivity(block_id);
+        nimble::Block& block = block_it->second;
+
+        uq_model.PerformAnalyses(reference_coordinate, num_elem_in_block,
+                                 elem_conn, block_id, block); 
+      }
+    }
+#endif
 
     macroscale_data.SwapStates();
   }
