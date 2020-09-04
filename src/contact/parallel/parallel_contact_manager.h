@@ -44,8 +44,9 @@
 #ifndef NIMBLE_PARALLEL_CONTACT_MANAGER_H
 #define NIMBLE_PARALLEL_CONTACT_MANAGER_H
 
-#include "../../nimble_contact_manager.h"
-#include "../../nimble_mpi.h"
+#if defined(NIMBLE_HAVE_MPI)
+
+#include "nimble_contact_manager.h"
 
 namespace nimble {
   class ParallelContactManager : public ContactManager {
@@ -68,5 +69,7 @@ namespace nimble {
     int m_num_ranks = 1;
   };
 }
+
+#endif
 
 #endif  // NIMBLE_PARALLEL_CONTACT_MANAGER_H
