@@ -201,6 +201,13 @@ else()
   set(ArborX_LIBS)
 endif()
 
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+message(" Include DIR ${Kokkos_INCLUDE_DIRS}")
+
 include_directories(src)
 
 add_subdirectory(src)
