@@ -263,5 +263,17 @@ TEST(projection_node_to_face, Projection) {
   // Tests:
   EXPECT_EQ(in, true);
 
+  // Change node coordinates
+  nCoord[0] = 0; nCoord[1] = 0; nCoord[2] = -1.5;
+  node.SetCoordinates(nCoord);
+
+  // Launch function
+  ContactManager::Projection(node, face, in, gap, normal, barycentric_coordinates, tol);
+
+  // Tests:
+  EXPECT_EQ(in, false);
+
+
+
 }
 
