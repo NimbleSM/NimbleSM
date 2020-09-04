@@ -126,7 +126,11 @@ endif()
 if(NOT HAVE_TRILINOS AND HAVE_KOKKOS)
   if(HAVE_KOKKOS)
     if (Kokkos_ROOT)
+      #
       # Search paths specified in the <PackageName>_ROOT
+      #
+      # See https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
+      #
       find_package(Kokkos REQUIRED)
       set(NIMBLE_HAVE_KOKKOS TRUE)
       set(KOKKOS_HEADER_DIR ${Kokkos_ROOT}/include)
@@ -195,13 +199,6 @@ else()
   SET(NIMBLE_HAVE_ARBORX FALSE)
   set(ArborX_LIBS)
 endif()
-
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-message(" Include DIR ${Kokkos_INCLUDE_DIRS}")
 
 include_directories(src)
 
