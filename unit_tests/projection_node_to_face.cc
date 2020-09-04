@@ -156,7 +156,7 @@ TEST(projection_node_to_face, Projection) {
 
   using namespace nimble;
 
-  // TEST 1
+  // TEST 1 - Simple projection
 
   // Inputs:
   //  - node
@@ -199,7 +199,7 @@ TEST(projection_node_to_face, Projection) {
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
 
 
-  // TEST 2
+  // TEST 2 - Negative gap
 
   // Change node coordinates
   nCoord[0] = 1.0; nCoord[1] = 0.0; nCoord[2] = -1.23;
@@ -225,7 +225,7 @@ TEST(projection_node_to_face, Projection) {
 
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
 
-  // Test 3
+  // Test 3 - Near tolerance
 
   // Change node coordinates
   nCoord[0] = 1.0; nCoord[1] = 0.5 * tol; nCoord[2] = 0.777;
@@ -250,6 +250,18 @@ TEST(projection_node_to_face, Projection) {
 //  EXPECT_DOUBLE_EQ(barycentric_coordinates[2], 0);
 
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
+
+  // Test 4 - inside the face but not through (in = true)
+
+  // Change node coordinates
+  nCoord[0] = 0; nCoord[1] = 0; nCoord[2] = -0.5;
+  node.SetCoordinates(nCoord);
+
+  // Launch function
+  ContactManager::Projection(node, face, in, gap, normal, barycentric_coordinates, tol);
+
+  // Tests:
+  EXPECT_EQ(in, true);
 
 }
 
