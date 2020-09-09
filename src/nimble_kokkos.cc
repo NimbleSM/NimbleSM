@@ -179,6 +179,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   const int my_mpi_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
 
+  Kokkos::Timer watch_readMesh;
   parser->Initialize(input_deck_name);
 
   // Read the mesh
@@ -199,6 +200,21 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
+
+  if (my_mpi_rank == 0) {
+    std::cout << "\n";
+    std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks() << "\n";
+    std::cout << "\n";
+    std::cout << " Number of Ranks         = " << num_mpi_ranks << "\n";
+#ifdef _OPENMP
+    std::cout << " Number of Threads       = " << omp_get_max_threads() << "\n";
+#endif
+    std::cout << "\n";
+    std::cout << " Reading Mesh = " << watch_readMesh.seconds() << "\n";
+    std::cout << "\n";
+  }
+
+  Kokkos::Timer watch_preProcessing;
 
   nimble_kokkos::DataManager data_manager;
   nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
@@ -467,6 +483,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     contact_manager.ContactVisualizationWriteStep(time_current);
   }
 
+  if (my_mpi_rank == 0) {
+    std::cout << " Pre-processing = " << watch_preProcessing.seconds() << "\n";
+  }
+
   //--- Define timers
   Kokkos::Timer watch_simulation, watch_internal;
   //
@@ -727,7 +747,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   }
 
   if (my_mpi_rank == 0) {
-    std::cout << " Total Simulation = " << total_simulation_time << "\n";
+    std::cout << " Total Time Loop = " << total_simulation_time << "\n";
     std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
     if (contact_enabled) {
       std::cout << " --- Contact Forces = " << total_contact_time << "\n";
