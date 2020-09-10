@@ -238,6 +238,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
     int step, bool debug_output) {
 
   //--- Set vector to store force
+  this->startTimer("Contact:ResetData");
   ContactManager::zeroContactForce();
 
   //--- Reset the contact_status flags
@@ -246,6 +247,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
 
   for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj)
     contact_nodes_d_(jj).ResetContactData();
+  this->stopTimer("Contact:ResetData");
 
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
@@ -286,13 +288,15 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
       //
     }
   }
+  this->stopTimer("Contact::EnforceInteraction");
 
+  this->startTimer("Contact::EnforceInteraction_F");
   for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
     auto &myFace = contact_faces_d_(iface);
     if (myFace.contact_status() > 0.0)
       myFace.ScatterForceToContactManagerForceVector(force_d_);
   }
-  this->stopTimer("Contact::EnforceInteraction");
+  this->stopTimer("Contact::EnforceInteraction_F");
 }
 
 }
