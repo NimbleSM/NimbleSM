@@ -208,10 +208,6 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       std::cout << " Number of Elements = " << mesh.GetNumElements() << "\n";
     }
     std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks() << "\n";
-    if (num_mpi_ranks == 1) {
-      for (int ib = 0; ib < mesh.GetNumGlobalBlocks(); ++ib)
-        std::cout << " Number of Elements in Block " << ib << " = " <<  mesh.GetNumElementsInBlock(ib) << "\n";
-    }
     std::cout << "\n";
     std::cout << " Number of Ranks         = " << num_mpi_ranks << "\n";
 #ifdef _OPENMP
