@@ -146,6 +146,22 @@ namespace nimble {
     NIMBLE_INLINE_FUNCTION
     ContactEntity() = default;
 
+    // FOr compatibility with older code
+    NIMBLE_INLINE_FUNCTION
+    ContactEntity(CONTACT_ENTITY_TYPE entity_type,
+                  int contact_entity_global_id,
+                  double const coord[],
+                  double characteristic_length,
+                  int node_id_for_node_1,
+                  int node_id_for_node_2 = 0,
+                  const int node_ids_for_fictitious_node[4] = 0)
+        : ContactEntity( entity_type, contact_entity_global_id, -1,
+            coord, characteristic_length, node_id_for_node_1, node_id_for_node_2,
+                         node_ids_for_fictitious_node )
+    {
+
+    }
+
     NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contact_entity_global_id,
@@ -220,7 +236,7 @@ namespace nimble {
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
-    void ScatterForceToContactManagerForceVector(ArgT force) const {
+    void ScatterForceToContactManagerForceVector(ArgT &force) const {
       int n = 3*node_id_for_node_1_;
       force[n]   += force_1_x_;
       force[n+1] += force_1_y_;
