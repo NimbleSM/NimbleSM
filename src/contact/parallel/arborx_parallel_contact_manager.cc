@@ -258,20 +258,41 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   Kokkos::View<details::OutputData *, kokkos_device> results("results", 0);
   Kokkos::View<int *, kokkos_device> offset("offset", 0);
   std::set<details::PairData> list_;
-
-  this->startTimer("ArborX::Search");
   auto comm = MPI_COMM_WORLD;
+
+  this->startTimer("ArborX::Search::Def");
   ArborX::DistributedSearchTree<memory_space> dtree(
       comm, kokkos_device::execution_space{}, contact_faces_d_);
+  this->stopTimer("ArborX::Search::Def");
 
+  this->startTimer("ArborX::Search::Query");
   dtree.query(kokkos_device::execution_space{},
               details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
               details::ContactCallback{m_rank, contact_faces_d_,
                                        penalty_parameter_, list_},
               results, offset);
-  this->stopTimer("ArborX::Search");
+  this->stopTimer("ArborX::Search::Query");
 
   this->startTimer("Contact::EnforceInteraction");
+  nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+  nimble_kokkos::DeviceScalarNodeView force = force_d_;
+  auto numNodes = contact_nodes_d_.extent(0);
+  Kokkos::parallel_for("Zero Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
+    auto &myNode = contact_nodes(i_node);
+    for (int j = offset(i_node); j < offset(i_node + 1); ++j) {
+      auto tmpOutput = results(j);
+      if (!tmpOutput.has_force_)
+        continue;
+      //
+      myNode.set_contact_status(true);
+      myNode.force_1_x_ = tmpOutput.force_node_[0];
+      myNode.force_1_y_ = tmpOutput.force_node_[1];
+      myNode.force_1_z_ = tmpOutput.force_node_[2];
+      //
+      myNode.ScatterForceToContactManagerForceVector(force);
+    }
+  });
+  /*
   for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
     auto &myNode = contact_nodes_d_(inode);
     for (int j = offset(inode); j < offset(inode + 1); ++j) {
@@ -279,7 +300,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
       if (!tmpOutput.has_force_)
         continue;
       //
-      contact_nodes_d_(inode).set_contact_status(true);
+      myNode.set_contact_status(true);
       myNode.force_1_x_ = tmpOutput.force_node_[0];
       myNode.force_1_y_ = tmpOutput.force_node_[1];
       myNode.force_1_z_ = tmpOutput.force_node_[2];
@@ -288,15 +309,14 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
       //
     }
   }
-  this->stopTimer("Contact::EnforceInteraction");
-
-  this->startTimer("Contact::EnforceInteraction_F");
+   */
+  //
   for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
     auto &myFace = contact_faces_d_(iface);
     if (myFace.contact_status() > 0.0)
       myFace.ScatterForceToContactManagerForceVector(force_d_);
   }
-  this->stopTimer("Contact::EnforceInteraction_F");
+  this->stopTimer("Contact::EnforceInteraction");
 }
 
 }
