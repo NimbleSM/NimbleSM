@@ -471,8 +471,6 @@ public:
     //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
     int contact_entity_global_id_ = -1;
 
-  protected:
-
     bool contact_status_ = false;
 
 };

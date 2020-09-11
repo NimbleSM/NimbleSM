@@ -388,8 +388,19 @@ protected:
 
 protected:
 
-  void startTimer(std::string str_val);
-  void stopTimer(std::string str_val);
+  NIMBLE_INLINE_FUNCTION
+  void startTimer(const std::string &str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Start(str_val);
+#endif
+  }
+
+  NIMBLE_INLINE_FUNCTION
+  void stopTimer(const std::string &str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Stop(str_val);
+#endif
+  }
 
 };
 
