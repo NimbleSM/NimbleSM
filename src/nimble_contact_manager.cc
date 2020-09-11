@@ -1491,23 +1491,27 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
     Kokkos::deep_copy(force_d_, 0.0);
     //
-    for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
-      contact_faces_d_(iface).force_1_x_ = 0.0;
-      contact_faces_d_(iface).force_1_y_ = 0.0;
-      contact_faces_d_(iface).force_1_z_ = 0.0;
-      contact_faces_d_(iface).force_2_x_ = 0.0;
-      contact_faces_d_(iface).force_2_y_ = 0.0;
-      contact_faces_d_(iface).force_2_z_ = 0.0;
-      contact_faces_d_(iface).force_3_x_ = 0.0;
-      contact_faces_d_(iface).force_3_y_ = 0.0;
-      contact_faces_d_(iface).force_3_z_ = 0.0;
-    }
+    nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+    auto numFace = contact_faces_d_.extent(0);
+    Kokkos::parallel_for("Zero Face Force", numFace, KOKKOS_LAMBDA(const int i_face) {
+      contact_faces(i_face).force_1_x_ = 0.0;
+      contact_faces(i_face).force_1_y_ = 0.0;
+      contact_faces(i_face).force_1_z_ = 0.0;
+      contact_faces(i_face).force_2_x_ = 0.0;
+      contact_faces(i_face).force_2_y_ = 0.0;
+      contact_faces(i_face).force_2_z_ = 0.0;
+      contact_faces(i_face).force_3_x_ = 0.0;
+      contact_faces(i_face).force_3_y_ = 0.0;
+      contact_faces(i_face).force_3_z_ = 0.0;
+    });
     //
-    for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
-      contact_nodes_d_(inode).force_1_x_ = 0.0;
-      contact_nodes_d_(inode).force_1_y_ = 0.0;
-      contact_nodes_d_(inode).force_1_z_ = 0.0;
-    }
+    nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+    auto numNodes = contact_faces_d_.extent(0);
+    Kokkos::parallel_for("Zero Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
+      contact_nodes(i_node).force_1_x_ = 0.0;
+      contact_nodes(i_node).force_1_y_ = 0.0;
+      contact_nodes(i_node).force_1_z_ = 0.0;
+    });
 #endif
   }
 
