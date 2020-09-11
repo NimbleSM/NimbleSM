@@ -97,8 +97,8 @@ namespace nimble {
   }
 
   void ParseContactCommand(std::string const & command,
-                           std::vector<std::string> & master_block_names,
-                           std::vector<std::string> & slave_block_names,
+                           std::vector<std::string> & primary_block_names,
+                           std::vector<std::string> & secondary_block_names,
                            double & penalty_parameter);
 
   class ContactEntity {
@@ -146,6 +146,7 @@ namespace nimble {
     NIMBLE_INLINE_FUNCTION
     ContactEntity() = default;
 
+    // FOr compatibility with older code
     NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contact_entity_global_id,
@@ -154,10 +155,27 @@ namespace nimble {
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
                   const int node_ids_for_fictitious_node[4] = 0)
+        : ContactEntity( entity_type, contact_entity_global_id, -1,
+            coord, characteristic_length, node_id_for_node_1, node_id_for_node_2,
+                         node_ids_for_fictitious_node )
+    {
+
+    }
+
+    NIMBLE_INLINE_FUNCTION
+    ContactEntity(CONTACT_ENTITY_TYPE entity_type,
+                  int contact_entity_global_id,
+                  int contact_entity_local_id,
+                  double const coord[],
+                  double characteristic_length,
+                  int node_id_for_node_1,
+                  int node_id_for_node_2 = 0,
+                  const int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
         char_len_(characteristic_length),
-        contact_entity_global_id_(contact_entity_global_id)
-    {
+        contact_entity_global_id_(contact_entity_global_id),
+        local_id_(contact_entity_local_id){
+
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
             num_nodes_ = 1;
@@ -175,7 +193,7 @@ namespace nimble {
           else{
             printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
           }
-          //
+
           coord_1_x_ = coord[0];
           coord_1_y_ = coord[1];
           coord_1_z_ = coord[2];
@@ -218,7 +236,7 @@ namespace nimble {
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
-    void ScatterForceToContactManagerForceVector(ArgT force) const {
+    void ScatterForceToContactManagerForceVector(ArgT &force) const {
       int n = 3*node_id_for_node_1_;
       force[n]   += force_1_x_;
       force[n+1] += force_1_y_;
@@ -264,6 +282,9 @@ namespace nimble {
     // Functions for bvh contact search
     NIMBLE_INLINE_FUNCTION
     int contact_entity_global_id() const { return contact_entity_global_id_; }
+
+    NIMBLE_INLINE_FUNCTION
+    int local_id() const noexcept { return local_id_; }
 
     NIMBLE_INLINE_FUNCTION
     vertex centroid() const {
@@ -470,6 +491,8 @@ public:
     //   next 3 bits are the face ordinal (range is 1-6)
     //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
     int contact_entity_global_id_ = -1;
+
+    int local_id_ = -1;
 
   protected:
 
