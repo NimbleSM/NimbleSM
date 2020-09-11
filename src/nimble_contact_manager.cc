@@ -1593,16 +1593,4 @@ namespace nimble {
     return timers_;
   }
 
-  void ContactManager::startTimer(std::string str_val) {
-#ifdef NIMBLE_TIME_CONTACT
-    watch_.Start(str_val);
-#endif
-  }
-
-  void ContactManager::stopTimer(std::string str_val) {
-#ifdef NIMBLE_TIME_CONTACT
-    watch_.Stop(str_val);
-#endif
-  }
-
 }

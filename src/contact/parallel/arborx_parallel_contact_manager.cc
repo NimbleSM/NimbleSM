@@ -130,25 +130,27 @@ struct ContactCallback {
       //
       details::getContactForce(penalty_, gap, normal, force);
       //
+      bool noSkip = false;
 #pragma omp critical
       {
         auto result = list_.insert(
             PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
-        if (result.second)
-        {
-          myFace.SetNodalContactForces(force, &facet_coordinates[0]);
-          //
-          faces_(f_primitive).set_contact_status(true);
-          faces_(f_primitive).force_1_x_ += myFace.force_1_x_;
-          faces_(f_primitive).force_1_y_ += myFace.force_1_y_;
-          faces_(f_primitive).force_1_z_ += myFace.force_1_z_;
-          faces_(f_primitive).force_2_x_ += myFace.force_2_x_;
-          faces_(f_primitive).force_2_y_ += myFace.force_2_y_;
-          faces_(f_primitive).force_2_z_ += myFace.force_2_z_;
-          faces_(f_primitive).force_3_x_ += myFace.force_3_x_;
-          faces_(f_primitive).force_3_y_ += myFace.force_3_y_;
-          faces_(f_primitive).force_3_z_ += myFace.force_3_z_;
-        }
+        noSkip = result.second;
+      }
+      //
+      myFace.SetNodalContactForces(force, &facet_coordinates[0]);
+      //
+      if (noSkip) {
+        Kokkos::atomic_assign(&faces_(f_primitive).contact_status_, true);
+        Kokkos::atomic_add(&faces_(f_primitive).force_1_x_, myFace.force_1_x_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_1_y_, myFace.force_1_y_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_1_z_, myFace.force_1_z_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_2_x_, myFace.force_2_x_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_2_y_, myFace.force_2_y_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_2_z_, myFace.force_2_z_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_3_x_, myFace.force_3_x_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_3_y_, myFace.force_3_y_);
+        Kokkos::atomic_add(&faces_(f_primitive).force_3_z_, myFace.force_3_z_);
       }
     }
     //
