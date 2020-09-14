@@ -566,6 +566,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       contact_manager.ApplyDisplacements(displacement);
       contact_manager.ComputeParallelContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force);
+      int vector_dimension = 3;
+      mpi_container.VectorReduction(vector_dimension, contact_force);
       if (contact_visualization && is_output_step) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
