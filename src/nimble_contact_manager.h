@@ -210,6 +210,8 @@ public:
         PROJECTION_TYPE *projection_type,
         double tolerance);
 
+    double GetPenaltyForceParam() const noexcept { return enforcement.penalty; }
+
 
 // DEPRECATED
     /// \brief Compute the projection of a point onto a triangular face
