@@ -10,11 +10,11 @@
 namespace nimble {
   struct NarrowphaseResult
   {
-    std::size_t face_local_index;
-    std::size_t node_local_index;
+    std::size_t local_index;
     double gap;
-    double normal[3];
+    double contact_force[3];
     double bary[3];
+    bool node;
   };
 
   class BvhContactManager : public ParallelContactManager

@@ -10,33 +10,48 @@ namespace nimble {
       : contact_manager{cm}
     {}
 
-    bvh::narrowphase_result operator()(const bvh::broadphase_collision< ContactEntity > &_a,
+    bvh::narrowphase_result_pair operator()(const bvh::broadphase_collision< ContactEntity > &_a,
         const bvh::broadphase_collision< ContactEntity > &_b )
     {
-      auto res = bvh::typed_narrowphase_result< NarrowphaseResult >();
+      auto res = bvh::narrowphase_result_pair();
+      res.a = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      res.b = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      auto &resa = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.a );
+      auto &resb = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.b );
       auto tree = build_snapshot_tree_top_down( _a.elements );
 
       std::size_t j = 0;
       for ( auto &&elb : _b.elements ) {
-        query_tree_local(tree, elb, [&_a, &_b, &elb, &res, this, j](std::size_t _i) {
+        query_tree_local(tree, elb, [&_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
           const auto &face = _a.elements[_i];
           const auto &node = elb;
           NarrowphaseResult entry;
 
           bool hit = false;
-          ContactManager::Projection(node, face, hit, entry.gap, entry.normal, entry.bary );
+          double norm[3];
+          ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary );
 
           if ( hit )
           {
-            entry.face_local_index = face.local_id();
-            entry.node_local_index = node.local_id();
-            res.emplace_back( std::move( entry ) );
+            details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
+
+            std::cout << "Hit! force: " << entry.contact_force[0] << ", " << entry.contact_force[1] << ", " << entry.contact_force[2] << '\n';
+            std::cout << "\tgap: " << entry.gap << ", norm: " << norm[0] << ", " << norm[1] << ", " << norm[2] << '\n';
+            std::cout << "\tcharacteristic length: " << face.char_len_ << '\n';
+
+            entry.local_index = face.local_id();
+            entry.node = false;
+            resa.emplace_back( entry );
+
+            entry.local_index = node.local_id();
+            entry.node = true;
+            resb.emplace_back( entry );
           }
         } );
         ++j;
       }
 
-      return res;
+      return { resa, resb };
     }
 
     BvhContactManager *contact_manager;
@@ -79,12 +94,35 @@ namespace nimble {
 
     m_world.finish_iteration();
 
+    for ( auto &f : force_ )
+      f = 0.0;
+
     // Update contact entities
     for ( auto &&r : m_last_results )
     {
-      contact_faces_[r.face_local_index].set_contact_status( true );
-      contact_nodes_[r.node_local_index].set_contact_status( true );
+      if ( r.node )
+      {
+        if ( r.local_index >= contact_nodes_.size() )
+          std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_.size() << ")\n";
+        auto &node = contact_nodes_.at(r.local_index);
+        node.set_contact_status( true );
+        std::cout << "(" << m_rank << ") node " << r.local_index << " got force " << r.contact_force[0] << ", " << r.contact_force[1] << ", " << r.contact_force[2] << '\n';
+        node.SetNodalContactForces( r.contact_force );
+        node.ScatterForceToContactManagerForceVector(force_);
+      } else {
+        if (r.local_index >= contact_faces_.size())
+          std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_.size()
+                    << ")\n";
+        auto &face = contact_faces_.at(r.local_index);
+        face.set_contact_status( true );
+        std::cout << "(" << m_rank << ") face " << r.local_index << " got force " << r.contact_force[0] << ", " << r.contact_force[1] << ", " << r.contact_force[2] << '\n';
+        face.SetNodalContactForces( r.contact_force, r.bary );
+        face.ScatterForceToContactManagerForceVector(force_);
+      }
     }
+
+    if ( !m_last_results.empty() )
+      std::cout << m_last_results.size() << " total collisions on node " << m_rank << '\n';
   }
 
   namespace
