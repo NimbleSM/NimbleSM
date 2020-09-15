@@ -200,6 +200,10 @@ namespace nimble {
       return output_field_string_;
     }
 
+#ifdef NIMBLE_HAVE_BVH
+    int ContactDicing() const noexcept { return contact_dicing_; }
+#endif
+
 #ifdef NIMBLE_HAVE_UQ
     std::string const & UqModelString()  const { return uq_model_string_; }
     std::map<std::string, std::string> const & UqParamsStrings()const { return uq_parameters_strings_; }
@@ -241,6 +245,9 @@ namespace nimble {
     std::string microscale_boundary_condition_strategy_;
     std::vector<std::string> boundary_condition_strings_;
     std::string output_field_string_;
+#ifdef NIMBLE_HAVE_BVH
+    int contact_dicing_ = 1;
+#endif
 #ifdef NIMBLE_HAVE_UQ
     std::map<std::string, std::string> uq_parameters_strings_;
     std::string uq_model_string_;

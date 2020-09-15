@@ -286,7 +286,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = mesh.GetNumBlocks();
 
 #ifdef NIMBLE_HAVE_BVH
-  nimble::BvhContactManager contact_manager(contact_interface, 2);
+  nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
 #else
   nimble::ContactManager contact_manager(contact_interface);
 #endif
