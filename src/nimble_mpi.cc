@@ -118,7 +118,7 @@ NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
-    if (argc != 2) {
+    if (argc < 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_MPI <input_deck.in>\n" << std::endl;
       exit(1);
     }
