@@ -399,7 +399,7 @@ namespace nimble {
           const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face);
           bool found = true;
           for ( int j = 0; j < 4; ++j ) {
-            if (std::find_if(face_global_ids.begin(), face_global_ids.end(), [mpi_buff_ptr, j]( auto &&id ) {
+            if (std::find_if(face_global_ids.begin(), face_global_ids.end(), [mpi_buff_ptr, j]( int id ) {
                  return id == mpi_buff_ptr[j];
                } ) == face_global_ids.end() ) {
               found = false;
