@@ -279,7 +279,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
   nimble_kokkos::DeviceScalarNodeView force = force_d_;
   auto numNodes = contact_nodes_d_.extent(0);
-  Kokkos::parallel_for("Zero Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
+  Kokkos::parallel_for("Update Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
     auto &myNode = contact_nodes(i_node);
     for (int j = offset(i_node); j < offset(i_node + 1); ++j) {
       auto tmpOutput = results(j);
@@ -297,7 +297,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   //
   for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
     auto &myFace = contact_faces_d_(iface);
-    if (myFace.contact_status() > 0.0)
+    if (myFace.contact_status())
       myFace.ScatterForceToContactManagerForceVector(force_d_);
   }
   this->stopTimer("Contact::EnforceInteraction");
