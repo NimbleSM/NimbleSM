@@ -35,10 +35,6 @@ namespace nimble {
           {
             details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
 
-            std::cout << "Hit! force: " << entry.contact_force[0] << ", " << entry.contact_force[1] << ", " << entry.contact_force[2] << '\n';
-            std::cout << "\tgap: " << entry.gap << ", norm: " << norm[0] << ", " << norm[1] << ", " << norm[2] << '\n';
-            std::cout << "\tcharacteristic length: " << face.char_len_ << '\n';
-
             entry.local_index = face.local_id();
             entry.node = false;
             resa.emplace_back( entry );
@@ -74,6 +70,7 @@ namespace nimble {
   BvhContactManager::~BvhContactManager() = default;
 
   void BvhContactManager::ComputeParallelContactForce(int step, bool debug_output) {
+    total_search_time.Start();
     m_world.start_iteration();
 
     // Update collision objects, this will build the trees
@@ -93,7 +90,9 @@ namespace nimble {
     } );
 
     m_world.finish_iteration();
+    total_search_time.Stop();
 
+    total_enforcement_time.Start();
     for ( auto &f : force_ )
       f = 0.0;
 
@@ -106,7 +105,6 @@ namespace nimble {
           std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_.size() << ")\n";
         auto &node = contact_nodes_.at(r.local_index);
         node.set_contact_status( true );
-        std::cout << "(" << m_rank << ") node " << r.local_index << " got force " << r.contact_force[0] << ", " << r.contact_force[1] << ", " << r.contact_force[2] << '\n';
         node.SetNodalContactForces( r.contact_force );
         node.ScatterForceToContactManagerForceVector(force_);
       } else {
@@ -115,14 +113,13 @@ namespace nimble {
                     << ")\n";
         auto &face = contact_faces_.at(r.local_index);
         face.set_contact_status( true );
-        std::cout << "(" << m_rank << ") face " << r.local_index << " got force " << r.contact_force[0] << ", " << r.contact_force[1] << ", " << r.contact_force[2] << '\n';
         face.SetNodalContactForces( r.contact_force, r.bary );
         face.ScatterForceToContactManagerForceVector(force_);
       }
     }
 
-    if ( !m_last_results.empty() )
-      std::cout << m_last_results.size() << " total collisions on node " << m_rank << '\n';
+    total_num_contacts += m_last_results.size();
+    total_enforcement_time.Stop();
   }
 
   namespace
