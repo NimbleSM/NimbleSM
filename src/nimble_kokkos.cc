@@ -676,7 +676,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       //
       auto tmpNum = contact_manager.numActiveContactFaces();
       if (tmpNum)
-        contactInfo[step] = tmpNum;
+        contactInfo.insert(std::make_pair(step, tmpNum));
       //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);
@@ -757,7 +757,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     MPI_Barrier(MPI_COMM_WORLD);
     if ((my_mpi_rank == irank) && (!contactInfo.empty())) {
       std::cout << " Rank " << irank << " has " << contactInfo.size()
-                            << " contact entries." << std::endl;
+                << " contact entries "
+                << "(out of " << num_load_steps << " time steps)."<< std::endl;
       std::cout.flush();
     }
     MPI_Barrier(MPI_COMM_WORLD);
