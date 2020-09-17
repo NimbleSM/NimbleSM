@@ -501,6 +501,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   double total_update_avu_time = 0.0;
   double total_exodus_write_time = 0.0;
   //
+  std::map<int, std::size_t> contactInfo;
+  //
   for (int step = 0 ; step < num_load_steps ; ++step) {
 
     if (my_mpi_rank == 0) {
@@ -672,6 +674,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       MPI_Barrier(MPI_COMM_WORLD);
       total_vector_reduction_time += watch_internal.seconds();
       //
+      auto tmpNum = contact_manager.numActiveContactFaces();
+      if (tmpNum)
+        contactInfo[step] = tmpNum;
+      //
 //      if (contact_visualization && is_output_step)
 //        contact_manager.ContactVisualizationWriteStep(time_current);
     }
@@ -746,6 +752,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   } // loop over time steps
   MPI_Barrier(MPI_COMM_WORLD);
   double total_simulation_time = watch_simulation.seconds();
+
+  for (int irank = 0; irank < num_mpi_ranks; ++irank) {
+    MPI_Barrier(MPI_COMM_WORLD);
+    if ((my_mpi_rank == irank) && (!contactInfo.empty())) {
+      std::cout << " Rank " << irank << " has " << contactInfo.size()
+                            << " contact entries." << std::endl;
+      std::cout.flush();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
 
   if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
     double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
