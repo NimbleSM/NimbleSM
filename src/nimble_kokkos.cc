@@ -543,6 +543,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
 
+    MPI_Barrier(MPI_COMM_WORLD);
     watch_internal.reset();
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
 
@@ -638,8 +639,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                        elem_conn_d,
                                        gathered_internal_force_block_d);
     } // loop over blocks
-
     Kokkos::deep_copy(internal_force_h, internal_force_d);
+    MPI_Barrier(MPI_COMM_WORLD);
     total_internal_force_time += watch_internal.seconds();
 
     // Perform a reduction to obtain correct values on MPI boundaries
@@ -651,6 +652,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // Evaluate the contact force
     if (contact_enabled) {
       //
+      MPI_Barrier(MPI_COMM_WORLD);
       watch_internal.reset();
       Kokkos::deep_copy(contact_force_d, (double)(0.0));
       contact_manager.ApplyDisplacements(displacement_d);
@@ -667,6 +669,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       // Perform a reduction to obtain correct values on MPI boundaries
       watch_internal.reset();
       mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+      MPI_Barrier(MPI_COMM_WORLD);
       total_vector_reduction_time += watch_internal.seconds();
       //
 //      if (contact_visualization && is_output_step)
@@ -741,7 +744,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     }
 
   } // loop over time steps
-
+  MPI_Barrier(MPI_COMM_WORLD);
   double total_simulation_time = watch_simulation.seconds();
 
   if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
