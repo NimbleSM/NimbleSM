@@ -18,15 +18,22 @@ FetchContent_Declare(
         GIT_TAG        release-${GOOGLETEST_VERSION}
 )
 
-if (${CMAKE_VERSION} VERSION_LESS "3.14")
-  message("Cmake < 3.14 - consider upgrading (FetchContent_MakeAvailable())")
-  FetchContent_GetProperties(googletest)
-  if(NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-  endif()
-else()
-  FetchContent_MakeAvailable(googletest)
+## Alternative using more recent features of CMake
+#if (${CMAKE_VERSION} VERSION_LESS "3.14")
+#  message("Cmake < 3.14 - consider upgrading (FetchContent_MakeAvailable())")
+#  FetchContent_GetProperties(googletest)
+#  if(NOT googletest_POPULATED)
+#    FetchContent_Populate(googletest)
+#    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+#  endif()
+#else()
+#  FetchContent_MakeAvailable(googletest)
+#endif()
+
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+  FetchContent_Populate(googletest)
+  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
 
 message(" * gtest sources dir: ${gtest_SOURCE_DIR}")
