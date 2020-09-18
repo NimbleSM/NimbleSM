@@ -49,6 +49,7 @@ jobs:
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
                  -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=OFF \
+                 -DNIMBLE_ENABLE_UNIT_TESTS=ON \
                  ..
       - name: compile
         run: cmake --build build
