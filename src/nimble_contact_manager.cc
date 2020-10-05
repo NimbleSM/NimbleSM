@@ -348,81 +348,92 @@ namespace nimble {
                                           std::vector<int>& entity_ids) {
 #ifdef NIMBLE_HAVE_MPI
 
-    using face_iterator_t = std::vector< std::vector<int> >::iterator;
-    using face_id_iterator_t = std::vector<int>::iterator;
-
     int mpi_rank, num_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
-    std::cout << "Removing internal skin faces on rank " << mpi_rank << '\n';
+    constexpr int num_nodes_in_face = 4;
 
-    int num_nodes_in_face = 4;
-
-    const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
+    const int *genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> face_global_ids;
-    face_global_ids.reserve(mesh.GetNumNodeGlobalIds());
+    face_global_ids.reserve(num_nodes_in_face * faces.size());
+    std::vector< int > fvec;
     for (auto& face : faces) {
-      for (int i : face) {
-        face_global_ids.push_back(genesis_node_global_ids[i]);
-      }
+      fvec.assign(num_nodes_in_face, std::numeric_limits< int >::max());
+      for (int ii = 0; ii < face.size(); ++ii)
+        fvec[ii] = genesis_node_global_ids[face[ii]];
+      std::sort(fvec.begin(), fvec.end());
+      for (auto inode : fvec)
+        face_global_ids.push_back(inode);
     }
 
-    std::vector<std::vector<int>> global_id_map;
-    global_id_map.reserve( faces.size() );
-    for ( auto &&face : faces ) {
-      std::vector< int > fvec;
-      fvec.reserve( face.size() );
-      for ( auto &&node : face )
-        fvec.push_back(genesis_node_global_ids[node]);
-      global_id_map.emplace_back(std::move(fvec));
-    }
+    std::set<int> totalList;
+    for (int ii = 0; ii < faces.size(); ++ii)
+      totalList.insert(ii);
 
     std::vector< bool > remove_face_hash(faces.size(), false);
     std::vector< bool > remove_entity_ids_hash(entity_ids.size(), false);
-    int bcast_size = static_cast<int>(face_global_ids.size());
+    size_t iCountRemovals = 0;
+    const auto bcast_size = static_cast<int>(face_global_ids.size());
+    Kokkos::Timer watchTmp;
+    watchTmp.reset();
     for (int shift = 1; shift < num_ranks; ++shift ) {
-      int recv_size = 0;
-      int bcast_size = static_cast<int>(face_global_ids.size());
       int target = ( mpi_rank + shift ) % num_ranks;
       int source = ( mpi_rank + num_ranks - shift ) % num_ranks;
+      //
+      int recv_size = 0;
       MPI_Sendrecv(&bcast_size, 1, MPI_INT, target, shift, &recv_size, 1, MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      //
       std::vector<int> mpi_buffer(recv_size);
-      
       MPI_Sendrecv(face_global_ids.data(), face_global_ids.size(), MPI_INT, target, shift, mpi_buffer.data(), mpi_buffer.size(), MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      
-      int mpi_buffer_num_faces = mpi_buffer.size()/num_nodes_in_face;
-      auto update_index = mpi_buffer_num_faces / 100;
+      //
+      int mpi_buffer_num_faces = recv_size / num_nodes_in_face;
+      std::set<int> iList(totalList);
+      //
       for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
-        for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
-          auto &face_global_ids = global_id_map[i_face];
-          const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face);
+        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face);
+        //
+        for (auto i_face : iList) {
+          // Get the list of nodes with global IDs on face `i_face`
+          // The list is of length `num_nodes_in_face`.
+          const int *face_globalIDs = &face_global_ids[i_face * num_nodes_in_face];
           bool found = true;
-          for ( int j = 0; j < 4; ++j ) {
-            if (std::find_if(face_global_ids.begin(), face_global_ids.end(), [mpi_buff_ptr, j]( int id ) {
-                 return id == mpi_buff_ptr[j];
-               } ) == face_global_ids.end() ) {
+          for (int j = 0; j < num_nodes_in_face; ++j) {
+            if (face_globalIDs[j] != mpi_buff_ptr[j]) {
               found = false;
+              break;
             }
           }
-
+          //
           if ( found ) {
-            *( remove_face_hash.begin() + i_face ) = true;
-            *( remove_entity_ids_hash.begin() + i_face ) = true;
+            remove_face_hash[i_face] = true;
+            remove_entity_ids_hash[i_face] = true;
+            iList.erase(i_face);
+            totalList.erase(i_face);
+            iCountRemovals += 1;
             break;
           }
         }
       }
     }
+    std::cout << " UH >> Debug >> Rank " << mpi_rank << " Inner Loop " << watchTmp.seconds() << "\n";
+
+    //
+    // Update the vector of faces and entity IDs
+    //
+
+    if (iCountRemovals == 0)
+      return;
 
     std::vector< std::vector< int > > new_faces;
-    std::vector< int > new_entity_ids;
     new_faces.reserve( faces.size() );
-    new_entity_ids.reserve( entity_ids.size() );
     for ( std::size_t i = 0; i < faces.size(); ++i ) {
       if ( !remove_face_hash[i] )
         new_faces.emplace_back( std::move( faces[i] ) );
     }
+
+    std::vector< int > new_entity_ids;
+    new_entity_ids.reserve( entity_ids.size() );
     for ( std::size_t i = 0; i < entity_ids.size(); ++i ) {
       if ( !remove_entity_ids_hash[i] )
         new_entity_ids.emplace_back( entity_ids[i] );
@@ -431,7 +442,6 @@ namespace nimble {
     std::cout << "Removed " << remove_entity_ids_hash.size() - new_entity_ids.size() << " faces\n";
     std::swap(new_faces, faces);
     std::swap(new_entity_ids, entity_ids);
-
 
 #endif
   }
