@@ -348,10 +348,7 @@ namespace nimble {
                                           std::vector<int>& entity_ids) {
 #ifdef NIMBLE_HAVE_MPI
 
-    using face_iterator_t = std::vector< std::vector<int> >::iterator;
-    using face_id_iterator_t = std::vector<int>::iterator;
-
-    int mpi_rank = 0, num_ranks = 1;
+    int mpi_rank, num_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
@@ -360,22 +357,26 @@ namespace nimble {
     const int *genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> face_global_ids;
     face_global_ids.reserve(num_nodes_in_face * faces.size());
-    std::map< std::vector<int>, int > faceList;
-    for (int iface = 0; iface < faces.size(); ++iface) {
-      const auto &face = faces[iface];
-      std::vector< int > fvec(num_nodes_in_face, std::numeric_limits< int >::max());
+    std::vector< int > fvec;
+    for (auto& face : faces) {
+      fvec.assign(num_nodes_in_face, std::numeric_limits< int >::max());
       for (int ii = 0; ii < face.size(); ++ii)
         fvec[ii] = genesis_node_global_ids[face[ii]];
       std::sort(fvec.begin(), fvec.end());
       for (auto inode : fvec)
         face_global_ids.push_back(inode);
-      faceList.emplace(std::make_pair(std::move(fvec), iface));
     }
+
+    std::set<int> totalList;
+    for (int ii = 0; ii < faces.size(); ++ii)
+      totalList.insert(ii);
 
     std::vector< bool > remove_face_hash(faces.size(), false);
     std::vector< bool > remove_entity_ids_hash(entity_ids.size(), false);
     size_t iCountRemovals = 0;
     const auto bcast_size = static_cast<int>(face_global_ids.size());
+    Kokkos::Timer watchTmp;
+    watchTmp.reset();
     for (int shift = 1; shift < num_ranks; ++shift ) {
       int target = ( mpi_rank + shift ) % num_ranks;
       int source = ( mpi_rank + num_ranks - shift ) % num_ranks;
@@ -384,27 +385,39 @@ namespace nimble {
       MPI_Sendrecv(&bcast_size, 1, MPI_INT, target, shift, &recv_size, 1, MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       //
       std::vector<int> mpi_buffer(recv_size);
-      MPI_Sendrecv(face_global_ids.data(), face_global_ids.size(), MPI_INT,
-                   target, shift, mpi_buffer.data(), mpi_buffer.size(),
-                   MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD,
-                   MPI_STATUS_IGNORE);
+      MPI_Sendrecv(face_global_ids.data(), face_global_ids.size(), MPI_INT, target, shift, mpi_buffer.data(), mpi_buffer.size(), MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       //
-      for (int i_mpi_buff_pos = 0 ; i_mpi_buff_pos < recv_size ; i_mpi_buff_pos += num_nodes_in_face) {
-        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_pos);
+      int mpi_buffer_num_faces = recv_size / num_nodes_in_face;
+      std::set<int> iList(totalList);
+      //
+      for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
+        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face);
         //
-        std::vector<int> tmpList(mpi_buff_ptr, mpi_buff_ptr + num_nodes_in_face);
-        auto tmpIter = faceList.find(tmpList);
-        if (tmpIter != faceList.end()) {
-          remove_face_hash[tmpIter->second] = true;
-          remove_entity_ids_hash[tmpIter->second] = true;
-          iCountRemovals += 1;
+        for (auto i_face : iList) {
+          // Get the list of nodes with global IDs on face `i_face`
+          // The list is of length `num_nodes_in_face`.
+          const int *face_globalIDs = &face_global_ids[i_face * num_nodes_in_face];
+          bool found = true;
+          for (int j = 0; j < num_nodes_in_face; ++j) {
+            if (face_globalIDs[j] != mpi_buff_ptr[j]) {
+              found = false;
+              break;
+            }
+          }
+          //
+          if ( found ) {
+            remove_face_hash[i_face] = true;
+            remove_entity_ids_hash[i_face] = true;
+            iList.erase(i_face);
+            totalList.erase(i_face);
+            iCountRemovals += 1;
+            break;
+          }
         }
       }
     }
+    std::cout << " UH >> Debug >> Rank " << mpi_rank << " Inner Loop " << watchTmp.seconds() << "\n";
 
-    faceList.clear();
-    face_global_ids.clear();
-    
     //
     // Update the vector of faces and entity IDs
     //
@@ -425,8 +438,8 @@ namespace nimble {
       if ( !remove_entity_ids_hash[i] )
         new_entity_ids.emplace_back( entity_ids[i] );
     }
-    std::cout << " Rank " << mpi_rank << " Removed " << remove_face_hash.size() - new_faces.size() << " faces\n";
-    std::cout << " Rank " << mpi_rank << " Removed " << remove_entity_ids_hash.size() - new_entity_ids.size() << " faces\n";
+    std::cout << "Removed " << remove_face_hash.size() - new_faces.size() << " faces\n";
+    std::cout << "Removed " << remove_entity_ids_hash.size() - new_entity_ids.size() << " faces\n";
     std::swap(new_faces, faces);
     std::swap(new_entity_ids, entity_ids);
 
