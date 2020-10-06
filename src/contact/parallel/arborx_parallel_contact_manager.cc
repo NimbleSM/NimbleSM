@@ -233,9 +233,9 @@ namespace nimble {
 
     this->startTimer("ArborX::Search");
     auto comm = MPI_COMM_WORLD;
-    ArborX::DistributedSearchTree<memory_space> dtree(comm,
-                                                      kokkos_device::execution_space{},
-                                                      contact_faces_d_);
+    ArborX::DistributedTree<memory_space> dtree(comm,
+                                                kokkos_device::execution_space{},
+                                                contact_faces_d_);
 
     dtree.query(kokkos_device::execution_space{},
                 details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
