@@ -376,6 +376,11 @@ void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
   else if (key == "output fields") {
     output_field_string_ = value;
   }
+#ifdef NIMBLE_HAVE_BVH
+  else if (key == "contact dicing") {
+    contact_dicing_ = std::atoi(value.c_str());
+  }
+#endif
 #ifdef NIMBLE_HAVE_UQ
 else if (key == "uq parameters") {
     size_t space_pos = value.find(" ");

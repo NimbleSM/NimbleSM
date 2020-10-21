@@ -76,6 +76,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "nimble_timer.h"
+
 int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::GenesisMesh & mesh,
 			   nimble::DataManager & data_manager,
@@ -118,7 +120,7 @@ NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
-    if (argc != 2) {
+    if (argc < 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_MPI <input_deck.in>\n" << std::endl;
       exit(1);
     }
@@ -286,7 +288,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = mesh.GetNumBlocks();
 
 #ifdef NIMBLE_HAVE_BVH
-  nimble::BvhContactManager contact_manager(contact_interface, 2);
+  nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
 #else
   nimble::ContactManager contact_manager(contact_interface);
 #endif
@@ -464,9 +466,15 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   //Timing occurs for this portion of the code
   nimble::quanta::stopwatch main_simulation_timer;
   main_simulation_timer.reset();
+
+  nimble::TimeKeeper total_step_time;
+  nimble::TimeKeeper total_contact_time;
+  nimble::TimeKeeper total_dynamics_time;
+
   double total_exodus_write_time = 0.0,
          total_vector_reduction_time = 0.0;
   for (int step=0 ; step<num_load_steps ; step++) {
+    total_step_time.Start();
 
     if (my_mpi_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
@@ -480,6 +488,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     if (step%output_frequency == 0 || step == num_load_steps - 1) {
       is_output_step = true;
     }
+
+    total_dynamics_time.Start();
 
     time_previous = time_current;
     time_current += final_time/num_load_steps;
@@ -559,18 +569,26 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 #endif
     }
 
+    total_dynamics_time.Stop();
+
     // Evaluate the contact force
     // TODO: remove this ifdef when parallel contact is supported with other backends
 #ifdef NIMBLE_HAVE_BVH
     if (contact_enabled) {
+      total_contact_time.Start();
       contact_manager.ApplyDisplacements(displacement);
       contact_manager.ComputeParallelContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force);
+      int vector_dimension = 3;
+      mpi_container.VectorReduction(vector_dimension, contact_force);
+      total_contact_time.Stop();
       if (contact_visualization && is_output_step) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
     }
 #endif
+
+    total_dynamics_time.Start();
 
 	{
 	  nimble::quanta::stopwatch vector_reduction_timer;
@@ -590,6 +608,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     for (int i=0 ; i<num_unknowns ; ++i) {
       velocity[i] += half_delta_time * acceleration[i];
     }
+
+    total_dynamics_time.Stop();
 
     if (is_output_step) {
 	  nimble::quanta::stopwatch exodus_write_timer;
@@ -630,8 +650,18 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 	  total_exodus_write_time += exodus_write_timer.age();
     }
     model_data.SwapStates();
+    total_step_time.Stop();
   }
   double total_simulation_time = main_simulation_timer.age();
+  if (my_mpi_rank == 0) {
+    std::cout << "======== Timing data: ========\n";
+    std::cout << "Total step time: " << total_step_time.GetElapsedTime() << '\n';
+    std::cout << "Total contact time: " << total_contact_time.GetElapsedTime() << '\n';
+    std::cout << "Total dynamics time: " << total_dynamics_time.GetElapsedTime() << '\n';
+    std::cout << "Total search time: " << contact_manager.total_search_time.GetElapsedTime() << '\n';
+    std::cout << "Total enforcement time: " << contact_manager.total_enforcement_time.GetElapsedTime() << '\n';
+    std::cout << "Total num contacts: " << contact_manager.total_num_contacts << '\n';
+  }
   if (my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
     nimble::TimingInfo timing_writer{
         num_mpi_ranks,

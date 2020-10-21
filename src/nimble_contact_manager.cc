@@ -51,6 +51,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 #include <set>
 #include <utility>
 
@@ -350,59 +351,84 @@ namespace nimble {
     using face_iterator_t = std::vector< std::vector<int> >::iterator;
     using face_id_iterator_t = std::vector<int>::iterator;
 
-    int mpi_rank, num_ranks;
+    int mpi_rank = 0, num_ranks = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
-    int num_nodes_in_face = 4;
+    constexpr int num_nodes_in_face = 4;
 
-    const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
+    const int *genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> face_global_ids;
-    for (auto& face : faces) {
-      for (int i : face) {
-        face_global_ids.push_back(genesis_node_global_ids[i]);
-      }
+    face_global_ids.reserve(num_nodes_in_face * faces.size());
+    std::map< std::vector<int>, int > faceList;
+    for (int iface = 0; iface < faces.size(); ++iface) {
+      const auto &face = faces[iface];
+      std::vector< int > fvec(num_nodes_in_face, std::numeric_limits< int >::max());
+      for (int ii = 0; ii < face.size(); ++ii)
+        fvec[ii] = genesis_node_global_ids[face[ii]];
+      std::sort(fvec.begin(), fvec.end());
+      for (auto inode : fvec)
+        face_global_ids.push_back(inode);
+      faceList.emplace(std::make_pair(std::move(fvec), iface));
     }
 
-    int max_buff_size = face_global_ids.size();
-    int global_max_buff_size = 0;
-    MPI_Allreduce(&max_buff_size, &global_max_buff_size, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    std::vector<int> mpi_buffer(global_max_buff_size);
-    int mpi_buffer_num_faces = global_max_buff_size/num_nodes_in_face;
-
-    for (int i_rank=0 ; i_rank<num_ranks ; i_rank++) {
-      std::fill(mpi_buffer.begin(), mpi_buffer.end(), -1);
-      if (mpi_rank == i_rank) {
-        for (int i=0 ; i<face_global_ids.size() ; i++) {
-          mpi_buffer[i] = face_global_ids.at(i);
-        }
-      }
-      // DJL MPI COMMUNICATION SHOULD BE DONE ONLY WITH NEIGHBORHING PARTITIONS
-      MPI_Bcast(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, i_rank, MPI_COMM_WORLD);
-      if (mpi_rank != i_rank) {
-        for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
-
-          for (int i_face = 0 ; i_face < faces.size() ; i_face++) {
-            std::vector<int> faceGlobalIDs = faces[i_face];
-            // DJL INEFFICIENT HANDLING OF GLOBAL IDS
-            for (int & faceGlobalID : faceGlobalIDs) {
-              faceGlobalID = genesis_node_global_ids[faceGlobalID];
-            }
-            // DJL INCORRECTLY SEARCHING EMPTY ENTRIES AT THE END OF mpi_buffer
-            if (std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face))   != faceGlobalIDs.end() &&
-                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+1)) != faceGlobalIDs.end() &&
-                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+2)) != faceGlobalIDs.end() &&
-                std::find(faceGlobalIDs.begin(), faceGlobalIDs.end(), mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face+3)) != faceGlobalIDs.end()) {
-              auto face_it = faces.begin() + i_face;
-              auto face_id_it = entity_ids.begin() + i_face;
-              faces.erase(face_it);
-              entity_ids.erase(face_id_it);
-              break;
-            }
-          }
+    std::vector< bool > remove_face_hash(faces.size(), false);
+    std::vector< bool > remove_entity_ids_hash(entity_ids.size(), false);
+    size_t iCountRemovals = 0;
+    const auto bcast_size = static_cast<int>(face_global_ids.size());
+    for (int shift = 1; shift < num_ranks; ++shift ) {
+      int target = ( mpi_rank + shift ) % num_ranks;
+      int source = ( mpi_rank + num_ranks - shift ) % num_ranks;
+      //
+      int recv_size = 0;
+      MPI_Sendrecv(&bcast_size, 1, MPI_INT, target, shift, &recv_size, 1, MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      //
+      std::vector<int> mpi_buffer(recv_size);
+      MPI_Sendrecv(face_global_ids.data(), face_global_ids.size(), MPI_INT,
+                   target, shift, mpi_buffer.data(), mpi_buffer.size(),
+                   MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE);
+      //
+      for (int i_mpi_buff_pos = 0 ; i_mpi_buff_pos < recv_size ; i_mpi_buff_pos += num_nodes_in_face) {
+        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_pos);
+        //
+        std::vector<int> tmpList(mpi_buff_ptr, mpi_buff_ptr + num_nodes_in_face);
+        auto tmpIter = faceList.find(tmpList);
+        if (tmpIter != faceList.end()) {
+          remove_face_hash[tmpIter->second] = true;
+          remove_entity_ids_hash[tmpIter->second] = true;
+          iCountRemovals += 1;
         }
       }
     }
+
+    faceList.clear();
+    face_global_ids.clear();
+    
+    //
+    // Update the vector of faces and entity IDs
+    //
+
+    if (iCountRemovals == 0)
+      return;
+
+    std::vector< std::vector< int > > new_faces;
+    new_faces.reserve( faces.size() );
+    for ( std::size_t i = 0; i < faces.size(); ++i ) {
+      if ( !remove_face_hash[i] )
+        new_faces.emplace_back( std::move( faces[i] ) );
+    }
+
+    std::vector< int > new_entity_ids;
+    new_entity_ids.reserve( entity_ids.size() );
+    for ( std::size_t i = 0; i < entity_ids.size(); ++i ) {
+      if ( !remove_entity_ids_hash[i] )
+        new_entity_ids.emplace_back( entity_ids[i] );
+    }
+    std::cout << " Rank " << mpi_rank << " Removed " << remove_face_hash.size() - new_faces.size() << " faces\n";
+    std::cout << " Rank " << mpi_rank << " Removed " << remove_entity_ids_hash.size() - new_entity_ids.size() << " faces\n";
+    std::swap(new_faces, faces);
+    std::swap(new_entity_ids, entity_ids);
 
 #endif
   }

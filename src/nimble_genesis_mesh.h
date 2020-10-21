@@ -82,6 +82,7 @@ namespace nimble {
     unsigned int GetNumNodes() const { return node_x_.size(); }
 
     const int * GetNodeGlobalIds() const { return &node_global_id_[0]; }
+    std::size_t GetNumNodeGlobalIds() const { return node_global_id_.size(); }
 
     int GetMaxNodeGlobalId() const {
       int max_id = -1;

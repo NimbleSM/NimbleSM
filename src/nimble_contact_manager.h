@@ -74,9 +74,7 @@
 #endif
 #endif
 
-#ifdef NIMBLE_TIME_CONTACT
 #include "nimble_timer.h"
-#endif
 
 namespace nimble {
 
@@ -210,6 +208,8 @@ public:
         PROJECTION_TYPE *projection_type,
         double tolerance);
 
+    double GetPenaltyForceParam() const noexcept { return enforcement.penalty; }
+
 
 // DEPRECATED
     /// \brief Compute the projection of a point onto a triangular face
@@ -325,6 +325,10 @@ public:
     /// \brief Return timing information
     /// \return Reference to map of strings to time value
     const std::unordered_map<std::string, double>& getTimers();
+
+    nimble::TimeKeeper total_search_time;
+    nimble::TimeKeeper total_enforcement_time;
+    std::size_t total_num_contacts = 0;
 
 protected:
  

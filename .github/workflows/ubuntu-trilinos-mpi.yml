@@ -68,6 +68,7 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
               -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
+              -DNIMBLE_ENABLE_UNIT_TESTS=ON \
               ..
     - name: Build NimbleSM
       run: |
