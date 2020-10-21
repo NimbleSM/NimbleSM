@@ -35,6 +35,8 @@ namespace nimble {
 
   private:
 
+    void ComputeBoundingVolumes();
+
     bvh::collision_world m_world;
     bvh::collision_object *m_nodes;
     bvh::collision_object *m_faces;

@@ -69,15 +69,40 @@ namespace nimble {
 
   BvhContactManager::~BvhContactManager() = default;
 
+  void BvhContactManager::ComputeBoundingVolumes()
+  {
+    for ( auto &&node : contact_nodes_ )
+    {
+      const double inflation_length = node.inflation_factor * node.char_len_;
+      ContactEntity::vertex v;
+      v[0] = node.coord_1_x_;
+      v[1] = node.coord_1_y_;
+      v[2] = node.coord_1_z_;
+      node.kdop_ = bvh::dop_26d::from_sphere( v, inflation_length );
+    }
+    for ( auto &&face : contact_faces_ )
+    {
+      const double inflation_length = face.inflation_factor * face.char_len_;
+      ContactEntity::vertex v[3];
+      v[0][0] = face.coord_1_x_;
+      v[0][1] = face.coord_1_y_;
+      v[0][2] = face.coord_1_z_;
+      v[1][0] = face.coord_2_x_;
+      v[1][1] = face.coord_2_y_;
+      v[1][2] = face.coord_2_z_;
+      v[2][0] = face.coord_3_x_;
+      v[2][1] = face.coord_3_y_;
+      v[2][2] = face.coord_3_z_;
+      face.kdop_ = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
+    }
+  }
+
   void BvhContactManager::ComputeParallelContactForce(int step, bool debug_output) {
     total_search_time.Start();
     m_world.start_iteration();
 
     // Update collision objects, this will build the trees
-    for ( auto &&node : contact_nodes_ )
-      node.RecomputeKdop();
-    for ( auto &&face : contact_faces_ )
-      face.RecomputeKdop();
+    ComputeBoundingVolumes();
 
     m_nodes->set_entity_data(contact_nodes_);
     m_faces->set_entity_data(contact_faces_);
@@ -92,6 +117,10 @@ namespace nimble {
     m_world.finish_iteration();
     total_search_time.Stop();
 
+    // event = vt::theTrace()->registerUserEventColl(“name”)
+    // tr = vt::trace::TraceScopedNote scope{“my node”, event};
+    // theTrace()->addUserEventBracketed(event, start, stop)
+    // theTrace()->addUserBracketedNote(start, stop, “my node”, event)
     total_enforcement_time.Start();
     for ( auto &f : force_ )
       f = 0.0;
