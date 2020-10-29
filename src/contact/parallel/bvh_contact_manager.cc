@@ -74,26 +74,14 @@ namespace nimble {
     for ( auto &&node : contact_nodes_ )
     {
       const double inflation_length = node.inflation_factor * node.char_len_;
-      ContactEntity::vertex v;
-      v[0] = node.coord_1_x_;
-      v[1] = node.coord_1_y_;
-      v[2] = node.coord_1_z_;
-      node.kdop_ = bvh::dop_26d::from_sphere( v, inflation_length );
+      ContactEntity::vertex *v = reinterpret_cast< ContactEntity::vertex * >( &node.coord_1_x_ );
+      node.kdop_ = bvh::dop_6d::from_sphere( *v, inflation_length );
     }
     for ( auto &&face : contact_faces_ )
     {
       const double inflation_length = face.inflation_factor * face.char_len_;
-      ContactEntity::vertex v[3];
-      v[0][0] = face.coord_1_x_;
-      v[0][1] = face.coord_1_y_;
-      v[0][2] = face.coord_1_z_;
-      v[1][0] = face.coord_2_x_;
-      v[1][1] = face.coord_2_y_;
-      v[1][2] = face.coord_2_z_;
-      v[2][0] = face.coord_3_x_;
-      v[2][1] = face.coord_3_y_;
-      v[2][2] = face.coord_3_z_;
-      face.kdop_ = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
+      ContactEntity::vertex *v = reinterpret_cast< ContactEntity::vertex * >( &face.coord_1_x_ );
+      face.kdop_ = bvh::dop_6d::from_vertices(v, v + 3, inflation_length);
     }
   }
 
