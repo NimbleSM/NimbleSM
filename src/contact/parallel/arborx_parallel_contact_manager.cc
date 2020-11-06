@@ -263,7 +263,7 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   auto comm = MPI_COMM_WORLD;
 
   this->startTimer("ArborX::Search::Def");
-  ArborX::DistributedSearchTree<memory_space> dtree(
+  ArborX::DistributedTree<memory_space> dtree(
       comm, kokkos_device::execution_space{}, contact_faces_d_);
   this->stopTimer("ArborX::Search::Def");
 
