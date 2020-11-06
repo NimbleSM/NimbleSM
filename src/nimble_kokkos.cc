@@ -545,7 +545,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
 
+#ifdef NIMBLE_HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     watch_internal.reset();
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
 
@@ -642,7 +644,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                        gathered_internal_force_block_d);
     } // loop over blocks
     Kokkos::deep_copy(internal_force_h, internal_force_d);
+#ifdef NIMBLE_HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     total_internal_force_time += watch_internal.seconds();
 
     // Perform a reduction to obtain correct values on MPI boundaries
@@ -654,7 +658,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // Evaluate the contact force
     if (contact_enabled) {
       //
+#ifdef NIMBLE_HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
+#endif
       watch_internal.reset();
       Kokkos::deep_copy(contact_force_d, (double)(0.0));
       contact_manager.ApplyDisplacements(displacement_d);
@@ -671,7 +677,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       // Perform a reduction to obtain correct values on MPI boundaries
       watch_internal.reset();
       mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+#ifdef NIMBLE_HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
+#endif
       total_vector_reduction_time += watch_internal.seconds();
       //
       auto tmpNum = contact_manager.numActiveContactFaces();
@@ -750,18 +758,24 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     }
 
   } // loop over time steps
+#ifdef NIMBLE_HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
+#endif
   double total_simulation_time = watch_simulation.seconds();
 
   for (int irank = 0; irank < num_mpi_ranks; ++irank) {
+#ifdef NIMBLE_HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     if ((my_mpi_rank == irank) && (!contactInfo.empty())) {
       std::cout << " Rank " << irank << " has " << contactInfo.size()
                 << " contact entries "
                 << "(out of " << num_load_steps << " time steps)."<< std::endl;
       std::cout.flush();
     }
+#ifdef NIMBLE_HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
   }
 
   if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
