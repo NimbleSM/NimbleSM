@@ -373,8 +373,6 @@ namespace nimble {
     std::vector< bool > remove_entity_ids_hash(entity_ids.size(), false);
     size_t iCountRemovals = 0;
     const auto bcast_size = static_cast<int>(face_global_ids.size());
-    Kokkos::Timer watchTmp;
-    watchTmp.reset();
     for (int shift = 1; shift < num_ranks; ++shift ) {
       int target = ( mpi_rank + shift ) % num_ranks;
       int source = ( mpi_rank + num_ranks - shift ) % num_ranks;
