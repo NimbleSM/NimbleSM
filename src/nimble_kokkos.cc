@@ -221,8 +221,6 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     std::cout << " Number of Threads       = " << omp_get_max_threads() << "\n";
 #endif
     std::cout << "\n";
-    std::cout << " Reading Mesh = " << watch_readMesh.seconds() << "\n";
-    std::cout << "\n";
   }
   watch_simulation.push_region("Model data and field allocation");
 
@@ -527,7 +525,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   watch_simulation.pop_region_and_report_time();
   //
-  double total_internal_force_time = 0.0;
+  double total_internal_force_time = 0.0, total_contact_time = 0.0;
   double total_arborx_time = 0.0,
          total_contact_applyd = 0.0, total_contact_getf = 0.0;
   double total_vector_reduction_time = 0.0;
@@ -697,19 +695,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     if (contact_enabled) {
       watch_internal_details.push_region("Contact");
       //
-#ifdef NIMBLE_HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-      watch_internal.reset();
       Kokkos::deep_copy(contact_force_d, (double)(0.0));
       contact_manager.ApplyDisplacements(displacement_d);
-      total_contact_applyd += watch_internal.seconds();
-      //
-      watch_internal.reset();
       contact_manager.ComputeContactForce(step+1, is_output_step);
-      total_arborx_time += watch_internal.seconds();
       //
-      watch_internal.reset();
       contact_manager.GetForces(contact_force_d);
       Kokkos::deep_copy(contact_force_h, contact_force_d);
       total_contact_time += watch_internal_details.pop_region_and_report_time();
@@ -816,13 +805,13 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   }
 
   if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
-    double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
+//    double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
     nimble::TimingInfo timing_writer{
         num_mpi_ranks,
         nimble::quanta::stopwatch::get_microsecond_timestamp(),
         total_simulation_time,
         total_internal_force_time,
-        tcontact,
+        total_contact_time,
         total_exodus_write_time,
         total_vector_reduction_time
     };
@@ -833,10 +822,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     std::cout << " Total Time Loop = " << total_simulation_time << "\n";
     std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
     if (contact_enabled) {
-      double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
-      std::cout << " --- Contact = " << tcontact << "\n";
-      std::cout << " --- >>> Apply displ. = " << total_contact_applyd << "\n";
-      std::cout << " --- >>> Search / Project / Enforce = " << total_arborx_time << "\n";
+//      double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
+      std::cout << " --- Contact = " << total_contact_time << "\n";
+//      std::cout << " --- >>> Apply displ. = " << total_contact_applyd << "\n";
+//      std::cout << " --- >>> Search / Project / Enforce = " << total_arborx_time << "\n";
       auto list_timers = contact_manager.getTimers();
       for (const auto& st_pair : list_timers)
         std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
