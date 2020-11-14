@@ -182,7 +182,7 @@ list(APPEND lstTests_ArborX_A
         rigid_body_motion
         simple_deformation_modes
 #        single_elem_complex_displacement
-#        sphere_plate_contact
+        sphere_plate_contact
 #        tiny_fe_squared
         wave_in_bar
         )

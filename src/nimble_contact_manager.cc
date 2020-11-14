@@ -348,10 +348,7 @@ namespace nimble {
                                           std::vector<int>& entity_ids) {
 #ifdef NIMBLE_HAVE_MPI
 
-    using face_iterator_t = std::vector< std::vector<int> >::iterator;
-    using face_id_iterator_t = std::vector<int>::iterator;
-
-    int mpi_rank = 0, num_ranks = 1;
+    int mpi_rank, num_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
@@ -389,8 +386,10 @@ namespace nimble {
                    MPI_INT, source, MPI_ANY_TAG, MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
       //
-      for (int i_mpi_buff_pos = 0 ; i_mpi_buff_pos < recv_size ; i_mpi_buff_pos += num_nodes_in_face) {
-        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_pos);
+      int mpi_buffer_num_faces = recv_size / num_nodes_in_face;
+      //
+      for (int i_mpi_buff_face = 0 ; i_mpi_buff_face < mpi_buffer_num_faces ; i_mpi_buff_face++) {
+        const auto *mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face*num_nodes_in_face);
         //
         std::vector<int> tmpList(mpi_buff_ptr, mpi_buff_ptr + num_nodes_in_face);
         auto tmpIter = faceList.find(tmpList);
@@ -402,9 +401,6 @@ namespace nimble {
       }
     }
 
-    faceList.clear();
-    face_global_ids.clear();
-    
     //
     // Update the vector of faces and entity IDs
     //
@@ -1526,23 +1522,27 @@ namespace nimble {
 #ifdef NIMBLE_HAVE_KOKKOS
     Kokkos::deep_copy(force_d_, 0.0);
     //
-    for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
-      contact_faces_d_(iface).force_1_x_ = 0.0;
-      contact_faces_d_(iface).force_1_y_ = 0.0;
-      contact_faces_d_(iface).force_1_z_ = 0.0;
-      contact_faces_d_(iface).force_2_x_ = 0.0;
-      contact_faces_d_(iface).force_2_y_ = 0.0;
-      contact_faces_d_(iface).force_2_z_ = 0.0;
-      contact_faces_d_(iface).force_3_x_ = 0.0;
-      contact_faces_d_(iface).force_3_y_ = 0.0;
-      contact_faces_d_(iface).force_3_z_ = 0.0;
-    }
+    nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
+    auto numFaces = contact_faces_d_.extent(0);
+    Kokkos::parallel_for("Zero Face Force", numFaces, KOKKOS_LAMBDA(const int i_face) {
+      contact_faces(i_face).force_1_x_ = 0.0;
+      contact_faces(i_face).force_1_y_ = 0.0;
+      contact_faces(i_face).force_1_z_ = 0.0;
+      contact_faces(i_face).force_2_x_ = 0.0;
+      contact_faces(i_face).force_2_y_ = 0.0;
+      contact_faces(i_face).force_2_z_ = 0.0;
+      contact_faces(i_face).force_3_x_ = 0.0;
+      contact_faces(i_face).force_3_y_ = 0.0;
+      contact_faces(i_face).force_3_z_ = 0.0;
+    });
     //
-    for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
-      contact_nodes_d_(inode).force_1_x_ = 0.0;
-      contact_nodes_d_(inode).force_1_y_ = 0.0;
-      contact_nodes_d_(inode).force_1_z_ = 0.0;
-    }
+    nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
+    auto numNodes = contact_nodes_d_.extent(0);
+    Kokkos::parallel_for("Zero Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
+      contact_nodes(i_node).force_1_x_ = 0.0;
+      contact_nodes(i_node).force_1_y_ = 0.0;
+      contact_nodes(i_node).force_1_z_ = 0.0;
+    });
 #endif
   }
 
@@ -1587,18 +1587,6 @@ namespace nimble {
     }
 #endif
     return timers_;
-  }
-
-  void ContactManager::startTimer(std::string str_val) {
-#ifdef NIMBLE_TIME_CONTACT
-    watch_.Start(str_val);
-#endif
-  }
-
-  void ContactManager::stopTimer(std::string str_val) {
-#ifdef NIMBLE_TIME_CONTACT
-    watch_.Stop(str_val);
-#endif
   }
 
 }

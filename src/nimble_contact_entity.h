@@ -494,8 +494,6 @@ public:
 
     int local_id_ = -1;
 
-  protected:
-
     bool contact_status_ = false;
 
 };
