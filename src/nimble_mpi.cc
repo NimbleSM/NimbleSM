@@ -331,7 +331,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                           contact_slave_block_ids);
 
     if (contact_visualization) {
-      std::string tag = "mpi.contact_entities";
+      std::string tag = "mpi";
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
@@ -452,6 +452,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                           elem_data_for_output,
                           derived_elem_data_labels,
                           derived_elem_data);
+  if (contact_visualization) {
+    contact_manager.ContactVisualizationWriteStep(time_current);
+  } 
 
   double user_specified_time_step = final_time/num_load_steps;
   if (my_mpi_rank == 0) {
@@ -582,9 +585,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       int vector_dimension = 3;
       mpi_container.VectorReduction(vector_dimension, contact_force);
       total_contact_time.Stop();
-      if (contact_visualization && is_output_step) {
-        contact_manager.ContactVisualizationWriteStep(time_current);
-      }
     }
 #endif
 
@@ -647,7 +647,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                               elem_data_for_output,
                               derived_elem_data_labels,
                               derived_elem_data);
-	  total_exodus_write_time += exodus_write_timer.age();
+      if (contact_visualization) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
+      }
+      total_exodus_write_time += exodus_write_timer.age();
     }
     model_data.SwapStates();
     total_step_time.Stop();
