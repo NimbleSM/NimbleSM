@@ -2,6 +2,9 @@
 #include <vt/transport.h>
 #include <fstream>
 #include <iomanip>
+#ifdef NIMBLE_HAVE_KOKKOS
+#include <bvh/narrowphase/kokkos.hpp>
+#endif
 
 namespace nimble {
 
@@ -10,6 +13,7 @@ namespace nimble {
       : contact_manager{cm}
     {}
 
+#ifndef NIMBLE_HAVE_KOKKOS
     bvh::narrowphase_result_pair operator()(const bvh::broadphase_collision< ContactEntity > &_a,
         const bvh::broadphase_collision< ContactEntity > &_b )
     {
@@ -49,6 +53,62 @@ namespace nimble {
 
       return { resa, resb };
     }
+#else
+    bvh::narrowphase_result_pair operator()(const bvh::broadphase_collision< ContactEntity > &_a,
+                                            const bvh::broadphase_collision< ContactEntity > &_b )
+    {
+      auto res = bvh::narrowphase_result_pair();
+      res.a = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      res.b = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      auto &resa = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.a );
+      auto &resb = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.b );
+
+      auto viewa = Kokkos::View< const ContactEntity *, Kokkos::HostSpace, Kokkos::MemoryTraits< Kokkos::Unmanaged > >( _a.elements.data(), _a.elements.size() );
+      auto viewb = Kokkos::View< const ContactEntity *, Kokkos::HostSpace, Kokkos::MemoryTraits< Kokkos::Unmanaged > >( _b.elements.data(), _b.elements.size() );
+
+      auto axis = bvh::kokkos::max_variant_axis( viewa, viewb );
+
+      auto resa_view = Kokkos::View< NarrowphaseResult *, Kokkos::HostSpace >( "aresults", viewa.size() * viewb.size() );
+      auto resb_view = Kokkos::View< NarrowphaseResult *, Kokkos::HostSpace >( "bresults", viewa.size() * viewb.size() );
+      std::atomic< int > acount{ 0 }, bcount{ 0 };
+      bvh::kokkos::sort_and_sweep_local( _a.meta, viewa, _b.meta, viewb, axis, [this, resa_view, resb_view, &acount, &bcount]( const ContactEntity &face, const ContactEntity &node ){
+        NarrowphaseResult entry;
+
+        bool hit = false;
+        double norm[3];
+        ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary );
+
+        if ( hit )
+        {
+          //std::cout << "hit: " << face.local_id() << " with " << node.local_id() << '\n';
+          details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
+
+          entry.local_index = face.local_id();
+          entry.node = false;
+          resa_view( acount.fetch_add( 1 ) ) = entry;
+
+          entry.local_index = node.local_id();
+          entry.node = true;
+          resb_view( bcount.fetch_add( 1 ) ) = entry;
+        }
+      } );
+
+      resa.set_data( resa_view.data(), acount.load() );
+      resb.set_data( resb_view.data(), bcount.load() );
+
+      /*
+      static int iter_count = 0;
+
+      if ( resa.size() > 0 )
+        std::cout << iter_count << ". resa = " << resa.size() << "\n";
+      if ( resb.size() > 0 )
+        std::cout << iter_count << ". resb = " << resb.size() << "\n";
+      ++iter_count;
+       */
+
+      return { resa, resb };
+    }
+#endif
 
     BvhContactManager *contact_manager;
   };
