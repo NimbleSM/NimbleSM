@@ -295,11 +295,13 @@ list(APPEND lstTests_Kokkos_B
 list(APPEND lstTestsCLI_MPI_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
         )
 
 list(APPEND lstTestsCLI_MPI_A_Suffixes
         "np1"
         "np2"
+        "np4"
         )
 
 list(APPEND lstTests_MPI_A
@@ -328,6 +330,21 @@ list(APPEND lstTestsCLI_MPI_B_Suffixes
 list(APPEND lstTests_MPI_B
         single_elem_complex_displacement
         )
+
+#######################################
+#--- Add contact tests when BVH is used
+if (NIMBLE_HAVE_BVH)
+  list(APPEND lstTests_MPI_A
+       contact_entity_creation
+       sphere_plate_contact 
+      )
+  #
+  list(APPEND lstTests_MPI_B
+       cubes_contact
+      )
+  #
+endif()
+#######################################
 
 ### TRILINOS ###
 # Same tests as MPI + brick_with_fiber_periodic
