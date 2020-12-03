@@ -188,7 +188,7 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
       uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
     // initialize
-    uq_model.Initialize(macroscale_data);
+    uq_model.Initialize(mesh,macroscale_data);
   } 
 #endif
 
@@ -636,6 +636,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
         uq_model.PerformAnalyses(reference_coordinate, num_elem_in_block,
                                  elem_conn, block_id, block); 
       }
+      uq_model.Write(step);
     }
 #endif
 

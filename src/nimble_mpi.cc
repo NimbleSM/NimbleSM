@@ -215,7 +215,7 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
       uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
     // initialize
-    uq_model.Initialize(model_data);
+    uq_model.Initialize(mesh,model_data);
   }
 #endif
 
