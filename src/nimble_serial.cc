@@ -791,8 +791,10 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
     delta_time = time_current - time_previous;
 
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency != 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)

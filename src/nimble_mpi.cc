@@ -518,8 +518,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       }
     }
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency != 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
 
     time_previous = time_current;
