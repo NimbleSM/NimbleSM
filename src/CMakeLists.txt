@@ -4,6 +4,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.cc
@@ -24,6 +25,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.h
@@ -84,18 +86,10 @@ ENDIF()
 
 add_executable(NimbleSM_Serial nimble_serial_main.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
-IF (NIMBLE_HAVE_TRILINOS)
-  # Note that TRILINOS provides access to KOKKOS
-  target_link_libraries(NimbleSM_Serial PRIVATE Trilinos::Trilinos)
-ELSE()
-  IF (NIMBLE_HAVE_KOKKOS)
-    target_link_libraries(NimbleSM_Serial PRIVATE Kokkos::kokkos)
-  ENDIF()
-ENDIF()
 
 if (NIMBLE_HAVE_TRILINOS)
   add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
-  target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble Trilinos::Trilinos)
+  target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
 endif()
 
 IF(NIMBLE_HAVE_MPI)
@@ -106,14 +100,6 @@ IF(NIMBLE_HAVE_MPI)
     )
   add_executable(NimbleSM_MPI nimble_mpi_main.cc)
   target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
-  IF (NIMBLE_HAVE_TRILINOS)
-    # Note that TRILINOS provides access to KOKKOS
-    target_link_libraries(NimbleSM_MPI PRIVATE Trilinos::Trilinos)
-  ELSE()
-    IF (NIMBLE_HAVE_KOKKOS)
-      target_link_libraries(NimbleSM_MPI PRIVATE Kokkos::kokkos)
-    ENDIF()
-  ENDIF()
 ENDIF()
 
 IF(NIMBLE_HAVE_QTHREADS)
@@ -140,17 +126,17 @@ IF(NIMBLE_HAVE_KOKKOS)
   IF (NIMBLE_HAVE_ARBORX)
     message("Executable = NimbleSM_ArborX")
     add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
-    target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX Kokkos::kokkos)
+    target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX)
   ELSE()
     message("Executable = NimbleSM_Kokkos")
     add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
     if (NIMBLE_HAVE_TRILINOS)
-      target_link_libraries(NimbleSM_Kokkos nimble::nimble Trilinos::Trilinos MPI::MPI_CXX)
+      target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
     ELSE()
       if (NIMBLE_HAVE_MPI)
-        target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos MPI::MPI_CXX)
+        target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
       else()
-        target_link_libraries(NimbleSM_Kokkos nimble::nimble Kokkos::kokkos)
+        target_link_libraries(NimbleSM_Kokkos nimble::nimble)
       endif()
     ENDIF()
   ENDIF()

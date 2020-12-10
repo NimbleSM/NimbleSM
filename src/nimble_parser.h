@@ -135,12 +135,7 @@ namespace nimble {
 
     int OutputFrequency() const { return output_frequency_; }
 
-    bool HasContact() const {
-      if (contact_string_.size() == 0)
-        return false;
-      else
-        return true;
-    }
+    bool HasContact() const { return (!contact_string_.empty()); }
 
     bool ContactVisualization() const {
       bool visualize_contact = visualize_contact_entities_ || visualize_contact_bounding_boxes_;
@@ -198,12 +193,16 @@ namespace nimble {
     std::vector<std::string> const & GetBoundaryConditionStrings() const { return boundary_condition_strings_; }
 
     std::string GetOutputFieldString() const {
-      if (output_field_string_.size() == 0) {
+      if (output_field_string_.empty()) {
         std::string msg = "\n**** Error in Parser::GetOutputFieldString(), output fields not found (possible input deck error?).";
         throw std::logic_error(msg);
       }
       return output_field_string_;
     }
+
+#ifdef NIMBLE_HAVE_BVH
+    int ContactDicing() const noexcept { return contact_dicing_; }
+#endif
 
 #ifdef NIMBLE_HAVE_UQ
     std::string const & UqModelString()  const { return uq_model_string_; }
@@ -246,6 +245,9 @@ namespace nimble {
     std::string microscale_boundary_condition_strategy_;
     std::vector<std::string> boundary_condition_strings_;
     std::string output_field_string_;
+#ifdef NIMBLE_HAVE_BVH
+    int contact_dicing_ = 1;
+#endif
 #ifdef NIMBLE_HAVE_UQ
     std::map<std::string, std::string> uq_parameters_strings_;
     std::string uq_model_string_;

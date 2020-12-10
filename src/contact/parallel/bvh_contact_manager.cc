@@ -10,33 +10,44 @@ namespace nimble {
       : contact_manager{cm}
     {}
 
-    bvh::narrowphase_result operator()(const bvh::broadphase_collision< ContactEntity > &_a,
+    bvh::narrowphase_result_pair operator()(const bvh::broadphase_collision< ContactEntity > &_a,
         const bvh::broadphase_collision< ContactEntity > &_b )
     {
-      auto res = bvh::typed_narrowphase_result< NarrowphaseResult >();
+      auto res = bvh::narrowphase_result_pair();
+      res.a = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      res.b = bvh::narrowphase_result( sizeof( NarrowphaseResult ) );
+      auto &resa = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.a );
+      auto &resb = static_cast< bvh::typed_narrowphase_result< NarrowphaseResult > & >( res.b );
       auto tree = build_snapshot_tree_top_down( _a.elements );
 
-      for ( auto &&elb : _b.elements )
-        query_tree_local( tree, elb, [&_a, &_b, &elb, &res, this]( std::size_t _i ) {
+      std::size_t j = 0;
+      for ( auto &&elb : _b.elements ) {
+        query_tree_local(tree, elb, [&_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
           const auto &face = _a.elements[_i];
           const auto &node = elb;
-          ContactManager::PROJECTION_TYPE proj_type;
-          ContactEntity::vertex closest_point;
-          double gap;
-          double normal[3];
-          contact_manager->ClosestPointProjectionSingle( node, face, 
-            &proj_type, &closest_point, gap, &normal);
-          if ( proj_type != ContactManager::PROJECTION_TYPE::UNKNOWN ) {
-            if ( gap <= 0.15 * ( node.char_len_ + face.char_len_ ) ) {
-              auto &entry = res.emplace_back();
-              entry.first_global_id = face.contact_entity_global_id();
-              entry.second_global_id = node.contact_entity_global_id();
-              entry.gap = gap;
-            }
-          };
-        } );
+          NarrowphaseResult entry;
 
-      return res;
+          bool hit = false;
+          double norm[3];
+          ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary );
+
+          if ( hit )
+          {
+            details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
+
+            entry.local_index = face.local_id();
+            entry.node = false;
+            resa.emplace_back( entry );
+
+            entry.local_index = node.local_id();
+            entry.node = true;
+            resb.emplace_back( entry );
+          }
+        } );
+        ++j;
+      }
+
+      return { resa, resb };
     }
 
     BvhContactManager *contact_manager;
@@ -59,6 +70,7 @@ namespace nimble {
   BvhContactManager::~BvhContactManager() = default;
 
   void BvhContactManager::ComputeParallelContactForce(int step, bool debug_output) {
+    total_search_time.Start();
     m_world.start_iteration();
 
     // Update collision objects, this will build the trees
@@ -78,21 +90,38 @@ namespace nimble {
     } );
 
     m_world.finish_iteration();
+    total_search_time.Stop();
+
+    total_enforcement_time.Start();
+    for ( auto &f : force_ )
+      f = 0.0;
 
     // Update contact entities
-    for ( auto &&face : contact_faces_ )
+    for ( auto &&r : m_last_results )
     {
-      face.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
-                          [&face]( NarrowphaseResult &res ){ return res.first_global_id == face.contact_entity_global_id(); } ) > 0 );
+      if ( r.node )
+      {
+        if ( r.local_index >= contact_nodes_.size() )
+          std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_.size() << ")\n";
+        auto &node = contact_nodes_.at(r.local_index);
+        node.set_contact_status( true );
+        node.SetNodalContactForces( r.contact_force );
+        node.ScatterForceToContactManagerForceVector(force_);
+      } else {
+        if (r.local_index >= contact_faces_.size())
+          std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_.size()
+                    << ")\n";
+        auto &face = contact_faces_.at(r.local_index);
+        face.set_contact_status( true );
+        face.SetNodalContactForces( r.contact_force, r.bary );
+        face.ScatterForceToContactManagerForceVector(force_);
+      }
     }
 
-    for ( auto &&node : contact_nodes_ )
-    {
-      node.set_contact_status( std::count_if( m_last_results.begin(), m_last_results.end(),
-                                              [&node]( NarrowphaseResult &res ){ return res.second_global_id == node.contact_entity_global_id(); } ) > 0 );
-    }
-
+    total_num_contacts += m_last_results.size();
+    total_enforcement_time.Stop();
   }
+
   namespace
   {
 

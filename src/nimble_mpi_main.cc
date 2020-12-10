@@ -65,6 +65,10 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
 
     status = nimble::NimbleMPIMain(material_factory, contact_interface, parser, init_data);
+#ifdef NIMBLE_HAVE_VT
+    while ( !vt_rt->isTerminated() )
+      ::vt::runScheduler();
+#endif
   }
 
   nimble::NimbleMPIFinalize();
