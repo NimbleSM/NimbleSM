@@ -188,7 +188,7 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
       uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
     // initialize
-    uq_model.Initialize(macroscale_data);
+    uq_model.Initialize(mesh,macroscale_data);
   } 
 #endif
 
@@ -463,8 +463,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       std::cout << "  100% complete\n" << std::endl << std::flush;
     }
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency > 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
 
     time_previous = time_current;
@@ -517,35 +519,37 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
-      int num_exact_samples = uq_model.GetNumExactSamples();
-      for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
-        //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
-        bool is_off_nominal = (ntraj > 0);
-        double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
-        double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
-        double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
-        std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
-        block.ComputeInternalForce(reference_coordinate,
-                                   disp_ptr,
-                                   vel_ptr,
-                                   rve_macroscale_deformation_gradient.data(),
-                                   internal_force_ptr,
-                                   time_previous,
-                                   time_current,
-                                   num_elem_in_block,
-                                   elem_conn,
-                                   elem_global_ids.data(),
-                                   elem_data_labels.at(block_id),
-                                   elem_data_n,
-                                   elem_data_np1,
-                                   data_manager,
-                                   is_output_step,
-                                   is_off_nominal,
-                                   params_this_sample
-                                   );
+      if(uq_model.Initialized()) {
+         int num_exact_samples = uq_model.GetNumExactSamples();
+         for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
+           //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
+           bool is_off_nominal = (ntraj > 0);
+           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
+           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
+           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
+           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
+           block.ComputeInternalForce(reference_coordinate,
+                                      disp_ptr,
+                                      vel_ptr,
+                                      rve_macroscale_deformation_gradient.data(),
+                                      internal_force_ptr,
+                                      time_previous,
+                                      time_current,
+                                      num_elem_in_block,
+                                      elem_conn,
+                                      elem_global_ids.data(),
+                                      elem_data_labels.at(block_id),
+                                      elem_data_n,
+                                      elem_data_np1,
+                                      data_manager,
+                                      is_output_step,
+                                      is_off_nominal,
+                                      params_this_sample
+                                      );
+         }
+         //Now apply closure to estimate approximate sample forces from the exact samples
+         uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
       }
-      //Now apply closure to estimate approximate sample forces from the exact samples
-      uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
 #else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
@@ -627,15 +631,18 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
 
 #ifdef NIMBLE_HAVE_UQ
-    if (is_output_step) {
-      for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-        int block_id = block_it->first;
-        int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-        int const * elem_conn = mesh.GetConnectivity(block_id);
-        nimble::Block& block = block_it->second;
-
-        uq_model.PerformAnalyses(reference_coordinate, num_elem_in_block,
-                                 elem_conn, block_id, block); 
+    if(uq_model.Initialized()) {
+      if (is_output_step) {
+        for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
+          int block_id = block_it->first;
+          int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+          int const * elem_conn = mesh.GetConnectivity(block_id);
+          nimble::Block& block = block_it->second;
+  
+          uq_model.PerformAnalyses(reference_coordinate, num_elem_in_block,
+                                   elem_conn, block_id, block); 
+        }
+        uq_model.Write(step);
       }
     }
 #endif
@@ -791,8 +798,10 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
     delta_time = time_current - time_previous;
 
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency != 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)

@@ -85,7 +85,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
          nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
-         int my_mpi_rank);
+         int my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+         ,nimble::UqModel & uq_model
+#endif
+         );
 
 int QuasistaticTimeIntegrator(nimble::Parser & parser,
 			      nimble::GenesisMesh & mesh,
@@ -200,6 +204,24 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
   }
+
+#ifdef NIMBLE_HAVE_UQ
+  // configure & allocate
+  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
+  if(parser->HasUq()) {
+    uq_model.ParseConfiguration(parser->UqModelString());
+    std::map<std::string, std::string> lines = parser->UqParamsStrings();
+    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
+      std::string material_key = it->first;
+      int block_id = parser->GetBlockIdFromMaterial( material_key );
+      std::string uq_params_this_material = it->second;
+      uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+    }
+    // initialize
+    uq_model.Initialize(mesh,model_data);
+  }
+#endif
+
   std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
   model_data.AllocateElementData(num_elem_in_each_block);
   model_data.SpecifyOutputFields(parser->GetOutputFieldString());
@@ -256,11 +278,19 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   }
 
   if (time_integration_scheme == "explicit") {
-    ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank);
+    ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+                          ,uq_model
+#endif
+                          );
   }
   else if (time_integration_scheme == "quasistatic") {
     QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
+
+#ifdef NIMBLE_HAVE_UQ
+  uq_model.Finalize();
+#endif
 
   return status;
 }
@@ -281,7 +311,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
-         int my_mpi_rank) {
+         int my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+                          ,nimble::UqModel & uq_model
+#endif
+         ) {
 
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
@@ -364,8 +398,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
-  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
   std::vector<Viewify> bc_offnom_velocity_views(0);
+  if(uq_model.Initialized()) {
+    uq_model.Setup();
+/// FOR CALL TO BCS ===================
+    int num_samples = uq_model.GetNumSamples();
+    for(int nuq=0; nuq<num_samples; nuq++){
+       double * v = uq_model.Velocities()[nuq];
+       bc_offnom_velocity_views.push_back( Viewify(v,3) );
+    }
+  }
 #endif
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
@@ -488,8 +530,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       }
     }
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency != 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
 
     total_dynamics_time.Start();
@@ -503,6 +547,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     for (int i=0 ; i<num_unknowns ; ++i) {
       velocity[i] += half_delta_time * acceleration[i];
     }
+
+#ifdef NIMBLE_HAVE_UQ
+    // 1st half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
+#endif
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
@@ -520,6 +569,12 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       displacement[i] += delta_time * velocity[i];
     }
 
+#ifdef NIMBLE_HAVE_UQ
+   // advance approximate trajectories
+   uq_model.UpdateDisplacement(delta_time);
+   uq_model.Prep();
+#endif
+
     // Evaluate the internal force
     for (int i=0 ; i<num_unknowns ; ++i) {
       internal_force[i] = 0.0;
@@ -533,25 +588,35 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
-      std::vector<double> params_this_sample(0);
-      block.ComputeInternalForce(reference_coordinate,
-                                 displacement,
-                                 velocity,
-                                 rve_macroscale_deformation_gradient.data(),
-                                 internal_force,
-                                 time_previous,
-                                 time_current,
-                                 num_elem_in_block,
-                                 elem_conn,
-                                 elem_global_ids.data(),
-                                 elem_data_labels.at(block_id),
-                                 elem_data_n,
-                                 elem_data_np1,
-                                 data_manager,
-                                 is_output_step,
-                                 false,
-                                 params_this_sample
-                                );
+      if(uq_model.Initialized()) {
+         int num_exact_samples = uq_model.GetNumExactSamples();
+         for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
+           //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
+           bool is_off_nominal = (ntraj > 0);
+           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
+           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
+           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
+           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1); 
+           block.ComputeInternalForce(reference_coordinate,
+                                      disp_ptr,
+                                      vel_ptr,
+                                      rve_macroscale_deformation_gradient.data(),
+                                      internal_force_ptr,
+                                      time_previous,
+                                      time_current,
+                                      num_elem_in_block,
+                                      elem_conn,
+                                      elem_global_ids.data(),
+                                      elem_data_labels.at(block_id),
+                                      elem_data_n,
+                                      elem_data_np1,
+                                      data_manager,
+                                      is_output_step,
+                                      is_off_nominal,
+                                      params_this_sample
+                                     );
+         }
+      }
 #else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
@@ -598,6 +663,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     int vector_dimension = 3;
     mpi_container.VectorReduction(vector_dimension, internal_force);
 	  total_vector_reduction_time += vector_reduction_timer.age();
+#ifdef NIMBLE_HAVE_UQ
+    if(uq_model.Initialized()) {
+       for(int ntraj=0; ntraj < uq_model.GetNumExactSamples(); ntraj++){
+         double * internal_force_ptr = uq_model.Forces()[ntraj];
+         mpi_container.VectorReduction(vector_dimension, internal_force_ptr);
+       }
+       //Now apply closure to estimate approximate sample forces from the exact samples
+       uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
+    }
+#endif
 	}
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_unknowns ; ++i) {
@@ -609,6 +684,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       velocity[i] += half_delta_time * acceleration[i];
     }
 
+#ifdef NIMBLE_HAVE_UQ
+    // 2nd half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
+#endif
     total_dynamics_time.Stop();
 
     if (is_output_step) {
