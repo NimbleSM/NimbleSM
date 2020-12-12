@@ -78,7 +78,6 @@ ENDIF()
 IF(NIMBLE_HAVE_UQ)
   target_sources(nimble PRIVATE
    ${CMAKE_CURRENT_LIST_DIR}/nimble_uq.cc
-   ${CMAKE_CURRENT_LIST_DIR}/nimble_uq_method.cc
   )
 ENDIF()
 
