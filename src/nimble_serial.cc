@@ -295,6 +295,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   nimble::ContactManager contact_manager(contact_interface);
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
+// NOTE move parsing inside contact manager
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;

@@ -44,8 +44,9 @@
 #ifndef NIMBLE_PARALLEL_CONTACT_MANAGER_H
 #define NIMBLE_PARALLEL_CONTACT_MANAGER_H
 
-#include "../../nimble_contact_manager.h"
-#include "../../nimble_mpi.h"
+#if defined(NIMBLE_HAVE_MPI)
+
+#include "nimble_contact_manager.h"
 
 namespace nimble {
   class ParallelContactManager : public ContactManager {
@@ -53,16 +54,22 @@ namespace nimble {
 
     ParallelContactManager(std::shared_ptr<ContactInterface> interface);
 
+    void ComputeContactForce(int step, bool debug_output) override {
+      ComputeParallelContactForce(step, debug_output);
+    }
+
     virtual void ComputeParallelContactForce(int step, bool debug_output) = 0;
 
     int Rank() const noexcept { return m_rank; }
     int NumRanks() const noexcept { return m_num_ranks; }
 
-  private:
+  protected:
 
-    int m_rank;
-    int m_num_ranks;
+    int m_rank = 0;
+    int m_num_ranks = 1;
   };
 }
+
+#endif
 
 #endif  // NIMBLE_PARALLEL_CONTACT_MANAGER_H
