@@ -44,9 +44,6 @@
 #ifndef NIMBLE_MPI_UTILS_H
 #define NIMBLE_MPI_UTILS_H
 
-#ifdef NIMBLE_HAVE_MPI
-
-#include <mpi.h>
 #include <algorithm>
 #include <exception>
 #include <iostream>
@@ -55,14 +52,20 @@
 #include <tuple>
 #include <vector>
 
+#ifdef NIMBLE_HAVE_MPI
+#include <mpi.h>
 #include "nimble.mpi.reduction.h"
+#endif
 
 namespace nimble
 {
 
 class MPIContainer
 {
-  std::unique_ptr<reduction::ReductionInfo> MeshReductionInfo;
+
+#ifdef NIMBLE_HAVE_MPI
+  std::unique_ptr<reduction::ReductionInfo> MeshReductionInfo = nullptr;
+#endif
 
  public:
   MPIContainer() {}
@@ -74,49 +77,55 @@ class MPIContainer
   // To start with, each rank has a list of its global nodes (this is passed in as global_node_ids)
   void Initialize(std::vector<int> const& global_node_ids)
   {
+#ifdef NIMBLE_HAVE_MPI
     MPI_Comm duplicate_of_world;
     MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
     mpicontext context{duplicate_of_world};
     reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
     MeshReductionInfo.reset(reduction_info);
+#endif
   }
+
+  /// \brief
+  ///
+  /// \param node_local_ids
+  /// \param min_rank_containing_node
   void GetPartitionBoundaryNodeLocalIds(std::vector<int>& node_local_ids,
                                         std::vector<int>& min_rank_containing_node)
   {
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->GetAllIndices(node_local_ids, min_rank_containing_node);
+#else
+    min_rank_containing_node.push_back(0);
+#endif
   }
+
+  /// \brief
+  ///
+  /// \param data_dimension
+  /// \param data
   void VectorReduction(int data_dimension, double* data)
   {
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->PerformReduction(data, data_dimension);
+#endif
   }
+
+  /// \brief
+  ///
+  /// \tparam Lookup
+  /// \param data_dimension
+  /// \param lookup
   template<class Lookup>
   void VectorReduction(int data_dimension, Lookup&& lookup)
   {
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->PerformReduction(lookup, data_dimension);
+#endif
   }
+
 };
 }   // namespace nimble
 
-#else // NIMBLE_HAVE_MPI
 
-namespace nimble
-{
-/// \class MPIContainer
-/// \brief Empty class of communication container when NimbleSM is compiled without MPI
-/// \note This empty class allows to write one code (while being a minor misnomer).
-class MPIContainer
-{
- public:
-  MPIContainer() {}
-
-  void Initialize(std::vector<int> const& global_node_ids) {}
-
-  void VectorReduction(int data_dimension, double* data) {}
-
-  template<class Lookup>
-  void VectorReduction(int data_dimension, Lookup& lookup) {}
-};
-}   // namespace nimble
-
-#endif // NIMBLE_HAVE_MPI
 #endif // NIMBLE_MPI_UTILS_H

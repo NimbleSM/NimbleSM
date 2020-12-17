@@ -53,18 +53,12 @@ namespace nimble { class Parser; }
 
 namespace nimble {
 
-struct NimbleMPIInitData {
-  std::string input_deck_name = "";
-  int my_mpi_rank = -1;
-  int num_mpi_ranks = -1;
-};
-
-NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]);
+std::string NimbleMPIInitializeAndGetInput(int argc, char* argv[]);
 
 int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
                   std::shared_ptr<nimble::Parser> parser,
-                  const NimbleMPIInitData& input_deck_name);
+                  const std::string& input_deck_name);
 
 void NimbleMPIFinalize();
 

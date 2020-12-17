@@ -42,16 +42,20 @@
 */
 
 #include <memory>
+#include <string>
 #include <nimble_contact_interface.h>
 #include "nimble_material_factory.h"
+
 #include "nimble_mpi.h"
+
 #include "nimble_parser.h"
 #ifdef NIMBLE_HAVE_VT
 #include <vt/transport.h>
 #endif
 
 int main(int argc, char *argv[]) {
-  nimble::NimbleMPIInitData init_data = nimble::NimbleMPIInitializeAndGetInput(argc, argv);
+
+  auto init_data = nimble::NimbleMPIInitializeAndGetInput(argc, argv);
 
   int status = 0;
   {
