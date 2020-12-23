@@ -48,6 +48,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace nimble {
 class Material;
@@ -82,6 +83,8 @@ class MaterialFactoryBase {
   std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const std::string& material_parameters,
                                                                             const int num_material_points = 0) const;
 
+  std::map<std::string, double> ParseMaterialParamsStringToMap(const std::string& material_parameters) const;
+
  private:
   std::vector<std::string> valid_double_parameter_names;
   std::vector<std::string> valid_string_parameter_names;
@@ -93,6 +96,8 @@ class MaterialFactory : public MaterialFactoryBase {
   virtual ~MaterialFactory() = default;
 
   void parse_and_create(const std::string& mat_params);
+
+  std::map<std::string, double> parse_material_params_string(const std::string& material_parameters);
 
   inline std::shared_ptr<Material> get_material() const { return material; }
 
