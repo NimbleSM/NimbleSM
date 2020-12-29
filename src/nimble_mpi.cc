@@ -72,6 +72,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef NIMBLE_HAVE_TRILINOS
+#include "nimble_tpetra_utils.h"
+#endif
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
