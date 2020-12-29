@@ -22,14 +22,14 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
 
     epu_required = False
     if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name or "NimbleSM_ArborX" in executable_name:
-        command.append("mpirun")
-        command.append("-np")
-        if num_ranks:
+        if num_ranks > 1:
+            command.append("mpirun")
+            command.append("-np")
             command.append(str(num_ranks))
             epu_required = True
-        else:
-            command.append("1")
-        command.append("--use-hwthread-cpus")
+            command.append("--use-hwthread-cpus")
+#        else:
+#            command.append("1")
         command.append(executable_name)
     if "NimbleSM_Qthreads" in executable_name:
         if qthreads_num_shepherds:
