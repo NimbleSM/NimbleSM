@@ -71,10 +71,6 @@
 #endif
 
 
-#ifdef NIMBLE_HAVE_MPI
-#include "nimble.mpi.utils.h"
-#endif
-
 #include <iostream>
 
 namespace nimble {
@@ -425,8 +421,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   for (int n=0 ; n<num_nodes ; ++n) {
     global_node_ids[n] = global_node_ids_ptr[n];
   }
-  nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids);
+  nimble::VectorCommunicator myVectorCommunicator;
+  myVectorCommunicator.Initialize(global_node_ids);
 
   int mpi_scalar_dimension = 1;
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
@@ -460,7 +456,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     contact_manager.CreateContactEntities(mesh,
-                                          mpi_container,
+                                          myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
@@ -482,7 +478,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   for (unsigned int i=0 ; i<num_nodes ; i++) {
     mpi_scalar_buffer[i] = lumped_mass_h(i);
   }
-  mpi_container.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
+  myVectorCommunicator.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
   for (int i=0 ; i<num_nodes ; i++) {
     lumped_mass_h(i) = mpi_scalar_buffer[i];
   }
@@ -687,7 +683,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
     // Perform a reduction to obtain correct values on MPI boundaries
     watch_internal.push_region("MPI reduction");
-    mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
+    myVectorCommunicator.VectorReduction(mpi_vector_dimension, internal_force_h);
     total_vector_reduction_time += watch_internal.pop_region_and_report_time();
     //
 
@@ -705,7 +701,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       // Perform a reduction to obtain correct values on MPI boundaries
       {
         watch_internal_details.push_region("MPI reduction");
-        mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+        myVectorCommunicator.VectorReduction(mpi_vector_dimension, contact_force_h);
         total_vector_reduction_time +=
             watch_internal_details.pop_region_and_report_time();
       }

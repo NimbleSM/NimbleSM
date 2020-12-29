@@ -55,7 +55,7 @@
 
 int main(int argc, char *argv[]) {
 
-  auto init_data = nimble::NimbleMPIInitializeAndGetInput(argc, argv);
+  auto init_data = nimble::NimbleInitializeAndGetInput(argc, argv);
 
   int status = 0;
   {
@@ -68,14 +68,15 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
     std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
 
-    status = nimble::NimbleMPIMain(material_factory, contact_interface, parser, init_data);
+    status = nimble::NimbleMain(material_factory, contact_interface, parser,
+                                init_data);
 #ifdef NIMBLE_HAVE_VT
     while ( !vt_rt->isTerminated() )
       ::vt::runScheduler();
 #endif
   }
 
-  nimble::NimbleMPIFinalize();
+  nimble::NimbleFinalize();
 
   return status;
 }

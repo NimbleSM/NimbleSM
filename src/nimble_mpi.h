@@ -53,14 +53,20 @@ namespace nimble { class Parser; }
 
 namespace nimble {
 
-std::string NimbleMPIInitializeAndGetInput(int argc, char* argv[]);
+/// \brief Initialization routine that parses the input parameters
+///
+/// \param argc
+/// \param argv
+/// \return String for the input filename.
+///
+std::string NimbleInitializeAndGetInput(int argc, char **argv);
 
-int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
+int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
                   std::shared_ptr<nimble::Parser> parser,
                   const std::string& input_deck_name);
 
-void NimbleMPIFinalize();
+void NimbleFinalize();
 
 }
 

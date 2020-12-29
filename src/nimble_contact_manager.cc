@@ -437,7 +437,7 @@ namespace nimble {
 
   void
   ContactManager::CreateContactEntities(GenesisMesh const & mesh,
-                                        nimble::MPIContainer & mpi_container,
+                                        nimble::VectorCommunicator & myVecComm,
                                         std::vector<int> const & primary_block_ids,
                                         std::vector<int> const & secondary_block_ids) {
 
@@ -477,12 +477,8 @@ namespace nimble {
     // create a list of ghosted nodes (e.g., nodes that are owned by a different processor)
     std::vector<int> partition_boundary_node_local_ids;
     std::vector<int> min_rank_containing_partition_boundary_nodes;
-#ifdef NIMBLE_HAVE_MPI
-    mpi_container.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_local_ids,
+    myVecComm.GetPartitionBoundaryNodeLocalIds(partition_boundary_node_local_ids,
                                                    min_rank_containing_partition_boundary_nodes);
-#else
-   min_rank_containing_partition_boundary_nodes.push_back(0);
-#endif
 
     std::vector<int> ghosted_node_local_ids;
     for (int i=0 ; i<partition_boundary_node_local_ids.size() ; i++) {

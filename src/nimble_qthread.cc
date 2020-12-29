@@ -721,7 +721,7 @@ int main(int argc, char *argv[]) {
   std::vector<double> internal_force_shared_mem(3*global_node_ids_shared_mem.size(), 0.0);
 
   // Initialize the MPI container
-  nimble::MPIContainer mpi_container;
+  nimble::VectorCommunicator mpi_container;
   mpi_container.Initialize(global_node_ids_shared_mem);
 
   // Initialize the boundary condition manager

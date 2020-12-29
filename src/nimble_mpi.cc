@@ -56,7 +56,7 @@
 #include "nimble_material_factory.h"
 
 #include "nimble_mpi.h"
-#include "nimble.mpi.utils.h"
+#include "nimble_vector_communicator.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_timing_utils.h"
 
@@ -97,7 +97,7 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &boundary_condition_manager,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    int num_mpi_ranks, int my_mpi_rank
+    int num_ranks, int my_rank
 #ifdef NIMBLE_HAVE_UQ
     ,
     nimble::UqModel &uq_model
@@ -127,7 +127,7 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
 
 }
 
-std::string NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
+std::string NimbleInitializeAndGetInput(int argc, char **argv) {
 
   int my_rank = 0, num_ranks = 1;
 #ifdef NIMBLE_HAVE_MPI
@@ -154,7 +154,11 @@ std::string NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
 
   if (argc < 2) {
     if (my_rank == 0) {
+#ifdef NIMBLE_HAVE_MPI
       std::cout << "Usage:  mpirun -np NP NimbleSM <input_deck.in>\n" << std::endl;
+#else
+      std::cout << "Usage:  NimbleSM <input_deck.in>\n" << std::endl;
+#endif
     }
     throw std::runtime_error("Inappropriate set of parameters");
   }
@@ -163,7 +167,7 @@ std::string NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
   return init_data;
 }
 
-int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
+int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
                   std::shared_ptr<nimble::Parser> parser,
                   const std::string& input_deck_name)
@@ -333,7 +337,7 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   return status;
 }
 
-void NimbleMPIFinalize() {
+void NimbleFinalize() {
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
 #endif
@@ -352,8 +356,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::BoundaryConditionManager & bc,
 			   nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
-         int num_mpi_ranks,
-         int my_mpi_rank
+         int num_ranks,
+         int my_rank
 #ifdef NIMBLE_HAVE_UQ
                           ,nimble::UqModel & uq_model
 #endif
@@ -382,8 +386,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   // Here is where the initialization occurs for MPI operations
   // In this call, each rank determines which nodes are shared with which other ranks
   // This information is stored so that the vector reductions will work later
-  nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids);
+  nimble::VectorCommunicator myVectorCommunicator;
+  myVectorCommunicator.Initialize(global_node_ids);
 
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
@@ -398,13 +402,12 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh,
-                                          mpi_container,
+    contact_manager.CreateContactEntities(mesh, myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
       std::string tag = "mpi";
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
@@ -476,7 +479,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   // DJL
   // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
   int scalar_dimension = 1;
-  mpi_container.VectorReduction(scalar_dimension, lumped_mass);
+  myVectorCommunicator.VectorReduction(scalar_dimension, lumped_mass);
 
   double time_current(0.0), time_previous(0.0);
   double final_time = parser.FinalTime();
@@ -538,7 +541,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
   double user_specified_time_step = final_time/num_load_steps;
 
-  if (my_mpi_rank == 0) {
+  if (my_rank == 0) {
     std::cout << "\nUser specified time step:              " << user_specified_time_step << std::endl;
     std::cout << "Approximate maximum stable time step:  " << critical_time_step << "\n" << std::endl;
     if (user_specified_time_step > critical_time_step) {
@@ -560,7 +563,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   for (int step=0 ; step<num_load_steps ; step++) {
     total_step_time.Start();
 
-    if (my_mpi_rank == 0) {
+    if (my_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
         std::cout << "   " << static_cast<int>( 100.0 * static_cast<double>(step+1)/num_load_steps ) << "% complete" << std::endl << std::flush;
       }
@@ -689,7 +692,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 #endif
       contact_manager.GetForces(contact_force);
       int vector_dimension = 3;
-      mpi_container.VectorReduction(vector_dimension, contact_force);
+      myVectorCommunicator.VectorReduction(vector_dimension, contact_force);
       total_contact_time.Stop();
     }
 
@@ -702,13 +705,13 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       // Perform a vector reduction on internal force.  This is a vector nodal
       // quantity.
       int vector_dimension = 3;
-      mpi_container.VectorReduction(vector_dimension, internal_force);
+      myVectorCommunicator.VectorReduction(vector_dimension, internal_force);
       total_vector_reduction_time += vector_reduction_timer.age();
 #ifdef NIMBLE_HAVE_UQ
       if (uq_model.Initialized()) {
         for (int ntraj = 0; ntraj < uq_model.GetNumExactSamples(); ntraj++) {
           double *internal_force_ptr = uq_model.Forces()[ntraj];
-          mpi_container.VectorReduction(vector_dimension, internal_force_ptr);
+          myVectorCommunicator.VectorReduction(vector_dimension, internal_force_ptr);
         }
         // Now apply closure to estimate approximate sample forces from the
         // exact samples
@@ -800,7 +803,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   }
 
   double total_simulation_time = main_simulation_timer.age();
-  if (my_mpi_rank == 0) {
+  if (my_rank == 0) {
     std::cout << "======== Timing data: ========\n";
     std::cout << "Total step time: " << total_step_time.GetElapsedTime() << '\n';
     std::cout << "Total contact time: " << total_contact_time.GetElapsedTime() << '\n';
@@ -809,9 +812,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     std::cout << "Total enforcement time: " << contact_manager.total_enforcement_time.GetElapsedTime() << '\n';
     std::cout << "Total num contacts: " << contact_manager.total_num_contacts << '\n';
   }
-  if (my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
+  if (my_rank == 0 && parser.WriteTimingDataFile()) {
     nimble::TimingInfo timing_writer{
-        num_mpi_ranks,
+        num_ranks,
         nimble::quanta::stopwatch::get_microsecond_timestamp(),
         total_simulation_time,
         0.0, 0.0,
@@ -868,6 +871,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   int linear_system_num_unknowns = linear_system_num_nodes * dim;
 
 #ifdef NIMBLE_HAVE_TRILINOS
+  auto comm = Tpetra::getDefaultComm();
   nimble::TpetraContainer tpetra_container;
   tpetra_container.Initialize(mesh, linear_system_global_node_ids, comm);
 #endif
