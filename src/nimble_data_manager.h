@@ -197,23 +197,14 @@ namespace nimble {
     //! Map key is the field_id, vector contains the nested data array for the given nodal field.
     std::map<int, std::vector<double>> node_data_;
 
-    //! Output labels for node data that will be written to disk
-    std::vector<std::string> output_node_component_labels_;
-
     //! Map key is the block_id, the vector contains the field ids for the fields on that block.
     std::map<int, std::vector<int>> element_data_fields_;
-
-    //! Map key is the block_id, vector contains component-wise label for each scalar entry in the data array.
-    std::map<int, std::vector<std::string>> element_component_labels_;
 
     //! Map key is the block_id, vector contains full data array for that block at step N.
     std::map<int, std::vector<double> > element_data_n_;
 
     //! Map key is the block_id, vector contains full data array for that block at step N+1.
     std::map<int, std::vector<double> > element_data_np1_;
-
-    //! Output labels for element data that will be written to disk.
-    std::map<int, std::vector<std::string> > output_element_component_labels_;
 
     //! List of node ids that are shared across multiple ranks
     std::vector<int> globally_shared_nodes_;
