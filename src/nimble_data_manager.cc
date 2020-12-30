@@ -50,14 +50,14 @@
 
 namespace nimble {
 
-  void ModelData::SetDimension(int dim) {
+  void BaseModelData::SetDimension(int dim) {
     if(dim != 2 && dim != 3){
       throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
     }
     dim_ = dim;
   }
 
-  int ModelData::GetFieldId(std::string label) {
+  int ModelData::GetFieldId(const std::string& label) const {
     for (auto const & id_field_pair : data_fields_) {
       if (id_field_pair.second.label_ == label) {
         return id_field_pair.first;
