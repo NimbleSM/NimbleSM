@@ -1,0 +1,89 @@
+name: ubuntu-trilinos-mpi
+  
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:  
+      - master
+      - develop
+
+  pull_request:
+
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-18.04
+
+    env:
+      CMAKE_BUILD_TYPE: Release
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: bash
+      run: |
+           sudo apt-get update -y -qq
+           sudo apt-get install -y libblas-dev liblapack-dev
+           sudo apt-get install -y libmetis-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
+           sudo apt-get install -y netcdf-bin libnetcdf-dev
+           sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y%m")"
+      shell: bash
+    - name: Cache Trilinos
+      id: cache-trilinos
+      uses: actions/cache@v2
+      with:
+        path: Trilinos/
+        key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-trilinos
+    - name: Build Trilinos
+      if: steps.cache-trilinos.outputs.cache-hit != 'true'
+      run: |
+        git clone https://github.com/trilinos/Trilinos.git
+        cd Trilinos
+        mkdir build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
+              -DTPL_ENABLE_MPI=ON \
+              -DTrilinos_ENABLE_Tpetra=ON \
+              -DTrilinos_ENABLE_Kokkos=ON \
+              -DTrilinos_ENABLE_Fortran=OFF \
+              -DTrilinos_ENABLE_Netcdf=ON \
+              -DTrilinos_ENABLE_SEACASEpu=ON \
+              -DTrilinos_ENABLE_SEACASExodiff=ON \
+              -DTrilinos_ENABLE_SEACASExodus=ON \
+              ..
+        make -j4
+    - name: Install Trilinos
+      run: |
+        cd Trilinos && cd build
+        sudo make install
+    - name: Configure NimbleSM
+      run: |
+        export ACCESS=`pwd`
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
+              -DHAVE_TRILINOS=ON -DUSE_PURE_MPI=ON \
+              -DNIMBLE_ENABLE_UNIT_TESTS=ON \
+              ..
+    - name: Build NimbleSM
+      run: |
+        cd build
+        make -j4
+    - name: Test NimbleSM
+      run: |
+        cd build
+        export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+        make test
+    - name: Upload log files
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: log-files
+        path: ./**/*.log
+

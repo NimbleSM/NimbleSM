@@ -72,7 +72,7 @@ namespace nimble {
     if (pos != std::string::npos){
       file_name = file_name.substr(0, pos);
     }
-    if (label.size() > 0) {
+    if (!label.empty()) {
       file_name += "." + label;
     }
     file_name += "." + extension;
@@ -311,6 +311,9 @@ void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
   else if (key == "contact") {
     contact_string_ = value;
   }
+  else if (key == "contact backend") {
+    contact_backend_string_ = value;
+  }
   else if (key == "contact visualization") {
 
     std::stringstream ss(value);
@@ -373,6 +376,11 @@ void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
   else if (key == "output fields") {
     output_field_string_ = value;
   }
+#ifdef NIMBLE_HAVE_BVH
+  else if (key == "contact dicing") {
+    contact_dicing_ = std::atoi(value.c_str());
+  }
+#endif
 #ifdef NIMBLE_HAVE_UQ
 else if (key == "uq parameters") {
     size_t space_pos = value.find(" ");

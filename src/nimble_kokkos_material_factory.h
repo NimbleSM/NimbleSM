@@ -47,6 +47,8 @@
 #include <memory>
 #include <string>
 
+#include "nimble_material_factory.h"
+
 namespace nimble {
 class Material;
 struct NGPLAMEData;
@@ -55,7 +57,7 @@ class MaterialParameters;
 
 namespace nimble_kokkos {
 
-class MaterialFactory {
+class MaterialFactory : public nimble::MaterialFactoryBase {
  public:
   explicit MaterialFactory();
   virtual ~MaterialFactory() = default;
@@ -75,7 +77,7 @@ class MaterialFactory {
 
   std::shared_ptr<const nimble::MaterialParameters> material_params;
 
-  virtual void create();
+  virtual void create() override;
 };
 
 }

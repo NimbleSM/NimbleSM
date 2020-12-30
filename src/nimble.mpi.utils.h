@@ -99,39 +99,22 @@ class MPIContainer
 
 #else // NIMBLE_HAVE_MPI
 
-// Throws runtime error if any of these are called as
-// They're not implemented when compiling without mpi.
 namespace nimble
 {
+/// \class MPIContainer
+/// \brief Empty class of communication container when NimbleSM is compiled without MPI
+/// \note This empty class allows to write one code (while being a minor misnomer).
 class MPIContainer
 {
  public:
   MPIContainer() {}
 
-  void Initialize(std::vector<int> const& global_node_ids)
-  {
-    throw std::runtime_error(
-        "[Called MPIContainer.Initialize()]: Calling MPI functions in version compiled without "
-        "MPI; try compiling with "
-        "-DNIMBLE_HAVE_MPI to compile with MPI");
-  }
+  void Initialize(std::vector<int> const& global_node_ids) {}
 
-  void VectorReduction(int data_dimension, double* data)
-  {
-    throw std::runtime_error(
-        "[Called MPIContainer.VectorReduction]: Calling MPI functions in version compiled without "
-        "MPI; try compiling with "
-        "-DNIMBLE_HAVE_MPI to compile with MPI");
-  }
+  void VectorReduction(int data_dimension, double* data) {}
 
   template<class Lookup>
-  void VectorReduction(int data_dimension, Lookup& lookup)
-  {
-    throw std::runtime_error(
-        "[Called MPIContainer.VectorReduction]: Calling MPI functions in version compiled without "
-        "MPI; try compiling with "
-        "-DNIMBLE_HAVE_MPI to compile with MPI");
-  }
+  void VectorReduction(int data_dimension, Lookup& lookup) {}
 };
 }   // namespace nimble
 

@@ -63,7 +63,10 @@ namespace nimble {
 
     if (det <= 0.0) {
 #ifdef NIMBLE_HAVE_KOKKOS
-      printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+      if (det == 0.0) 
+        printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+      else
+        printf("\n**** Error in HexElement::Invert3x3(), negative determinant (%e)\n", det);
 #else
       throw std::logic_error("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
 #endif

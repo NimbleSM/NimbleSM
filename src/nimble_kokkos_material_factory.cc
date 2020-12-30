@@ -46,40 +46,40 @@
 #include <utility>
 #include <nimble_kokkos_defs.h>
 #include <nimble_kokkos_material_factory.h>
-#include <nimble_material_factory_util.h>
+#include <nimble_material.h>
 
 namespace nimble_kokkos {
 
 using nimble::Material;
 
 MaterialFactory::MaterialFactory()
-    : material_device(nullptr) {
+    : MaterialFactoryBase(),
+      material_device(nullptr) {
 }
 
 void MaterialFactory::parse_and_create(const std::string& mat_params, const int num_points) {
-  material_params = nimble::ParseMaterialParametersString(mat_params.c_str(), num_points);
+  material_params = ParseMaterialParametersString(mat_params, num_points);
   create();
 }
 
 template <typename MatType>
-inline std::pair<std::shared_ptr<Material>, Material*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
+inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
   auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<Material*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  nimble::Material* pointer_that_lives_on_the_stack = mat_device;
+  auto mat_device = static_cast<MatType*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
+  MatType& mat_host_ref = *mat_host;
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (pointer_that_lives_on_the_stack) MatType(mat_params_struct);
+    new (mat_device) MatType(mat_host_ref);
   });
+  Kokkos::fence();
   return std::make_pair(mat_host, mat_device);
 }
 
 void MaterialFactory::create() {
-  char name[nimble::MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  material_params->GetMaterialName(name, false);
-  std::string name_string(name);
-  if (nimble::StringsAreEqual(name_string.c_str(), "neohookean")) {
+  auto name_string = material_params->GetMaterialName(false);
+  if (name_string == "neohookean") {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
         *material_params);
-  } else if (nimble::StringsAreEqual(name_string.c_str(), "elastic")) {
+  } else if (name_string == "elastic") {
     std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
         *material_params);
   } else {

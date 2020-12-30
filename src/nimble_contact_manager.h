@@ -47,8 +47,9 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <float.h>
+#include <cfloat>
 #include <cmath>
+#include <unordered_map>
 
 #include "nimble_contact_entity.h"
 #include "nimble_contact_interface.h"
@@ -73,13 +74,55 @@
 #endif
 #endif
 
+#include "nimble_timer.h"
+
 namespace nimble {
 
-class ContactInterface;
+namespace details {
 
-  class ContactManager {
+inline
+void getContactForce(
+    const double penalty,
+    const double gap,
+    const double normal[3],
+    double contact_force[3]
+)
+{
+  const double scale = penalty * gap;
+  for (int i = 0; i < 3; ++i)
+    contact_force[i] = scale * normal[i];
+}
 
-  public:
+}
+
+struct PenaltyContactEnforcement {
+  PenaltyContactEnforcement() : penalty(0.0) {}
+
+  template < typename VecType >
+  NIMBLE_INLINE_FUNCTION
+  void EnforceContact(ContactEntity &node, 
+                      ContactEntity &face, 
+                      const double gap,
+                      const double normal[3], 
+                      const double barycentric_coordinates[3],
+                      VecType &full_contact_force) const {
+      double contact_force[3] { };
+      details::getContactForce(penalty, gap, normal, contact_force);
+      //
+      face.SetNodalContactForces(contact_force, barycentric_coordinates);
+      node.SetNodalContactForces(contact_force);
+      //
+      node.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
+      face.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
+  }
+
+  double penalty;
+
+};
+
+class ContactManager {
+
+public:
 
     typedef enum ProjectionType {
       UNKNOWN=0,
@@ -87,47 +130,47 @@ class ContactInterface;
       FACE=2
     } PROJECTION_TYPE;
 
-    explicit ContactManager( std::shared_ptr<ContactInterface> interface,
-                             std::size_t dicing_factor = 1);
+    explicit ContactManager( std::shared_ptr<ContactInterface> interface );
 
-    virtual ~ContactManager() {}
+    virtual ~ContactManager() = default;
 
-    bool ContactEnabled() { return contact_enabled_; }
+    bool ContactEnabled() const { return contact_enabled_; }
 
-    void SkinBlocks(GenesisMesh const & mesh,
+    static void SkinBlocks(GenesisMesh const & mesh,
                     std::vector<int> const & block_ids,
                     int entity_id_offset,
                     std::vector< std::vector<int> > & skin_faces,
                     std::vector<int> & entity_ids);
 
-    void RemoveInternalSkinFaces(GenesisMesh const & mesh,
+    static void RemoveInternalSkinFaces(GenesisMesh const & mesh,
                                  std::vector< std::vector<int> >& faces,
                                  std::vector<int>& entity_ids);
 
     void SetPenaltyParameter(double penalty_parameter) {
       penalty_parameter_ = penalty_parameter;
+      enforcement.penalty = penalty_parameter_;
       contact_interface->SetUpPenaltyEnforcement(penalty_parameter_);
     }
 
     void CreateContactEntities(GenesisMesh const & mesh,
-                               std::vector<int> const & master_block_ids,
-                               std::vector<int> const & slave_block_ids) {
+                               std::vector<int> const & primary_block_ids,
+                               std::vector<int> const & secondary_block_ids) {
       nimble::MPIContainer mpi_container;
-      CreateContactEntities(mesh, mpi_container, master_block_ids, slave_block_ids);
+      CreateContactEntities(mesh, mpi_container, primary_block_ids, secondary_block_ids);
     }
 
 
     void CreateContactEntities(GenesisMesh const & mesh,
                                nimble::MPIContainer & mpi_container,
-                               std::vector<int> const & master_block_ids,
-                               std::vector<int> const & slave_block_ids);
+                               std::vector<int> const & primary_block_ids,
+                               std::vector<int> const & secondary_block_ids);
 
     template <typename ArgT>
-    void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & master_skin_faces,
-                                    std::vector<int> const & master_skin_entity_ids,
-                                    std::vector<int> const & slave_node_ids,
-                                    std::vector<int> const & slave_skin_entity_ids,
-                                    std::map<int, double> const & slave_node_char_lens,
+    void CreateContactNodesAndFaces(std::vector< std::vector<int> > const & primary_skin_faces,
+                                    std::vector<int> const & primary_skin_entity_ids,
+                                    std::vector<int> const & secondary_node_ids,
+                                    std::vector<int> const & secondary_node_entity_ids,
+                                    std::map<int, double> const & secondary_node_char_lens,
                                     ArgT& contact_nodes,
                                     ArgT& contact_faces) const ;
 
@@ -140,155 +183,229 @@ class ContactInterface;
 
     double BoundingBoxAverageCharacteristicLengthOverAllRanks() const ;
 
-    void ApplyDisplacements(const double * const displacement) {
-      for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
-        int node_id = node_ids_[i_node];
-        for (int i=0 ; i<3 ; i++) {
-          coord_[3*i_node + i] = model_coord_[3*i_node + i] + displacement[3*node_id + i];
-        }
-      }
-      for (unsigned int i_face=0 ; i_face<contact_faces_.size() ; i_face++) {
-        contact_faces_[i_face].SetCoordinates(coord_.data());
-      }
-      for (unsigned int i_node=0 ; i_node<contact_nodes_.size() ; i_node++) {
-        contact_nodes_[i_node].SetCoordinates(coord_.data());
-      }
-    }
+    void ApplyDisplacements(const double * displacement);
+    void GetForces(double * contact_force) const;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-
-    void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d) {
-
-      int num_nodes_in_contact_manager = node_ids_d_.extent(0);
-      int num_contact_node_entities = contact_nodes_d_.extent(0);
-      int num_contact_face_entities = contact_faces_d_.extent(0);
-
-      // circumvent lambda *this glitch
-      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
-      nimble_kokkos::DeviceScalarNodeView model_coord = model_coord_d_;
-      nimble_kokkos::DeviceScalarNodeView coord = coord_d_;
-      nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
-      nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
-
-      Kokkos::parallel_for("ContactManager::ApplyDisplacements set coord_d_ vector",
-                           num_nodes_in_contact_manager,
-                           KOKKOS_LAMBDA(const int i) {
-        int node_id = node_ids(i);
-        coord(3*i)   = model_coord(3*i)   + displacement_d(node_id, 0);
-        coord(3*i+1) = model_coord(3*i+1) + displacement_d(node_id, 1);
-        coord(3*i+2) = model_coord(3*i+2) + displacement_d(node_id, 2);
-      });
-
-      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact node entity displacements",
-                         num_contact_node_entities,
-                         KOKKOS_LAMBDA(const int i_node) {
-        contact_nodes(i_node).SetCoordinates(coord);
-      });
-
-      Kokkos::parallel_for("ContactManager::ApplyDisplacements set contact face entity displacements",
-                         num_contact_face_entities,
-                         KOKKOS_LAMBDA(const int i_face) {
-        contact_faces(i_face).SetCoordinates(coord);
-      });
-
-    }
+    // Kokkos versions of ApplyDisplacements and GetForces
+    void ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d);
+    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const;
 #endif
 
-    void GetForces(double * const contact_force) {
-      for (unsigned int i_node=0; i_node<node_ids_.size() ; i_node++) {
-        int node_id = node_ids_[i_node];
-        for (int i=0 ; i<3 ; i++) {
-          contact_force[3*node_id + i] = force_[3*i_node + i];
-        }
-      }
-    }
-
-#ifdef NIMBLE_HAVE_KOKKOS
-    void GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) {
-
-      int num_nodes_in_contact_manager = node_ids_d_.extent(0);
-
-      // circumvent lambda *this glitch
-      nimble_kokkos::DeviceIntegerArrayView node_ids = node_ids_d_;
-      nimble_kokkos::DeviceScalarNodeView force = force_d_;
-
-      Kokkos::parallel_for("ContactManager::GetForces",
-                         num_nodes_in_contact_manager,
-                         KOKKOS_LAMBDA(const int i) {
-        int node_id = node_ids(i);
-        contact_force_d(node_id, 0) = force(3*i);
-        contact_force_d(node_id, 1) = force(3*i+1);
-        contact_force_d(node_id, 2) = force(3*i+2);
-      });
-    }
-#endif
-
-    void ComputeContactForce(int step, bool debug_output);
+    virtual void ComputeContactForce(int step, bool debug_output);
 
     void BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const & nodes,
                                          std::vector<ContactEntity> const & triangles);
 
-    void ClosestPointProjection(std::vector<ContactEntity> const & nodes,
-                                std::vector<ContactEntity> const & triangles,
-                                std::vector<ContactEntity::vertex>& closest_points,
-                                std::vector<PROJECTION_TYPE>& projection_types);
+    void ClosestPointProjection(const ContactEntity *nodes,
+                                const ContactEntity *triangles,
+                                ContactEntity::vertex *closest_points,
+                                PROJECTION_TYPE *projection_types,
+                                std::size_t num_elements);
+    void ClosestPointProjectionSingle( const ContactEntity &node,
+        const ContactEntity &tri,
+        ContactEntity::vertex *closest_point,
+        PROJECTION_TYPE *projection_type,
+        double tolerance);
 
-#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-    using patch_collection = bvh::vt::collection< bvh::patch< ContactEntity >, bvh::vt::index_1d >;
+    double GetPenaltyForceParam() const noexcept { return enforcement.penalty; }
 
-    void ComputeParallelContactForce(int step, bool is_output_step, bool visualize = false);
+
+// DEPRECATED
+    /// \brief Compute the projection of a point onto a triangular face
+    ///
+    /// \param[in] node Node to project
+    /// \param[in] tri Face to project onto
+    /// \param[out] projection_type Result of projection (FACE: success,
+    ///             UNKNOWN: point projects outside the face)
+    /// \param[out] closest_point Projection
+    /// \param[out] gap Normal distance when the point projects onto the face
+    /// \param[out] normal Unit normal vector outside of face
+    /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+    static void SimpleClosestPointProjectionSingle( const ContactEntity &node,
+        const ContactEntity &tri,
+        PROJECTION_TYPE *projection_type,
+        ContactEntity::vertex *closest_point,
+        double &gap,
+        double *normal,
+        double tolerance = 1.e-8);
+
+    /// \brief Compute the projection of a point onto a triangular face
+    ///
+    /// \param[in] node Node to project
+    /// \param[in] tri Face to project onto
+    /// \param[out] in True if node is inside the facet 
+    /// \param[out] gap Normal distance when the point projects onto the face
+    /// \param[out] normal Unit normal vector outside of face
+    /// \param[out] barycentric_coordinates Projection of node on facet
+    /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+    static void Projection( const ContactEntity &node,
+        const ContactEntity &tri,
+        bool   &in,
+        double &gap,
+        double *normal,
+        double *barycentric_coordinates,
+        double tolerance = 1.e-8);
+
+    virtual void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
+
+    virtual void ContactVisualizationWriteStep(double time_current);
+
+    /// \brief Returns the number of contact faces "actively" in collision
+    ///
+    /// \return Number of active contact faces
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
+    std::size_t numActiveContactFaces() const {
+       std::size_t num_contacts = 0;
+       for (size_t i = 0; i < numContactFaces(); ++i) {
+         const auto &myface = getContactFace(i);
+         num_contacts += static_cast<size_t>(myface.contact_status());
+       }
+       return num_contacts;
+    }
+
+    /// \brief Returns a read-only reference to contact face entity
+    ///
+    /// \param i_face Index of the contact face
+    /// \return Read-only reference to contact face entity
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
+    const ContactEntity& getContactFace(size_t i_face) const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_faces_h_(i_face);
+#else
+      return contact_faces_[i_face];
 #endif
+    }
 
-    void InitializeContactVisualization(std::string const & contact_visualization_exodus_file_name);
-
-    void ContactVisualizationWriteStep(double time_current);
-
-#ifdef NIMBLE_HAVE_BVH
-    void VisualizeCollisionInfo(const bvh::bvh_tree_26d &faces_tree, const bvh::bvh_tree_26d &nodes_tree,
-                                const bvh::bvh_tree_26d::collision_query_result_type &collision_result,
-                                int step);
+    /// \brief Returns the number of contact faces
+    ///
+    /// \return Number of contact faces
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
+    size_t numContactFaces() const {
+#ifdef NIMBLE_HAVE_KOKKOS
+    return contact_faces_h_.extent(0);
+#else
+    return contact_faces_.size();
 #endif
+    }
 
-  protected:
-    bool contact_enabled_ = false;
-    double penalty_parameter_;
+    /// \brief Returns a read-only reference to contact node entity
+    ///
+    /// \param i_node Index of the contact node
+    /// \return Read-only reference to contact node entity
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
+    const ContactEntity& getContactNode(size_t i_node) const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_nodes_h_(i_node);
+#else
+      return contact_nodes_[i_node];
+#endif
+    }
 
-    std::vector<int> node_ids_;
-    std::vector<double> model_coord_;
-    std::vector<double> coord_;
-    std::vector<double> force_;
-    std::vector<ContactEntity> contact_faces_;
-    std::vector<ContactEntity> contact_nodes_;
+    /// \brief Returns the number of contact nodes
+    ///
+    /// \return Number of contact nodes
+    ///
+    /// \note When using Kokkos, the data is extracted from the "host".
+    size_t numContactNodes() const {
+#ifdef NIMBLE_HAVE_KOKKOS
+      return contact_nodes_h_.extent(0);
+#else
+      return contact_nodes_.size();
+#endif
+    }
 
-    double contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
-    nimble::ExodusOutput exodus_output_for_contact_visualization_;
+    /// \brief Zero the contact forces
+    void zeroContactForce();
+
+    /// \brief Return timing information
+    /// \return Reference to map of strings to time value
+    const std::unordered_map<std::string, double>& getTimers();
+
+    nimble::TimeKeeper total_search_time;
+    nimble::TimeKeeper total_enforcement_time;
+    std::size_t total_num_contacts = 0;
+
+protected:
+ 
+  PenaltyContactEnforcement enforcement;
+
+  template< typename VecType>
+  void EnforceNodeFaceInteraction(
+      ContactEntity &node, 
+      ContactEntity &face, 
+      const double gap,
+      const double direction[3], 
+      const double facet_coordinates[3],
+      VecType &full_contact_force) const {
+    enforcement.EnforceContact<VecType>(node, face, gap, direction, facet_coordinates, 
+                full_contact_force);
+  }
+
+  /// Routine to write the contact data to Exodus file at time t
+  ///
+  /// \param t Time for the current data
+  ///
+  /// \note When using Kokkos, the data is extracted from the "host".
+  void WriteVisualizationData(double t);
+
+  //--- Variables
+
+  bool contact_enabled_ = false;
+  double penalty_parameter_;
+
+  std::vector<int> node_ids_;
+  std::vector<double> model_coord_;
+  std::vector<double> coord_;
+  std::vector<double> force_;
+  std::vector<ContactEntity> contact_faces_;
+  std::vector<ContactEntity> contact_nodes_;
+
+  double contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  nimble::GenesisMesh genesis_mesh_for_contact_visualization_;
+  nimble::ExodusOutput exodus_output_for_contact_visualization_;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
-    nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
-    nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
-    nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
+  nimble_kokkos::DeviceIntegerArrayView node_ids_d_ = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
+  nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView force_d_ = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
 
-    nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
-    nimble_kokkos::DeviceContactEntityArrayView contact_nodes_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_nodes_d", 1);
+  nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
+  nimble_kokkos::DeviceContactEntityArrayView contact_nodes_d_ = nimble_kokkos::DeviceContactEntityArrayView("contact_nodes_d", 1);
 
-    // TODO remove this once enforcement is on device
-    nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
-    nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
+  // TODO remove this once enforcement is on device
+  nimble_kokkos::HostContactEntityArrayView contact_faces_h_ = nimble_kokkos::HostContactEntityArrayView("contact_faces_h", 1);
+  nimble_kokkos::HostContactEntityArrayView contact_nodes_h_ = nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
 #endif
 
-    std::size_t dicing_factor_; ///< Patch dicing factor for overdecomposition
-
-#if defined(NIMBLE_HAVE_MPI) && defined(NIMBLE_HAVE_BVH)
-
-    bvh::vt::collision_world<bvh::patch<ContactEntity>, bvh::bvh_tree_26d>  collision_world_;
-
-    patch_collection face_patch_collection_;
-    patch_collection node_patch_collection_;
+  std::unordered_map<std::string, double> timers_;
+#ifdef NIMBLE_TIME_CONTACT
+  nimble::Timer watch_;
 #endif
 
-    std::shared_ptr<ContactInterface> contact_interface;
+  std::shared_ptr<ContactInterface> contact_interface;
+
+protected:
+
+  NIMBLE_INLINE_FUNCTION
+  void startTimer(const std::string &str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Start(str_val);
+#endif
+  }
+
+  NIMBLE_INLINE_FUNCTION
+  void stopTimer(const std::string &str_val) {
+#ifdef NIMBLE_TIME_CONTACT
+    watch_.Stop(str_val);
+#endif
+  }
+
 };
 
 } // namespace nimble

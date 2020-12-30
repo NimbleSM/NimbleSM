@@ -136,6 +136,10 @@ namespace nimble {
       return material_->GetBulkModulus();
     }
 
+    double GetShearModulus() const {
+      return material_->GetShearModulus();
+    }
+
     void ComputeLumpedMassMatrix(const double * const reference_coordinates,
                                  int num_elem,
                                  const int * const elem_conn,
@@ -172,7 +176,8 @@ namespace nimble {
                               DataManager& data_manager,
                               bool is_output_step,
 #ifdef NIMBLE_HAVE_UQ
-                              UqModel* uq_model,
+                              const bool & is_off_nominal,
+                              std::vector<double> const & uq_params_this_sample, 
 #endif
                               bool compute_stress_only = false) const ;
 
@@ -195,6 +200,8 @@ namespace nimble {
                                    std::vector< std::vector<double> >& derived_elem_data);
 
     std::shared_ptr<Material> const GetMaterialPointer() const { return material_; }
+
+    std::shared_ptr<Element> const GetElementPointer() const { return element_; }
 
 #ifdef NIMBLE_HAVE_UQ
     // HACK specific to elastic models

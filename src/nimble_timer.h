@@ -66,14 +66,14 @@ namespace nimble {
       ar | total_time_;
     }
 
-    void Start() {
-      start_time_ = clock.now();
+    inline void Start() {
+      start_time_ = std::chrono::high_resolution_clock::now();
     }
 
-    void Stop() {
+    inline void Stop() {
       using std::chrono::duration;
       using std::chrono::duration_cast;
-      end_time_ = clock.now();
+      end_time_ = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> time_increment(0.0);
       if (end_time_ > start_time_) {
         time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
@@ -81,13 +81,12 @@ namespace nimble {
       total_time_ += time_increment.count();
     }
 
-    double GetElapsedTime() const {
+    inline double GetElapsedTime() const {
       return total_time_;
     }
 
   private:
 
-    std::chrono::high_resolution_clock clock;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
     std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
     double total_time_;
@@ -97,26 +96,26 @@ namespace nimble {
 
   public:
 
-    Timer(){}
+    Timer()= default;
 
-    ~Timer(){}
+    ~Timer()= default;
 
     template<typename ArchiveType>
     void serialize(ArchiveType& ar) {
       ar | timers_;
     }
 
-    void Start(const std::string& name) {
+    inline void Start(const std::string& name) {
       TimeKeeper& time_keeper = timers_[name];
       time_keeper.Start();
     }
 
-    void Stop(const std::string& name) {
+    inline void Stop(const std::string& name) {
       TimeKeeper& time_keeper = timers_[name];
       time_keeper.Stop();
     }
 
-    double ElapsedTime(const std::string& name) const {
+    inline double ElapsedTime(const std::string& name) const {
       return timers_.at(name).GetElapsedTime();
     }
 

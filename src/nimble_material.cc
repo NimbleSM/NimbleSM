@@ -41,18 +41,24 @@
 //@HEADER
 */
 
-#include "nimble_material.h"
-#include "nimble_utils.h"
-#include <sstream>
+#include <nimble_material.h>
+#include <nimble_material_factory.h>
+#include <cmath>
 
 namespace nimble {
 
+void ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase& factory) {
+  factory.add_valid_double_parameter_name("bulk_modulus");
+  factory.add_valid_double_parameter_name("shear_modulus");
+  factory.add_valid_double_parameter_name("density");
+}
+
   ElasticMaterial::ElasticMaterial(MaterialParameters const & material_parameters)
-    : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
+    : Material(), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
     dim_ = 3;
-    density_ = material_parameters_.GetParameterValue("density");
-    bulk_modulus_ =  material_parameters_.GetParameterValue("bulk_modulus");
-    shear_modulus_ =  material_parameters_.GetParameterValue("shear_modulus");
+    density_ = material_parameters.GetParameterValue("density");
+    bulk_modulus_ =  material_parameters.GetParameterValue("bulk_modulus");
+    shear_modulus_ =  material_parameters.GetParameterValue("shear_modulus");
   }
 
   void ElasticMaterial::GetStress(int elem_id,
@@ -96,59 +102,19 @@ namespace nimble {
     // TODO rotate stress?
   }
 
-#ifdef NIMBLE_HAVE_KOKKOS
-  void ElasticMaterial::GetStress(double time_previous,
-                                  double time_current,
-                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
-
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = stress_np1;
-    double strain[6];
-    double trace_strain;
-
-    double two_mu = 2.0 * shear_modulus_;
-    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
-
-    strain[K_S_XX_] = def_grad[K_F_XX_] - 1.0;
-    strain[K_S_YY_] = def_grad[K_F_YY_] - 1.0;
-    strain[K_S_ZZ_] = def_grad[K_F_ZZ_] - 1.0;
-    strain[K_S_XY_] = 0.5*(def_grad[K_F_XY_] + def_grad[K_F_YX_]);
-    strain[K_S_YZ_] = 0.5*(def_grad[K_F_YZ_] + def_grad[K_F_ZY_]);
-    strain[K_S_ZX_] = 0.5*(def_grad[K_F_ZX_] + def_grad[K_F_XZ_]);
-
-    trace_strain = strain[K_S_XX] + strain[K_S_YY] + strain[K_S_ZZ];
-
-    stress[K_S_XX_] = two_mu * strain[K_S_XX_] + lambda * trace_strain;
-    stress[K_S_YY_] = two_mu * strain[K_S_YY_] + lambda * trace_strain;
-    stress[K_S_ZZ_] = two_mu * strain[K_S_ZZ_] + lambda * trace_strain;
-    stress[K_S_XY_] = two_mu * strain[K_S_XY_];
-    stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
-    stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
-
-    // TODO rotate stress?
-  }
-#endif
-
 #ifdef NIMBLE_HAVE_UQ
-  void ElasticMaterial::GetOffNominalStress(const std::vector<double> & params_this_sample,
-                                            const int & bulk_mod_idx,
-                                            const int & shear_mod_idx,
+  void ElasticMaterial::GetOffNominalStress(const double & bulk_mod,
+                                            const double & shear_mod,
                                             int num_pts,
                                             const double * const deformation_gradient_np1,
                                             double* stress_np1) {
-
-    double bulk_mod = (bulk_mod_idx == -1) ? bulk_modulus_ : params_this_sample[bulk_mod_idx];
-    double shear_mod = (shear_mod_idx == -1) ? shear_modulus_ : params_this_sample[shear_mod_idx];
 
     double* stress = stress_np1;
     const double * def_grad = deformation_gradient_np1;
     double strain[6];
     double trace_strain;
 
-    double two_mu = 2.0 * shear_modulus_;
+    double two_mu = 2.0 * shear_mod;
     double lambda = bulk_mod - 2.0*shear_mod/3.0;
 
     for (int pt = 0 ; pt < num_pts ; pt++, def_grad+=9, stress+=6){
@@ -221,13 +187,21 @@ namespace nimble {
     }
   }
 
-  NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const & material_parameters)
-    : Material(material_parameters), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0) {
-    dim_ = 3;
-    density_ = material_parameters_.GetParameterValue("density");
-    bulk_modulus_ =  material_parameters_.GetParameterValue("bulk_modulus");
-    shear_modulus_ =  material_parameters_.GetParameterValue("shear_modulus");
+  void NeohookeanMaterial::register_supported_material_parameters(MaterialFactoryBase& factory) {
+    factory.add_valid_double_parameter_name("bulk_modulus");
+    factory.add_valid_double_parameter_name("shear_modulus");
+    factory.add_valid_double_parameter_name("density");
   }
+
+NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const &material_parameters)
+    :
+    Material(),
+    num_state_variables_(0),
+    dim_(3),
+    density_(material_parameters.GetParameterValue("density")),
+    bulk_modulus_(material_parameters.GetParameterValue("bulk_modulus")),
+    shear_modulus_(material_parameters.GetParameterValue("shear_modulus")) {
+}
 
   void NeohookeanMaterial::GetStress(int elem_id,
                                      int num_pts,
@@ -319,15 +293,11 @@ namespace nimble {
 
 #ifdef NIMBLE_HAVE_UQ
   void NeohookeanMaterial::GetOffNominalStress(
-      const std::vector<double> & params_this_sample,
-      const int & bulk_mod_idx,
-      const int & shear_mod_idx,
+      const double & bulk_mod,
+      const double & shear_mod,
       int num_pts,
       const double * const deformation_gradient_np1,
       double* stress_np1) {
-
-    double bulk_mod = (bulk_mod_idx == -1) ? bulk_modulus_ : params_this_sample[bulk_mod_idx];
-    double shear_mod = (shear_mod_idx == -1) ? shear_modulus_ : params_this_sample[shear_mod_idx];
 
     double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
     double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
@@ -403,86 +373,6 @@ namespace nimble {
       sig += 6;
     }
 
-  }
-#endif
-
-#ifdef NIMBLE_HAVE_KOKKOS
-  void NeohookeanMaterial::GetStress(double time_previous,
-                                     double time_current,
-                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
-
-    double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
-    double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
-
-    // deformation gradient, left stretch, and rotation
-    double def_grad[9], v[6], r[9];
-    for (int i=0 ; i<9 ; i++) {
-      def_grad[i] = deformation_gradient_np1[i];
-    }
-
-    Polar_Decomp(def_grad, v, r);
-
-    CheckVectorSanity(9, def_grad, "neohookean deformation_gradient_np1");
-    CheckVectorSanity(6, v, "neohookean v");
-    CheckVectorSanity(9, r, "neohookean r");
-
-    xj =     v[K_S_XX_]*v[K_S_YY_]*v[K_S_ZZ_]
-       + 2.0*v[K_S_XY_]*v[K_S_YZ_]*v[K_S_ZX_]
-       -     v[K_S_XX_]*v[K_S_YZ_]*v[K_S_YZ_]
-       -     v[K_S_YY_]*v[K_S_ZX_]*v[K_S_ZX_]
-       -     v[K_S_ZZ_]*v[K_S_XY_]*v[K_S_XY_];
-
-    double cbrt_xj = std::cbrt(xj);
-    fac = 1.0 / (cbrt_xj * cbrt_xj);
-
-    pressure = 0.5*bulk_modulus_*(xj - 1.0/xj);
-
-    bxx = v[K_S_XX_]*v[K_S_XX_]
-        + v[K_S_XY_]*v[K_S_YX_]
-        + v[K_S_XZ_]*v[K_S_ZX_];
-
-    byy = v[K_S_YX_]*v[K_S_XY_]
-        + v[K_S_YY_]*v[K_S_YY_]
-        + v[K_S_YZ_]*v[K_S_ZY_];
-
-    bzz = v[K_S_ZX_]*v[K_S_XZ_]
-        + v[K_S_ZY_]*v[K_S_YZ_]
-        + v[K_S_ZZ_]*v[K_S_ZZ_];
-
-    bxy = v[K_S_XX_]*v[K_S_XY_]
-        + v[K_S_XY_]*v[K_S_YY_]
-        + v[K_S_XZ_]*v[K_S_ZY_];
-
-    byz = v[K_S_YX_]*v[K_S_XZ_]
-        + v[K_S_YY_]*v[K_S_YZ_]
-        + v[K_S_YZ_]*v[K_S_ZZ_];
-
-    bzx = v[K_S_ZX_]*v[K_S_XX_]
-        + v[K_S_ZY_]*v[K_S_YX_]
-        + v[K_S_ZZ_]*v[K_S_ZX_];
-
-    bxx = fac*bxx;
-    byy = fac*byy;
-    bzz = fac*bzz;
-    bxy = fac*bxy;
-    byz = fac*byz;
-    bzx = fac*bzx;
-
-    trace = bxx + byy + bzz;
-
-    bxx = bxx - trace/3.0;
-    byy = byy - trace/3.0;
-    bzz = bzz - trace/3.0;
-
-    stress_np1(K_S_XX_) = pressure + shear_modulus_*bxx/xj;
-    stress_np1(K_S_YY_) = pressure + shear_modulus_*byy/xj;
-    stress_np1(K_S_ZZ_) = pressure + shear_modulus_*bzz/xj;
-    stress_np1(K_S_XY_) =            shear_modulus_*bxy/xj;
-    stress_np1(K_S_YZ_) =            shear_modulus_*byz/xj;
-    stress_np1(K_S_ZX_) =            shear_modulus_*bzx/xj;
   }
 #endif
 

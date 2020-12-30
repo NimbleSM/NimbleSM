@@ -52,6 +52,7 @@
 #include "nimble_mesh_utils.h"
 #include "nimble.mpi.utils.h"
 #include "nimble.quanta.stopwatch.h"
+#include "nimble_timing_utils.h"
 #include "nimble_view.h"
 #include "nimble_contact_manager.h"
 #include <nimble_contact_interface.h>
@@ -59,7 +60,7 @@
 #include "nimble_mpi.h"
 
 #ifdef NIMBLE_HAVE_BVH
-#include <bvh/vt/context.hpp>
+#include "contact/parallel/bvh_contact_manager.h"
 #endif
 
 #ifdef NIMBLE_HAVE_UQ
@@ -75,6 +76,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "nimble_timer.h"
+
 int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::GenesisMesh & mesh,
 			   nimble::DataManager & data_manager,
@@ -82,7 +85,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
          nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
-         int my_mpi_rank);
+         int my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+         ,nimble::UqModel & uq_model
+#endif
+         );
 
 int QuasistaticTimeIntegrator(nimble::Parser & parser,
 			      nimble::GenesisMesh & mesh,
@@ -117,7 +124,7 @@ NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
-    if (argc != 2) {
+    if (argc < 2) {
       std::cout << "Usage:  mpirun -np NP NimbleSM_MPI <input_deck.in>\n" << std::endl;
       exit(1);
     }
@@ -136,7 +143,8 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   
 #ifdef NIMBLE_HAVE_BVH
   auto comm = MPI_COMM_WORLD;
-  bvh::vt::context vt_ctx{ argc, argv, &comm };
+
+  //bvh::vt::context vt_ctx{ argc, argv, &comm };
 #endif
 
   const int my_mpi_rank = init_data.my_mpi_rank;
@@ -196,6 +204,24 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
   }
+
+#ifdef NIMBLE_HAVE_UQ
+  // configure & allocate
+  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
+  if(parser->HasUq()) {
+    uq_model.ParseConfiguration(parser->UqModelString());
+    std::map<std::string, std::string> lines = parser->UqParamsStrings();
+    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
+      std::string material_key = it->first;
+      int block_id = parser->GetBlockIdFromMaterial( material_key );
+      std::string uq_params_this_material = it->second;
+      uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+    }
+    // initialize
+    uq_model.Initialize(mesh,model_data);
+  }
+#endif
+
   std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
   model_data.AllocateElementData(num_elem_in_each_block);
   model_data.SpecifyOutputFields(parser->GetOutputFieldString());
@@ -252,11 +278,19 @@ int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   }
 
   if (time_integration_scheme == "explicit") {
-    ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank);
+    ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_mpi_ranks, my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+                          ,uq_model
+#endif
+                          );
   }
   else if (time_integration_scheme == "quasistatic") {
     QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, num_mpi_ranks, my_mpi_rank);
   }
+
+#ifdef NIMBLE_HAVE_UQ
+  uq_model.Finalize();
+#endif
 
   return status;
 }
@@ -277,17 +311,37 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 			   nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
          int num_mpi_ranks,
-         int my_mpi_rank) {
+         int my_mpi_rank
+#ifdef NIMBLE_HAVE_UQ
+                          ,nimble::UqModel & uq_model
+#endif
+         ) {
 
   int dim = mesh.GetDim();
   int num_nodes = mesh.GetNumNodes();
   int num_blocks = mesh.GetNumBlocks();
 
+#ifdef NIMBLE_HAVE_BVH
+  nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
+#else
   nimble::ContactManager contact_manager(contact_interface);
+#endif
   
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
-  
+
+  std::vector<int> global_node_ids(num_nodes);
+  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
+  for (int n=0 ; n<num_nodes ; ++n) {
+    global_node_ids[n] = global_node_ids_ptr[n];
+  }
+
+  // DJL
+  // Here is where the initialization occurs for MPI operations
+  // In this call, each rank determines which nodes are shared with which other ranks
+  // This information is stored so that the vector reductions will work later
+  nimble::MPIContainer mpi_container;
+  mpi_container.Initialize(global_node_ids);
   if (contact_enabled) {
     
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
@@ -306,28 +360,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     contact_manager.SetPenaltyParameter(penalty_parameter);
     
     contact_manager.CreateContactEntities(mesh,
+                                          mpi_container,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
 
     if (contact_visualization) {
-      std::string tag = "serial.contact_entities";
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag);
+      std::string tag = "mpi";
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
-
-  std::vector<int> global_node_ids(num_nodes);
-  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
-  for (int n=0 ; n<num_nodes ; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
-
-  // DJL
-  // Here is where the initialization occurs for MPI operations
-  // In this call, each rank determines which nodes are shared with which other ranks
-  // This information is stored so that the vector reductions will work later
-  nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids);
 
   int num_global_data = 0;
   std::vector<double> global_data(num_global_data);
@@ -356,8 +398,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
-  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
   std::vector<Viewify> bc_offnom_velocity_views(0);
+  if(uq_model.Initialized()) {
+    uq_model.Setup();
+/// FOR CALL TO BCS ===================
+    int num_samples = uq_model.GetNumSamples();
+    for(int nuq=0; nuq<num_samples; nuq++){
+       double * v = uq_model.Velocities()[nuq];
+       bc_offnom_velocity_views.push_back( Viewify(v,3) );
+    }
+  }
 #endif
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
@@ -444,6 +494,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                           elem_data_for_output,
                           derived_elem_data_labels,
                           derived_elem_data);
+  if (contact_visualization) {
+    contact_manager.ContactVisualizationWriteStep(time_current);
+  } 
 
   double user_specified_time_step = final_time/num_load_steps;
   if (my_mpi_rank == 0) {
@@ -458,9 +511,15 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   //Timing occurs for this portion of the code
   nimble::quanta::stopwatch main_simulation_timer;
   main_simulation_timer.reset();
+
+  nimble::TimeKeeper total_step_time;
+  nimble::TimeKeeper total_contact_time;
+  nimble::TimeKeeper total_dynamics_time;
+
   double total_exodus_write_time = 0.0,
          total_vector_reduction_time = 0.0;
   for (int step=0 ; step<num_load_steps ; step++) {
+    total_step_time.Start();
 
     if (my_mpi_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
@@ -471,9 +530,13 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       }
     }
     bool is_output_step = false;
-    if (step%output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
+    if (output_frequency != 0) {
+      if (step%output_frequency == 0 || step == num_load_steps - 1) {
+        is_output_step = true;
+      }
     }
+
+    total_dynamics_time.Start();
 
     time_previous = time_current;
     time_current += final_time/num_load_steps;
@@ -484,6 +547,11 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     for (int i=0 ; i<num_unknowns ; ++i) {
       velocity[i] += half_delta_time * acceleration[i];
     }
+
+#ifdef NIMBLE_HAVE_UQ
+    // 1st half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
+#endif
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
@@ -501,6 +569,12 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       displacement[i] += delta_time * velocity[i];
     }
 
+#ifdef NIMBLE_HAVE_UQ
+   // advance approximate trajectories
+   uq_model.UpdateDisplacement(delta_time);
+   uq_model.Prep();
+#endif
+
     // Evaluate the internal force
     for (int i=0 ; i<num_unknowns ; ++i) {
       internal_force[i] = 0.0;
@@ -513,6 +587,37 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       nimble::Block& block = block_it->second;
       std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
       std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
+#ifdef NIMBLE_HAVE_UQ
+      if(uq_model.Initialized()) {
+         int num_exact_samples = uq_model.GetNumExactSamples();
+         for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
+           //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
+           bool is_off_nominal = (ntraj > 0);
+           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
+           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
+           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
+           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1); 
+           block.ComputeInternalForce(reference_coordinate,
+                                      disp_ptr,
+                                      vel_ptr,
+                                      rve_macroscale_deformation_gradient.data(),
+                                      internal_force_ptr,
+                                      time_previous,
+                                      time_current,
+                                      num_elem_in_block,
+                                      elem_conn,
+                                      elem_global_ids.data(),
+                                      elem_data_labels.at(block_id),
+                                      elem_data_n,
+                                      elem_data_np1,
+                                      data_manager,
+                                      is_output_step,
+                                      is_off_nominal,
+                                      params_this_sample
+                                     );
+         }
+      }
+#else
       block.ComputeInternalForce(reference_coordinate,
                                  displacement,
                                  velocity,
@@ -528,24 +633,27 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                  elem_data_np1,
                                  data_manager,
                                  is_output_step
-#ifdef NIMBLE_HAVE_UQ
-                                 ,&uq_model
+                                ); 
 #endif
-                                 );
     }
+
+    total_dynamics_time.Stop();
 
     // Evaluate the contact force
     // TODO: remove this ifdef when parallel contact is supported with other backends
 #ifdef NIMBLE_HAVE_BVH
     if (contact_enabled) {
+      total_contact_time.Start();
       contact_manager.ApplyDisplacements(displacement);
-      contact_manager.ComputeParallelContactForce(step+1, is_output_step, contact_visualization);
+      contact_manager.ComputeParallelContactForce(step+1, is_output_step);
       contact_manager.GetForces(contact_force);
-      if (contact_visualization && is_output_step) {
-        contact_manager.ContactVisualizationWriteStep(time_current);
-      }
+      int vector_dimension = 3;
+      mpi_container.VectorReduction(vector_dimension, contact_force);
+      total_contact_time.Stop();
     }
 #endif
+
+    total_dynamics_time.Start();
 
 	{
 	  nimble::quanta::stopwatch vector_reduction_timer;
@@ -555,6 +663,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     int vector_dimension = 3;
     mpi_container.VectorReduction(vector_dimension, internal_force);
 	  total_vector_reduction_time += vector_reduction_timer.age();
+#ifdef NIMBLE_HAVE_UQ
+    if(uq_model.Initialized()) {
+       for(int ntraj=0; ntraj < uq_model.GetNumExactSamples(); ntraj++){
+         double * internal_force_ptr = uq_model.Forces()[ntraj];
+         mpi_container.VectorReduction(vector_dimension, internal_force_ptr);
+       }
+       //Now apply closure to estimate approximate sample forces from the exact samples
+       uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
+    }
+#endif
 	}
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i=0 ; i<num_unknowns ; ++i) {
@@ -565,6 +683,12 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     for (int i=0 ; i<num_unknowns ; ++i) {
       velocity[i] += half_delta_time * acceleration[i];
     }
+
+#ifdef NIMBLE_HAVE_UQ
+    // 2nd half step: update velocities for approximate trajectories
+    uq_model.UpdateVelocity(half_delta_time);
+#endif
+    total_dynamics_time.Stop();
 
     if (is_output_step) {
 	  nimble::quanta::stopwatch exodus_write_timer;
@@ -602,34 +726,34 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                               elem_data_for_output,
                               derived_elem_data_labels,
                               derived_elem_data);
-	  total_exodus_write_time += exodus_write_timer.age();
+      if (contact_visualization) {
+        contact_manager.ContactVisualizationWriteStep(time_current);
+      }
+      total_exodus_write_time += exodus_write_timer.age();
     }
     model_data.SwapStates();
+    total_step_time.Stop();
   }
   double total_simulation_time = main_simulation_timer.age();
-  if(my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
-	  std::string timingdatastr, timingfilenamestr;
-	  {
-		std::stringstream timinginfo;
-		timinginfo << num_mpi_ranks << "\t" << total_simulation_time << "\t" << total_exodus_write_time << "\t" << total_vector_reduction_time << "\n";
-		timingdatastr = timinginfo.str();
-	  }
-	  {
-		std::stringstream filename_stream;
-		filename_stream << "nimble_timing_data_n" << num_mpi_ranks << "_" <<  nimble::quanta::stopwatch::get_microsecond_timestamp() << ".log";
-		timingfilenamestr = filename_stream.str();
-		for(char& c : timingfilenamestr) {
-			if(c == ' ') c = '-';
-		}
-	  }
-	  std::fstream fs(timingfilenamestr, fs.binary | fs.trunc | fs.in | fs.out);
-	  if(!fs.is_open()) {
-		  std::cout << "Failed to open timing data file" << std::endl;
-	  } else {
-		  fs << timingdatastr;
-		  fs.flush();
-		  fs.close();
-	  }
+  if (my_mpi_rank == 0) {
+    std::cout << "======== Timing data: ========\n";
+    std::cout << "Total step time: " << total_step_time.GetElapsedTime() << '\n';
+    std::cout << "Total contact time: " << total_contact_time.GetElapsedTime() << '\n';
+    std::cout << "Total dynamics time: " << total_dynamics_time.GetElapsedTime() << '\n';
+    std::cout << "Total search time: " << contact_manager.total_search_time.GetElapsedTime() << '\n';
+    std::cout << "Total enforcement time: " << contact_manager.total_enforcement_time.GetElapsedTime() << '\n';
+    std::cout << "Total num contacts: " << contact_manager.total_num_contacts << '\n';
+  }
+  if (my_mpi_rank == 0 && parser.WriteTimingDataFile()) {
+    nimble::TimingInfo timing_writer{
+        num_mpi_ranks,
+        nimble::quanta::stopwatch::get_microsecond_timestamp(),
+        total_simulation_time,
+        0.0, 0.0,
+        total_exodus_write_time,
+        total_vector_reduction_time
+    };
+    timing_writer.BinaryWrite();
   }
   return status;
 }

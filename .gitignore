@@ -28,3 +28,4 @@ cmake-build-*/
 # Vim swapfiles, etc
 *.swp
 *.swo
+

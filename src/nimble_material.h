@@ -46,11 +46,14 @@
 
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
+#include "nimble_utils.h"
+#include <algorithm>
 #include <string.h>
 
 namespace nimble {
 
   class DataManager;
+  class MaterialFactoryBase;
   class MaterialFactory;
 
   NIMBLE_INLINE_FUNCTION
@@ -85,154 +88,126 @@ namespace nimble {
     static const int MAX_NUM_MAT_PARAM = 64;
     static const int MAX_MAT_MODEL_STR_LEN = 64;
 
-    NIMBLE_INLINE_FUNCTION
-    MaterialParameters() : num_material_parameters_(0), num_material_points_(0) {
-      for (int i=0 ; i<MAX_NUM_MAT_PARAM ; ++i) {
-        for (int j=0 ; j<MAX_MAT_MODEL_STR_LEN ; ++j) {
-          material_parameter_names_[i][j] = '\0';
-        }
-        material_parameter_values_[i] = 0.0;
-      }
+    inline
+    MaterialParameters() : num_material_points_(0) {
     }
 
-    NIMBLE_INLINE_FUNCTION
-    MaterialParameters(const char material_name[MAX_MAT_MODEL_STR_LEN],
-                       int num_material_parameters,
-                       const char material_parameter_names[MAX_NUM_MAT_PARAM][MAX_MAT_MODEL_STR_LEN],
-                       const double material_parameter_values[MAX_NUM_MAT_PARAM],
-                       int num_material_points = 0)
-      : num_material_parameters_(num_material_parameters), num_material_points_(num_material_points) {
-      for (int i=0 ; i<MAX_MAT_MODEL_STR_LEN ; ++i) {
-        material_name_[i] = material_name[i];
-      }
-      for (int i=0 ; i<MAX_NUM_MAT_PARAM ; ++i) {
-        for (int j=0 ; j<MAX_MAT_MODEL_STR_LEN ; ++j) {
-          material_parameter_names_[i][j] = material_parameter_names[i][j];
-        }
-        material_parameter_values_[i] = material_parameter_values[i];
-      }
-    }
+  inline
+  MaterialParameters(const std::string& material_name,
+                     const std::map<std::string, std::string>& string_params,
+                     const std::map<std::string, double>& double_params,
+                     int num_material_points = 0)
+      :
+      material_name_(material_name),
+      material_string_parameters_(string_params),
+      material_double_parameters_(double_params),
+      num_material_points_(num_material_points) {
+  }
 
-    NIMBLE_INLINE_FUNCTION
+  static inline void ConvertStringToUpperCase(std::string &s) {
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  }
+
+    inline
     ~MaterialParameters() {}
 
-    NIMBLE_INLINE_FUNCTION
+    inline
     void AddParameter(const char* parameter_name, double parameter_value) {
-      int len = StringLength(parameter_name);
-      for (int i=0 ; i<len ; ++i) {
-        material_parameter_names_[num_material_parameters_][i] = parameter_name[i];
-      }
-      material_parameter_names_[num_material_parameters_][len] = '\0';
-      material_parameter_values_[num_material_parameters_] = parameter_value;
-      num_material_parameters_ += 1;
+      material_double_parameters_.insert(std::make_pair(std::string(parameter_name), parameter_value));
     }
 
-    NIMBLE_INLINE_FUNCTION
+    inline
+    void AddStringParameter(const char* parameter_name, const char* parameter_value) {
+      material_string_parameters_.insert(std::make_pair(std::string(parameter_name), std::string(parameter_value)));
+    }
+
+    inline
     bool IsParameter(const char* parameter_name) const {
-      for (int i=0 ; i<num_material_parameters_ ; ++i) {
-        if (StringsAreEqual(parameter_name, material_parameter_names_[i])) {
-          return true;
-        }
-      }
-      return false;
+      return material_double_parameters_.find(parameter_name) != material_double_parameters_.end();
     }
 
-    NIMBLE_INLINE_FUNCTION
-    void GetMaterialName(char material_name[MAX_MAT_MODEL_STR_LEN],
-                         bool upper_case = false) const {
-      for (int i=0 ; i<MAX_MAT_MODEL_STR_LEN ; ++i) {
-        material_name[i] = material_name_[i];
-      }
-      if (upper_case) {
-        ConvertStringToUpperCase(material_name);
-      }
+    inline
+    bool IsStringParameter(const char* parameter_name) const {
+      return material_string_parameters_.find(parameter_name) != material_string_parameters_.end();
     }
 
-    NIMBLE_INLINE_FUNCTION
+  inline std::string GetMaterialName(bool upper_case = false) const {
+    std::string name = material_name_;
+    if (upper_case) {
+      ConvertStringToUpperCase(name);
+    }
+    return name;
+  }
+
+    inline
     int GetNumParameters() const {
-      return num_material_parameters_;
+      return material_double_parameters_.size();
     }
 
-    NIMBLE_INLINE_FUNCTION
-    void GetParameterName(int index,
-                          char parameter_name[MAX_MAT_MODEL_STR_LEN],
-                          bool upper_case = false) const {
-      for (int i=0 ; i<MAX_MAT_MODEL_STR_LEN ; ++i) {
-        parameter_name[i] = material_parameter_names_[index][i];
-      }
-      if (upper_case) {
-        ConvertStringToUpperCase(parameter_name);
-      }
+    inline
+    int GetNumStringParameters() const {
+      return material_string_parameters_.size();
     }
 
-    NIMBLE_INLINE_FUNCTION
+    inline
     double GetParameterValue(const char* parameter_name) const {
-      for (int i=0 ; i<num_material_parameters_ ; ++i) {
-        if (StringsAreEqual(parameter_name, material_parameter_names_[i])) {
-          return material_parameter_values_[i];
-        }
+      try {
+        return material_double_parameters_.at(parameter_name);
+      } catch(...) {
+        std::string errMsg = "Double parameter '" + std::string(parameter_name) + "' does not exist";
+        throw std::runtime_error(errMsg);
       }
-      return 0.0;
     }
 
-    NIMBLE_INLINE_FUNCTION
-    double GetParameterValue(int index) const {
-      return material_parameter_values_[index];
+    inline
+    const std::string& GetStringParameterValue(const char* parameter_name) const {
+      try {
+        return material_string_parameters_.at(parameter_name);
+      } catch(...) {
+        std::string errMsg = "String parameter '" + std::string(parameter_name) + "' does not exist";
+        throw std::runtime_error(errMsg);
+      }
     }
 
-    NIMBLE_INLINE_FUNCTION
+    inline
     int GetNumMaterialPoints() const {
       return num_material_points_;
     }
 
-    NIMBLE_INLINE_FUNCTION
+    inline
+    const std::map<std::string, double>&
+    GetParameters() const {
+      return material_double_parameters_;
+    }
+
+    inline
+    const std::map<std::string, std::string>&
+    GetStringParameters() const {
+      return material_string_parameters_;
+    }
+
+    inline
     void Print() const {
       printf("\n--MaterialParameters\n");
-      printf("  material name %s\n", material_name_);
-      printf("  number of material parameters %d\n", num_material_parameters_);
-      for (int i=0 ; i<num_material_parameters_ ; ++i) {
-        printf("  %s %f\n", material_parameter_names_[i], material_parameter_values_[i]);
+      printf("  material name %s\n", material_name_.c_str());
+      int num_material_double_parameters_ = material_double_parameters_.size();
+      printf("  number of material double parameters %d\n", num_material_double_parameters_);
+      for (auto p : material_double_parameters_) {
+        printf("  %s %f\n", p.first.c_str(), p.second);
+      }
+      int num_material_string_parameters_ = material_string_parameters_.size();
+      printf("  number of material string parameters %d\n", num_material_string_parameters_);
+      for (auto p : material_string_parameters_) {
+        printf("  %s %s\n", p.first.c_str(), p.second.c_str());
       }
     }
 
   private:
+    std::string material_name_;
 
-    NIMBLE_INLINE_FUNCTION
-    void ConvertStringToUpperCase(char s[MAX_MAT_MODEL_STR_LEN]) const {
-      for (int i=0 ; i<MAX_MAT_MODEL_STR_LEN ; ++i) {
-        if (s[i] == 'a') s[i] = 'A';
-        if (s[i] == 'b') s[i] = 'B';
-        if (s[i] == 'c') s[i] = 'C';
-        if (s[i] == 'd') s[i] = 'D';
-        if (s[i] == 'e') s[i] = 'E';
-        if (s[i] == 'f') s[i] = 'F';
-        if (s[i] == 'g') s[i] = 'G';
-        if (s[i] == 'h') s[i] = 'H';
-        if (s[i] == 'i') s[i] = 'I';
-        if (s[i] == 'j') s[i] = 'J';
-        if (s[i] == 'k') s[i] = 'K';
-        if (s[i] == 'l') s[i] = 'L';
-        if (s[i] == 'm') s[i] = 'M';
-        if (s[i] == 'n') s[i] = 'N';
-        if (s[i] == 'o') s[i] = 'O';
-        if (s[i] == 'p') s[i] = 'P';
-        if (s[i] == 'q') s[i] = 'Q';
-        if (s[i] == 'r') s[i] = 'R';
-        if (s[i] == 's') s[i] = 'S';
-        if (s[i] == 't') s[i] = 'T';
-        if (s[i] == 'u') s[i] = 'U';
-        if (s[i] == 'v') s[i] = 'V';
-        if (s[i] == 'w') s[i] = 'W';
-        if (s[i] == 'x') s[i] = 'X';
-        if (s[i] == 'y') s[i] = 'Y';
-        if (s[i] == 'z') s[i] = 'Z';
-      }
-    }
+    std::map<std::string, double> material_double_parameters_;
+    std::map<std::string, std::string> material_string_parameters_;
 
-    char material_name_[MAX_MAT_MODEL_STR_LEN];
-    int num_material_parameters_ = 0;
-    char material_parameter_names_[MAX_NUM_MAT_PARAM][MAX_MAT_MODEL_STR_LEN];
-    double material_parameter_values_[MAX_NUM_MAT_PARAM];
     int num_material_points_;
   };
 
@@ -241,7 +216,10 @@ namespace nimble {
     public:
 
     NIMBLE_FUNCTION
-    Material(MaterialParameters const & material_parameters): material_parameters_(material_parameters) {}
+    Material() {}
+
+    NIMBLE_FUNCTION
+    Material(const Material& mat) = default;
 
     NIMBLE_FUNCTION
     virtual ~Material() {}
@@ -263,6 +241,9 @@ namespace nimble {
 
     NIMBLE_FUNCTION
     virtual double GetBulkModulus() const = 0;
+
+    NIMBLE_FUNCTION
+    virtual double GetShearModulus() const = 0;
 
     NIMBLE_FUNCTION
     virtual void InitializeRVE(int elem_global_id,
@@ -294,26 +275,20 @@ namespace nimble {
                            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
                            nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) = 0;
 #endif
-
     NIMBLE_FUNCTION
     virtual void GetTangent(int num_pts,
                             double* material_tangent) const = 0;
 
-    NIMBLE_FUNCTION
-    MaterialParameters const & GetMaterialParameters() const { return material_parameters_;}
-
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    virtual void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                                     const int & bulk_mod_idx,
-                                     const int & shear_mod_idx,
+    virtual void GetOffNominalStress(const double & bulk_mod,
+                                     const double & shear_mod,
                                      int num_pts,
                                      const double * const deformation_gradient_np1,
                                      double* stress_np1) = 0;
 #endif
 
   protected:
-
     const int K_S_XX_ = 0 ;
     const int K_S_YY_ = 1 ;
     const int K_S_ZZ_ = 2 ;
@@ -333,39 +308,41 @@ namespace nimble {
     const int K_F_YX_ = 6 ;
     const int K_F_ZY_ = 7 ;
     const int K_F_XZ_ = 8 ;
-
-    MaterialParameters material_parameters_;
   };
 
   class ElasticMaterial : public Material {
 
   public:
+    static void register_supported_material_parameters(MaterialFactoryBase& factory);
 
     NIMBLE_FUNCTION
     ElasticMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
-    virtual ~ElasticMaterial() {}
+    ElasticMaterial(const ElasticMaterial& mat) = default;
 
     NIMBLE_FUNCTION
-    int NumStateVariables() const { return num_state_variables_; };
+    int NumStateVariables() const override { return num_state_variables_; };
 
     NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override {
       printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableLabel().\n");
     }
 
     NIMBLE_FUNCTION
-    double GetStateVariableInitialValue(int index) const  {
+    double GetStateVariableInitialValue(int index) const  override {
       printf("\n**** Error, bad index in ElasticMaterial::GetStateVariableInitialValue().\n");
       return 0.0;
     }
 
     NIMBLE_FUNCTION
-    double GetDensity() const { return density_; }
+    double GetDensity() const override { return density_; }
 
     NIMBLE_FUNCTION
-    double GetBulkModulus() const { return bulk_modulus_; }
+    double GetBulkModulus() const override { return bulk_modulus_; }
+
+    NIMBLE_FUNCTION
+    double GetShearModulus() const override { return shear_modulus_; }
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,
@@ -379,30 +356,29 @@ namespace nimble {
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
-                   bool is_output_step);
+                   bool is_output_step) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     void GetStress(double time_previous,
                    double time_current,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
                    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1);
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
 #endif
 
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
-                    double* material_tangent) const ;
+                    double* material_tangent) const override;
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                             const int & bulk_mod_idx,
-                             const int & shear_mod_idx,
+    void GetOffNominalStress(const double & bulk_mod,
+                             const double & shear_mod,
                              int num_pts,
                              const double * const deformation_gradient_np1,
-                             double* stress_np1);
+                             double* stress_np1) override;
 #endif
 
   private:
@@ -417,32 +393,36 @@ namespace nimble {
   class NeohookeanMaterial : public Material {
 
   public:
+    static void register_supported_material_parameters(MaterialFactoryBase& factory);
+
+    NIMBLE_FUNCTION
+    NeohookeanMaterial(const NeohookeanMaterial& mat) = default;
 
     NIMBLE_FUNCTION
     NeohookeanMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
-    virtual ~NeohookeanMaterial() {}
+    int NumStateVariables() const override { return num_state_variables_; };
 
     NIMBLE_FUNCTION
-    int NumStateVariables() const { return num_state_variables_; };
-
-    NIMBLE_FUNCTION
-    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const {
+    void GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override {
       printf("\n**** Error, bad index in NeohookeanMaterial::GetStateVariableLabel().\n");
     }
 
     NIMBLE_FUNCTION
-    double GetStateVariableInitialValue(int index) const  {
+    double GetStateVariableInitialValue(int index) const  override {
       printf("\n**** Error, bad index in NeohookeanMaterial::GetStateVariableInitialValue().\n");
       return 0.0;
     }
 
     NIMBLE_FUNCTION
-    double GetDensity() const { return density_; }
+    double GetDensity() const  override { return density_; }
 
     NIMBLE_FUNCTION
-    double GetBulkModulus() const { return bulk_modulus_; }
+    double GetBulkModulus() const  override { return bulk_modulus_; }
+
+    NIMBLE_FUNCTION
+    double GetShearModulus() const override { return shear_modulus_; }
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,
@@ -456,30 +436,29 @@ namespace nimble {
                    const double * const state_data_n,
                    double* state_data_np1,
                    DataManager& data_manager,
-                   bool is_output_step);
+                   bool is_output_step) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-    NIMBLE_FUNCTION
+    NIMBLE_INLINE_FUNCTION
     void GetStress(double time_previous,
                    double time_current,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
                    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
                    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1);
+                   nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
 #endif
 
     NIMBLE_FUNCTION
     void GetTangent(int num_pts,
-                    double* material_tangent) const ;
+                    double* material_tangent) const  override;
 
 #ifdef NIMBLE_HAVE_UQ
     NIMBLE_FUNCTION
-    void GetOffNominalStress(const std::vector<double> & params_this_sample,
-                             const int & bulk_mod_idx,
-                             const int & shear_mod_idx,
+    void GetOffNominalStress(const double & bulk_mod,
+                             const double & shear_mod,
                              int num_pts,
                              const double * const deformation_gradient_np1,
-                             double* stress_np1);
+                             double* stress_np1) override;
 #endif
 
   private:
@@ -490,6 +469,122 @@ namespace nimble {
     double bulk_modulus_;
     double shear_modulus_;
   };
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  NIMBLE_FUNCTION
+  void ElasticMaterial::GetStress(double time_previous,
+                                  double time_current,
+                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
+
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = stress_np1;
+    double strain[6];
+    double trace_strain;
+
+    double two_mu = 2.0 * shear_modulus_;
+    double lambda = bulk_modulus_ - 2.0*shear_modulus_/3.0;
+
+    strain[K_S_XX_] = def_grad[K_F_XX_] - 1.0;
+    strain[K_S_YY_] = def_grad[K_F_YY_] - 1.0;
+    strain[K_S_ZZ_] = def_grad[K_F_ZZ_] - 1.0;
+    strain[K_S_XY_] = 0.5*(def_grad[K_F_XY_] + def_grad[K_F_YX_]);
+    strain[K_S_YZ_] = 0.5*(def_grad[K_F_YZ_] + def_grad[K_F_ZY_]);
+    strain[K_S_ZX_] = 0.5*(def_grad[K_F_ZX_] + def_grad[K_F_XZ_]);
+
+    trace_strain = strain[K_S_XX_] + strain[K_S_YY_] + strain[K_S_ZZ_];
+
+    stress[K_S_XX_] = two_mu * strain[K_S_XX_] + lambda * trace_strain;
+    stress[K_S_YY_] = two_mu * strain[K_S_YY_] + lambda * trace_strain;
+    stress[K_S_ZZ_] = two_mu * strain[K_S_ZZ_] + lambda * trace_strain;
+    stress[K_S_XY_] = two_mu * strain[K_S_XY_];
+    stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
+    stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
+
+    // TODO rotate stress?
+  }
+
+  NIMBLE_FUNCTION
+  void NeohookeanMaterial::GetStress(double time_previous,
+                                     double time_current,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+                                     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
+                                     nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) {
+
+    double xj,fac,pressure,bxx,byy,bzz,bxy,byz,bzx,trace;
+    double sxx,syy,szz,sxy,syz,szx,syx,szy,sxz;
+
+    // deformation gradient, left stretch, and rotation
+    double def_grad[9], v[6], r[9];
+    for (int i=0 ; i<9 ; i++) {
+      def_grad[i] = deformation_gradient_np1[i];
+    }
+
+    Polar_Decomp(def_grad, v, r);
+
+    CheckVectorSanity(9, def_grad, "neohookean deformation_gradient_np1");
+    CheckVectorSanity(6, v, "neohookean v");
+    CheckVectorSanity(9, r, "neohookean r");
+
+    xj =     v[K_S_XX_]*v[K_S_YY_]*v[K_S_ZZ_]
+       + 2.0*v[K_S_XY_]*v[K_S_YZ_]*v[K_S_ZX_]
+       -     v[K_S_XX_]*v[K_S_YZ_]*v[K_S_YZ_]
+       -     v[K_S_YY_]*v[K_S_ZX_]*v[K_S_ZX_]
+       -     v[K_S_ZZ_]*v[K_S_XY_]*v[K_S_XY_];
+
+    double cbrt_xj = std::cbrt(xj);
+    fac = 1.0 / (cbrt_xj * cbrt_xj);
+
+    pressure = 0.5*bulk_modulus_*(xj - 1.0/xj);
+
+    bxx = v[K_S_XX_]*v[K_S_XX_]
+        + v[K_S_XY_]*v[K_S_YX_]
+        + v[K_S_XZ_]*v[K_S_ZX_];
+
+    byy = v[K_S_YX_]*v[K_S_XY_]
+        + v[K_S_YY_]*v[K_S_YY_]
+        + v[K_S_YZ_]*v[K_S_ZY_];
+
+    bzz = v[K_S_ZX_]*v[K_S_XZ_]
+        + v[K_S_ZY_]*v[K_S_YZ_]
+        + v[K_S_ZZ_]*v[K_S_ZZ_];
+
+    bxy = v[K_S_XX_]*v[K_S_XY_]
+        + v[K_S_XY_]*v[K_S_YY_]
+        + v[K_S_XZ_]*v[K_S_ZY_];
+
+    byz = v[K_S_YX_]*v[K_S_XZ_]
+        + v[K_S_YY_]*v[K_S_YZ_]
+        + v[K_S_YZ_]*v[K_S_ZZ_];
+
+    bzx = v[K_S_ZX_]*v[K_S_XX_]
+        + v[K_S_ZY_]*v[K_S_YX_]
+        + v[K_S_ZZ_]*v[K_S_ZX_];
+
+    bxx = fac*bxx;
+    byy = fac*byy;
+    bzz = fac*bzz;
+    bxy = fac*bxy;
+    byz = fac*byz;
+    bzx = fac*bzx;
+
+    trace = bxx + byy + bzz;
+
+    bxx = bxx - trace/3.0;
+    byy = byy - trace/3.0;
+    bzz = bzz - trace/3.0;
+
+    stress_np1(K_S_XX_) = pressure + shear_modulus_*bxx/xj;
+    stress_np1(K_S_YY_) = pressure + shear_modulus_*byy/xj;
+    stress_np1(K_S_ZZ_) = pressure + shear_modulus_*bzz/xj;
+    stress_np1(K_S_XY_) =            shear_modulus_*bxy/xj;
+    stress_np1(K_S_YZ_) =            shear_modulus_*byz/xj;
+    stress_np1(K_S_ZX_) =            shear_modulus_*bzx/xj;
+  }
+#endif
 
 } // namespace nimble
 

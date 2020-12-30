@@ -24,9 +24,15 @@ if(NIMBLE_HAVE_MPI)
   add_test(rigid_body_motion_mpi_np2 python ../run_exodiff_test.py --executable "${NimbleSM_MPI}" --input-deck rigid_body_motion.in --num-ranks 2)
 endif()
 
-if(NIMBLE_HAVE_KOKKOS)
+if(NIMBLE_HAVE_ARBORX)
+  add_test(rigid_body_motion_arborx_np1 python ../run_exodiff_test.py --executable "${NimbleSM_ArborX}" --input-deck rigid_body_motion.in --num-ranks 1)
+endif()
+
+if(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
   add_test(rigid_body_motion_kokkos_np1 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck rigid_body_motion.in --num-ranks 1)
-  add_test(rigid_body_motion_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck rigid_body_motion.in --num-ranks 2)
+  if (NIMBLE_HAVE_MPI)
+    add_test(rigid_body_motion_kokkos_np2 python ../run_exodiff_test.py --executable "${NimbleSM_Kokkos}" --input-deck rigid_body_motion.in --num-ranks 2)
+  endif()
 endif()
 
 if(NIMBLE_HAVE_TRILINOS)

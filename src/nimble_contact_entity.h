@@ -44,12 +44,16 @@
 #ifndef NIMBLE_CONTACTENTITY_H
 #define NIMBLE_CONTACTENTITY_H
 
-#include <vector>
-#include <cstring>
-#include <string>
 #include <cfloat>
-#include <math.h>
+#include <cmath>
+#include <cstring>
+#include <set>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "nimble_kokkos_defs.h"
+#include "nimble_utils.h"
 
 #ifdef NIMBLE_HAVE_BVH
   #include <bvh/kdop.hpp>
@@ -68,10 +72,8 @@ namespace nimble {
     b[0] = pt_3_x - pt_1_x;
     b[1] = pt_3_y - pt_1_y;
     b[2] = pt_3_z - pt_1_z;
-    cross[0] = b[1]*a[2] - b[2]*a[1];
-    cross[1] = b[2]*a[0] - b[0]*a[2];
-    cross[2] = b[0]*a[1] - b[1]*a[0];
-    area = 0.5 * sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
+    CrossProduct(b, a, cross);
+    area = 0.5 * std::sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
     return area;
   }
 
@@ -95,8 +97,8 @@ namespace nimble {
   }
 
   void ParseContactCommand(std::string const & command,
-                           std::vector<std::string> & master_block_names,
-                           std::vector<std::string> & slave_block_names,
+                           std::vector<std::string> & primary_block_names,
+                           std::vector<std::string> & secondary_block_names,
                            double & penalty_parameter);
 
   class ContactEntity {
@@ -109,10 +111,25 @@ namespace nimble {
       TRIANGLE=3
     } CONTACT_ENTITY_TYPE;
 
-    struct vertex {
+    class vertex {
+    public:
       NIMBLE_INLINE_FUNCTION
-      vertex() {
-        coords_[0] = coords_[1] = coords_[2] = 0.0;
+      vertex() = default;
+      NIMBLE_INLINE_FUNCTION
+      ~vertex() = default;
+      NIMBLE_INLINE_FUNCTION
+      vertex(const vertex &rhs) // copy constructor
+      {
+        for (int ii = 0; ii < 3; ++ii)
+          coords_[ii] = rhs.coords_[ii];
+      }
+      NIMBLE_INLINE_FUNCTION
+      vertex& operator=(const vertex &rhs) // copy assignment
+      {
+        if (this != &rhs)
+          for (int ii = 0; ii < 3; ++ii)
+            coords_[ii] = rhs.coords_[ii];
+        return *this;
       }
       NIMBLE_INLINE_FUNCTION
       double& operator[](int i) {
@@ -122,12 +139,14 @@ namespace nimble {
       double operator[](int i) const {
         return coords_[i];
       }
-      double coords_[3];
+      //
+      double coords_[3] = {0.0, 0.0, 0.0};
     };
 
     NIMBLE_INLINE_FUNCTION
-    ContactEntity() {}
+    ContactEntity() = default;
 
+    // FOr compatibility with older code
     NIMBLE_INLINE_FUNCTION
     ContactEntity(CONTACT_ENTITY_TYPE entity_type,
                   int contact_entity_global_id,
@@ -135,10 +154,27 @@ namespace nimble {
                   double characteristic_length,
                   int node_id_for_node_1,
                   int node_id_for_node_2 = 0,
-                  int node_ids_for_fictitious_node[4] = 0)
+                  const int node_ids_for_fictitious_node[4] = 0)
+        : ContactEntity( entity_type, contact_entity_global_id, -1,
+            coord, characteristic_length, node_id_for_node_1, node_id_for_node_2,
+                         node_ids_for_fictitious_node )
+    {
+
+    }
+
+    NIMBLE_INLINE_FUNCTION
+    ContactEntity(CONTACT_ENTITY_TYPE entity_type,
+                  int contact_entity_global_id,
+                  int contact_entity_local_id,
+                  double const coord[],
+                  double characteristic_length,
+                  int node_id_for_node_1,
+                  int node_id_for_node_2 = 0,
+                  const int node_ids_for_fictitious_node[4] = 0)
       : entity_type_(entity_type),
         char_len_(characteristic_length),
-        contact_entity_global_id_(contact_entity_global_id){
+        contact_entity_global_id_(contact_entity_global_id),
+        local_id_(contact_entity_local_id){
 
           // contact entities must be either nodes (one node) or trianglular faces (three nodes)
           if (entity_type_ == NODE) {
@@ -157,6 +193,7 @@ namespace nimble {
           else{
             printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
           }
+
           coord_1_x_ = coord[0];
           coord_1_y_ = coord[1];
           coord_1_z_ = coord[2];
@@ -169,10 +206,10 @@ namespace nimble {
             coord_3_z_ = coord[8];
           }
           SetBoundingBox();
-        }
+    }
 
     NIMBLE_INLINE_FUNCTION
-    ~ContactEntity() {}
+    ~ContactEntity() = default;
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
@@ -199,7 +236,7 @@ namespace nimble {
 
     template <typename ArgT>
     NIMBLE_INLINE_FUNCTION
-    void ScatterForceToContactManagerForceVector(ArgT force) {
+    void ScatterForceToContactManagerForceVector(ArgT &force) const {
       int n = 3*node_id_for_node_1_;
       force[n]   += force_1_x_;
       force[n+1] += force_1_y_;
@@ -247,8 +284,23 @@ namespace nimble {
     int contact_entity_global_id() const { return contact_entity_global_id_; }
 
     NIMBLE_INLINE_FUNCTION
+    int local_id() const noexcept { return local_id_; }
+
+    NIMBLE_INLINE_FUNCTION
     vertex centroid() const {
       return centroid_;
+    }
+
+    void ExportGeometryInto(ContactEntity &xerox) const;
+
+    NIMBLE_INLINE_FUNCTION
+    bool contact_status() const noexcept {
+      return contact_status_;
+    }
+
+    NIMBLE_INLINE_FUNCTION
+    void set_contact_status( bool status ) noexcept {
+      contact_status_ = status;
     }
 
 #ifdef NIMBLE_HAVE_BVH
@@ -256,7 +308,7 @@ namespace nimble {
 
     void RecomputeKdop()
     {
-      const double inflation_length = 0.15 * char_len_;
+      const double inflation_length = inflation_factor * char_len_;
       if (entity_type_ == NODE) {
         vertex v;
         v[0] = coord_1_x_;
@@ -284,67 +336,43 @@ namespace nimble {
     }
 #endif
 
+    /// \brief Distribute input force among node(s) of the entity
+    ///
+    /// \param contact_force Input force to distribute
+    /// \param N Array of barycentric coordinates when entity is triangular face
+    ///
+    /// \note Array N is not accessed when the entity is a node.
+    /// \note Indices for node(s) of the entity are not accessed.
     NIMBLE_INLINE_FUNCTION
-    void SetBoundingBox() {
-
-      centroid_[0] = coord_1_x_;
-      centroid_[1] = coord_1_y_;
-      centroid_[2] = coord_1_z_;
-      bounding_box_x_min_ = coord_1_x_;
-      bounding_box_x_max_ = coord_1_x_;
-      bounding_box_y_min_ = coord_1_y_;
-      bounding_box_y_max_ = coord_1_y_;
-      bounding_box_z_min_ = coord_1_z_;
-      bounding_box_z_max_ = coord_1_z_;
-
-      // todo, try ternary operator here
-      if (entity_type_ == TRIANGLE) {
-        centroid_[0] += coord_2_x_;
-        centroid_[1] += coord_2_y_;
-        centroid_[2] += coord_2_z_;
-        if (coord_2_x_ < bounding_box_x_min_)
-          bounding_box_x_min_ = coord_2_x_;
-        if (coord_2_x_ > bounding_box_x_max_)
-          bounding_box_x_max_ = coord_2_x_;
-        if (coord_2_y_ < bounding_box_y_min_)
-          bounding_box_y_min_ = coord_2_y_;
-        if (coord_2_y_ > bounding_box_y_max_)
-          bounding_box_y_max_ = coord_2_y_;
-        if (coord_2_z_ < bounding_box_z_min_)
-          bounding_box_z_min_ = coord_2_z_;
-        if (coord_2_z_ > bounding_box_z_max_)
-          bounding_box_z_max_ = coord_2_z_;
-        centroid_[0] += coord_3_x_;
-        centroid_[1] += coord_3_y_;
-        centroid_[2] += coord_3_z_;
-        if (coord_3_x_ < bounding_box_x_min_)
-          bounding_box_x_min_ = coord_3_x_;
-        if (coord_3_x_ > bounding_box_x_max_)
-          bounding_box_x_max_ = coord_3_x_;
-        if (coord_3_y_ < bounding_box_y_min_)
-          bounding_box_y_min_ = coord_3_y_;
-        if (coord_3_y_ > bounding_box_y_max_)
-          bounding_box_y_max_ = coord_3_y_;
-        if (coord_3_z_ < bounding_box_z_min_)
-          bounding_box_z_min_ = coord_3_z_;
-        if (coord_3_z_ > bounding_box_z_max_)
-          bounding_box_z_max_ = coord_3_z_;
+    void SetNodalContactForces(const double * const contact_force,
+                               const double * const N = nullptr) {
+      switch (entity_type_)
+      {
+      default:
+        break;
+      case NODE:
+        force_1_x_ = -contact_force[0];
+        force_1_y_ = -contact_force[1];
+        force_1_z_ = -contact_force[2];
+        break;
+      case TRIANGLE:
+        if (N == nullptr) {
+          // throw error
+        }
+        force_1_x_ = N[0] * contact_force[0];
+        force_1_y_ = N[0] * contact_force[1];
+        force_1_z_ = N[0] * contact_force[2];
+        force_2_x_ = N[1] * contact_force[0];
+        force_2_y_ = N[1] * contact_force[1];
+        force_2_z_ = N[1] * contact_force[2];
+        force_3_x_ = N[2] * contact_force[0];
+        force_3_y_ = N[2] * contact_force[1];
+        force_3_z_ = N[2] * contact_force[2];
+        break;
       }
-
-      centroid_[0] /= num_nodes_;
-      centroid_[1] /= num_nodes_;
-      centroid_[2] /= num_nodes_;
-
-      double inflation_length = 0.15 * char_len_;
-
-      bounding_box_x_min_ -= inflation_length;
-      bounding_box_x_max_ += inflation_length;
-      bounding_box_y_min_ -= inflation_length;
-      bounding_box_y_max_ += inflation_length;
-      bounding_box_z_min_ -= inflation_length;
-      bounding_box_z_max_ += inflation_length;
     }
 
+// DEPRECATED
     NIMBLE_INLINE_FUNCTION
     void ComputeNodalContactForces(const double * const contact_force,
                                    const double * const closest_point_projection) {
@@ -383,6 +411,28 @@ namespace nimble {
       }
     }
 
+    void ResetContactData() {
+      contact_status_ = false;
+    }
+
+  protected:
+    /// \brief Create a bounding box centered around the entity
+    ///
+    /// \note This function is only called within the class ContactEntity
+    void SetBoundingBox();
+
+
+  public:
+    //--- List of friend functions
+  template <typename ArgT>
+  friend void SerializeContactFaces(int num_entities, ArgT contact_entities,
+                                    std::vector<char> &buffer);
+
+  template <typename ArgT>
+  friend void UnserializeContactFaces(int num_entities, ArgT contact_entities,
+                                      std::vector<char> &buffer);
+
+public:
     // positions of nodes that define triangular contact patch
     CONTACT_ENTITY_TYPE entity_type_ = NONE;
     int num_nodes_ = 0;
@@ -404,6 +454,11 @@ namespace nimble {
     double force_3_x_ = 0.0;
     double force_3_y_ = 0.0;
     double force_3_z_ = 0.0;
+
+    /// \brief Factor multiplying characteristic length to inflate bounding box
+    ///
+    /// \note Empirical default value 0.15
+    double inflation_factor = 0.15;
 
     double char_len_ = 0.0;
 
@@ -436,7 +491,12 @@ namespace nimble {
     //   next 3 bits are the face ordinal (range is 1-6)
     //   remaining bits are the genesis element id from the parent FEM mesh (e.g., the global id of the hex from which the face was extracted)
     int contact_entity_global_id_ = -1;
-  };
+
+    int local_id_ = -1;
+
+    bool contact_status_ = false;
+
+};
 
   template <typename ArgT>
   void SerializeContactFaces(int num_entities,
@@ -514,7 +574,7 @@ namespace nimble {
   // Free functions for accessing entity info for bvh
   bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity );
   std::size_t get_entity_global_id( const ContactEntity &_entity );
-  tim::vec3d get_entity_centroid( const ContactEntity &_entity );
+  bvh::m::vec3d get_entity_centroid( const ContactEntity &_entity );
 #endif
 
 } // namespace nimble

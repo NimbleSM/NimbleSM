@@ -1,4 +1,0 @@
-Requirements
-- Need code to say which MPI ranks need to communicate with eachother for collisions
-- Need to be able to send contact entities
-- 

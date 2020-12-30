@@ -82,6 +82,7 @@ namespace nimble {
     unsigned int GetNumNodes() const { return node_x_.size(); }
 
     const int * GetNodeGlobalIds() const { return &node_global_id_[0]; }
+    std::size_t GetNumNodeGlobalIds() const { return node_global_id_.size(); }
 
     int GetMaxNodeGlobalId() const {
       int max_id = -1;
@@ -101,9 +102,13 @@ namespace nimble {
 
     unsigned int GetNumBlocks() const { return block_ids_.size(); }
 
+    unsigned int GetNumGlobalBlocks() const { return all_block_ids_.size(); }
+
     bool HasBlock(std::string const & block_name) const;
 
     std::vector<int> GetBlockIds() const { return block_ids_; }
+
+    std::vector<int> GetAllBlockIds() const { return all_block_ids_; }
 
     int GetNumElementsInBlock(int block_id) const;
 
@@ -117,7 +122,7 @@ namespace nimble {
 
     std::string GetElementType(int block_id) const;
 
-    std::string GetBlockName(int block_id) const { return block_names_.at(block_id); }
+    std::string GetBlockName(int block_id) const { return all_block_names_.at(block_id); }
 
     int GetBlockId(std::string const & block_name) const;
 
@@ -196,7 +201,9 @@ namespace nimble {
     std::vector<double> node_y_;
     std::vector<double> node_z_;
     std::vector<int> elem_global_id_;
+    std::vector<int> all_block_ids_;
     std::vector<int> block_ids_;
+    std::map<int, std::string> all_block_names_;
     std::map<int, std::string> block_names_;
     std::map<int, std::vector<int> > block_elem_global_ids_;
     std::map<int, int> block_num_nodes_per_elem_;
