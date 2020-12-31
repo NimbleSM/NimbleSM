@@ -179,6 +179,7 @@ namespace nimble {
 
     std::map<int, int>& GetGlobalNodeIdToLocalNodeIdMap() { return global_node_id_to_local_node_id_; }
 
+    void SwapStates() {
       element_data_n_.swap(element_data_np1_);
     }
 
