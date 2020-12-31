@@ -18,8 +18,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_serial.cc)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
@@ -46,7 +45,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_vector_communicator.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_version.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_serial.h)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.h)
 
 if(NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
@@ -66,8 +65,7 @@ if(NIMBLE_HAVE_MPI)
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.serialization.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.arrayview.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.stopwatch.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.quanta.stopwatch.h)
 endif()
 
 add_subdirectory(contact)
