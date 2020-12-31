@@ -79,16 +79,21 @@ namespace nimble {
       return output_node_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetElementDataLabels() {
+    std::map<int, std::vector<std::string> > GetElementDataLabels() const {
       return element_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetElementDataLabelsForOutput() {
+    std::map<int, std::vector<std::string> > GetElementDataLabelsForOutput() const {
       return output_element_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetDerivedElementDataLabelsForOutput() {
+    std::map<int, std::vector<std::string> > GetDerivedElementDataLabelsForOutput() const {
       return derived_output_element_data_labels_;
+    }
+
+    void SetDerivedElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
+    {
+      derived_output_element_data_labels_ = ref;
     }
 
     virtual int AllocateNodeData(Length length,
@@ -97,9 +102,7 @@ namespace nimble {
 
     virtual int GetFieldId(const std::string& field_label) const = 0;
 
-  // UH -- Temporary solution
-  public:
-  //private:
+  protected:
 
     //! Problem dimension, either 2 or 3.
     int dim_ = 3;
