@@ -213,13 +213,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
-  std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
   nimble::GenesisMesh mesh;
-  mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
-  if (rve_genesis_file_name != "none") {
-    rve_mesh.ReadFile(rve_genesis_file_name);
+  {
+    //--- UH This part is independent of Kokkos
+    std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
+    std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
+    mesh.ReadFile(genesis_file_name);
+    if (rve_genesis_file_name != "none") {
+      rve_mesh.ReadFile(rve_genesis_file_name);
+    }
   }
 
   watch_simulation.pop_region_and_report_time();
@@ -252,9 +255,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   nimble_kokkos::DataManager data_manager;
   nimble_kokkos::ModelData &model_data = data_manager.GetMacroScaleData();
+  model_data.SetDimension(dim);
+
+  // Global data
+  std::vector<std::string> global_data_labels;
 
   nimble_kokkos::FieldIds field_ids;
-
   field_ids.lumped_mass = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   field_ids.reference_coordinates = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
   field_ids.displacement = model_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
@@ -277,7 +283,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
     blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
-
+    //
+    // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
+    //
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
     field_ids.deformation_gradient = model_data.AllocateIntegrationPointData(block_id, nimble::FULL_TENSOR,
@@ -306,15 +314,13 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
   std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
   std::string const & time_integration_scheme = parser->TimeIntegrationScheme();
-
   nimble::BoundaryConditionManager boundary_condition_manager;
   boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
-  // Initialize the output file
+  // Initialize the exodus-output-manager
   nimble_kokkos::ExodusOutputManager exodus_output_manager;
   exodus_output_manager.SpecifyOutputFields(model_data, parser->GetOutputFieldString());
 
-  std::vector<std::string> global_data_labels;
   auto node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
   auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
 
@@ -325,7 +331,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   }
   //////////////
 
-  // ****
+  // Initialize the output file
   nimble::ExodusOutput exodus_output;
   exodus_output.Initialize(output_exodus_name, mesh);
   exodus_output.InitializeDatabase(mesh,
