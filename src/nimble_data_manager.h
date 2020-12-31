@@ -75,19 +75,19 @@ namespace nimble {
 
     double GetCriticalTimeStep() const { return critical_time_step_; }
 
-    std::vector<std::string> const & GetNodeDataLabelsForOutput() const {
+    const std::vector<std::string> & GetNodeDataLabelsForOutput() const {
       return output_node_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetElementDataLabels() const {
+    const std::map<int, std::vector<std::string> > & GetElementDataLabels() const {
       return element_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetElementDataLabelsForOutput() const {
+    const std::map<int, std::vector<std::string> > & GetElementDataLabelsForOutput() const {
       return output_element_component_labels_;
     }
 
-    std::map<int, std::vector<std::string> > GetDerivedElementDataLabelsForOutput() const {
+    const std::map<int, std::vector<std::string> > & GetDerivedElementDataLabelsForOutput() const {
       return derived_output_element_data_labels_;
     }
 
