@@ -44,9 +44,10 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
-#include "nimble_data_utils.h"
 #include "nimble_block.h"
+#include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
+#include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -101,6 +102,8 @@ namespace nimble {
                          int num_objects) = 0;
 
     virtual int GetFieldId(const std::string& field_label) const = 0;
+
+    virtual void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) = 0;
 
   protected:
 
@@ -176,9 +179,10 @@ namespace nimble {
 
     std::map<int, int>& GetGlobalNodeIdToLocalNodeIdMap() { return global_node_id_to_local_node_id_; }
 
-    void SwapStates() {
       element_data_n_.swap(element_data_np1_);
     }
+
+   void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
 
   protected:
 
