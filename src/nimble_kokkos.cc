@@ -324,12 +324,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   auto node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
   auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
 
-  /// UH --- This would need to be treated differently
-  auto& derived_elem_data_labels = model_data.derived_output_element_data_labels_;
+  std::map<int, std::vector<std::string> > derived_elem_data_labels;
   for (int block_id : block_ids) {
     derived_elem_data_labels[block_id] = std::vector<std::string>(); // TODO elliminate this
   }
-  //////////////
 
   // Initialize the output file
   nimble::ExodusOutput exodus_output;
@@ -339,6 +337,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                                    node_data_labels_for_output,
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
+
+  model_data.SetDerivedElementDataLabelsForOutput(std::move(derived_elem_data_labels));
 
   const double * const ref_coord_x = mesh.GetCoordinatesX();
   const double * const ref_coord_y = mesh.GetCoordinatesY();
@@ -595,10 +595,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
 
   std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-
-  //// UH --- This will need to be changed
-  auto &derived_elem_data_labels = model_data.derived_output_element_data_labels_;
-  /////////
+  auto const &derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
 
   exodus_output.WriteStep(time_current,
                           global_data,
