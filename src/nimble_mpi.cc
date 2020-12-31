@@ -99,8 +99,7 @@ int ExplicitTimeIntegrator(
     std::shared_ptr<nimble::ContactInterface> contact_interface,
     int num_ranks, int my_rank
 #ifdef NIMBLE_HAVE_UQ
-    ,
-    nimble::UqModel &uq_model
+    , nimble::UqModel &uq_model
 #endif
 );
 
@@ -188,13 +187,15 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
-  std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
   nimble::GenesisMesh mesh;
-  mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
-  if (rve_genesis_file_name != "none") {
-    rve_mesh.ReadFile(rve_genesis_file_name);
+  {
+    std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
+    std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
+    mesh.ReadFile(genesis_file_name);
+    if (rve_genesis_file_name != "none") {
+      rve_mesh.ReadFile(rve_genesis_file_name);
+    }
   }
   std::string tag = "mpi";
 
@@ -209,9 +210,7 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   model_data.SetDimension(dim);
 
   // Global data
-  int num_global_data = 0;
-  std::vector<std::string> global_data_labels(num_global_data);
-  std::vector<double> global_data(num_global_data);
+  std::vector<std::string> global_data_labels;
 
   int lumped_mass_field_id = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   int reference_coordinate_field_id = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
@@ -310,11 +309,11 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   const double * const ref_coord_x = mesh.GetCoordinatesX();
   const double * const ref_coord_y = mesh.GetCoordinatesY();
   const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
+  auto reference_coordinate = Viewify(model_data.GetNodeData(reference_coordinate_field_id), dim);
   for (int i=0 ; i<num_nodes ; i++) {
-    reference_coordinate[3*i]   = ref_coord_x[i];
-    reference_coordinate[3*i+1] = ref_coord_y[i];
-    reference_coordinate[3*i+2] = ref_coord_z[i];
+    reference_coordinate(i, 0) = ref_coord_x[i];
+    reference_coordinate(i, 1) = ref_coord_y[i];
+    reference_coordinate(i, 2) = ref_coord_z[i];
   }
 
   int status = 0;
@@ -412,9 +411,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
   }
 
-  int num_global_data = 0;
-  std::vector<double> global_data(num_global_data);
-
+  std::vector<double> global_data;
+  
   nimble::ModelData & model_data = data_manager.GetMacroScaleData();
 
   int lumped_mass_field_id = model_data.GetFieldId("lumped_mass");
@@ -876,8 +874,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   tpetra_container.Initialize(mesh, linear_system_global_node_ids, comm);
 #endif
 
-  int num_global_data = 0;
-  std::vector<double> global_data(num_global_data);
+  std::vector<double> global_data;
 
   nimble::ModelData & model_data = data_manager.GetMacroScaleData();
 
