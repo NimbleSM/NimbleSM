@@ -386,6 +386,21 @@ namespace nimble {
     }
   }
 
+  void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
+  {
+    const double * const ref_coord_x = mesh.GetCoordinatesX();
+    const double * const ref_coord_y = mesh.GetCoordinatesY();
+    const double * const ref_coord_z = mesh.GetCoordinatesZ();
+    auto field_id = GetFieldId("reference_coordinate");
+    double* reference_coordinate = GetNodeData(field_id);
+    int num_nodes = static_cast<int>(mesh.GetNumNodes());
+    for (int i=0 ; i < num_nodes ; i++) {
+      reference_coordinate[3*i]   = ref_coord_x[i];
+      reference_coordinate[3*i+1] = ref_coord_y[i];
+      reference_coordinate[3*i+2] = ref_coord_z[i];
+    }
+  }
+
   void ModelData::GetNodeDataComponent(int field_id,
                                          int component,
                                          double* const component_data) {

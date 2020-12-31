@@ -171,6 +171,8 @@ class ModelData : public nimble::BaseModelData
                              DeviceElementConnectivityView elem_conn_d,
                              DeviceVectorNodeGatheredView gathered_view_d);
 
+  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
+
 #ifndef KOKKOS_ENABLE_QTHREADS
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                    int num_elements,

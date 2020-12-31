@@ -325,7 +325,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
 
   std::map<int, std::vector<std::string> > derived_elem_data_labels;
-  for (int block_id : block_ids) {
+  for (auto block_id : block_ids) {
     derived_elem_data_labels[block_id] = std::vector<std::string>(); // TODO elliminate this
   }
 
@@ -340,17 +340,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   model_data.SetDerivedElementDataLabelsForOutput(std::move(derived_elem_data_labels));
 
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  nimble_kokkos::HostVectorNodeView reference_coordinate_h = model_data.GetHostVectorNodeData(field_ids.reference_coordinates);
-  nimble_kokkos::DeviceVectorNodeView reference_coordinate_d = model_data.GetDeviceVectorNodeData(field_ids.reference_coordinates);
-  for (int i=0 ; i<num_nodes ; i++) {
-    reference_coordinate_h(i, 0) = ref_coord_x[i];
-    reference_coordinate_h(i, 1) = ref_coord_y[i];
-    reference_coordinate_h(i, 2) = ref_coord_z[i];
-  }
-  Kokkos::deep_copy(reference_coordinate_d, reference_coordinate_h);
+  model_data.SetReferenceCoordinates(mesh);
 
   watch_simulation.pop_region_and_report_time();
 
