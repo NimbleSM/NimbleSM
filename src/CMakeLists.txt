@@ -83,28 +83,19 @@ IF(NIMBLE_HAVE_UQ)
   )
 ENDIF()
 
-#add_executable(NimbleSM_Serial nimble_serial_main.cc)
-#target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
-
 if (NIMBLE_HAVE_TRILINOS)
   add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
   target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
 endif()
 
-#IF(NIMBLE_HAVE_MPI)
-  target_sources(nimble PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction_utils.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.cc
-    )
-  add_executable(NimbleSM_MPI nimble_mpi_main.cc)
-  target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
-#ENDIF()
-
-IF(NIMBLE_HAVE_QTHREADS)
-  add_executable(NimbleSM_Qthreads nimble_qthread.cc ${NIMBLE_SOURCES})
-  target_link_libraries(NimbleSM_Qthreads ${LAME_LIBS} ${Exodus_LIBS} ${bvh_LIBS} ${Qthreads_LIBS})
-ENDIF()
+# UH -- Need to rename the executable without the MPI keyword
+target_sources(nimble PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction_utils.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.cc
+  )
+add_executable(NimbleSM_MPI nimble_mpi_main.cc)
+target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
 
 IF(NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE
