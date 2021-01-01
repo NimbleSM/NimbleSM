@@ -75,7 +75,7 @@ class VectorCommunicator {
   int dim_ = 3;
   unsigned int num_nodes_ = 0;
 #ifdef NIMBLE_HAVE_TRILINOS
-  comm_type comm_ = nullptr;
+  comm_type comm_;
 #else
   comm_type comm_ = 0;
 #endif
