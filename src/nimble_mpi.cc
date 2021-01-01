@@ -181,7 +181,7 @@ NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv) {
   details::parseCommandLine(argc, argv, init_data);
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (init_data.use_tpetra) {
+  if (init_data.use_tpetra_) {
     Tpetra::ScopeGuard tpetraScope(&argc,&argv);
     auto comm = Tpetra::getDefaultComm();
     num_ranks = comm->getSize();
@@ -401,7 +401,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
 
 #ifdef NIMBLE_HAVE_TRILINOS
   auto comm = (parser->UseTpetra()) ? Tpetra::getDefaultComm()
-                                    : nullptr;
+                                    : Teuchos::RCP<const Teuchos::Comm<int>>();
 #else
   int comm = 0;
 #endif
