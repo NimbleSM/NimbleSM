@@ -42,16 +42,11 @@
 */
 
 #include <memory>
-#include <string>
-#include <nimble_contact_interface.h>
+
+#include "nimble_contact_interface.h"
 #include "nimble_material_factory.h"
-
 #include "nimble_mpi.h"
-
 #include "nimble_parser.h"
-#ifdef NIMBLE_HAVE_VT
-#include <vt/transport.h>
-#endif
 
 int main(int argc, char *argv[]) {
 
@@ -59,21 +54,11 @@ int main(int argc, char *argv[]) {
 
   int status = 0;
   {
-    // Initialize VT if we need to
-#ifdef NIMBLE_HAVE_VT
-    MPI_Comm vt_comm = MPI_COMM_WORLD;
-    auto vt_rt = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm );
-#endif
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-    std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
+    std::shared_ptr<MaterialFactoryType> material_factory(new MaterialFactoryType);
     std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
-
-    status = nimble::NimbleMain(material_factory, contact_interface, parser,
-                                init_data);
-#ifdef NIMBLE_HAVE_VT
-    while ( !vt_rt->isTerminated() )
-      ::vt::runScheduler();
-#endif
+    parser->Initialize(init_data);
+    status = nimble::NimbleMain(material_factory, contact_interface, parser);
   }
 
   nimble::NimbleFinalize();

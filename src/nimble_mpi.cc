@@ -76,6 +76,10 @@
 #include "nimble_tpetra_utils.h"
 #endif
 
+#ifdef NIMBLE_HAVE_VT
+#include <vt/transport.h>
+#endif
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -92,12 +96,14 @@ namespace nimble {
 namespace details {
 
 int ExplicitTimeIntegrator(
-    nimble::Parser &parser, nimble::GenesisMesh &mesh,
+    const nimble::Parser &parser,
+    nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &boundary_condition_manager,
+    nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    int num_ranks, int my_rank
+    int num_ranks, int my_rank,
+    nimble::VectorCommunicator &myVectorCommunicator
 #ifdef NIMBLE_HAVE_UQ
     , nimble::UqModel &uq_model
 #endif
@@ -106,8 +112,11 @@ int ExplicitTimeIntegrator(
 int QuasistaticTimeIntegrator(
     nimble::Parser &parser, nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &boundary_condition_manager,
-    nimble::ExodusOutput &exodus_output, int my_rank, int num_ranks);
+    nimble::BoundaryConditionManager &bc,
+    nimble::ExodusOutput &exodus_output,
+    int my_rank, int num_ranks,
+    nimble::VectorCommunicator &myVectorCommunicator
+);
 
 double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   nimble::DataManager & data_manager,
@@ -124,32 +133,81 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step);
 
+int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
+{
+  for (int ia = 1; ia < argc; ++ia) {
+    std::string my_arg = std::string(argv[ia]);
+    if (my_arg == "--use_vt") {
+#ifdef NIMBLE_HAVE_VT
+      init_data.use_vt_ = true;
+#endif
+      continue;
+    }
+    if (my_arg == "--use_kokkos") {
+#ifdef NIMBLE_HAVE_KOKKOS
+      init_data.use_kokkos_ = true;
+#endif
+      continue;
+    }
+    if (my_arg == "--use_tpetra") {
+#ifdef NIMBLE_HAVE_TRILINOS
+      init_data.use_tpetra_ = true;
+#endif
+      continue;
+    }
+    //
+    init_data.file_name_ = my_arg;
+  }
+  //
+  // Throw an error when multiple flags are specified
+  //
+  int iflag = (init_data.use_vt_ == true) + (init_data.use_kokkos_ == true)
+              + (init_data.use_tpetra_ == true);
+  if (iflag > 1) {
+    throw std::runtime_error("\nError: Too many command line arguments !!\n");
+  }
+  return 0;
 }
 
-std::string NimbleInitializeAndGetInput(int argc, char **argv) {
+}
+
+
+NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv) {
 
   int my_rank = 0, num_ranks = 1;
-#ifdef NIMBLE_HAVE_MPI
-  MPI_Init(&argc, &argv);
-  int mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  if (mpi_err != MPI_SUCCESS) {
-    throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
+
+  // --- Parse the command line
+  NimbleInitData init_data;
+  details::parseCommandLine(argc, argv, init_data);
+
+#ifdef NIMBLE_HAVE_TRILINOS
+  if (init_data.use_tpetra) {
+    Tpetra::ScopeGuard tpetraScope(&argc,&argv);
+    auto comm = Tpetra::getDefaultComm();
+    num_ranks = comm->getSize();
+    my_rank = comm->getRank();
   }
-  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-  if (mpi_err != MPI_SUCCESS) {
-    throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n");
+  else
+#endif
+#ifdef NIMBLE_HAVE_MPI
+  {
+    MPI_Init(&argc, &argv);
+    int mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    if (mpi_err != MPI_SUCCESS) {
+      throw std::logic_error(
+          "\nError:  MPI_Comm_rank() returned nonzero error code.\n");
+    }
+    mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+    if (mpi_err != MPI_SUCCESS) {
+      throw std::logic_error(
+          "\nError:  MPI_Comm_size() returned nonzero error code.\n");
+    }
   }
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif
-
-  // Banner
-  if (my_rank == 0) {
-    std::cout << "\n-- NimbleSM" << std::endl;
-    std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
-  }
 
   if (argc < 2) {
     if (my_rank == 0) {
@@ -159,17 +217,43 @@ std::string NimbleInitializeAndGetInput(int argc, char **argv) {
       std::cout << "Usage:  NimbleSM <input_deck.in>\n" << std::endl;
 #endif
     }
-    throw std::runtime_error("Inappropriate set of parameters");
+    throw std::runtime_error("\nError: Inappropriate set of parameters.\n");
   }
 
-  std::string init_data = std::string(argv[1]);
+  // Banner
+  if (my_rank == 0) {
+    std::cout << "\n-- NimbleSM" << std::endl;
+    std::cout << "-- version " << nimble::NimbleVersion() << "\n";
+    if (init_data.use_kokkos_) {
+      std::cout << "-- Using Kokkos interface \n";
+    }
+    else if (init_data.use_tpetra_) {
+      std::cout << "-- Using Tpetra interface \n";
+    }
+    else if (init_data.use_vt_) {
+      std::cout << "-- Using VT runtime \n";
+    }
+    std::cout << "-- Number of rank";
+    if (num_ranks > 1)
+      std::cout << "(s)";
+    std::cout << " = " << num_ranks << "\n";
+    std::cout << std::endl;
+  }
+
+  // Initialize VT if needed
+#ifdef NIMBLE_HAVE_VT
+  if (init_data.use_vt == true) {
+    MPI_Comm vt_comm = MPI_COMM_WORLD;
+    ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm );
+  }
+#endif
+
   return init_data;
 }
 
-int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
+int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
                   std::shared_ptr<nimble::ContactInterface> contact_interface,
-                  std::shared_ptr<nimble::Parser> parser,
-                  const std::string& input_deck_name)
+                  std::shared_ptr<nimble::Parser> parser)
 {
 
   int my_rank = 0, num_ranks = 1;
@@ -179,12 +263,9 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
-  auto comm = MPI_COMM_WORLD;
-
-  //bvh::vt::context vt_ctx{ argc, argv, &comm };
+  auto comm_mpi = MPI_COMM_WORLD;
+  //bvh::vt::context vt_ctx{ argc, argv, &comm_mpi };
 #endif
-
-  parser->Initialize(input_deck_name);
 
   // Read the mesh
   nimble::GenesisMesh mesh;
@@ -197,8 +278,8 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
       rve_mesh.ReadFile(rve_genesis_file_name);
     }
   }
-  std::string tag = "mpi";
 
+  std::string tag = parser->GetOutputTag();
   std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_rank, num_ranks);
 
   int dim = mesh.GetDim();
@@ -224,6 +305,7 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   int external_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
   int contact_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
   int skin_node_field_id = model_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
+
   // Blocks
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -291,6 +373,7 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
   std::string time_integration_scheme = parser->TimeIntegrationScheme();
   nimble::BoundaryConditionManager bc;
   bc.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+
   // Initialize the output file
   nimble::ExodusOutput exodus_output;
   exodus_output.Initialize(output_exodus_name, mesh);
@@ -316,17 +399,28 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
     reference_coordinate(i, 2) = ref_coord_z[i];
   }
 
+#ifdef NIMBLE_HAVE_TRILINOS
+  auto comm = (parser->UseTpetra()) ? Tpetra::getDefaultComm()
+                                    : nullptr;
+#else
+  int comm = 0;
+#endif
+  nimble::VectorCommunicator myCommunicator(dim, num_nodes, comm);
+
   int status = 0;
   if (time_integration_scheme == "explicit") {
-    status = details::ExplicitTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output, contact_interface, num_ranks, my_rank
+    status = details::ExplicitTimeIntegrator(*parser, mesh, data_manager, bc,
+                                             exodus_output, contact_interface,
+                                             num_ranks, my_rank, myCommunicator
 #ifdef NIMBLE_HAVE_UQ
-                          ,uq_model
+                          , uq_model
 #endif
                           );
   }
   else if (time_integration_scheme == "quasistatic") {
-    status = details::QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc, exodus_output,
-                              my_rank, num_ranks);
+    status = details::QuasistaticTimeIntegrator(*parser, mesh, data_manager, bc,
+                                                exodus_output,
+                                                my_rank, num_ranks, myCommunicator);
   }
 
 #ifdef NIMBLE_HAVE_UQ
@@ -337,6 +431,12 @@ int NimbleMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
 }
 
 void NimbleFinalize() {
+
+#ifdef NIMBLE_HAVE_VT
+  while ( !::vt::curRT->isTerminated() )
+      ::vt::runScheduler();
+#endif
+
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::finalize();
 #endif
@@ -349,18 +449,20 @@ void NimbleFinalize() {
 
 namespace details {
 
-int ExplicitTimeIntegrator(nimble::Parser & parser,
-			   nimble::GenesisMesh & mesh,
-			   nimble::DataManager & data_manager,
-			   nimble::BoundaryConditionManager & bc,
-			   nimble::ExodusOutput & exodus_output,
-                           std::shared_ptr<nimble::ContactInterface> contact_interface,
-         int num_ranks,
-         int my_rank
+int ExplicitTimeIntegrator(
+    const nimble::Parser &parser,
+    nimble::GenesisMesh &mesh,
+    nimble::DataManager &data_manager,
+    nimble::BoundaryConditionManager &bc,
+    nimble::ExodusOutput &exodus_output,
+    std::shared_ptr<nimble::ContactInterface> contact_interface,
+    int num_ranks, int my_rank,
+    nimble::VectorCommunicator &myVectorCommunicator
 #ifdef NIMBLE_HAVE_UQ
-                          ,nimble::UqModel & uq_model
+    , nimble::UqModel &uq_model
 #endif
-         ) {
+)
+{
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
@@ -375,6 +477,32 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
 
+#ifdef NIMBLE_HAVE_TRILINOS
+  //
+  // -- This code does not seem to be active
+  // -- The lines are commented out for the moment.
+  //
+/*
+  int contact_block_id_1 = 0;
+  int contact_block_id_2 = 0;
+  double* contact_data_block_1 = 0;
+  double* contact_data_block_2 = 0;
+  std::vector<int> contact_results_block_1;
+  std::vector<int> contact_results_block_2;
+  bool has_contact = parser.HasContact();
+  if (has_contact) {
+    std::stringstream ss(parser.ContactString());
+    std::string block_name;
+    ss >> block_name;
+    contact_block_id_1 = mesh.GetBlockId(block_name);
+    contact_results_block_1.resize(mesh.GetNumElementsInBlock(contact_block_id_1));
+    ss >> block_name;
+    contact_block_id_2 = mesh.GetBlockId(block_name);
+    contact_results_block_2.resize(mesh.GetNumElementsInBlock(contact_block_id_2));
+  }
+*/
+#endif
+
   std::vector<int> global_node_ids(num_nodes);
   int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
   for (int n=0 ; n<num_nodes ; ++n) {
@@ -385,7 +513,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   // Here is where the initialization occurs for MPI operations
   // In this call, each rank determines which nodes are shared with which other ranks
   // This information is stored so that the vector reductions will work later
-  nimble::VectorCommunicator myVectorCommunicator;
   myVectorCommunicator.Initialize(global_node_ids);
 
   if (contact_enabled) {
@@ -405,7 +532,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
-      std::string tag = "mpi";
+      std::string tag = parser.GetOutputTag();
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
@@ -474,7 +601,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       critical_time_step = block_critical_time_step;
     }
   }
-  // DJL
+
   // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
   int scalar_dimension = 1;
   myVectorCommunicator.VectorReduction(scalar_dimension, lumped_mass);
@@ -548,7 +675,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     std::cout << "Explicit time integration:\n    0% complete" << std::endl;
   }
 
-  //Timing occurs for this portion of the code
+  // Timing occurs for this portion of the code
   nimble::quanta::stopwatch main_simulation_timer;
   main_simulation_timer.reset();
 
@@ -829,7 +956,9 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
 			      nimble::DataManager & data_manager,
 			      nimble::BoundaryConditionManager & bc,
 			      nimble::ExodusOutput & exodus_output,
-                              int my_rank, int num_ranks)
+                              int my_rank, int num_ranks,
+                              nimble::VectorCommunicator &myVectorCommunicator
+)
 {
 
   if (num_ranks > 1) {
@@ -869,14 +998,12 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   int linear_system_num_unknowns = linear_system_num_nodes * dim;
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  auto comm = Tpetra::getDefaultComm();
-  nimble::TpetraContainer tpetra_container;
-  tpetra_container.Initialize(mesh, linear_system_global_node_ids, comm);
+//  myVectorCommunicator.Initialize(linear_system_global_node_ids);
 #endif
 
   std::vector<double> global_data;
 
-  nimble::ModelData & model_data = data_manager.GetMacroScaleData();
+  nimble::ModelData &model_data = data_manager.GetMacroScaleData();
 
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
   int displacement_field_id = model_data.GetFieldId("displacement");
@@ -916,7 +1043,10 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
   }
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  tpetra_container.AllocateTangentStiffnessMatrix(mesh);
+//  tpetra_container.AllocateTangentStiffnessMatrix(mesh);
+//  if (my_rank == 0) {
+//    std::cout << "Number of nonzeros in the crs tangent stiffness matrix = " << tpetra_container.TangentStiffnessMatrixNumNonzeros() << "\n" << std::endl;
+//  }
 #endif
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
@@ -1036,7 +1166,7 @@ int QuasistaticTimeIntegrator(nimble::Parser & parser,
 
       tangent_stiffness.SetAllValues(0.0);
 #ifdef NIMBLE_HAVE_TRILINOS
-      tpetra_container.TangentStiffnessMatrixSetScalar(0.0);
+//      tpetra_container.TangentStiffnessMatrixSetScalar(0.0);
 #endif
       for (auto& block_it : blocks) {
         int block_id = block_it.first;

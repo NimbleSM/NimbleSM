@@ -67,7 +67,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleInitData& input_deck_name);
+                     const NimbleInitData& init_data);
 
 int NimbleKokkosFinalize(const NimbleInitData& init_data);
 

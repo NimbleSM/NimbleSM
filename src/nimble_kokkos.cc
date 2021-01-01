@@ -180,7 +180,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Parse and read mesh");
   
-  parser->Initialize(input_deck_name);
+  parser->Initialize(init_data.input_deck_name);
 
   // Read the mesh
   std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
