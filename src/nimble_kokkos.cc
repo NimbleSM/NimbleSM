@@ -75,7 +75,7 @@
 
 namespace nimble {
 
-NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
 #ifdef NIMBLE_HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -85,7 +85,7 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   Kokkos::initialize(argc, argv);
 #endif
 
-  NimbleInitData init_data;
+  NimbleKokkosInitData init_data;
 
 #ifdef NIMBLE_HAVE_MPI
   int mpi_err;
@@ -151,7 +151,7 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   return init_data;
 }
 
-int NimbleKokkosFinalize(const NimbleInitData& init_data) {
+int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
   }
@@ -171,7 +171,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleInitData& init_data) {
+                     const NimbleKokkosInitData& init_data) {
   const int num_mpi_ranks = init_data.num_mpi_ranks;
   const int my_mpi_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;

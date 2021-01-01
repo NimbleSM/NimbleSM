@@ -54,22 +54,22 @@ namespace nimble { class Parser; }
 
 namespace nimble {
 
-struct NimbleInitData {
+struct NimbleKokkosInitData {
   std::string input_deck_name = "";
   int my_mpi_rank = -1;
   int num_mpi_ranks = -1;
 };
 
 
-NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
+NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
 void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleInitData& init_data);
+                     const NimbleKokkosInitData& init_data);
 
-int NimbleKokkosFinalize(const NimbleInitData& init_data);
+int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data);
 
 }
 
