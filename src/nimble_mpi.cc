@@ -248,6 +248,9 @@ NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv) {
   }
 #endif
 
+  init_data.my_rank_ = my_rank;
+  init_data.num_ranks_ = num_ranks;
+
   return init_data;
 }
 
@@ -256,11 +259,8 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
                   std::shared_ptr<nimble::Parser> parser)
 {
 
-  int my_rank = 0, num_ranks = 1;
-#ifdef NIMBLE_HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-#endif
+  int my_rank = parser->GetRankID();
+  int num_ranks = parser->GetNumRanks();
 
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;

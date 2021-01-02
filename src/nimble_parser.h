@@ -96,6 +96,8 @@ namespace nimble {
     bool use_vt_ = false;
     bool use_kokkos_ = false;
     bool use_tpetra_ = false;
+    int my_rank_ = 0;
+    int num_ranks_ = 1;
 
     std::string GetOutputTag() const;
 
@@ -103,6 +105,7 @@ namespace nimble {
     template< typename ArchiveType >
     void serialize(ArchiveType& ar) {
       ar | inputFile_ | use_vt_ | use_kokkos_ | use_tpetra_;
+      ar | my_rank_ | num_ranks_;
     }
 #endif
 
@@ -240,6 +243,12 @@ namespace nimble {
 
     bool UseVT() const
     { return run_data_.use_vt_; }
+
+    int GetRankID() const
+    { return run_data_.my_rank_; }
+
+    int GetNumRanks() const
+    { return run_data_.num_ranks_; }
 
 #ifdef NIMBLE_HAVE_BVH
     int ContactDicing() const noexcept { return contact_dicing_; }
