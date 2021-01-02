@@ -254,8 +254,10 @@ NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv) {
   }
 #endif
 
+  std::cout << " after setting init_data >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
   init_data.my_rank_ = my_rank;
   init_data.num_ranks_ = num_ranks;
+  std::cout << " before return >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
 
   return init_data;
 }
