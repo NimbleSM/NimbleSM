@@ -111,8 +111,8 @@ public:
       TpetraReductionInfo.reset(tpetra_container);
       TpetraReductionInfo->Initialize(dim_, num_nodes_, comm_, global_node_ids);
     }
+    else
 #endif
-
 #ifdef NIMBLE_HAVE_MPI
     {
       MPI_Comm duplicate_of_world;
