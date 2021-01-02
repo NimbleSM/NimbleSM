@@ -140,18 +140,24 @@ int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
     if (my_arg == "--use_vt") {
 #ifdef NIMBLE_HAVE_VT
       init_data.use_vt_ = true;
+#else
+      std::cerr << "\n Flag '--use_vt' ignored \n\n";
 #endif
       continue;
     }
     if (my_arg == "--use_kokkos") {
 #ifdef NIMBLE_HAVE_KOKKOS
       init_data.use_kokkos_ = true;
+#else
+      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
 #endif
       continue;
     }
     if (my_arg == "--use_tpetra") {
 #ifdef NIMBLE_HAVE_TRILINOS
       init_data.use_tpetra_ = true;
+#else
+      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
 #endif
       continue;
     }
@@ -261,6 +267,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
 
   int my_rank = parser->GetRankID();
   int num_ranks = parser->GetNumRanks();
+std::cout << " nimblemain >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
 
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;
@@ -286,6 +293,8 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
+  std::cout << " dim " << dim << " num_nodes " << num_nodes
+            << " num_blocks" << num_blocks << "\n";
   nimble::DataManager data_manager;
   nimble::ModelData & model_data = data_manager.GetMacroScaleData();
   model_data.SetDimension(dim);
@@ -394,6 +403,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
   const double * const ref_coord_z = mesh.GetCoordinatesZ();
   auto reference_coordinate = Viewify(model_data.GetNodeData(reference_coordinate_field_id), dim);
   for (int i=0 ; i<num_nodes ; i++) {
+    std::cout << " i " << i << " num_nodes " << num_nodes << "\n";
     reference_coordinate(i, 0) = ref_coord_x[i];
     reference_coordinate(i, 1) = ref_coord_y[i];
     reference_coordinate(i, 2) = ref_coord_z[i];
