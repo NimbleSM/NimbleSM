@@ -51,7 +51,6 @@
 int main(int argc, char *argv[]) {
 
   auto init_data = nimble::NimbleInitializeAndGetInput(argc, argv);
-  std::cout << " after init_data \n" << std::endl;
 
   int status = 0;
   {

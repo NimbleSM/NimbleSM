@@ -254,10 +254,8 @@ NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv) {
   }
 #endif
 
-  std::cout << " after setting init_data >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
   init_data.my_rank_ = my_rank;
   init_data.num_ranks_ = num_ranks;
-  std::cout << " before return >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
 
   return init_data;
 }
@@ -269,7 +267,6 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
 
   int my_rank = parser->GetRankID();
   int num_ranks = parser->GetNumRanks();
-std::cout << " nimblemain >> my_rank " << my_rank << " num_ranks " << num_ranks << "\n";
 
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;
@@ -295,8 +292,6 @@ std::cout << " nimblemain >> my_rank " << my_rank << " num_ranks " << num_ranks 
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
-  std::cout << " dim " << dim << " num_nodes " << num_nodes
-            << " num_blocks" << num_blocks << "\n";
   nimble::DataManager data_manager;
   nimble::ModelData & model_data = data_manager.GetMacroScaleData();
   model_data.SetDimension(dim);
@@ -480,11 +475,13 @@ int ExplicitTimeIntegrator(
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
+  std::cout << " before contactmgr \n" << std::endl;
 #ifdef NIMBLE_HAVE_BVH
   nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
 #else
   nimble::ContactManager contact_manager(contact_interface);
 #endif
+  std::cout << " after contactmgr \n" << std::endl;
   
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
@@ -518,6 +515,7 @@ int ExplicitTimeIntegrator(
   std::vector<int> global_node_ids(num_nodes);
   int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
   for (int n=0 ; n<num_nodes ; ++n) {
+    std::cout << " >> n " << n << " num_nodes " << num_nodes << "\n";
     global_node_ids[n] = global_node_ids_ptr[n];
   }
 
@@ -525,7 +523,9 @@ int ExplicitTimeIntegrator(
   // Here is where the initialization occurs for MPI operations
   // In this call, each rank determines which nodes are shared with which other ranks
   // This information is stored so that the vector reductions will work later
+  std::cout << " myVecCom >> before init " << std::endl;
   myVectorCommunicator.Initialize(global_node_ids);
+  std::cout << " myVecCom >> after init " << std::endl;
 
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
