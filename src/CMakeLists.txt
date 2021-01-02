@@ -82,7 +82,8 @@ IF(NIMBLE_HAVE_UQ)
 ENDIF()
 
 if (NIMBLE_HAVE_TRILINOS)
-  add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
+#  add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
+  add_executable(NimbleSM_Tpetra nimble_mpi_main.cc)
   target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
 endif()
 

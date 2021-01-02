@@ -30,10 +30,9 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
             command.append("--use-hwthread-cpus")
 #        else:
 #            command.append("1")
+        command.append(executable_name)
         if "NimbleSM_Tpetra" in executable_name: 
-          command.append("NimbleSM_MPI --use_tpetra")
-        else:
-          command.append(executable_name)
+          command.append("--use_tpetra")
     if "NimbleSM_Qthreads" in executable_name:
         if qthreads_num_shepherds:
             command.append("-num_shepherds")
