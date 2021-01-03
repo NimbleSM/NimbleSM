@@ -217,8 +217,16 @@ Parser::Parser()
   material_strings_["rve"] = "none";
 }
 
-  void Parser::Initialize(const NimbleInitData &init_data) {
-    run_data_ = init_data;
+  void Parser::Initialize(NimbleInitData &init_data) {
+    run_data_.file_name_ = init_data.file_name_;
+    run_data_.use_vt_ = init_data.use_vt_;
+    run_data_.use_kokkos_ = init_data.use_kokkos_;
+    run_data_.use_tpetra_ = init_data.use_tpetra_;
+    run_data_.my_rank_ = init_data.my_rank_;
+    run_data_.num_ranks_ = init_data.num_ranks_;
+#ifdef NIMBLE_HAVE_TRILINOS
+    run_data_.tpetra_scope_.reset(init_data.tpetra_scope_.release());
+#endif
     ReadFile();
   }
 

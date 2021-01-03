@@ -64,15 +64,15 @@ namespace nimble {
 ///
 /// \param argc
 /// \param argv
-/// \return String for the input filename.
+/// \param parser
 ///
-NimbleInitData NimbleInitializeAndGetInput(int argc, char **argv);
+void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
 int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
-                  std::shared_ptr<nimble::ContactInterface> contact_interface,
-                  std::shared_ptr<nimble::Parser> parser);
+               std::shared_ptr<nimble::ContactInterface> contact_interface,
+               const nimble::Parser &parser);
 
-void NimbleFinalize();
+void NimbleFinalize(const nimble::Parser &parser);
 
 }
 

@@ -55,6 +55,10 @@
   #include <map>
 #endif
 
+#ifdef NIMBLE_HAVE_TRILINOS
+#include <Tpetra_Core.hpp>
+#endif
+
 namespace nimble {
 
   constexpr int MAX_C_STR_SIZE = 256;
@@ -99,6 +103,10 @@ namespace nimble {
     int my_rank_ = 0;
     int num_ranks_ = 1;
 
+#ifdef NIMBLE_HAVE_TRILINOS
+    std::unique_ptr<Tpetra::ScopeGuard> tpetra_scope_ = nullptr;
+#endif
+
     std::string GetOutputTag() const;
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -135,7 +143,7 @@ namespace nimble {
     }
 #endif
 
-    void Initialize(const NimbleInitData &init_data);
+    void Initialize(NimbleInitData &init_data);
 
     void Initialize(const std::string &fileName);
 

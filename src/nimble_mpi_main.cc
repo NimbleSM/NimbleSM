@@ -50,20 +50,14 @@
 
 int main(int argc, char *argv[]) {
 
-  auto init_data = nimble::NimbleInitializeAndGetInput(argc, argv);
+  nimble::Parser myParser;
+  nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
 
-  int status = 0;
-  {
-    std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-    std::shared_ptr<MaterialFactoryType> material_factory(new MaterialFactoryType);
-    std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
-    std::cout << " before initialize \n" << std::endl;
-    parser->Initialize(init_data);
-    std::cout << " after initialize \n" << std::endl;
-    status = nimble::NimbleMain(material_factory, contact_interface, parser);
-  }
+  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+  std::shared_ptr<MaterialFactoryType> material_factory(new MaterialFactoryType);
+  int status = nimble::NimbleMain(material_factory, contact_interface, myParser);
 
-  nimble::NimbleFinalize();
+  nimble::NimbleFinalize(myParser);
 
   return status;
 }

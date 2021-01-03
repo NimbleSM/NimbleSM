@@ -107,18 +107,13 @@ public:
   {
 #ifdef NIMBLE_HAVE_TRILINOS
     if (comm_) {
-      std::cout << " 110 \n";
       auto tpetra_container = new nimble::TpetraContainer();
-      std::cout << " 111 \n";
       TpetraReductionInfo.reset(tpetra_container);
-      std::cout << " 112 \n";
       TpetraReductionInfo->Initialize(dim_, num_nodes_, comm_, global_node_ids);
-      std::cout << " 113 \n";
     }
 #endif
 
 #ifdef NIMBLE_HAVE_MPI
-    std::cout << " 121 \n";
     {
       MPI_Comm duplicate_of_world;
       MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
@@ -126,7 +121,6 @@ public:
       reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
       MeshReductionInfo.reset(reduction_info);
     }
-    std::cout << " 129 \n";
 #endif
   }
 
