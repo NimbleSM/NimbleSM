@@ -979,7 +979,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 			      nimble::BoundaryConditionManager & bc,
 			      nimble::ExodusOutput & exodus_output,
                               int my_rank, int num_ranks,
-                              const nimble::VectorCommunicator &myVectorCommunicator
+                              nimble::VectorCommunicator &myVectorCommunicator
 )
 {
 
