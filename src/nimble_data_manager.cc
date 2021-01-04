@@ -50,14 +50,14 @@
 
 namespace nimble {
 
-  void ModelData::SetDimension(int dim) {
+  void BaseModelData::SetDimension(int dim) {
     if(dim != 2 && dim != 3){
       throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
     }
     dim_ = dim;
   }
 
-  int ModelData::GetFieldId(std::string label) {
+  int ModelData::GetFieldId(const std::string& label) const {
     for (auto const & id_field_pair : data_fields_) {
       if (id_field_pair.second.label_ == label) {
         return id_field_pair.first;
@@ -383,6 +383,21 @@ namespace nimble {
     }
     else {
       field.id_ = field_id;
+    }
+  }
+
+  void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
+  {
+    const double * const ref_coord_x = mesh.GetCoordinatesX();
+    const double * const ref_coord_y = mesh.GetCoordinatesY();
+    const double * const ref_coord_z = mesh.GetCoordinatesZ();
+    auto field_id = GetFieldId("reference_coordinate");
+    double* reference_coordinate = GetNodeData(field_id);
+    int num_nodes = static_cast<int>(mesh.GetNumNodes());
+    for (int i=0 ; i < num_nodes ; i++) {
+      reference_coordinate[3*i]   = ref_coord_x[i];
+      reference_coordinate[3*i+1] = ref_coord_y[i];
+      reference_coordinate[3*i+2] = ref_coord_z[i];
     }
   }
 

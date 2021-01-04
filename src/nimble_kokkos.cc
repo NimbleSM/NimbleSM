@@ -79,6 +79,26 @@
 
 namespace nimble {
 
+
+namespace details_kokkos {
+
+int ExplicitTimeIntegrator(nimble::Parser & parser,
+                           nimble::GenesisMesh & mesh,
+                           nimble_kokkos::DataManager & data_manager,
+                           nimble::BoundaryConditionManager & boundary_condition_manager,
+                           std::map<int, nimble_kokkos::Block> &blocks,
+                           nimble::ExodusOutput & exodus_output,
+                           nimble_kokkos::ExodusOutputManager & exodus_output_manager,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface,
+                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
+                           nimble_kokkos::FieldIds &field_ids,
+                           int num_ranks,
+                           int my_rank
+);
+
+}
+
+
 NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
 #ifdef NIMBLE_HAVE_MPI
@@ -176,8 +196,14 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
                      const NimbleInitData& init_data) {
-  const int num_mpi_ranks = init_data.num_mpi_ranks;
-  const int my_mpi_rank = init_data.my_mpi_rank;
+
+  int num_ranks = 1, my_rank = 0;
+
+#ifdef NIMBLE_HAVE_MPI
+  num_ranks = init_data.num_mpi_ranks;
+  my_rank = init_data.my_mpi_rank;
+#endif
+
   const std::string& input_deck_name = init_data.input_deck_name;
 
   //--- Define timers
@@ -187,13 +213,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   parser->Initialize(input_deck_name);
 
   // Read the mesh
-  std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_mpi_rank, num_mpi_ranks);
-  std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
   nimble::GenesisMesh mesh;
-  mesh.ReadFile(genesis_file_name);
   nimble::GenesisMesh rve_mesh;
-  if (rve_genesis_file_name != "none") {
-    rve_mesh.ReadFile(rve_genesis_file_name);
+  {
+    //--- UH This part is independent of Kokkos
+    std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
+    std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
+    mesh.ReadFile(genesis_file_name);
+    if (rve_genesis_file_name != "none") {
+      rve_mesh.ReadFile(rve_genesis_file_name);
+    }
   }
 
   watch_simulation.pop_region_and_report_time();
@@ -203,20 +232,20 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 #else
   std::string tag = "kokkos";
 #endif
-  std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+  std::string output_exodus_name = nimble::IOFileName(parser->ExodusFileName(), "e", tag, my_rank, num_ranks);
   int dim = mesh.GetDim();
-  int num_nodes = mesh.GetNumNodes();
-  int num_blocks = mesh.GetNumBlocks();
+  int num_nodes = static_cast<int>(mesh.GetNumNodes());
+  int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
-  if (my_mpi_rank == 0) {
+  if (my_rank == 0) {
     std::cout << "\n";
-    if (num_mpi_ranks == 1) {
+    if (num_ranks == 1) {
       std::cout << " Number of Nodes = " << num_nodes << "\n";
       std::cout << " Number of Elements = " << mesh.GetNumElements() << "\n";
     }
     std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks() << "\n";
     std::cout << "\n";
-    std::cout << " Number of Ranks         = " << num_mpi_ranks << "\n";
+    std::cout << " Number of Ranks         = " << num_ranks << "\n";
 #ifdef _OPENMP
     std::cout << " Number of Threads       = " << omp_get_max_threads() << "\n";
 #endif
@@ -225,47 +254,26 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   watch_simulation.push_region("Model data and field allocation");
 
   nimble_kokkos::DataManager data_manager;
-  nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
+  nimble_kokkos::ModelData &model_data = data_manager.GetMacroScaleData();
+  model_data.SetDimension(dim);
+
+  // Global data
+  std::vector<std::string> global_data_labels;
 
   nimble_kokkos::FieldIds field_ids;
-
   field_ids.lumped_mass = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
-  nimble_kokkos::HostScalarNodeView lumped_mass_h = model_data.GetHostScalarNodeData(field_ids.lumped_mass);
-  nimble_kokkos::DeviceScalarNodeView lumped_mass_d = model_data.GetDeviceScalarNodeData(field_ids.lumped_mass);
-
   field_ids.reference_coordinates = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
-  nimble_kokkos::HostVectorNodeView reference_coordinate_h = model_data.GetHostVectorNodeData(field_ids.reference_coordinates);
-  nimble_kokkos::DeviceVectorNodeView reference_coordinate_d = model_data.GetDeviceVectorNodeData(field_ids.reference_coordinates);
-
   field_ids.displacement = model_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
-  nimble_kokkos::HostVectorNodeView displacement_h = model_data.GetHostVectorNodeData(field_ids.displacement);
-  nimble_kokkos::DeviceVectorNodeView displacement_d = model_data.GetDeviceVectorNodeData(field_ids.displacement);
-  Kokkos::deep_copy(displacement_h, (double)(0.0));
-
   field_ids.velocity = model_data.AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
-  nimble_kokkos::HostVectorNodeView velocity_h = model_data.GetHostVectorNodeData(field_ids.velocity);
-  nimble_kokkos::DeviceVectorNodeView velocity_d = model_data.GetDeviceVectorNodeData(field_ids.velocity);
-  Kokkos::deep_copy(velocity_h, (double)(0.0));
-
   field_ids.acceleration =  model_data.AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
-  nimble_kokkos::HostVectorNodeView acceleration_h = model_data.GetHostVectorNodeData(field_ids.acceleration);
-  Kokkos::deep_copy(acceleration_h, (double)(0.0));
-
   field_ids.internal_force =  model_data.AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
-  nimble_kokkos::HostVectorNodeView internal_force_h = model_data.GetHostVectorNodeData(field_ids.internal_force);
-  nimble_kokkos::DeviceVectorNodeView internal_force_d = model_data.GetDeviceVectorNodeData(field_ids.internal_force);
-
   field_ids.contact_force =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
-  nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(field_ids.contact_force);
-  nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(field_ids.contact_force);
-  Kokkos::deep_copy(contact_force_h, (double)(0.0));
 
   bool store_unrotated_stress(true);
 
   // Blocks
   // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble_kokkos::Block> blocks;
-  std::map<int, nimble_kokkos::Block>::iterator block_it;
   std::vector<int> block_ids = mesh.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
     int block_id = block_ids.at(i);
@@ -275,7 +283,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
     blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
-
+    //
+    // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
+    //
     std::vector<double> initial_value(9, 0.0);
     initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
     field_ids.deformation_gradient = model_data.AllocateIntegrationPointData(block_id, nimble::FULL_TENSOR,
@@ -299,6 +309,79 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     }
   }
 
+  // Initialize the initial- and boundary-condition manager
+  std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
+  std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
+  std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
+  std::string const & time_integration_scheme = parser->TimeIntegrationScheme();
+  nimble::BoundaryConditionManager boundary_condition_manager;
+  boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+
+  // Initialize the exodus-output-manager
+  nimble_kokkos::ExodusOutputManager exodus_output_manager;
+  exodus_output_manager.SpecifyOutputFields(model_data, parser->GetOutputFieldString());
+
+  auto node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
+  auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
+
+  std::map<int, std::vector<std::string> > derived_elem_data_labels;
+  for (auto block_id : block_ids) {
+    derived_elem_data_labels[block_id] = std::vector<std::string>(); // TODO elliminate this
+  }
+
+  // Initialize the output file
+  nimble::ExodusOutput exodus_output;
+  exodus_output.Initialize(output_exodus_name, mesh);
+  exodus_output.InitializeDatabase(mesh,
+                                   global_data_labels,
+                                   node_data_labels_for_output,
+                                   elem_data_labels_for_output,
+                                   derived_elem_data_labels);
+
+  model_data.SetDerivedElementDataLabelsForOutput(std::move(derived_elem_data_labels));
+
+  model_data.SetReferenceCoordinates(mesh);
+
+  watch_simulation.pop_region_and_report_time();
+
+  if (time_integration_scheme == "explicit") {
+    details_kokkos::ExplicitTimeIntegrator(*parser, mesh, data_manager,
+                           boundary_condition_manager, blocks,
+                           exodus_output, exodus_output_manager,
+                           contact_interface, block_material_interface_factory,
+                           field_ids,
+                           num_ranks, my_rank);
+  }
+  else {
+    throw std::runtime_error("\n Time Integration Scheme Not Implemented \n");
+  }
+
+}
+
+
+namespace details_kokkos {
+
+int ExplicitTimeIntegrator(nimble::Parser & parser,
+                           nimble::GenesisMesh & mesh,
+                           nimble_kokkos::DataManager & data_manager,
+                           nimble::BoundaryConditionManager & boundary_condition_manager,
+                           std::map<int, nimble_kokkos::Block> &blocks,
+                           nimble::ExodusOutput & exodus_output,
+                           nimble_kokkos::ExodusOutputManager & exodus_output_manager,
+                           std::shared_ptr<nimble::ContactInterface> contact_interface,
+                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
+                           nimble_kokkos::FieldIds &field_ids,
+                           int num_ranks,
+                           int my_rank
+)
+{
+
+  int dim = mesh.GetDim();
+  int num_nodes = static_cast<int>(mesh.GetNumNodes());
+  int num_blocks = static_cast<int>(mesh.GetNumBlocks());
+
+  nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
+
   // Build up block data for stress computation
   std::vector<nimble_kokkos::BlockData> block_data;
   for (auto &&block_it : blocks)
@@ -311,52 +394,15 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     block_data.emplace_back(block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
   }
 
-  // Initialize the initial- and boundary-condition manager
-  std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
-  std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
-  std::string const & time_integration_scheme = parser->TimeIntegrationScheme();
-
-  nimble::BoundaryConditionManager boundary_condition_manager;
-  boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
-
-  // Initialize the output file
-  nimble_kokkos::ExodusOutputManager exodus_output_manager;
-  exodus_output_manager.SpecifyOutputFields(model_data, parser->GetOutputFieldString());
-  std::vector<std::string> global_data_labels;
-  std::vector<std::string> node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > derived_elem_data_labels;
-  for (int block_id : block_ids) {
-    derived_elem_data_labels[block_id] = std::vector<std::string>(); // TODO elliminate this
-  }
-  // ****
-  nimble::ExodusOutput exodus_output;
-  exodus_output.Initialize(output_exodus_name, mesh);
-  exodus_output.InitializeDatabase(mesh,
-                                   global_data_labels,
-                                   node_data_labels_for_output,
-                                   elem_data_labels_for_output,
-                                   derived_elem_data_labels);
-
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  for (int i=0 ; i<num_nodes ; i++) {
-    reference_coordinate_h(i, 0) = ref_coord_x[i];
-    reference_coordinate_h(i, 1) = ref_coord_y[i];
-    reference_coordinate_h(i, 2) = ref_coord_z[i];
-  }
-  Kokkos::deep_copy(reference_coordinate_d, reference_coordinate_h);
-
-  int block_index;
-
   // Containers for gathered data
   std::vector<nimble_kokkos::DeviceScalarNodeGatheredView> gathered_lumped_mass_d(num_blocks, nimble_kokkos::DeviceScalarNodeGatheredView("gathred_lumped_mass", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_reference_coordinates", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
+
+  int block_index;
+  std::map<int, nimble_kokkos::Block>::iterator block_it;
   for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
     int block_id = block_it->first;
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -367,11 +413,35 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     Kokkos::resize(gathered_contact_force_d.at(block_index), num_elem_in_block);
   }
 
-  watch_simulation.pop_region_and_report_time();
-
+  nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Lumped mass gather and compute");
 
+  nimble_kokkos::HostScalarNodeView lumped_mass_h = model_data.GetHostScalarNodeData(field_ids.lumped_mass);
+  nimble_kokkos::DeviceScalarNodeView lumped_mass_d = model_data.GetDeviceScalarNodeData(field_ids.lumped_mass);
+  Kokkos::deep_copy(lumped_mass_h, (double)(0.0));
   Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
+
+  nimble_kokkos::HostVectorNodeView reference_coordinate_h = model_data.GetHostVectorNodeData(field_ids.reference_coordinates);
+  nimble_kokkos::DeviceVectorNodeView reference_coordinate_d = model_data.GetDeviceVectorNodeData(field_ids.reference_coordinates);
+
+  nimble_kokkos::HostVectorNodeView displacement_h = model_data.GetHostVectorNodeData(field_ids.displacement);
+  nimble_kokkos::DeviceVectorNodeView displacement_d = model_data.GetDeviceVectorNodeData(field_ids.displacement);
+  Kokkos::deep_copy(displacement_h, (double)(0.0));
+
+  nimble_kokkos::HostVectorNodeView velocity_h = model_data.GetHostVectorNodeData(field_ids.velocity);
+  nimble_kokkos::DeviceVectorNodeView velocity_d = model_data.GetDeviceVectorNodeData(field_ids.velocity);
+  Kokkos::deep_copy(velocity_h, (double)(0.0));
+
+  nimble_kokkos::HostVectorNodeView acceleration_h = model_data.GetHostVectorNodeData(field_ids.acceleration);
+  Kokkos::deep_copy(acceleration_h, (double)(0.0));
+
+  nimble_kokkos::HostVectorNodeView internal_force_h = model_data.GetHostVectorNodeData(field_ids.internal_force);
+  nimble_kokkos::DeviceVectorNodeView internal_force_d = model_data.GetDeviceVectorNodeData(field_ids.internal_force);
+  Kokkos::deep_copy(internal_force_h, (double)(0.0));
+
+  nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(field_ids.contact_force);
+  nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(field_ids.contact_force);
+  Kokkos::deep_copy(contact_force_h, (double)(0.0));
 
   // Compute the lumped mass
   for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
@@ -403,10 +473,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
     // COMPUTE LUMPED MASS
     Kokkos::parallel_for("Lumped Mass", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
-        nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-        nimble_kokkos::DeviceScalarNodeGatheredSubView element_lumped_mass_d = Kokkos::subview(gathered_lumped_mass_block_d, i_elem, Kokkos::ALL);
-        element_d->ComputeLumpedMass(density, element_reference_coordinate_d, element_lumped_mass_d);
-      });
+      nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+      nimble_kokkos::DeviceScalarNodeGatheredSubView element_lumped_mass_d = Kokkos::subview(gathered_lumped_mass_block_d, i_elem, Kokkos::ALL);
+      element_d->ComputeLumpedMass(density, element_reference_coordinate_d, element_lumped_mass_d);
+    });
 
     // SCATTER TO NODE DATA
     model_data.ScatterScalarNodeData(field_ids.lumped_mass,
@@ -444,12 +514,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   nimble::ContactManager contact_manager(contact_interface);
 #endif // NIMBLE_HAVE_ARBORX
 
-  bool contact_enabled = parser->HasContact();
-  bool contact_visualization = parser->ContactVisualization();
+  bool contact_enabled = parser.HasContact();
+  bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
     double penalty_parameter;
-    nimble::ParseContactCommand(parser->ContactString(),
+    nimble::ParseContactCommand(parser.ContactString(),
                                 contact_master_block_names,
                                 contact_slave_block_names,
                                 penalty_parameter);
@@ -469,7 +539,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 #else
       std::string tag = "kokkos";
 #endif
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser->ContactVisualizationFileName(), "e", tag, my_mpi_rank, num_mpi_ranks);
+      std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
       contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
@@ -492,10 +562,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   watch_simulation.push_region("BC enforcement");
 
   double time_current(0.0), time_previous(0.0);
-  double final_time = parser->FinalTime();
+  double final_time = parser.FinalTime();
   double delta_time(0.0), half_delta_time(0.0);
-  const int num_load_steps = parser->NumLoadSteps();
-  int output_frequency = parser->OutputFrequency();
+  const int num_load_steps = parser.NumLoadSteps();
+  int output_frequency = parser.OutputFrequency();
 
   boundary_condition_manager.ApplyInitialConditions(reference_coordinate_h, velocity_h);
   boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
@@ -510,8 +580,13 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   exodus_output_manager.ComputeElementData(mesh, model_data, blocks, gathered_reference_coordinate_d, gathered_displacement_d);
   std::vector<double> global_data;
   std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+
   std::map<int, std::vector< std::vector<double> > > const & elem_data_for_output = exodus_output_manager.GetElementDataForOutput(model_data);
+  auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
+
   std::map<int, std::vector< std::vector<double> > > derived_elem_data;
+  auto const &derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
+
   exodus_output.WriteStep(time_current,
                           global_data,
                           node_data_for_output,
@@ -527,7 +602,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   //
   double total_internal_force_time = 0.0, total_contact_time = 0.0;
   double total_arborx_time = 0.0,
-         total_contact_applyd = 0.0, total_contact_getf = 0.0;
+      total_contact_applyd = 0.0, total_contact_getf = 0.0;
   double total_vector_reduction_time = 0.0;
   double total_update_avu_time = 0.0;
   double total_exodus_write_time = 0.0;
@@ -539,7 +614,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   for (int step = 0 ; step < num_load_steps ; ++step) {
 
-    if (my_mpi_rank == 0) {
+    if (my_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
         std::cout << "   " << static_cast<int>( 100.0 * static_cast<double>(step+1)/num_load_steps ) << "% complete" << std::endl << std::flush;
       }
@@ -579,7 +654,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     // Copy the current displacement and velocity value to device memory
     Kokkos::deep_copy(displacement_d, displacement_h);
     Kokkos::deep_copy(velocity_d, velocity_h);
-    
+
     total_update_avu_time += watch_internal.pop_region_and_report_time();
 
     watch_internal.push_region("Force calculation");
@@ -625,13 +700,13 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
       // COMPUTE DEFORMATION GRADIENTS
       Kokkos::parallel_for("Deformation Gradient", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
-          nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
-          nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
-          nimble_kokkos::DeviceFullTensorIntPtSubView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
-          element_d->ComputeDeformationGradients(element_reference_coordinate_d,
-                                                 element_displacement_d,
-                                                 element_deformation_gradient_step_np1_d);
-        });
+        nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+        nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+        nimble_kokkos::DeviceFullTensorIntPtSubView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+        element_d->ComputeDeformationGradients(element_reference_coordinate_d,
+                                               element_displacement_d,
+                                               element_deformation_gradient_step_np1_d);
+      });
     }
     watch_internal_details.pop_region_and_report_time();
 
@@ -663,15 +738,15 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
       // COMPUTE NODAL FORCES
       Kokkos::parallel_for("Force", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
-          nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-          nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-          nimble_kokkos::DeviceSymTensorIntPtSubView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-          nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d = Kokkos::subview(gathered_internal_force_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-          element_d->ComputeNodalForces(element_reference_coordinate_d,
-                                        element_displacement_d,
-                                        element_stress_step_np1_d,
-                                        element_internal_force_d);
-        });
+        nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+        nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+        nimble_kokkos::DeviceSymTensorIntPtSubView element_stress_step_np1_d = Kokkos::subview(stress_step_np1_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+        nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d = Kokkos::subview(gathered_internal_force_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+        element_d->ComputeNodalForces(element_reference_coordinate_d,
+                                      element_displacement_d,
+                                      element_stress_step_np1_d,
+                                      element_internal_force_d);
+      });
 
       model_data.ScatterVectorNodeData(field_ids.internal_force,
                                        num_elem_in_block,
@@ -789,11 +864,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   } // loop over time steps
   double total_simulation_time = watch_simulation.pop_region_and_report_time();
 
-  for (int irank = 0; irank < num_mpi_ranks; ++irank) {
+  for (int irank = 0; irank < num_ranks; ++irank) {
 #ifdef NIMBLE_HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    if ((my_mpi_rank == irank) && (!contactInfo.empty())) {
+    if ((my_rank == irank) && (!contactInfo.empty())) {
       std::cout << " Rank " << irank << " has " << contactInfo.size()
                 << " contact entries "
                 << "(out of " << num_load_steps << " time steps)."<< std::endl;
@@ -804,10 +879,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 #endif
   }
 
-  if (my_mpi_rank == 0 && parser->WriteTimingDataFile()) {
+  if (my_rank == 0 && parser.WriteTimingDataFile()) {
 //    double tcontact = total_contact_applyd + total_arborx_time + total_contact_getf;
     nimble::TimingInfo timing_writer{
-        num_mpi_ranks,
+        num_ranks,
         nimble::quanta::stopwatch::get_microsecond_timestamp(),
         total_simulation_time,
         total_internal_force_time,
@@ -818,7 +893,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     timing_writer.BinaryWrite();
   }
 
-  if (my_mpi_rank == 0) {
+  if (my_rank == 0) {
     std::cout << " Total Time Loop = " << total_simulation_time << "\n";
     std::cout << " --- Internal Forces = " << total_internal_force_time << "\n";
     if (contact_enabled) {
@@ -836,6 +911,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     std::cout << " --- Vector Reduction = " << total_vector_reduction_time << "\n";
   }
 
+  return 0;
 }
+
+}
+
 
 }
