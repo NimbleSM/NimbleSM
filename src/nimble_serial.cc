@@ -185,7 +185,9 @@ int NimbleSerialMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
       std::string material_key = it->first;
       int block_id = parser->GetBlockIdFromMaterial( material_key );
       std::string uq_params_this_material = it->second;
-      uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+      std::string const & nominal_params_string = parser->GetMacroscaleMaterialParameters(block_id);
+      bool block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end() ;
+      uq_model.ParseBlockInput( uq_params_this_material, block_id, nominal_params_string, *material_factory, block_id_present, blocks );
     }
     // initialize
     uq_model.Initialize(mesh,macroscale_data);
