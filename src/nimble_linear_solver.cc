@@ -114,8 +114,8 @@ namespace nimble {
     throw std::runtime_error("Error, CRSMatrixContainer::FindIndex() failed to find index.");
   }
 
-  void CRSMatrixContainer::MatVec(const double * const vec,
-                                  double * const result) const {
+  void CRSMatrixContainer::MatVec(const double *vec,
+                                  double *result) const {
     for (unsigned int i_row=0 ; i_row<num_rows_ ; i_row++) {
       result[i_row] = 0.0;
     }
@@ -124,8 +124,8 @@ namespace nimble {
     }
   }
 
-  void CRSMatrixContainer::DiagonalMatrixMatVec(const double * const vec,
-                                                double * const result) const {
+  void CRSMatrixContainer::DiagonalMatrixMatVec(const double *vec,
+                                                double *result) const {
     // the matrix must be diagonal
     if (num_rows_ != data_.size()) {
       throw std::runtime_error("**** Error in CRSMatrixContainer::DiagonalMatrixMatVec(), matrix is not diagonal.\n");
@@ -136,7 +136,7 @@ namespace nimble {
     }
   }
 
-  void PopulateDiagonalPreconditioner(CRSMatrixContainer const & A,
+  void PopulateDiagonalPreconditioner(const CRSMatrixContainer &A,
                                       CRSMatrixContainer & M)
   {
     // the preconditioner must be a diagonal matrix
@@ -283,9 +283,9 @@ namespace nimble {
   }
 
   bool CG_SolveSystem(nimble::CRSMatrixContainer& A,
-                      const double * const b,
+                      const double *b,
                       CGScratchSpace& cg_scratch,
-                      double * const x,
+                      double *x,
                       int& num_iterations)
   {
     // see "An Introduction to the Conjugate Gradient Method Without the Agonizing Pain", J.R. Shewchuk, 1994.
