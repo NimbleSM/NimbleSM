@@ -993,7 +993,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
-  const int * const global_node_ids = mesh.GetNodeGlobalIds();
+  const int *global_node_ids = mesh.GetNodeGlobalIds();
 
   // Store various mappings from global to local node ids
   // Things get a bit tricky for periodic boundary conditions,
@@ -1204,23 +1204,24 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                             tangent_stiffness);
       }
 
-      // For the dof with kinematic BC, zero out the rows and columns and put a non-zero on the diagonal
       double diagonal_entry(0.0);
       for (int i=0 ; i<linear_system_num_unknowns ; ++i) {
         diagonal_entry += std::abs(tangent_stiffness(i,i));
       }
       diagonal_entry /= linear_system_num_unknowns;
-      bc.ModifyTangentStiffnessMatrixForKinematicBC(linear_system_num_unknowns, linear_system_global_node_ids.data(), diagonal_entry, tangent_stiffness);
 
+      // For the dof with kinematic BC, zero out the rows and columns and put a non-zero on the diagonal
+      bc.ModifyTangentStiffnessMatrixForKinematicBC(linear_system_num_unknowns, linear_system_global_node_ids.data(), diagonal_entry, tangent_stiffness);
       bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector.data());
 
+      // Solve the linear system with the tangent stiffness matrix
       int num_cg_iterations(0);
       std::fill(linear_solver_solution.begin(), linear_solver_solution.end(), 0.0);
       bool success = nimble::CG_SolveSystem(tangent_stiffness,
-                                                    residual_vector.data(),
-                                                    cg_scratch,
-                                                    linear_solver_solution.data(),
-                                                    num_cg_iterations);
+                                            residual_vector.data(),
+                                            cg_scratch,
+                                            linear_solver_solution.data(),
+                                            num_cg_iterations);
       if (!success) {
         throw std::logic_error("\nError:  CG linear solver failed to converge.\n");
       }
@@ -1258,12 +1259,12 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                                          rve_macroscale_deformation_gradient.data(),
                                                          is_output_step);
 
+      //
       // secant line search
-      double sr(0.0), s_trial_r(0.0);
-      for (int n=0 ; n<linear_system_num_unknowns ; n++) {
-        sr += linear_solver_solution[n] * residual_vector[n];
-        s_trial_r += linear_solver_solution[n] * trial_residual_vector[n];
-      }
+      //
+
+      double sr = nimble::InnerProduct(linear_solver_solution, residual_vector);
+      double s_trial_r = nimble::InnerProduct(linear_solver_solution, trial_residual_vector);
       double alpha = -1.0 * sr / (s_trial_r - sr);
 
       // evaluate residual for alpha computed with secant line search
@@ -1387,9 +1388,13 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                 derived_elem_data);
       }
 
-    // swap states
     }
+
+    // swap states
+    model_data.SwapStates();
+
   }
+
   if (my_rank == 0) {
     std::cout << "\nComplete.\n" << std::endl;
   }
@@ -1459,6 +1464,24 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
 #endif
     );
   }
+  //
+  // UH Check whether we should do a reduction
+  //
+//  int vector_dimension = 3;
+//  mpi_container.VectorReduction(vector_dimension, internal_force);
+//#ifdef NIMBLE_HAVE_UQ
+// What to do?
+//  if(uq_model.Initialized()) {
+//       for(int ntraj=0; ntraj < uq_model.GetNumExactSamples(); ntraj++){
+//         double * internal_force_ptr = uq_model.Forces()[ntraj];
+//         mpi_container.VectorReduction(vector_dimension, internal_force_ptr);
+//       }
+//       //Now apply closure to estimate approximate sample forces from the exact samples
+//       uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
+//    }
+//#endif
+  //
+
   for (int i=0 ; i<linear_system_num_unknowns ; i++) {
     residual_vector[i] = 0.0;
   }
@@ -1474,17 +1497,20 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
     }
   }
   bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector);
-  double l2_norm(0.0), infinity_norm(0.0);
-  for (int i=0 ; i<num_nodes ; i++) {
-    double f = std::abs(residual_vector[i]);
-    l2_norm += f * f;
-    if (f > infinity_norm) {
-      infinity_norm = f;
-    }
-  }
-  l2_norm = sqrt(l2_norm);
-  double residual = l2_norm + 20.0 * infinity_norm;
 
+  double l2_norm = InnerProduct(num_nodes, residual_vector, residual_vector);
+  l2_norm = sqrt(l2_norm);
+
+  double infinity_norm(0.0);
+  for (int i=0 ; i<num_nodes ; i++) {
+    infinity_norm = std::max(infinity_norm, std::abs(residual_vector[i]));
+  }
+#ifdef NIMBLE_HAVE_MPI
+  double restmp = infinity_norm;
+  MPI_Allreduce(&restmp, &infinity_norm, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  double residual = l2_norm + 20.0 * infinity_norm;
   return residual;
 }
 
