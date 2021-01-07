@@ -52,6 +52,8 @@
 
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
+#include "nimble_data_manager.h"
+
 
 namespace nimble_kokkos {
 
@@ -70,14 +72,14 @@ struct FieldIds {
   int contact_force = -1;
 };
 
-class ModelData
+class ModelData : public nimble::BaseModelData
 {
 
  public:
 
   int AllocateNodeData(nimble::Length length,
                        std::string label,
-                       int num_objects);
+                       int num_objects) override;
 
   int AllocateElementData(int block_id,
                           nimble::Length length,
@@ -90,7 +92,8 @@ class ModelData
                                    int num_objects,
                                    std::vector<double> initial_value = std::vector<double>());
 
-  int GetFieldId(std::string field_label) const { return field_label_to_field_id_map_.at(field_label); }
+  int GetFieldId(const std::string& field_label) const override
+  { return field_label_to_field_id_map_.at(field_label); }
 
   std::vector<int> GetBlockIds() const ;
 
@@ -167,6 +170,8 @@ class ModelData
                              int num_nodes_per_element,
                              DeviceElementConnectivityView elem_conn_d,
                              DeviceVectorNodeGatheredView gathered_view_d);
+
+  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
 
 #ifndef KOKKOS_ENABLE_QTHREADS
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
