@@ -191,8 +191,8 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
                      const NimbleKokkosInitData& init_data) {
-  const int num_mpi_ranks = init_data.num_mpi_ranks;
-  const int my_mpi_rank = init_data.my_mpi_rank;
+  const int num_ranks = init_data.num_mpi_ranks;
+  const int my_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
 
   //--- Define timers
