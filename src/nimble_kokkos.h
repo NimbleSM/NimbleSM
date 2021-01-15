@@ -47,10 +47,6 @@
 #include <string>
 #include <memory>
 
-#ifdef NIMBLE_HAVE_MPI
-#include "nimble_mpi.h"
-#endif
-
 namespace nimble_kokkos { class MaterialFactory; }
 namespace nimble { class ContactInterface; }
 namespace nimble_kokkos { class BlockMaterialInterfaceFactory; }
@@ -58,25 +54,22 @@ namespace nimble { class Parser; }
 
 namespace nimble {
 
-#ifdef NIMBLE_HAVE_MPI
-using NimbleInitData = NimbleMPIInitData;
-#else
-struct NimbleInitData {
+struct NimbleKokkosInitData {
   std::string input_deck_name = "";
   int my_mpi_rank = -1;
   int num_mpi_ranks = -1;
 };
-#endif
 
-NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
+
+NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
 void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleInitData& input_deck_name);
+                     const NimbleKokkosInitData& init_data);
 
-int NimbleKokkosFinalize(const NimbleInitData& init_data);
+int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data);
 
 }
 

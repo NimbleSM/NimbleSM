@@ -50,6 +50,10 @@
   #include <vector>
 #endif
 
+#ifdef NIMBLE_HAVE_MPI
+#include <mpi.h>
+#endif
+
 namespace nimble {
 
   class MatrixContainer {
@@ -112,7 +116,7 @@ namespace nimble {
   public:
     CRSMatrixContainer() : num_rows_(0) {}
 
-    ~CRSMatrixContainer(){}
+    ~CRSMatrixContainer() = default;
 
     void AllocateNonzeros(std::vector<int> const & i_index,
                           std::vector<int> const & j_index);
@@ -135,9 +139,8 @@ namespace nimble {
     }
 
     void SetAllValues(double value) {
-      for (unsigned int i=0 ; i<data_.size() ; i++) {
-        data_[i] = value;
-      }
+      for (double &d_data : data_)
+        d_data = value;
     }
 
     void SetRowValues(int row, double value);
@@ -148,11 +151,11 @@ namespace nimble {
 
     unsigned int NumNonzeros() const { return data_.size(); }
 
-    void MatVec(const double * const vec,
-                double * const result) const ;
+    void MatVec(const double * vec,
+                double *result) const ;
 
-    void DiagonalMatrixMatVec(const double * const vec,
-                              double * const result) const ;
+    void DiagonalMatrixMatVec(const double *vec,
+                              double *result) const ;
 
     inline
     double operator()(int i_index, int j_index) const {
@@ -181,19 +184,35 @@ namespace nimble {
     std::vector<int> j_index_;
     std::vector<int> row_first_index_;
 
-    friend void PopulateDiagonalPreconditioner(CRSMatrixContainer const & A,
+    /// \brief Generate a diagonal preconditioner from a sparse matrix
+    ///
+    /// \param A Input sparse matrix
+    /// \param M Diagonal preconditioner (mathematically M = (diag(A))^{-1})
+    friend void PopulateDiagonalPreconditioner(const CRSMatrixContainer &A,
                                                CRSMatrixContainer & M);
   };
 
   inline
   double InnerProduct(unsigned int num_entries,
-                      const double * const vec_1,
-                      const double * const vec_2) {
+                      const double *vec_1,
+                      const double *vec_2) {
     double result(0.0);
     for (unsigned int i=0 ; i<num_entries ; i++) {
       result += vec_1[i] * vec_2[i];
     }
+#ifdef NIMBLE_HAVE_MPI
+    double restmp = result;
+    MPI_Allreduce(&restmp, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
     return result;
+  }
+
+
+  inline
+  double InnerProduct(const std::vector<double> &vec_1,
+                      const std::vector<double> &vec_2)
+  {
+    return InnerProduct(vec_1.size(), &vec_1[0], &vec_2[0]);
   }
 
   void LU_Decompose(int num_entries,
@@ -234,9 +253,9 @@ namespace nimble {
   };
 
   bool CG_SolveSystem(nimble::CRSMatrixContainer& A,
-                      const double * const b,
+                      const double * b,
                       CGScratchSpace& cg_scratch,
-                      double * const x,
+                      double *x,
                       int& num_iterations);
 
 }

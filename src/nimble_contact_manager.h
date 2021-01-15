@@ -55,7 +55,7 @@
 #include "nimble_contact_interface.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_exodus_output.h"
-#include "nimble.mpi.utils.h"
+#include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
   #include "nimble_kokkos_defs.h"
@@ -155,13 +155,13 @@ public:
     void CreateContactEntities(GenesisMesh const & mesh,
                                std::vector<int> const & primary_block_ids,
                                std::vector<int> const & secondary_block_ids) {
-      nimble::MPIContainer mpi_container;
+      nimble::VectorCommunicator mpi_container;
       CreateContactEntities(mesh, mpi_container, primary_block_ids, secondary_block_ids);
     }
 
 
     void CreateContactEntities(GenesisMesh const & mesh,
-                               nimble::MPIContainer & mpi_container,
+                               nimble::VectorCommunicator & mpi_container,
                                std::vector<int> const & primary_block_ids,
                                std::vector<int> const & secondary_block_ids);
 

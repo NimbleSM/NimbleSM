@@ -41,12 +41,9 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_MPI_UTILS_H
-#define NIMBLE_MPI_UTILS_H
+#ifndef NIMBLE_VECTOR_COMMUNICATOR_H
+#define NIMBLE_VECTOR_COMMUNICATOR_H
 
-#ifdef NIMBLE_HAVE_MPI
-
-#include <mpi.h>
 #include <algorithm>
 #include <exception>
 #include <iostream>
@@ -55,17 +52,51 @@
 #include <tuple>
 #include <vector>
 
+#ifdef NIMBLE_HAVE_MPI
+#include <mpi.h>
 #include "nimble.mpi.reduction.h"
+#endif
+
+#ifdef NIMBLE_HAVE_TRILINOS
+#include "nimble_tpetra_utils.h"
+#endif
+
+#ifdef NIMBLE_HAVE_TRILINOS
+typedef Teuchos::RCP<const Teuchos::Comm<int>> comm_type;
+#else
+typedef int comm_type;
+#endif
 
 namespace nimble
 {
 
-class MPIContainer
-{
-  std::unique_ptr<reduction::ReductionInfo> MeshReductionInfo;
+class VectorCommunicator {
 
- public:
-  MPIContainer() {}
+  int dim_ = 3;
+  unsigned int num_nodes_ = 0;
+#ifdef NIMBLE_HAVE_TRILINOS
+  comm_type comm_;
+#else
+  comm_type comm_ = 0;
+#endif
+
+#ifdef NIMBLE_HAVE_MPI
+  std::unique_ptr<reduction::ReductionInfo> MeshReductionInfo = nullptr;
+#endif
+
+#ifdef NIMBLE_HAVE_TRILINOS
+  std::unique_ptr<nimble::TpetraContainer> TpetraReductionInfo = nullptr;
+#endif
+
+public:
+
+  VectorCommunicator() = default;
+
+  VectorCommunicator(int d, unsigned int n, comm_type comm)
+      : dim_(d), num_nodes_(n), comm_(comm)
+  { }
+
+  ~VectorCommunicator() = default;
 
   // The goal of this function is to set up all the bookkeeping so that the VectorReduction()
   // function can be performed as quickly as possible
@@ -74,49 +105,73 @@ class MPIContainer
   // To start with, each rank has a list of its global nodes (this is passed in as global_node_ids)
   void Initialize(std::vector<int> const& global_node_ids)
   {
-    MPI_Comm duplicate_of_world;
-    MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
-    mpicontext context{duplicate_of_world};
-    reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
-    MeshReductionInfo.reset(reduction_info);
+#ifdef NIMBLE_HAVE_TRILINOS
+    if (comm_) {
+      auto tpetra_container = new nimble::TpetraContainer();
+      TpetraReductionInfo.reset(tpetra_container);
+      TpetraReductionInfo->Initialize(dim_, num_nodes_, comm_, global_node_ids);
+    }
+#endif
+
+#ifdef NIMBLE_HAVE_MPI
+    {
+      MPI_Comm duplicate_of_world;
+      MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
+      mpicontext context{duplicate_of_world};
+      reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
+      MeshReductionInfo.reset(reduction_info);
+    }
+#endif
   }
+
+  /// \brief
+  ///
+  /// \param node_local_ids
+  /// \param min_rank_containing_node
   void GetPartitionBoundaryNodeLocalIds(std::vector<int>& node_local_ids,
                                         std::vector<int>& min_rank_containing_node)
   {
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->GetAllIndices(node_local_ids, min_rank_containing_node);
+#else
+    min_rank_containing_node.push_back(0);
+#endif
   }
+
+  /// \brief
+  ///
+  /// \param data_dimension
+  /// \param data
   void VectorReduction(int data_dimension, double* data)
   {
+#ifdef NIMBLE_HAVE_TRILINOS
+    if (TpetraReductionInfo)
+    {
+      TpetraReductionInfo->VectorReduction(data_dimension, data);
+      return;
+    }
+#endif
+
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->PerformReduction(data, data_dimension);
+#endif
   }
+
+  /// \brief
+  ///
+  /// \tparam Lookup
+  /// \param data_dimension
+  /// \param lookup
   template<class Lookup>
   void VectorReduction(int data_dimension, Lookup&& lookup)
   {
+#ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->PerformReduction(lookup, data_dimension);
+#endif
   }
+
 };
 }   // namespace nimble
 
-#else // NIMBLE_HAVE_MPI
 
-namespace nimble
-{
-/// \class MPIContainer
-/// \brief Empty class of communication container when NimbleSM is compiled without MPI
-/// \note This empty class allows to write one code (while being a minor misnomer).
-class MPIContainer
-{
- public:
-  MPIContainer() {}
-
-  void Initialize(std::vector<int> const& global_node_ids) {}
-
-  void VectorReduction(int data_dimension, double* data) {}
-
-  template<class Lookup>
-  void VectorReduction(int data_dimension, Lookup& lookup) {}
-};
-}   // namespace nimble
-
-#endif // NIMBLE_HAVE_MPI
 #endif // NIMBLE_MPI_UTILS_H

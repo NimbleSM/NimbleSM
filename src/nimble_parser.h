@@ -55,6 +55,10 @@
   #include <map>
 #endif
 
+#ifdef NIMBLE_HAVE_TRILINOS
+#include <Tpetra_Core.hpp>
+#endif
+
 namespace nimble {
 
   constexpr int MAX_C_STR_SIZE = 256;
@@ -90,22 +94,58 @@ namespace nimble {
     std::string material_key_;
   };
 
+  struct NimbleInitData {
+
+    std::string file_name_ = std::string("none");
+    bool use_vt_ = false;
+    bool use_kokkos_ = false;
+    bool use_tpetra_ = false;
+    int my_rank_ = 0;
+    int num_ranks_ = 1;
+
+#ifdef NIMBLE_HAVE_TRILINOS
+    std::unique_ptr<Tpetra::ScopeGuard> tpetra_scope_ = nullptr;
+#endif
+
+    std::string GetOutputTag() const;
+
+#ifdef NIMBLE_HAVE_DARMA
+    template< typename ArchiveType >
+    void serialize(ArchiveType& ar) {
+      ar | inputFile_ | use_vt_ | use_kokkos_ | use_tpetra_;
+      ar | my_rank_ | num_ranks_;
+    }
+#endif
+
+  };
+
   class Parser {
 
   public:
     
     Parser();
 
-    virtual ~Parser() {}
+    virtual ~Parser() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
     template< typename ArchiveType >
     void serialize(ArchiveType& ar) {
-      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_ | exodus_file_name_ | use_two_level_mesh_decomposition_ | write_timing_data_file_ | time_integration_scheme_ | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_ | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_ | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_ | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_ | boundary_condition_strings_ | output_field_string_;
+      ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_;
+      ar | exodus_file_name_ | use_two_level_mesh_decomposition_;
+      ar | write_timing_data_file_ | time_integration_scheme_;
+      ar | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_;
+      ar | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
+      ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
+      ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
+      ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
+      ar | boundary_condition_strings_ | output_field_string_;
+      ar | run_data_;
     }
 #endif
 
-    void Initialize(std::string filename);
+    void Initialize(NimbleInitData &init_data);
+
+    void Initialize(const std::string &fileName);
 
     std::string GenesisFileName() const { return genesis_file_name_; }
 
@@ -200,6 +240,24 @@ namespace nimble {
       return output_field_string_;
     }
 
+    std::string GetOutputTag() const
+    { return run_data_.GetOutputTag(); }
+
+    bool UseKokkos() const
+    { return run_data_.use_kokkos_; }
+
+    bool UseTpetra() const
+    { return run_data_.use_tpetra_; }
+
+    bool UseVT() const
+    { return run_data_.use_vt_; }
+
+    int GetRankID() const
+    { return run_data_.my_rank_; }
+
+    int GetNumRanks() const
+    { return run_data_.num_ranks_; }
+
 #ifdef NIMBLE_HAVE_BVH
     int ContactDicing() const noexcept { return contact_dicing_; }
 #endif
@@ -221,7 +279,6 @@ namespace nimble {
 
     void ReadFile();
 
-    std::string file_name_;
     std::string genesis_file_name_;
     std::string rve_genesis_file_name_;
     std::string exodus_file_name_;
@@ -252,6 +309,8 @@ namespace nimble {
     std::map<std::string, std::string> uq_parameters_strings_;
     std::string uq_model_string_;
 #endif
+
+    NimbleInitData run_data_;
   };
 } // namespace nimble
 

@@ -147,7 +147,10 @@ namespace nimble {
                     std::vector<int> const & global_node_ids,
                     comm_type comm);
 
-    void AllocateTangentStiffnessMatrix(GenesisMesh const & mesh);
+  void Initialize(int d, unsigned int n, comm_type comm,
+                  std::vector<int> const & global_node_ids);
+
+  void AllocateTangentStiffnessMatrix(GenesisMesh const & mesh);
 
     int TangentStiffnessMatrixNumNonzeros();
 
@@ -164,7 +167,9 @@ namespace nimble {
     void VectorReduction(ModelData & model_data,
                          std::string quantity_label);
 
-    int dim_;
+  void VectorReduction(int data_dimension, double* data);
+
+  int dim_;
     std::vector<int> global_node_ids_;
 
 #ifdef NIMBLE_HAVE_TRILINOS

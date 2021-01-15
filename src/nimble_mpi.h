@@ -41,32 +41,38 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_MPI_H
-#define NIMBLE_MPI_H
+#ifndef NIMBLE_MAIN_H
+#define NIMBLE_MAIN_H
 
 #include <string>
 #include <memory>
 
+#include "nimble_parser.h"
+
 namespace nimble { class MaterialFactory; }
 namespace nimble { class ContactInterface; }
-namespace nimble { class Parser; }
+
+#ifdef NIMBLE_HAVE_EXTRAS
+using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+using MaterialFactoryType = nimble::MaterialFactory;
+#endif
 
 namespace nimble {
 
-struct NimbleMPIInitData {
-  std::string input_deck_name = "";
-  int my_mpi_rank = -1;
-  int num_mpi_ranks = -1;
-};
+/// \brief Initialization routine that parses the input parameters
+///
+/// \param argc
+/// \param argv
+/// \param parser
+///
+void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
-NimbleMPIInitData NimbleMPIInitializeAndGetInput(int argc, char* argv[]);
+int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
+               std::shared_ptr<nimble::ContactInterface> contact_interface,
+               const nimble::Parser &parser);
 
-int NimbleMPIMain(std::shared_ptr<nimble::MaterialFactory> material_factory,
-                  std::shared_ptr<nimble::ContactInterface> contact_interface,
-                  std::shared_ptr<nimble::Parser> parser,
-                  const NimbleMPIInitData& input_deck_name);
-
-void NimbleMPIFinalize();
+void NimbleFinalize(const nimble::Parser &parser);
 
 }
 
