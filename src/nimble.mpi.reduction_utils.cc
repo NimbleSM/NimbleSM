@@ -41,10 +41,11 @@
 //@HEADER
 */
 
+#ifdef NIMBLE_HAVE_MPI
+
 #include "nimble.mpi.reduction_utils.h"
 #include <map>
 
-#ifdef NIMBLE_HAVE_MPI
 std::vector<int> nimble::PackIDSpace(const std::vector<int>& raw_node_ids,
                                      int max_nodes_assigned_to_a_rank,
                                      const mpicontext& context)

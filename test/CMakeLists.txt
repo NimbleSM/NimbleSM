@@ -67,10 +67,6 @@
 message(STATUS "### TESTS CONFIGURATION STARTS ###")
 
 # Defines all versions of NimbleSM to be tested
-list(APPEND lstVersions
-        Serial
-        )
-
 IF(NIMBLE_HAVE_ARBORX)
     list(APPEND lstVersions
             ArborX
@@ -83,11 +79,9 @@ IF(NIMBLE_HAVE_TRILINOS)
             )
 ENDIF()
 
-IF(NIMBLE_HAVE_MPI)
-    list(APPEND lstVersions
-            MPI
-            )
-ENDIF()
+list(APPEND lstVersions
+     MPI
+    )
 
 IF(NIMBLE_HAVE_KOKKOS AND NOT NIMBLE_HAVE_ARBORX)
     list(APPEND lstVersions
@@ -115,29 +109,6 @@ foreach(version IN LISTS lstVersions)
 endforeach()
 
 ### Defines tests to be run for each version of NimbleSM ###
-
-### SERIAL ###
-
-list(APPEND lstTestsCLI_Serial
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_"
-        )
-
-list(APPEND lstTests_Serial
-        brick_with_fiber_periodic
-        brick_with_fibers
-#        contact_entity_creation
-#        cylinder_with_hole
-        notched_plate_native_hypoelastic
-        notched_plate_native_neohookean
-#        plate_with_hole_rve
-        quasistatic_tension
-        rigid_body_motion
-        simple_deformation_modes
-        single_elem_complex_displacement
-#        tiny_fe_squared
-        wave_in_bar
-        )
-
 
 ### ARBORX ###
 
@@ -294,15 +265,22 @@ list(APPEND lstTests_Kokkos_B
 
 list(APPEND lstTestsCLI_MPI_A
         "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 1"
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
-        "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
-        )
+     )
 
 list(APPEND lstTestsCLI_MPI_A_Suffixes
         "np1"
-        "np2"
-        "np4"
+    )
+
+IF (NIMBLE_HAVE_MPI)
+  list(APPEND lstTestsCLI_MPI_A
+       "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 2"
+       "../run_exodiff_test.py --executable _EXECUTABLE_ --input-deck _INPUT_DECK_ --num-ranks 4"
         )
+  list(APPEND lstTestsCLI_MPI_A_Suffixes
+       "np2"
+       "np4"
+       )
+ENDIF()
 
 list(APPEND lstTests_MPI_A
 #        brick_with_fiber_periodic

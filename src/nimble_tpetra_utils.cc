@@ -50,14 +50,19 @@ namespace nimble {
   void TpetraContainer::Initialize(GenesisMesh const & mesh,
                                    std::vector<int> const & global_node_ids,
                                    comm_type comm) {
+    Initialize(mesh.GetDim(), mesh.GetNumNodes(), comm, global_node_ids);
+  }
+
+  void TpetraContainer::Initialize(int d, unsigned int n, comm_type comm,
+                    std::vector<int> const & global_node_ids) {
 
 #ifdef NIMBLE_HAVE_TRILINOS
 
     comm_ = comm;
     global_node_ids_ = global_node_ids;
 
-    unsigned int num_nodes = mesh.GetNumNodes();
-    dim_ = mesh.GetDim();
+    unsigned int num_nodes = n;
+    dim_ = d;
 
     const Tpetra::global_size_t num_global_elements = Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
     const global_ordinal_type index_base = 0;
@@ -226,14 +231,27 @@ namespace nimble {
   }
 
   void TpetraContainer::VectorReduction(ModelData & model_data,
-                                        std::string quantity_label) {
-
+                                        std::string quantity_label)
+  {
 #ifdef NIMBLE_HAVE_TRILINOS
-
     int field_id = model_data.GetFieldId(quantity_label);
     Field field = model_data.GetField(field_id);
     Length length = field.length_;
     double* data = model_data.GetNodeData(field_id);
+    //
+    int data_dimension = LengthToInt(length, dim_);
+    VectorReduction(data_dimension, data);
+#endif
+
+  }
+
+  void TpetraContainer::VectorReduction(int data_dimension, double *data)
+  {
+
+#ifdef NIMBLE_HAVE_TRILINOS
+    Length length = SCALAR;
+    if (data_dimension == dim_)
+      length = VECTOR;
 
     if (length == SCALAR) {
 

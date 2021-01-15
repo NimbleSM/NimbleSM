@@ -71,14 +71,9 @@
 #endif
 
 
-#ifdef NIMBLE_HAVE_MPI
-#include "nimble.mpi.utils.h"
-#endif
-
 #include <iostream>
 
 namespace nimble {
-
 
 namespace details_kokkos {
 
@@ -99,7 +94,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 }
 
 
-NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
 #ifdef NIMBLE_HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -109,7 +104,7 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   Kokkos::initialize(argc, argv);
 #endif
 
-  NimbleInitData init_data;
+  NimbleKokkosInitData init_data;
 
 #ifdef NIMBLE_HAVE_MPI
   int mpi_err;
@@ -175,7 +170,7 @@ NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   return init_data;
 }
 
-int NimbleKokkosFinalize(const NimbleInitData& init_data) {
+int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data) {
   if (init_data.my_mpi_rank == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
   }
@@ -195,22 +190,16 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleInitData& init_data) {
-
-  int num_ranks = 1, my_rank = 0;
-
-#ifdef NIMBLE_HAVE_MPI
-  num_ranks = init_data.num_mpi_ranks;
-  my_rank = init_data.my_mpi_rank;
-#endif
-
+                     const NimbleKokkosInitData& init_data) {
+  const int num_ranks = init_data.num_mpi_ranks;
+  const int my_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
 
   //--- Define timers
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Parse and read mesh");
   
-  parser->Initialize(input_deck_name);
+  parser->Initialize(init_data.input_deck_name);
 
   // Read the mesh
   nimble::GenesisMesh mesh;
@@ -495,8 +484,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   for (int n=0 ; n<num_nodes ; ++n) {
     global_node_ids[n] = global_node_ids_ptr[n];
   }
-  nimble::MPIContainer mpi_container;
-  mpi_container.Initialize(global_node_ids);
+  nimble::VectorCommunicator myVectorCommunicator;
+  myVectorCommunicator.Initialize(global_node_ids);
 
   int mpi_scalar_dimension = 1;
   std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
@@ -530,7 +519,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     contact_manager.CreateContactEntities(mesh,
-                                          mpi_container,
+                                          myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
@@ -552,7 +541,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   for (unsigned int i=0 ; i<num_nodes ; i++) {
     mpi_scalar_buffer[i] = lumped_mass_h(i);
   }
-  mpi_container.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
+  myVectorCommunicator.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
   for (int i=0 ; i<num_nodes ; i++) {
     lumped_mass_h(i) = mpi_scalar_buffer[i];
   }
@@ -762,7 +751,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
     // Perform a reduction to obtain correct values on MPI boundaries
     watch_internal.push_region("MPI reduction");
-    mpi_container.VectorReduction(mpi_vector_dimension, internal_force_h);
+    myVectorCommunicator.VectorReduction(mpi_vector_dimension, internal_force_h);
     total_vector_reduction_time += watch_internal.pop_region_and_report_time();
     //
 
@@ -780,7 +769,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       // Perform a reduction to obtain correct values on MPI boundaries
       {
         watch_internal_details.push_region("MPI reduction");
-        mpi_container.VectorReduction(mpi_vector_dimension, contact_force_h);
+        myVectorCommunicator.VectorReduction(mpi_vector_dimension, contact_force_h);
         total_vector_reduction_time +=
             watch_internal_details.pop_region_and_report_time();
       }

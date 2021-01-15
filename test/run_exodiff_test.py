@@ -21,18 +21,18 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         command.append("++local")
 
     epu_required = False
-    if "NimbleSM_Serial" in executable_name:
-        command.append(executable_name)
     if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name or "NimbleSM_ArborX" in executable_name:
-        command.append("mpirun")
-        command.append("-np")
-        if num_ranks:
+        if num_ranks > 1:
+            command.append("mpirun")
+            command.append("-np")
             command.append(str(num_ranks))
             epu_required = True
-        else:
-            command.append("1")
-        command.append("--use-hwthread-cpus")
+            command.append("--use-hwthread-cpus")
+#        else:
+#            command.append("1")
         command.append(executable_name)
+        if "NimbleSM_Tpetra" in executable_name: 
+          command.append("--use_tpetra")
     if "NimbleSM_Qthreads" in executable_name:
         if qthreads_num_shepherds:
             command.append("-num_shepherds")
@@ -60,10 +60,6 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
     epu_output_extension = "none"
     epu_exodus_output_name = "none"
     epu_ranks_string = "none"
-    if "NimbleSM_Serial" in executable_name:
-        nimble_output_name = base_name
-        log_file_name = base_name + ".serial.log"
-        epu_exodus_output_name = base_name + ".serial.e"
     if "NimbleSM_ArborX" in executable_name:
         nimble_output_name = base_name + ".arborx"
         log_file_name = base_name + ".arborx.np" + str(num_ranks) + ".log"
