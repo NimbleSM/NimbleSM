@@ -85,10 +85,18 @@ ENDIF()
 
 add_executable(NimbleSM_Serial nimble_serial_main.cc)
 target_link_libraries(NimbleSM_Serial PRIVATE nimble::nimble)
+install(TARGETS NimbleSM_Serial EXPORT NimbleSMTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if (NIMBLE_HAVE_TRILINOS)
   add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
   target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
+  install(TARGETS NimbleSM_Tpetra EXPORT NimbleSMTargets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 
 IF(NIMBLE_HAVE_MPI)
@@ -99,11 +107,19 @@ IF(NIMBLE_HAVE_MPI)
     )
   add_executable(NimbleSM_MPI nimble_mpi_main.cc)
   target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
+  install(TARGETS NimbleSM_MPI EXPORT NimbleSMTargets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 
 IF(NIMBLE_HAVE_QTHREADS)
   add_executable(NimbleSM_Qthreads nimble_qthread.cc ${NIMBLE_SOURCES})
   target_link_libraries(NimbleSM_Qthreads ${LAME_LIBS} ${Exodus_LIBS} ${bvh_LIBS} ${Qthreads_LIBS})
+  install(TARGETS NimbleSM_Qthreads EXPORT NimbleSMTargets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 
 IF(NIMBLE_HAVE_KOKKOS)
@@ -125,10 +141,18 @@ IF(NIMBLE_HAVE_KOKKOS)
   IF (NIMBLE_HAVE_ARBORX)
     message("Executable = NimbleSM_ArborX")
     add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
+    install(TARGETS NimbleSM_ArborX EXPORT NimbleSMTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX)
   ELSE()
     message("Executable = NimbleSM_Kokkos")
     add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
+    install(TARGETS NimbleSM_Kokkos EXPORT NimbleSMTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     if (NIMBLE_HAVE_TRILINOS)
       target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
     ELSE()
