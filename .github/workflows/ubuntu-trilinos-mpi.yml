@@ -51,6 +51,7 @@ jobs:
       run: |
         git clone https://github.com/trilinos/Trilinos.git
         cd Trilinos
+        git checkout cd8e9bff404
         mkdir build && cd build
         cmake -DCMAKE_INSTALL_PREFIX="/usr/" \
               -DTPL_ENABLE_MPI=ON \
