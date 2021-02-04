@@ -114,15 +114,15 @@ namespace nimble {
 #endif
 
     void Initialize(std::string const & macro_material_parameters,
-                    MaterialFactory& factory);
+                    nimble::MaterialFactoryBase *factory);
 
     void Initialize(std::string const & macro_material_parameters,
                     std::map<int, std::string> const & rve_material_parameters,
                     GenesisMesh const & rve_mesh,
                     std::string rve_boundary_condition_strategy,
-                    MaterialFactory& factory);
+                    nimble::MaterialFactoryBase *factory);
 
-    void InstantiateMaterialModel(MaterialFactory& factory);
+    void InstantiateMaterialModel(nimble::MaterialFactoryBase *factory);
 
     void InstantiateElement();
 
@@ -157,7 +157,7 @@ namespace nimble {
                                std::vector<std::string> const & derived_elem_data_labels,
                                std::vector<double>& elem_data_n,
                                std::vector<double>& elem_data_np1,
-                               MaterialFactory& material_factory,
+                               nimble::MaterialFactoryBase *material_factory,
                                DataManager& data_manager);
 
     void ComputeInternalForce(const double * const reference_coordinates,

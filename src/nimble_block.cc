@@ -65,7 +65,7 @@
 namespace nimble {
 
   void Block::Initialize(std::string const & macro_material_parameters,
-                         MaterialFactory& factory) {
+                         nimble::MaterialFactoryBase *factory) {
     macro_material_parameters_ = macro_material_parameters;
     InstantiateMaterialModel(factory);
     InstantiateElement();
@@ -75,7 +75,7 @@ namespace nimble {
                          std::map<int, std::string> const & rve_material_parameters,
                          GenesisMesh const & rve_mesh,
                          std::string rve_boundary_condition_strategy,
-                         MaterialFactory& factory) {
+                         nimble::MaterialFactoryBase *factory) {
     macro_material_parameters_ = macro_material_parameters;
     if (macro_material_parameters_ == "none") {
       rve_material_parameters_ = rve_material_parameters;
@@ -86,11 +86,11 @@ namespace nimble {
     InstantiateElement();
   }
 
-  void Block::InstantiateMaterialModel(MaterialFactory& factory) {
+  void Block::InstantiateMaterialModel(nimble::MaterialFactoryBase *factory) {
 
     if (macro_material_parameters_ != "none" && rve_material_parameters_.size() == 0) {
-      factory.parse_and_create(macro_material_parameters_);
-      material_ = factory.get_material();
+      factory->parse_and_create(macro_material_parameters_);
+      material_ = factory->get_material();
     }
 #ifndef NIMBLE_HAVE_KOKKOS
     else if (macro_material_parameters_ == "none" && rve_material_parameters_.size() != 0) {
@@ -214,7 +214,7 @@ namespace nimble {
                                     std::vector<std::string> const & derived_elem_data_labels,
                                     std::vector<double>& elem_data_n,
                                     std::vector<double>& elem_data_np1,
-                                    MaterialFactory& material_factory,
+                                    nimble::MaterialFactoryBase *material_factory,
                                     DataManager& data_manager) {
 
     int num_int_pts = element_->NumIntegrationPointsPerElement();

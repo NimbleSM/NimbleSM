@@ -53,9 +53,7 @@ int main(int argc, char *argv[]) {
   nimble::Parser myParser;
   nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
 
-  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-  std::shared_ptr<MaterialFactoryType> material_factory(new MaterialFactoryType);
-  int status = nimble::NimbleMain(material_factory, contact_interface, myParser);
+  int status = nimble::NimbleMain(myParser);
 
   nimble::NimbleFinalize(myParser);
 

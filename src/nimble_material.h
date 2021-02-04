@@ -109,7 +109,7 @@ namespace nimble {
   }
 
     inline
-    ~MaterialParameters() {}
+    ~MaterialParameters() = default;
 
     inline
     void AddParameter(const char* parameter_name, double parameter_value) {
@@ -216,13 +216,13 @@ namespace nimble {
     public:
 
     NIMBLE_FUNCTION
-    Material() {}
+    Material() = default;
 
     NIMBLE_FUNCTION
     Material(const Material& mat) = default;
 
     NIMBLE_FUNCTION
-    virtual ~Material() {}
+    virtual ~Material() = default;
 
     NIMBLE_FUNCTION
     virtual bool IsNGPLAMEModel() const { return false; }
@@ -250,7 +250,7 @@ namespace nimble {
                                int integration_point_id,
                                DataManager& data_manager,
                                bool write_exodus_output,
-                               MaterialFactory& factory) {}
+                               nimble::MaterialFactoryBase *factory) {}
 
     NIMBLE_FUNCTION
     virtual void GetStress(int elem_id,

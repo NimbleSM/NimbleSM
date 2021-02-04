@@ -84,10 +84,10 @@ namespace nimble_kokkos {
 
     void Initialize(std::string const & macro_material_parameters,
                     int num_elements,
-                    MaterialFactory& factory);
+                    nimble::MaterialFactoryBase *factory);
 
     void InstantiateMaterialModel(int num_material_points,
-                                  MaterialFactory& factory);
+                                  nimble::MaterialFactoryBase *factory);
 
     void InstantiateElement();
 

@@ -63,10 +63,7 @@ struct NimbleKokkosInitData {
 
 NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
-void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
-                     std::shared_ptr<nimble::ContactInterface> contact_interface,
-                     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                     std::shared_ptr<nimble::Parser> parser,
+void NimbleKokkosMain(std::shared_ptr<nimble::Parser> parser,
                      const NimbleKokkosInitData& init_data);
 
 int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data);

@@ -52,7 +52,7 @@ namespace nimble_kokkos {
 
   void Block::Initialize(std::string const & macro_material_parameters,
                          int num_elements,
-                         MaterialFactory& factory) {
+                         nimble::MaterialFactoryBase *factory) {
     macro_material_parameters_ = macro_material_parameters;
     InstantiateElement();
     int num_material_points = num_elements * element_host_->NumIntegrationPointsPerElement();
@@ -60,11 +60,13 @@ namespace nimble_kokkos {
   }
 
   void Block::InstantiateMaterialModel(int num_material_points,
-                                       MaterialFactory& factory) {
-    factory.parse_and_create(macro_material_parameters_, num_material_points);
-    material_host_ = factory.get_material_host();
-    material_device_ = factory.get_material_device();
-    ngp_lame_data_ = factory.get_ngp_lame_data();
+                                       nimble::MaterialFactoryBase *factory) {
+    factory->parse_and_create(macro_material_parameters_, num_material_points);
+    material_host_ = factory->get_material();
+    //
+    auto factory_kokkos = dynamic_cast<nimble_kokkos::MaterialFactory*>(factory);
+    material_device_ = factory_kokkos->get_material_device();
+    ngp_lame_data_ = factory_kokkos->get_ngp_lame_data();
   }
 
   void Block::InstantiateElement() {

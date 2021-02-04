@@ -64,8 +64,8 @@
 #include "contact/parallel/bvh_contact_manager.h"
 #endif
 
-#ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
+#ifdef NIMBLE_HAVE_KOKKOS
+#include "nimble_kokkos_material_factory.h"
 #endif
 
 #ifdef NIMBLE_HAVE_MPI
@@ -74,6 +74,10 @@
 
 #ifdef NIMBLE_HAVE_TRILINOS
 #include "nimble_tpetra_utils.h"
+#endif
+
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
 #endif
 
 #ifdef NIMBLE_HAVE_VT
@@ -261,9 +265,7 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   parser.Initialize(init_data);
 }
 
-int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
-               std::shared_ptr<nimble::ContactInterface> contact_interface,
-               const nimble::Parser &parser)
+int NimbleMain(const nimble::Parser &parser)
 {
 
   int my_rank = parser.GetRankID();
@@ -313,6 +315,21 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
   int contact_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
   int skin_node_field_id = model_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
 
+  //
+#ifdef NIMBLE_HAVE_KOKKOS
+  std::shared_ptr<nimble::MaterialFactoryBase> material_factory = nullptr;
+  if (parser.UseKokkos()) {
+    material_factory = std::shared_ptr<nimble::MaterialFactoryBase>(new nimble_kokkos::MaterialFactory);
+  }
+  else {
+    material_factory = std::shared_ptr<nimble::MaterialFactoryBase>(new nimble::MaterialFactory);
+  }
+#else
+  std::shared_ptr<nimble::MaterialFactoryBase> material_factory(new nimble::MaterialFactory);
+#endif
+
+  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+
   // Blocks
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -323,7 +340,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
     std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
     blocks[block_id] = nimble::Block();
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
+    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, material_factory.get());
     std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
@@ -369,7 +386,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
                                 derived_elem_data_labels.at(block_id),
                                 elem_data_n,
                                 elem_data_np1,
-                                *material_factory,
+                                material_factory.get(),
                                 data_manager);
   }
 

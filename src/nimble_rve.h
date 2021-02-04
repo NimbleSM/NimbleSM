@@ -108,7 +108,7 @@ namespace nimble {
                        int integration_point_id,
                        DataManager& data_manager,
                        bool write_exodus_output,
-                       MaterialFactory& factory) override;
+                       nimble::MaterialFactoryBase *factory) override;
 
     NIMBLE_FUNCTION
     void GetStress(int elem_id,

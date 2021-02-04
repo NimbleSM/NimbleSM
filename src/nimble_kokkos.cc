@@ -85,7 +85,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::ExodusOutput & exodus_output,
                            nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
-                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                            nimble_kokkos::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
@@ -186,10 +185,7 @@ int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data) {
 #endif
 }
 
-void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
-                     std::shared_ptr<nimble::ContactInterface> contact_interface,
-                     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                     std::shared_ptr<nimble::Parser> parser,
+void NimbleKokkosMain(std::shared_ptr<nimble::Parser> parser,
                      const NimbleKokkosInitData& init_data) {
   const int num_ranks = init_data.num_mpi_ranks;
   const int my_rank = init_data.my_mpi_rank;
@@ -260,6 +256,10 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
 
   bool store_unrotated_stress(true);
 
+  //
+  std::shared_ptr<nimble::MaterialFactoryBase> material_factory(new nimble_kokkos::MaterialFactory);
+  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+
   // Blocks
   // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble_kokkos::Block> blocks;
@@ -271,7 +271,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     std::string rve_bc_strategy = parser->GetMicroscaleBoundaryConditionStrategy();
     int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
     blocks[block_id] = nimble_kokkos::Block();
-    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
+    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, material_factory.get());
     //
     // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
     //
@@ -337,7 +337,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
     details_kokkos::ExplicitTimeIntegrator(*parser, mesh, data_manager,
                            boundary_condition_manager, blocks,
                            exodus_output, exodus_output_manager,
-                           contact_interface, block_material_interface_factory,
+                           contact_interface,
                            field_ids,
                            num_ranks, my_rank);
   }
@@ -358,7 +358,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::ExodusOutput & exodus_output,
                            nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
-                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                            nimble_kokkos::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
@@ -370,6 +369,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
   nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
+
+  std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
 
   // Build up block data for stress computation
   std::vector<nimble_kokkos::BlockData> block_data;

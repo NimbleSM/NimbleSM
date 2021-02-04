@@ -47,7 +47,7 @@
 #include <memory>
 #include <string>
 
-#include "nimble_material_factory.h"
+#include "nimble_material_factory_base.h"
 
 namespace nimble {
 class Material;
@@ -58,26 +58,36 @@ class MaterialParameters;
 namespace nimble_kokkos {
 
 class MaterialFactory : public nimble::MaterialFactoryBase {
+
  public:
   explicit MaterialFactory();
-  virtual ~MaterialFactory() = default;
+  ~MaterialFactory() override = default;
 
-  void parse_and_create(const std::string& mat_params, const int num_mat_points);
+  inline std::shared_ptr<nimble::Material> get_material() const override
+  { return material; }
 
-  inline std::shared_ptr<nimble::Material> get_material_host() const { return material_host; }
+  //--- Specific routines to Kokkos-based environment
+
+  inline std::shared_ptr<nimble::Material> get_material_host() const { return material; }
 
   inline nimble::Material* get_material_device() const { return material_device; }
 
   inline std::shared_ptr<nimble::NGPLAMEData> get_ngp_lame_data() const { return ngp_lame_data; }
 
  protected:
-  std::shared_ptr<nimble::Material> material_host;
+
+  void create() override;
+
+ protected:
+
+  ///
+  /// \note The variable material is used as 'material_host'
+  /// (i.e. a variable defined on the host memory space).
+  ///
+
   nimble::Material* material_device;
   std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data;
 
-  std::shared_ptr<const nimble::MaterialParameters> material_params;
-
-  virtual void create() override;
 };
 
 }

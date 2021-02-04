@@ -134,7 +134,7 @@ namespace nimble {
                           int integration_point_id,
                           DataManager& data_manager,
                           bool write_exodus_output,
-                          MaterialFactory& factory) {
+                          nimble::MaterialFactoryBase *factory) {
 
     RVEData& rve_data = data_manager.AllocateRVEData(elem_global_id, integration_point_id);
     ModelData& model_data = rve_data.model_data_;

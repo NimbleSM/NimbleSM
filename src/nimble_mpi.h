@@ -68,9 +68,7 @@ namespace nimble {
 ///
 void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
-int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
-               std::shared_ptr<nimble::ContactInterface> contact_interface,
-               const nimble::Parser &parser);
+int NimbleMain(const nimble::Parser &parser);
 
 void NimbleFinalize(const nimble::Parser &parser);
 

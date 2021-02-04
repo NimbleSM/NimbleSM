@@ -57,11 +57,6 @@ MaterialFactory::MaterialFactory()
       material_device(nullptr) {
 }
 
-void MaterialFactory::parse_and_create(const std::string& mat_params, const int num_points) {
-  material_params = ParseMaterialParametersString(mat_params, num_points);
-  create();
-}
-
 template <typename MatType>
 inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
   auto mat_host = std::make_shared<MatType>(mat_params_struct);
@@ -77,10 +72,10 @@ inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_a
 void MaterialFactory::create() {
   auto name_string = material_params->GetMaterialName(false);
   if (name_string == "neohookean") {
-    std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
+    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
         *material_params);
   } else if (name_string == "elastic") {
-    std::tie(material_host, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
+    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
         *material_params);
   } else {
     throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");

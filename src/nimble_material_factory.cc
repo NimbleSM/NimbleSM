@@ -41,69 +41,20 @@
 //@HEADER
 */
 
-#include <cstdlib>
-#include <cstring>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
-#include <nimble_material.h>
-#include <nimble_material_factory.h>
-#include <nimble_parser_util.h>
-#include <stddef.h>
 #include <cassert>
 
+#include "nimble_material.h"
+#include "nimble_material_factory.h"
+#include "nimble_parser_util.h"
+
 namespace nimble {
-
-MaterialFactoryBase::MaterialFactoryBase()
-{
-  NeohookeanMaterial::register_supported_material_parameters(*this);
-  ElasticMaterial::register_supported_material_parameters(*this);
-}
-
-std::shared_ptr<MaterialParameters> MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_parameters,
-                                                                                       const int num_material_points) const {
-
-  auto tokens = nimble::tokenize_string(material_parameters);
-
-  // The first string is the material name, followed by the material properties (key-value pairs)
-
-  assert(tokens.size() > 1);
-
-  const std::string material_name = tokens.front();
-  auto token = tokens.cbegin() + 1;
-  auto tokens_end = tokens.cend();
-
-  std::map<std::string, std::string> material_string_parameters;
-  std::map<std::string, double> material_double_parameters;
-  for (; token != tokens_end; token += 2) {
-    auto&& key = *token;
-    auto&& val = *(token+1);
-    if (std::find(valid_double_parameter_names.begin(), valid_double_parameter_names.end(), key)
-        != valid_double_parameter_names.end()) {
-      double double_val = nimble::string_to_double(val);
-      material_double_parameters.insert(std::make_pair(key, double_val));
-    } else if (std::find(valid_string_parameter_names.begin(), valid_string_parameter_names.end(),
-                         key) != valid_string_parameter_names.end()) {
-      material_string_parameters.insert(std::make_pair(key, val));
-    } else {
-      std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
-      std::runtime_error err(errMsg);
-      throw err;
-    }
-  }
-
-  return std::make_shared<MaterialParameters>(material_name, material_string_parameters, material_double_parameters,
-                                              num_material_points);
-}
 
 MaterialFactory::MaterialFactory()
     :
     MaterialFactoryBase() {
-}
-
-void MaterialFactory::parse_and_create(const std::string &mat_params) {
-  material_params = ParseMaterialParametersString(mat_params);
-  create();
 }
 
 void MaterialFactory::create() {
