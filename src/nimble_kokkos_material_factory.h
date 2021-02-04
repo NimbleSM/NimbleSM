@@ -63,9 +63,6 @@ class MaterialFactory : public nimble::MaterialFactoryBase {
   explicit MaterialFactory();
   ~MaterialFactory() override = default;
 
-  inline std::shared_ptr<nimble::Material> get_material() const override
-  { return material; }
-
   //--- Specific routines to Kokkos-based environment
 
   inline std::shared_ptr<nimble::Material> get_material_host() const { return material; }

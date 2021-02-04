@@ -60,9 +60,6 @@ class MaterialFactory : public MaterialFactoryBase {
   explicit MaterialFactory();
   ~MaterialFactory() override = default;
 
-  inline std::shared_ptr<nimble::Material> get_material() const override
-  { return material; }
-
  protected:
 
   void create() override;

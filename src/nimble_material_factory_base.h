@@ -76,7 +76,8 @@ class MaterialFactoryBase {
     find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
   }
 
-  virtual std::shared_ptr<nimble::Material> get_material() const = 0;
+  virtual std::shared_ptr<nimble::Material> get_material() const
+  { return material; }
 
   virtual void parse_and_create(const std::string& mat_params,
                                 int num_points)
