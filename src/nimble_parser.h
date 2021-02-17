@@ -243,6 +243,15 @@ namespace nimble {
     std::string GetOutputTag() const
     { return run_data_.GetOutputTag(); }
 
+    void SetToUseKokkos()
+    { run_data_.use_kokkos_ = true; }
+
+    void SetToUseTpetra() const
+    { run_data_.use_tpetra_ = true; }
+
+    void SetToUseVT() const
+    { run_data_.use_vt_ = true; }
+
     bool UseKokkos() const
     { return run_data_.use_kokkos_; }
 
