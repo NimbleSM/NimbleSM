@@ -246,10 +246,10 @@ namespace nimble {
     void SetToUseKokkos()
     { run_data_.use_kokkos_ = true; }
 
-    void SetToUseTpetra() const
+    void SetToUseTpetra()
     { run_data_.use_tpetra_ = true; }
 
-    void SetToUseVT() const
+    void SetToUseVT()
     { run_data_.use_vt_ = true; }
 
     bool UseKokkos() const
