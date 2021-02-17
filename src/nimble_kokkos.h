@@ -47,7 +47,7 @@
 #include <string>
 #include <memory>
 
-namespace nimble_kokkos { class MaterialFactory; }
+namespace nimble { class MaterialFactoryBase; }
 namespace nimble { class ContactInterface; }
 namespace nimble_kokkos { class BlockMaterialInterfaceFactory; }
 namespace nimble { class Parser; }
@@ -63,7 +63,7 @@ struct NimbleKokkosInitData {
 
 NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
-void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
+void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_factory_base,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,

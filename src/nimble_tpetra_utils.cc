@@ -41,6 +41,8 @@
 //@HEADER
 */
 
+#include "nimble_genesis_mesh.h"
+#include "nimble_model_data.h"
 #include "nimble_tpetra_utils.h"
 
 #include <set>
@@ -182,7 +184,7 @@ namespace nimble {
 
     // identify the nonzeros in the crs graph
     for (auto const & entry : matrix_nonzeros) {
-      int global_row = entry.first;
+      auto global_row = entry.first;
       auto&& nonzeros_in_row_set = entry.second;
       std::vector<global_ordinal_type> nonzeros_in_row(nonzeros_in_row_set.begin(), nonzeros_in_row_set.end());
       crs_graph->insertGlobalIndices(global_row, Teuchos::arrayViewFromVector(nonzeros_in_row));

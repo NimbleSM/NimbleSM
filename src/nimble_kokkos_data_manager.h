@@ -52,25 +52,10 @@
 
 #include "nimble_kokkos_defs.h"
 #include "nimble_data_utils.h"
-#include "nimble_data_manager.h"
+#include "nimble_model_data_base.h"
 
 
 namespace nimble_kokkos {
-
-struct FieldIds {
-  int deformation_gradient = -1;
-  int stress = -1;
-  int unrotated_stress = -1;
-
-  int reference_coordinates = -1;
-  int displacement = -1;
-  int velocity = -1;
-  int acceleration = -1;
-
-  int lumped_mass = -1;
-  int internal_force = -1;
-  int contact_force = -1;
-};
 
 class ModelData : public nimble::BaseModelData
 {

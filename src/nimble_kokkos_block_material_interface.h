@@ -44,6 +44,8 @@
 #ifndef SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
 #define SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
 
+#include "nimble_block_material_interface_base.h"
+
 #include <nimble_data_utils.h>
 #include <nimble_kokkos_block.h>
 #include <nimble_kokkos_data_manager.h>
@@ -59,47 +61,30 @@ inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_ele
   return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
 }
 
-struct BlockData {
-  BlockData(nimble_kokkos::Block &block_, nimble::Material* material_d_, const int block_id_,
-            const int num_block_elems_, const int num_points_per_block_elem_)
-      :
-      block(block_),
-      material_device(material_d_),
-      id(block_id_),
-      num_elems(num_block_elems_),
-      num_points_per_elem(num_points_per_block_elem_) {
-  }
-
-  nimble_kokkos::Block &block;
-  nimble::Material *material_device;
-  int id;
-  int num_elems;
-  int num_points_per_elem;
-};
-
-class BlockMaterialInterface {
+class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
  public:
-  BlockMaterialInterface(const double time_n_, const double time_np1_, const FieldIds &field_ids_,
-                         const std::vector<BlockData>& blocks_,
-                         nimble_kokkos::ModelData &model_data_)
-      :
+  BlockMaterialInterface(double time_n_, double time_np1_,
+                         const nimble::FieldIds &field_ids_,
+                         const std::vector<nimble::BlockData>& blocks_,
+                         nimble::BaseModelData *model_data_)
+      : nimble::BlockMaterialInterfaceBase(),
       time_n(time_n_),
       time_np1(time_np1_),
       field_ids(field_ids_),
-      model_data(model_data_),
-      blocks(blocks_) {
-  }
+      model_data(dynamic_cast<nimble_kokkos::ModelData*>(model_data_)),
+      blocks(blocks_)
+  {}
 
-  virtual ~BlockMaterialInterface() = default;
+  ~BlockMaterialInterface() override = default;
 
-  virtual void ComputeStress() const;
+  void ComputeStress() const override;
 
  protected:
   const double time_n;
   const double time_np1;
-  const FieldIds &field_ids;
-  nimble_kokkos::ModelData &model_data;
-  std::vector<BlockData> blocks;
+  const nimble::FieldIds &field_ids;
+  nimble_kokkos::ModelData *model_data;
+  std::vector<nimble::BlockData> blocks;
 };
 
 }

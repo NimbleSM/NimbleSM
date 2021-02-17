@@ -44,9 +44,6 @@
 #ifndef NIMBLE_TPETRA_UTILS_H
 #define NIMBLE_TPETRA_UTILS_H
 
-#include "nimble_genesis_mesh.h"
-#include "nimble_data_manager.h"
-
 #ifdef NIMBLE_HAVE_TRILINOS
   #include <Tpetra_Core.hpp>
   #include <Teuchos_GlobalMPISession.hpp>
@@ -63,6 +60,9 @@
 
 namespace nimble {
 
+  class GenesisMesh;
+  class ModelData;
+
 #ifdef NIMBLE_HAVE_TRILINOS
   typedef Teuchos::RCP<const Teuchos::Comm<int>> comm_type;
 #else
@@ -74,18 +74,18 @@ namespace nimble {
 
    public:
 
-    TpetraMatrixContainer() {}
+    TpetraMatrixContainer() = default;
 
-    ~TpetraMatrixContainer() {}
+    ~TpetraMatrixContainer() = default;
 
 #ifdef NIMBLE_HAVE_TRILINOS
 
-    TpetraMatrixContainer(Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>> crs_matrix)
+    explicit TpetraMatrixContainer(Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>> crs_matrix)
       : crs_matrix_(crs_matrix) {}
 
     bool SumIntoValue(LocalOrdinal local_row_index, GlobalOrdinal local_col_index, Scalar value) {
 
-      LocalOrdinal local_row = static_cast<LocalOrdinal>(local_row_index);
+      auto local_row = static_cast<LocalOrdinal>(local_row_index);
       Teuchos::ArrayRCP<LocalOrdinal> local_cols;
       Teuchos::ArrayRCP<Scalar> values;
 

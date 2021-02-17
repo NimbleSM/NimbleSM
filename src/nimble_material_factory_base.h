@@ -41,45 +41,75 @@
 //@HEADER
 */
 
-#include <stdexcept>
-#include <tuple>
-#include <utility>
-#include <nimble_kokkos_defs.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
+#ifndef SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_
+#define SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_
 
-namespace nimble_kokkos {
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
-using nimble::Material;
-
-MaterialFactory::MaterialFactory()
-    : MaterialFactoryBase(),
-      material_device(nullptr) {
+namespace nimble {
+class Material;
+class MaterialParameters;
 }
 
-template <typename MatType>
-inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
-  auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<MatType*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  MatType& mat_host_ref = *mat_host;
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (mat_device) MatType(mat_host_ref);
-  });
-  Kokkos::fence();
-  return std::make_pair(mat_host, mat_device);
-}
+namespace nimble {
 
-void MaterialFactory::create() {
-  auto name_string = material_params->GetMaterialName(false);
-  if (name_string == "neohookean") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        *material_params);
-  } else if (name_string == "elastic") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        *material_params);
-  } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
+class MaterialFactoryBase {
+private:
+  static inline void find_or_insert_string_in_vector(const std::string &str, std::vector<std::string> &vec) {
+    if (std::find(vec.begin(), vec.end(), str) == vec.end()) {
+      vec.push_back(str);
+    }
   }
-}
+
+public:
+  MaterialFactoryBase();
+  virtual ~MaterialFactoryBase() = default;
+
+  inline void add_valid_double_parameter_name(const char *name) {
+    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
+  }
+
+  inline void add_valid_string_parameter_name(const char *name) {
+    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
+  }
+
+  virtual std::shared_ptr<nimble::Material> get_material() const
+  { return material; }
+
+  virtual void parse_and_create(const std::string& mat_params,
+                                int num_points)
+  {
+    material_params = ParseMaterialParametersString(mat_params, num_points);
+    create();
+  }
+
+  virtual void parse_and_create(const std::string& mat_params)
+  { parse_and_create(mat_params, 0); }
+
+protected:
+
+  virtual void create() = 0;
+
+protected:
+
+  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const std::string& material_parameters,
+                                                                            int num_material_points = 0) const;
+
+  //
+  //--- Protected Variables
+  //
+
+  std::shared_ptr< nimble::Material > material = nullptr;
+  std::shared_ptr<const nimble::MaterialParameters> material_params;
+
+private:
+  std::vector<std::string> valid_double_parameter_names;
+  std::vector<std::string> valid_string_parameter_names;
+};
 
 }
+
+#endif /* SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_ */

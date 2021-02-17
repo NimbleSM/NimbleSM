@@ -46,9 +46,11 @@
 
 #include <map>
 #include <vector>
-#include <nimble_element.h>
-#include <nimble_kokkos_defs.h>
-#include <nimble_material.h>
+
+#include "nimble_block_base.h"
+
+#include "nimble_element.h"
+#include "nimble_kokkos_defs.h"
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -63,21 +65,24 @@ namespace nimble_kokkos { class MaterialFactory; }
 
 namespace nimble_kokkos {
 
-  class Block {
+class Block : public nimble::BlockBase {
 
   public:
 
-  Block() : macro_material_parameters_("none"), rve_boundary_condition_strategy_("none"),
-      elem_conn_d("element_connectivity_d", 0), element_device_(0), material_device_(0) {}
+    Block() : BlockBase(),
+      macro_material_parameters_("none"), rve_boundary_condition_strategy_("none"),
+      elem_conn_d("element_connectivity_d", 0),
+      element_device_(0), material_device_(0)
+    {}
 
-    virtual ~Block() {
+    ~Block() override {
       /* Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) { */
       /*     element_device_->~Element(); */
       /*   }); */
-      if (element_device_ != 0) {
+      if (element_device_ != nullptr) {
         Kokkos::kokkos_free(element_device_);
       }
-      if (material_device_ != 0) {
+      if (material_device_ != nullptr) {
         Kokkos::kokkos_free(material_device_);
       }
     }
@@ -89,21 +94,13 @@ namespace nimble_kokkos {
     void InstantiateMaterialModel(int num_material_points,
                                   MaterialFactory& factory);
 
-    void InstantiateElement();
+    void InstantiateElement() override;
 
-    double GetDensity() const {
-      return material_host_->GetDensity();
-    }
-
-    double GetBulkModulus() const {
-      return material_host_->GetBulkModulus();
-    }
-
-    std::shared_ptr<nimble::Element> GetHostElement() { return element_host_; }
+    std::shared_ptr<nimble::Element> GetHostElement() { return element_; }
 
     nimble::Element* GetDeviceElement() { return element_device_; }
 
-    std::shared_ptr<nimble::Material> GetHostMaterialModel() { return material_host_; }
+    std::shared_ptr<nimble::Material> GetHostMaterialModel() { return material_; }
 
     nimble::Material* GetDeviceMaterialModel() { return material_device_; }
 
@@ -137,11 +134,8 @@ namespace nimble_kokkos {
     // element connectivity
     DeviceElementConnectivityView elem_conn_d;
 
-    std::shared_ptr<nimble::Element> element_host_ = nullptr;
     nimble::Element* element_device_;
 
-
-    std::shared_ptr<nimble::Material> material_host_ = nullptr;
     nimble::Material* material_device_;
 
     std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
