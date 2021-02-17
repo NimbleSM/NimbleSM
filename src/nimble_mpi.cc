@@ -190,6 +190,21 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   NimbleInitData init_data;
   details::parseCommandLine(argc, argv, init_data);
 
+  //--- Check whether multiple conflicting parameters are set
+  {
+    int iflag = (init_data.use_tpetra_ == true) + (init_data.use_vt_ == true) +
+                (init_data.use_kokkos_ == true);
+    if (iflag > 1) {
+      if (init_data.use_kokkos_)
+        std::cerr << "-- Using Kokkos interface \n";
+      if (init_data.use_tpetra_)
+        std::cerr << "-- Using Tpetra interface \n";
+      if (init_data.use_vt_)
+        std::cerr << "-- Using VT runtime \n";
+      throw std::invalid_argument(" Conflicting Parameters Set \n");
+    }
+  }
+	
 #ifdef NIMBLE_HAVE_TRILINOS
   if (init_data.use_tpetra_) {
     init_data.tpetra_scope_.reset(new Tpetra::ScopeGuard(&argc,&argv));
