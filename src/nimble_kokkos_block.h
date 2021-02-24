@@ -60,7 +60,6 @@
   #include <memory>
 #endif
 
-namespace nimble { struct NGPLAMEData; }
 namespace nimble_kokkos { class MaterialFactory; }
 
 namespace nimble_kokkos {
@@ -70,7 +69,6 @@ class Block : public nimble::BlockBase {
   public:
 
     Block() : BlockBase(),
-      macro_material_parameters_("none"), rve_boundary_condition_strategy_("none"),
       elem_conn_d("element_connectivity_d", 0),
       element_device_(0), material_device_(0)
     {}
@@ -106,8 +104,6 @@ class Block : public nimble::BlockBase {
 
     DeviceElementConnectivityView& GetDeviceElementConnectivityView() { return elem_conn_d; }
 
-    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
-
     double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
                                    const double * const node_displacements,
                                    int num_elem,
@@ -124,13 +120,6 @@ class Block : public nimble::BlockBase {
 
   private:
 
-    std::string macro_material_parameters_;
-    std::map<int, std::string> rve_material_parameters_;
-    std::string rve_boundary_condition_strategy_;
-    std::vector<int> rve_output_global_elem_ids_;
-    // todo: can we avoid carrying the rve_mesh around?
-    //GenesisMesh rve_mesh_;
-
     // element connectivity
     DeviceElementConnectivityView elem_conn_d;
 
@@ -138,7 +127,6 @@ class Block : public nimble::BlockBase {
 
     nimble::Material* material_device_;
 
-    std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
   };
 
 } // namespace nimble

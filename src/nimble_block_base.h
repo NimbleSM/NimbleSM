@@ -46,10 +46,12 @@
 
 #include <memory>
 
+#include "nimble_genesis_mesh.h"
 #include "nimble_material.h"
 
 namespace nimble {
 
+struct NGPLAMEData;
 class Element;
 
 class BlockBase {
@@ -74,10 +76,25 @@ public:
     return material_->GetShearModulus();
   }
 
+  std::shared_ptr<Material> GetMaterialPointer() const { return material_; }
+
+  std::shared_ptr<Element> GetElementPointer() const { return element_; }
+
+  std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
+
 protected:
+
+  std::string macro_material_parameters_ = "none";
+  std::map<int, std::string> rve_material_parameters_;
+  std::string rve_boundary_condition_strategy_ = "none";
+  std::vector<int> rve_output_global_elem_ids_;
+  // todo: can we avoid carrying the rve_mesh around?
+  GenesisMesh rve_mesh_;
 
   std::shared_ptr<Element> element_ = nullptr;
   std::shared_ptr<Material> material_ = nullptr;
+
+  std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
 
 };
 
