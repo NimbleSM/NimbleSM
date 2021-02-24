@@ -51,7 +51,6 @@
 
 namespace nimble {
 
-struct NGPLAMEData;
 class Element;
 
 class BlockBase {
@@ -80,8 +79,6 @@ public:
 
   std::shared_ptr<Element> GetElementPointer() const { return element_; }
 
-  std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
-
 protected:
 
   std::string macro_material_parameters_ = "none";
@@ -93,8 +90,6 @@ protected:
 
   std::shared_ptr<Element> element_ = nullptr;
   std::shared_ptr<Material> material_ = nullptr;
-
-  std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
 
 };
 

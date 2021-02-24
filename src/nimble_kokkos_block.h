@@ -60,6 +60,8 @@
   #include <memory>
 #endif
 
+namespace nimble { struct NGPLAMEData; }
+
 namespace nimble_kokkos { class MaterialFactory; }
 
 namespace nimble_kokkos {
@@ -118,6 +120,8 @@ class Block : public nimble::BlockBase {
                                        const int * const global_node_ids,
                                        MatT & tangent_stiffness) const ;
 
+    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
+
   private:
 
     // element connectivity
@@ -126,6 +130,8 @@ class Block : public nimble::BlockBase {
     nimble::Element* element_device_;
 
     nimble::Material* material_device_;
+
+    std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
 
   };
 
