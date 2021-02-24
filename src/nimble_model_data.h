@@ -61,7 +61,7 @@
 
 namespace nimble {
 
-class ModelData : public BaseModelData {
+class ModelData : public ModelDataBase {
 
 public:
 

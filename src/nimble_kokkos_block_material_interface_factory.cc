@@ -54,7 +54,7 @@ std::shared_ptr<nimble::BlockMaterialInterfaceBase> BlockMaterialInterfaceFactor
     double time_n, double time_np1,
     const nimble::FieldIds &field_ids,
     const std::vector<nimble::BlockData> &blocks,
-    nimble::BaseModelData *model_data_ptr
+    nimble::ModelDataBase *model_data_ptr
 ) const
 {
   std::shared_ptr<nimble::BlockMaterialInterfaceBase> res_ptr(new nimble_kokkos::BlockMaterialInterface(time_n, time_np1, field_ids, blocks, model_data_ptr));

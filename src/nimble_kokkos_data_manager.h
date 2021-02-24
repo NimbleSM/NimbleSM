@@ -57,7 +57,7 @@
 
 namespace nimble_kokkos {
 
-class ModelData : public nimble::BaseModelData
+class ModelData : public nimble::ModelDataBase
 {
 
  public:

@@ -66,7 +66,7 @@ class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
   BlockMaterialInterface(double time_n_, double time_np1_,
                          const nimble::FieldIds &field_ids_,
                          const std::vector<nimble::BlockData>& blocks_,
-                         nimble::BaseModelData *model_data_)
+                         nimble::ModelDataBase *model_data_)
       : nimble::BlockMaterialInterfaceBase(),
       time_n(time_n_),
       time_np1(time_np1_),

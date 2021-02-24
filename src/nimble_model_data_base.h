@@ -73,13 +73,13 @@ struct FieldIds {
 };
 
 
-class BaseModelData {
+class ModelDataBase {
 
 public:
 
-  BaseModelData() = default;
+  ModelDataBase() = default;
 
-  virtual ~BaseModelData() = default;
+  virtual ~ModelDataBase() = default;
 
   void SetDimension(int dim) {
     if(dim != 2 && dim != 3){

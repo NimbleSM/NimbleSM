@@ -61,7 +61,7 @@ class BlockMaterialInterfaceFactory : public nimble::BlockMaterialInterfaceFacto
   std::shared_ptr<nimble::BlockMaterialInterfaceBase> create(double time_n, double time_np1,
                                                  const nimble::FieldIds &field_ids,
                                                  const std::vector<nimble::BlockData> &blocks,
-                                                 nimble::BaseModelData *model_data_ptr) const override;
+                                                 nimble::ModelDataBase *model_data_ptr) const override;
 };
 
 }
