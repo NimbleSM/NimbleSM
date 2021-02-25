@@ -41,45 +41,45 @@
 //@HEADER
 */
 
-#include <stdexcept>
-#include <tuple>
-#include <utility>
-#include <nimble_kokkos_defs.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
+#ifndef SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_BASE_H
+#define SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_BASE_H
 
-namespace nimble_kokkos {
+namespace nimble {
 
-using nimble::Material;
+class BlockBase;
+class Material;
 
-MaterialFactory::MaterialFactory()
-    : MaterialFactoryBase(),
-      material_device(nullptr) {
-}
-
-template <typename MatType>
-inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
-  auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<MatType*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  MatType& mat_host_ref = *mat_host;
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (mat_device) MatType(mat_host_ref);
-  });
-  Kokkos::fence();
-  return std::make_pair(mat_host, mat_device);
-}
-
-void MaterialFactory::create() {
-  auto name_string = material_params->GetMaterialName(false);
-  if (name_string == "neohookean") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        *material_params);
-  } else if (name_string == "elastic") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        *material_params);
-  } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
+struct BlockData {
+  BlockData(nimble::BlockBase *block_, nimble::Material* material_d_, const int block_id_,
+            const int num_block_elems_, const int num_points_per_block_elem_)
+      :
+      block(block_),
+      material_device(material_d_),
+      id(block_id_),
+      num_elems(num_block_elems_),
+      num_points_per_elem(num_points_per_block_elem_) {
   }
-}
+
+  nimble::BlockBase *block = nullptr;
+  nimble::Material *material_device = nullptr;
+  int id = 0;
+  int num_elems = 0;
+  int num_points_per_elem = 0;
+};
+
+class BlockMaterialInterfaceBase {
+
+public:
+
+  BlockMaterialInterfaceBase() = default;
+
+  virtual ~BlockMaterialInterfaceBase() = default;
+
+  virtual void ComputeStress() const = 0;
+
+};
 
 }
+
+
+#endif // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_BASE_H

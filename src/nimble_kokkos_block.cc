@@ -55,14 +55,14 @@ namespace nimble_kokkos {
                          MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
     InstantiateElement();
-    int num_material_points = num_elements * element_host_->NumIntegrationPointsPerElement();
+    int num_material_points = num_elements * element_->NumIntegrationPointsPerElement();
     InstantiateMaterialModel(num_material_points, factory);
   }
 
   void Block::InstantiateMaterialModel(int num_material_points,
                                        MaterialFactory& factory) {
     factory.parse_and_create(macro_material_parameters_, num_material_points);
-    material_host_ = factory.get_material_host();
+    material_ = factory.get_material_host();
     material_device_ = factory.get_material_device();
     ngp_lame_data_ = factory.get_ngp_lame_data();
   }
@@ -70,7 +70,7 @@ namespace nimble_kokkos {
   void Block::InstantiateElement() {
 
     // instantiate the element on the host (eventually we won't need this)
-    element_host_ = std::make_shared<nimble::HexElement>();
+    element_ = std::make_shared<nimble::HexElement>();
 
     // instantiate the element on the device
     element_device_ = static_cast<nimble::Element*>(Kokkos::kokkos_malloc<>("Element", sizeof(nimble::HexElement)));
@@ -84,8 +84,8 @@ namespace nimble_kokkos {
                                         const double * const node_displacements,
                                         int num_elem,
                                         const int * const elem_conn) const {
-    int dim = element_host_->Dim();
-    int num_node_per_elem = element_host_->NumNodesPerElement();
+    int dim = element_->Dim();
+    int num_node_per_elem = element_->NumNodesPerElement();
     double sound_speed = std::sqrt( GetBulkModulus() / GetDensity() );
     double critical_time_step = std::numeric_limits<double>::max();
 
@@ -107,7 +107,7 @@ namespace nimble_kokkos {
         }
       }
 
-      double elem_critical_time_step = element_host_->ComputeCharacteristicLength(node_coord) / sound_speed;
+      double elem_critical_time_step = element_->ComputeCharacteristicLength(node_coord) / sound_speed;
       if (elem_critical_time_step < critical_time_step) {
         critical_time_step = elem_critical_time_step;
       }
@@ -126,9 +126,9 @@ namespace nimble_kokkos {
                                             const int * const global_node_ids,
                                             MatT & tangent_stiffness) const {
 
-    int dim = element_host_->Dim();
-    int num_node_per_elem = element_host_->NumNodesPerElement();
-    int num_int_pt_per_elem = element_host_->NumIntegrationPointsPerElement();
+    int dim = element_->Dim();
+    int num_node_per_elem = element_->NumNodesPerElement();
+    int num_int_pt_per_elem = element_->NumIntegrationPointsPerElement();
 
     int vector_size = LengthToInt(nimble::VECTOR, dim);
     int full_tensor_size = LengthToInt(nimble::FULL_TENSOR, dim);
@@ -147,9 +147,9 @@ namespace nimble_kokkos {
         }
       }
 
-      material_host_->GetTangent(num_int_pt_per_elem, material_tangent);
+      material_->GetTangent(num_int_pt_per_elem, material_tangent);
 
-      element_host_->ComputeTangent(cur_coord, material_tangent, element_tangent);
+      element_->ComputeTangent(cur_coord, material_tangent, element_tangent);
 
       for (int row=0 ; row<num_node_per_elem ; row++) {
         int global_row_node = global_node_ids[ elem_conn[elem*num_node_per_elem + row] ];

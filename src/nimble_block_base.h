@@ -41,45 +41,58 @@
 //@HEADER
 */
 
-#include <stdexcept>
-#include <tuple>
-#include <utility>
-#include <nimble_kokkos_defs.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
+#ifndef NIMBLE_BLOCK_BASE_H
+#define NIMBLE_BLOCK_BASE_H
 
-namespace nimble_kokkos {
+#include <memory>
 
-using nimble::Material;
+#include "nimble_genesis_mesh.h"
+#include "nimble_material.h"
 
-MaterialFactory::MaterialFactory()
-    : MaterialFactoryBase(),
-      material_device(nullptr) {
-}
+namespace nimble {
 
-template <typename MatType>
-inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
-  auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<MatType*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  MatType& mat_host_ref = *mat_host;
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (mat_device) MatType(mat_host_ref);
-  });
-  Kokkos::fence();
-  return std::make_pair(mat_host, mat_device);
-}
+class Element;
 
-void MaterialFactory::create() {
-  auto name_string = material_params->GetMaterialName(false);
-  if (name_string == "neohookean") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        *material_params);
-  } else if (name_string == "elastic") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        *material_params);
-  } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
+class BlockBase {
+
+public:
+
+  BlockBase() = default;
+
+  virtual ~BlockBase() = default;
+
+  virtual void InstantiateElement() = 0;
+
+  double GetDensity() const {
+    return material_->GetDensity();
   }
-}
 
-}
+  double GetBulkModulus() const {
+    return material_->GetBulkModulus();
+  }
+
+  double GetShearModulus() const {
+    return material_->GetShearModulus();
+  }
+
+  std::shared_ptr<Material> GetMaterialPointer() const { return material_; }
+
+  std::shared_ptr<Element> GetElementPointer() const { return element_; }
+
+protected:
+
+  std::string macro_material_parameters_ = "none";
+  std::map<int, std::string> rve_material_parameters_;
+  std::string rve_boundary_condition_strategy_ = "none";
+  std::vector<int> rve_output_global_elem_ids_;
+  // todo: can we avoid carrying the rve_mesh around?
+  GenesisMesh rve_mesh_;
+
+  std::shared_ptr<Element> element_ = nullptr;
+  std::shared_ptr<Material> material_ = nullptr;
+
+};
+
+} // namespace nimble
+
+#endif // NIMBLE_BLOCK_BASE_H
