@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
   auto init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
 
   {
-    std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory(new nimble_kokkos::MaterialFactory);
+    std::shared_ptr<nimble::MaterialFactoryBase> material_factory(new nimble_kokkos::MaterialFactory);
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
     std::shared_ptr<nimble::Parser> parser(new nimble::Parser);

@@ -86,7 +86,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           nimble_kokkos::FieldIds &field_ids,
+                           nimble::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
 );
@@ -186,7 +186,7 @@ int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data) {
 #endif
 }
 
-void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_factory,
+void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_factory_base,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
@@ -205,7 +205,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   nimble::GenesisMesh mesh;
   nimble::GenesisMesh rve_mesh;
   {
-    //--- UH This part is independent of Kokkos
+    //--- This part is independent of Kokkos
     std::string genesis_file_name = nimble::IOFileName(parser->GenesisFileName(), "g", "", my_rank, num_ranks);
     std::string rve_genesis_file_name = nimble::IOFileName(parser->RVEGenesisFileName(), "g");
     mesh.ReadFile(genesis_file_name);
@@ -213,6 +213,12 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
       rve_mesh.ReadFile(rve_genesis_file_name);
     }
   }
+
+  //
+  //--- Temporary solution while refactor is on-going
+  //
+  auto material_factory = std::dynamic_pointer_cast<nimble_kokkos::MaterialFactory>(material_factory_base);
+  //-----------------------------------
 
   watch_simulation.pop_region_and_report_time();
 
@@ -249,7 +255,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble_kokkos::MaterialFactory> material_f
   // Global data
   std::vector<std::string> global_data_labels;
 
-  nimble_kokkos::FieldIds field_ids;
+  nimble::FieldIds field_ids;
   field_ids.lumped_mass = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
   field_ids.reference_coordinates = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
   field_ids.displacement = model_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
@@ -359,7 +365,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           nimble_kokkos::FieldIds &field_ids,
+                           nimble::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
 )
@@ -372,7 +378,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
 
   // Build up block data for stress computation
-  std::vector<nimble_kokkos::BlockData> block_data;
+  std::vector<nimble::BlockData> block_data;
   for (auto &&block_it : blocks)
   {
     int block_id = block_it.first;
@@ -380,7 +386,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     nimble::Material *material_d = block.GetDeviceMaterialModel();
     int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
     int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
-    block_data.emplace_back(block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
+    block_data.emplace_back(&block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
   }
 
   // Containers for gathered data
@@ -701,7 +707,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
     {
       watch_internal_details.push_region("Material stress calculation");
-      auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data, model_data);
+      auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data, &model_data);
       block_material_interface->ComputeStress();
       watch_internal_details.pop_region_and_report_time();
     }

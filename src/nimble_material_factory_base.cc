@@ -43,43 +43,54 @@
 
 #include <stdexcept>
 #include <tuple>
-#include <utility>
-#include <nimble_kokkos_defs.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_material.h>
+#include <vector>
+#include <cassert>
 
-namespace nimble_kokkos {
+#include "nimble_material.h"
+#include "nimble_material_factory_base.h"
+#include "nimble_parser_util.h"
 
-using nimble::Material;
+namespace nimble {
 
-MaterialFactory::MaterialFactory()
-    : MaterialFactoryBase(),
-      material_device(nullptr) {
+MaterialFactoryBase::MaterialFactoryBase()
+{
+  NeohookeanMaterial::register_supported_material_parameters(*this);
+  ElasticMaterial::register_supported_material_parameters(*this);
 }
 
-template <typename MatType>
-inline std::pair<std::shared_ptr<MatType>, MatType*> allocate_material_on_host_and_device(const nimble::MaterialParameters& mat_params_struct) {
-  auto mat_host = std::make_shared<MatType>(mat_params_struct);
-  auto mat_device = static_cast<MatType*>(Kokkos::kokkos_malloc<>("Material", sizeof(MatType)));
-  MatType& mat_host_ref = *mat_host;
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) {
-    new (mat_device) MatType(mat_host_ref);
-  });
-  Kokkos::fence();
-  return std::make_pair(mat_host, mat_device);
-}
+std::shared_ptr<MaterialParameters> MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_parameters,
+                                                                                       int num_material_points) const {
 
-void MaterialFactory::create() {
-  auto name_string = material_params->GetMaterialName(false);
-  if (name_string == "neohookean") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::NeohookeanMaterial>(
-        *material_params);
-  } else if (name_string == "elastic") {
-    std::tie(material, material_device) = allocate_material_on_host_and_device<nimble::ElasticMaterial>(
-        *material_params);
-  } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
+  auto tokens = nimble::tokenize_string(material_parameters);
+
+  // The first string is the material name, followed by the material properties (key-value pairs)
+
+  assert(tokens.size() > 1);
+
+  const std::string material_name = tokens.front();
+  auto token = tokens.cbegin() + 1;
+  auto tokens_end = tokens.cend();
+
+  std::map<std::string, std::string> material_string_parameters;
+  std::map<std::string, double> material_double_parameters;
+  for (; token != tokens_end; token += 2) {
+    auto&& key = *token;
+    auto&& val = *(token+1);
+    if (std::find(valid_double_parameter_names.begin(), valid_double_parameter_names.end(), key)
+        != valid_double_parameter_names.end()) {
+      double double_val = nimble::string_to_double(val);
+      material_double_parameters.insert(std::make_pair(key, double_val));
+    } else if (std::find(valid_string_parameter_names.begin(), valid_string_parameter_names.end(),
+                         key) != valid_string_parameter_names.end()) {
+      material_string_parameters.insert(std::make_pair(key, val));
+    } else {
+      std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
+      throw std::runtime_error(errMsg);
+    }
   }
+
+  return std::make_shared<MaterialParameters>(material_name, material_string_parameters, material_double_parameters,
+                                              num_material_points);
 }
 
 }

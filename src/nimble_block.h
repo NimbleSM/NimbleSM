@@ -44,9 +44,9 @@
 #ifndef NIMBLE_BLOCK_H
 #define NIMBLE_BLOCK_H
 
+#include "nimble_block_base.h"
+
 #include "nimble_element.h"
-#include "nimble_material.h"
-#include "nimble_genesis_mesh.h"
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -62,21 +62,19 @@ namespace nimble {
 
   class UqModel;//Forward declaration to avoid circular header inclusion
 
-  class Block {
+  class Block : public nimble::BlockBase {
 
   public:
 
-    Block() :
-      macro_material_parameters_("none"), 
-      vol_ave_volume_offset_(-1), 
-      rve_boundary_condition_strategy_("none") 
+    Block() : BlockBase(),
+      vol_ave_volume_offset_(-1)
 #ifdef NIMBLE_HAVE_UQ
-      ,bulk_modulus_uq_index_(-1)
-      ,shear_modulus_uq_index_(-1)
+      , bulk_modulus_uq_index_(-1)
+      , shear_modulus_uq_index_(-1)
 #endif
       {}
 
-    virtual ~Block() { }
+    ~Block() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
     template<typename ArchiveType>
@@ -124,21 +122,9 @@ namespace nimble {
 
     void InstantiateMaterialModel(MaterialFactory& factory);
 
-    void InstantiateElement();
+    void InstantiateElement() override;
 
     void GetDataLabelsAndLengths(std::vector< std::pair<std::string, Length> >& data_labels_and_lengths);
-
-    double GetDensity() const {
-      return material_->GetDensity();
-    }
-
-    double GetBulkModulus() const {
-      return material_->GetBulkModulus();
-    }
-
-    double GetShearModulus() const {
-      return material_->GetShearModulus();
-    }
 
     void ComputeLumpedMassMatrix(const double * const reference_coordinates,
                                  int num_elem,
@@ -199,10 +185,6 @@ namespace nimble {
                                    int num_derived_elem_data,
                                    std::vector< std::vector<double> >& derived_elem_data);
 
-    std::shared_ptr<Material> const GetMaterialPointer() const { return material_; }
-
-    std::shared_ptr<Element> const GetElementPointer() const { return element_; }
-
 #ifdef NIMBLE_HAVE_UQ
     // HACK specific to elastic models
     void SetUqParameters(const std::map<std::string,int> & param_indices) {
@@ -215,25 +197,18 @@ namespace nimble {
     }
 #endif
 
-  private:
+  protected:
 
     void DetermineDataOffsets(std::vector<std::string> const & elem_data_labels,
                               std::vector<std::string> const & derived_elem_data_labels);
 
-    std::string macro_material_parameters_;
-    std::map<int, std::string> rve_material_parameters_;
-    std::string rve_boundary_condition_strategy_;
-    std::vector<int> rve_output_global_elem_ids_;
-    // todo: can we avoid carrying the rve_mesh around?
-    GenesisMesh rve_mesh_;
-    std::shared_ptr<Element> element_ = nullptr;
-    std::shared_ptr<Material> material_ = nullptr;
     std::vector<int> def_grad_offset_;
     std::vector<int> stress_offset_;
     std::vector<int> state_data_offset_;
     int vol_ave_volume_offset_;
     std::vector<int> vol_ave_offsets_;
     std::map<int, int> vol_ave_index_to_derived_data_index_;
+
 #ifdef NIMBLE_HAVE_UQ
     // HACK specific to elastic models
 //  std::pair<int, int> range_of_uq_params_;

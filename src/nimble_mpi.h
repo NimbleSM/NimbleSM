@@ -48,14 +48,19 @@
 #include <memory>
 
 #include "nimble_parser.h"
+#include "nimble_material_factory_base.h"
 
-namespace nimble { class MaterialFactory; }
-namespace nimble { class ContactInterface; }
+namespace nimble {
+
+class BlockMaterialInterfaceFactoryBase;
+class ContactInterface;
+
+}
 
 #ifdef NIMBLE_HAVE_EXTRAS
 using MaterialFactoryType = nimble::ExtrasMaterialFactory;
 #else
-using MaterialFactoryType = nimble::MaterialFactory;
+using MaterialFactoryType = nimble::MaterialFactoryBase;
 #endif
 
 namespace nimble {
@@ -68,8 +73,9 @@ namespace nimble {
 ///
 void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
-int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
+int NimbleMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
                std::shared_ptr<nimble::ContactInterface> contact_interface,
+               const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
                const nimble::Parser &parser);
 
 void NimbleFinalize(const nimble::Parser &parser);

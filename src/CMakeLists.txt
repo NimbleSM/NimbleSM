@@ -1,6 +1,7 @@
 message("src/CMakeLists.txt")
 
 target_sources(nimble PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.cc
@@ -15,18 +16,22 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_genesis_mesh.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_block_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition.h
@@ -36,6 +41,9 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_genesis_mesh.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_base.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_factory_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_interface.h
@@ -108,6 +116,7 @@ IF(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.cc)
 
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}

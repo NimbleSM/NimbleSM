@@ -53,7 +53,9 @@
 #include "nimble_contact_interface.h"
 #include "nimble_contact_manager.h"
 #include "nimble_view.h"
+#include "nimble_block_material_interface_factory_base.h"
 #include "nimble_material_factory.h"
+#include "nimble_model_data.h"
 
 #include "nimble_mpi.h"
 #include "nimble_vector_communicator.h"
@@ -102,6 +104,7 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
 #ifdef NIMBLE_HAVE_UQ
@@ -261,13 +264,20 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   parser.Initialize(init_data);
 }
 
-int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
+int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base,
                std::shared_ptr<nimble::ContactInterface> contact_interface,
+               const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
                const nimble::Parser &parser)
 {
 
   int my_rank = parser.GetRankID();
   int num_ranks = parser.GetNumRanks();
+
+  //
+  /// Temporary solution while refactoring
+  //
+  auto material_factory = std::dynamic_pointer_cast<nimble::MaterialFactory>(material_factory_base);
+  ////////////////////////////////////////
 
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;
@@ -426,6 +436,7 @@ int NimbleMain(std::shared_ptr<MaterialFactoryType> material_factory,
   if (time_integration_scheme == "explicit") {
     status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
                                              exodus_output, contact_interface,
+                                             block_material,
                                              num_ranks, my_rank, myCommunicator
 #ifdef NIMBLE_HAVE_UQ
                           , uq_model
@@ -480,6 +491,7 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
 #ifdef NIMBLE_HAVE_UQ
