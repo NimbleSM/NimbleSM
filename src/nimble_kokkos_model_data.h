@@ -198,21 +198,4 @@ class ModelData : public nimble::ModelDataBase
 
 } // namespace
 
-///
-/// Temporary Solution while refactoring
-///
-namespace details_kokkos {
-
-nimble_kokkos::ModelData &
-to_ModelData(const std::shared_ptr<nimble::ModelDataBase> &mptr) {
-  auto *model_data_ptr = dynamic_cast<nimble_kokkos::ModelData *>(mptr.get());
-  if (model_data_ptr == nullptr) {
-    throw std::runtime_error(" Incompatible Model Data \n");
-  }
-  return *model_data_ptr;
-}
-
-}
-/////////////////
-
 #endif
