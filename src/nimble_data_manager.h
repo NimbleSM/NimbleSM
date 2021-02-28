@@ -50,6 +50,7 @@
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
 #include "nimble_model_data_base.h"
+#include "nimble_model_data.h"
 #include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -65,7 +66,7 @@ namespace nimble {
 class ModelDataBase;
 
 struct RVEData {
-  std::shared_ptr<nimble::ModelDataBase> model_data_;
+  nimble::ModelData model_data_;
   std::vector<double> residual_vector_;
   std::vector<double> linear_solver_solution_;
   CRSMatrixContainer tangent_stiffness_;

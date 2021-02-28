@@ -50,7 +50,6 @@
 #include "nimble_material_factory.h"
 #include "nimble_mesh_utils.h"
 #include "nimble_model_data.h"
-#include "nimble_model_data_utils.h"
 #include "nimble_rve.h"
 #include "nimble_utils.h"
 
@@ -142,7 +141,7 @@ namespace nimble {
                           MaterialFactory& factory) {
 
     RVEData& rve_data = data_manager.AllocateRVEData(elem_global_id, integration_point_id);
-    ModelData& model_data = details::to_ModelData(rve_data.model_data_);
+    ModelData& model_data = rve_data.model_data_;
     std::map<int, std::vector< std::vector<double> > >& derived_elem_data = rve_data.derived_elem_data_;
     std::vector<double>& residual_vector = rve_data.residual_vector_;
     std::vector<double>& linear_solver_solution = rve_data.linear_solver_solution_;
@@ -350,7 +349,7 @@ namespace nimble {
     for (int pt = 0 ; pt < num_pts ; pt++){
 
       RVEData& rve_data = data_manager.GetRVEData(elem_id, pt+1);
-      ModelData& model_data = details::to_ModelData(rve_data.model_data_);
+      ModelData& model_data = rve_data.model_data_;
       std::map<int, std::vector< std::vector<double> > >& derived_elem_data = rve_data.derived_elem_data_;
       std::vector<double>& residual_vector = rve_data.residual_vector_;
       std::vector<double>& linear_solver_solution = rve_data.linear_solver_solution_;
