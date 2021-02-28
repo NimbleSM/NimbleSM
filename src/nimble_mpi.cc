@@ -179,6 +179,18 @@ int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
   return 0;
 }
 
+
+/// Temporary Solution while refactoring
+nimble::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr)
+{
+  auto *model_data_ptr = dynamic_cast<nimble::ModelData*>(mptr.get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  return *model_data_ptr;
+}
+/////////////////
+
 }
 
 
@@ -273,12 +285,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   int my_rank = parser.GetRankID();
   int num_ranks = parser.GetNumRanks();
 
-  //
-  /// Temporary solution while refactoring
-  //
-  auto material_factory = std::dynamic_pointer_cast<nimble::MaterialFactory>(material_factory_base);
-  ////////////////////////////////////////
-
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;
   //bvh::vt::context vt_ctx{ argc, argv, &comm_mpi };
@@ -303,8 +309,15 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
-  nimble::DataManager data_manager;
-  nimble::ModelData & model_data = data_manager.GetMacroScaleData();
+  nimble::DataManager data_manager(parser);
+
+  //
+  /// Temporary solution while refactoring
+  //
+  nimble::ModelData &model_data = details::to_ModelData(data_manager.GetMacroScaleData());
+  auto material_factory = std::dynamic_pointer_cast<nimble::MaterialFactory>(material_factory_base);
+  ////////////////////////////////////////
+
   model_data.SetDimension(dim);
 
   // Global data
@@ -574,7 +587,7 @@ int ExplicitTimeIntegrator(
 
   std::vector<double> global_data;
   
-  nimble::ModelData & model_data = data_manager.GetMacroScaleData();
+  nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
 
   int lumped_mass_field_id = model_data.GetFieldId("lumped_mass");
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
@@ -1037,7 +1050,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
   std::vector<double> global_data;
 
-  nimble::ModelData &model_data = data_manager.GetMacroScaleData();
+  nimble::ModelData &model_data = details::to_ModelData(data_manager.GetMacroScaleData());
 
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
   int displacement_field_id = model_data.GetFieldId("displacement");
@@ -1431,7 +1444,10 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step) {
 
-  nimble::ModelData & macroscale_data = data_manager.GetMacroScaleData();
+  ///// Temporary Solution
+  nimble::ModelData &macroscale_data = details::to_ModelData(data_manager.GetMacroScaleData());
+  /////
+
   std::map<int, nimble::Block>& blocks = macroscale_data.GetBlocks();
   std::map<int, std::vector<std::string> > const & elem_data_labels = macroscale_data.GetElementDataLabels();
   int dim = mesh.GetDim();

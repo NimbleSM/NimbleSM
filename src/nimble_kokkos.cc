@@ -45,12 +45,13 @@
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_contact_manager.h"
+#include "nimble_data_manager.h"
 #include "nimble_exodus_output.h"
 #include "nimble_exodus_output_manager.h"
 #include "nimble_kokkos_block.h"
-#include "nimble_kokkos_data_manager.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_material_factory.h"
+#include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_profiling.h"
 #include "nimble_parser.h"
 #include "nimble_timer.h"
@@ -79,7 +80,7 @@ namespace details_kokkos {
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
-                           nimble_kokkos::DataManager & data_manager,
+                           nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
                            std::map<int, nimble_kokkos::Block> &blocks,
                            nimble::ExodusOutput & exodus_output,
@@ -90,6 +91,19 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            int num_ranks,
                            int my_rank
 );
+
+
+/// Temporary Solution while refactoring
+nimble_kokkos::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr)
+{
+  auto *model_data_ptr = dynamic_cast<nimble_kokkos::ModelData*>(mptr.get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  return *model_data_ptr;
+}
+/////////////////
+
 
 }
 
@@ -191,6 +205,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
                      const NimbleKokkosInitData& init_data) {
+
   const int num_ranks = init_data.num_mpi_ranks;
   const int my_rank = init_data.my_mpi_rank;
   const std::string& input_deck_name = init_data.input_deck_name;
@@ -214,9 +229,13 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
     }
   }
 
+  parser->SetUseKokkos();
+  nimble::DataManager data_manager(*parser);
+
   //
   //--- Temporary solution while refactor is on-going
   //
+  nimble_kokkos::ModelData &model_data = details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
   auto material_factory = std::dynamic_pointer_cast<nimble_kokkos::MaterialFactory>(material_factory_base);
   //-----------------------------------
 
@@ -248,8 +267,6 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
   }
   watch_simulation.push_region("Model data and field allocation");
 
-  nimble_kokkos::DataManager data_manager;
-  nimble_kokkos::ModelData &model_data = data_manager.GetMacroScaleData();
   model_data.SetDimension(dim);
 
   // Global data
@@ -358,7 +375,7 @@ namespace details_kokkos {
 
 int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
-                           nimble_kokkos::DataManager & data_manager,
+                           nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
                            std::map<int, nimble_kokkos::Block> &blocks,
                            nimble::ExodusOutput & exodus_output,
@@ -375,7 +392,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
-  nimble_kokkos::ModelData & model_data = data_manager.GetMacroScaleData();
+  /// Temporary Solution while refactoring
+  nimble_kokkos::ModelData &model_data = details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
+  /////////////////
 
   // Build up block data for stress computation
   std::vector<nimble::BlockData> block_data;

@@ -41,11 +41,12 @@
 //@HEADER
 */
 
-#include "nimble_data_manager.h"
+#include "nimble_model_data.h"
+
 #include <set>
 #include <sstream>
 #include <algorithm>
-#include <ctype.h>
+#include <cctype>
 #include <stdexcept>
 
 namespace nimble {

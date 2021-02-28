@@ -243,6 +243,11 @@ namespace nimble {
     std::string GetOutputTag() const
     { return run_data_.GetOutputTag(); }
 
+#ifdef NIMBLE_HAVE_KOKKOS
+    void SetUseKokkos()
+    { run_data_.use_kokkos_ = true; }
+#endif
+
     bool UseKokkos() const
     { return run_data_.use_kokkos_; }
 

@@ -46,14 +46,21 @@
 
 #include "nimble_block_material_interface_base.h"
 
-#include <nimble_data_utils.h>
-#include <nimble_kokkos_block.h>
-#include <nimble_kokkos_data_manager.h>
-#include <nimble_kokkos_defs.h>
-#include <nimble_utils.h>
+#include "nimble_data_utils.h"
+#include "nimble_kokkos_block.h"
+#include "nimble_kokkos_defs.h"
+#include "nimble_utils.h"
 
-namespace nimble_kokkos
-{
+namespace nimble {
+
+class ModelDataBase;
+class FieldIds;
+
+}
+
+namespace nimble_kokkos {
+
+class ModelData;
 
 using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
 inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
@@ -63,17 +70,11 @@ inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_ele
 
 class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
  public:
+
   BlockMaterialInterface(double time_n_, double time_np1_,
                          const nimble::FieldIds &field_ids_,
                          const std::vector<nimble::BlockData>& blocks_,
-                         nimble::ModelDataBase *model_data_)
-      : nimble::BlockMaterialInterfaceBase(),
-      time_n(time_n_),
-      time_np1(time_np1_),
-      field_ids(field_ids_),
-      model_data(dynamic_cast<nimble_kokkos::ModelData*>(model_data_)),
-      blocks(blocks_)
-  {}
+                         nimble::ModelDataBase *model_data_);
 
   ~BlockMaterialInterface() override = default;
 

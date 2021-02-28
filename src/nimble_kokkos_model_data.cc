@@ -677,8 +677,5 @@ void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
   }
 #endif
 
-  ModelData& DataManager::GetMacroScaleData() {
-    return macroscale_data_;
-  }
 
-} // namespace nimble
+  } // namespace nimble
