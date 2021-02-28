@@ -158,5 +158,4 @@ protected:
 
 } // namespace nimble
 
-
 #endif
