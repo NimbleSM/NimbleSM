@@ -50,6 +50,7 @@
 #include "nimble_material_factory.h"
 #include "nimble_mesh_utils.h"
 #include "nimble_model_data.h"
+#include "nimble_model_data_utils.h"
 #include "nimble_rve.h"
 #include "nimble_utils.h"
 

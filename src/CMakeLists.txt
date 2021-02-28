@@ -1,7 +1,6 @@
 message("src/CMakeLists.txt")
 
 target_sources(nimble PRIVATE
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.cc
@@ -17,13 +16,14 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_manager.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.h
@@ -42,6 +42,8 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_factory_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.h

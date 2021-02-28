@@ -53,6 +53,7 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_profiling.h"
+#include "nimble_model_data_utils.h"
 #include "nimble_parser.h"
 #include "nimble_timer.h"
 #include "nimble_timing_utils.h"
@@ -223,7 +224,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
   //
   //--- Temporary solution while refactor is on-going
   //
-  nimble_kokkos::ModelData &model_data = details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
+  nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
   auto material_factory = std::dynamic_pointer_cast<nimble_kokkos::MaterialFactory>(material_factory_base);
   //-----------------------------------
 
@@ -381,7 +382,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
   /// Temporary Solution while refactoring
-  nimble_kokkos::ModelData &model_data = details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
+  nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
   /////////////////
 
   // Build up block data for stress computation
