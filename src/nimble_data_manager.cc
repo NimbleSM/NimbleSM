@@ -42,34 +42,48 @@
 */
 
 #include "nimble_data_manager.h"
-#include <set>
-#include <sstream>
+#ifdef NIMBLE_HAVE_KOKKOS
+#include "nimble_kokkos_model_data.h"
+#endif
+#include "nimble_model_data.h"
+
 #include <algorithm>
-#include <ctype.h>
 #include <stdexcept>
 
 namespace nimble {
 
-  ModelData& DataManager::GetMacroScaleData() {
-    return macroscale_data_;
-  }
 
-  RVEData& DataManager::AllocateRVEData(int global_element_id,
-                                        int integration_point_id) {
-    std::pair<int, int> id_pair(global_element_id, integration_point_id);
-    if (rve_data_.find(id_pair) != rve_data_.end()) {
-      throw std::logic_error("\n****Error in DataManager::AllocateRVEData, requested global_element_id and integration_point_id have already been allocated.\n");
-    }
-    rve_data_[id_pair] = RVEData();
-    RVEData& rve_data = rve_data_[id_pair];
-    return rve_data;
+DataManager::DataManager(const nimble::Parser &parser)
+    : parser_(parser), macroscale_data_(), rve_data_()
+{
+#ifdef NIMBLE_HAVE_KOKKOS
+  if (parser_.UseKokkos()) {
+    macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();
+    return;
   }
+#endif
+  macroscale_data_ = std::make_shared<nimble::ModelData>();
+}
 
-  RVEData& DataManager::GetRVEData(int global_element_id,
-                                     int integration_point_id) {
-    std::pair<int, int> id_pair(global_element_id, integration_point_id);
-    RVEData& rve_data = rve_data_.at(id_pair);
-    return rve_data;
+
+RVEData& DataManager::AllocateRVEData(int global_element_id,
+                                      int integration_point_id) {
+  std::pair<int, int> id_pair(global_element_id, integration_point_id);
+  if (rve_data_.find(id_pair) != rve_data_.end()) {
+    throw std::logic_error("\n****Error in DataManager::AllocateRVEData, requested global_element_id and integration_point_id have already been allocated.\n");
   }
+  rve_data_[id_pair] = RVEData();
+  RVEData& rve_data = rve_data_[id_pair];
+  return rve_data;
+}
+
+
+RVEData& DataManager::GetRVEData(int global_element_id,
+                                   int integration_point_id) {
+  std::pair<int, int> id_pair(global_element_id, integration_point_id);
+  RVEData& rve_data = rve_data_.at(id_pair);
+  return rve_data;
+}
+
 
 } // namespace nimble

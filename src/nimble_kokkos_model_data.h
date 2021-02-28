@@ -41,8 +41,8 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_KOKKOS_DATA_MANAGER_H
-#define NIMBLE_KOKKOS_DATA_MANAGER_H
+#ifndef NIMBLE_KOKKOS_MODEL_DATA_H
+#define NIMBLE_KOKKOS_MODEL_DATA_H
 
 #include <Kokkos_Core.hpp>
 #include <string>
@@ -61,6 +61,10 @@ class ModelData : public nimble::ModelDataBase
 {
 
  public:
+
+  ModelData() = default;
+
+  ~ModelData() override = default;
 
   int AllocateNodeData(nimble::Length length,
                        std::string label,
@@ -192,20 +196,6 @@ class ModelData : public nimble::ModelDataBase
   std::vector< std::map<int, int> > field_id_to_device_integration_point_data_index_;
 };
 
-class DataManager {
-
-  public:
-
-    DataManager() {}
-
-    virtual ~DataManager() {}
-
-    ModelData& GetMacroScaleData();
-
- protected:
-
-    ModelData macroscale_data_;
-};
 
 } // namespace
 
