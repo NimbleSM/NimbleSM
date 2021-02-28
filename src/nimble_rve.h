@@ -44,8 +44,10 @@
 #ifndef NIMBLE_RVE_H
 #define NIMBLE_RVE_H
 
+#ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_defs.h"
-#include "nimble_material.h"
+#endif
+
 #include "nimble_genesis_mesh.h"
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_linear_solver.h"
@@ -59,6 +61,9 @@
 class Block;
 
 namespace nimble {
+
+class DataManager;
+class MaterialFactory;
 
   class RVE : public Material {
 

@@ -41,8 +41,10 @@
 //@HEADER
 */
 
-#include "nimble_kokkos_data_manager.h"
 #include <stdexcept>
+
+#include "nimble_data_manager.h"
+#include "nimble_kokkos_model_data.h"
 
 #include <Kokkos_ScatterView.hpp>
 
