@@ -47,7 +47,6 @@
 #include "nimble_contact_manager.h"
 #include "nimble_data_manager.h"
 #include "nimble_exodus_output.h"
-#include "nimble_exodus_output_manager.h"
 #include "nimble_kokkos_block.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_material_factory.h"
@@ -83,12 +82,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
-                           std::map<int, nimble_kokkos::Block> &blocks,
                            nimble::ExodusOutput & exodus_output,
-                           nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           nimble::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
 );
@@ -224,13 +220,6 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
   parser->SetToUseKokkos();
   nimble::DataManager data_manager(*parser, mesh, rve_mesh);
 
-  //
-  //--- Temporary solution while refactor is on-going
-  //
-  nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
-  auto material_factory = std::dynamic_pointer_cast<nimble_kokkos::MaterialFactory>(material_factory_base);
-  //-----------------------------------
-
   watch_simulation.pop_region_and_report_time();
 
 #ifdef NIMBLE_HAVE_ARBORX
@@ -259,61 +248,11 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
   }
   watch_simulation.push_region("Model data and field allocation");
 
-  model_data.SetDimension(dim);
+  data_manager.Initialize(material_factory_base);
 
-  // Global data
-  std::vector<std::string> global_data_labels;
-
-  nimble::FieldIds field_ids;
-  field_ids.lumped_mass = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
-  field_ids.reference_coordinates = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
-  field_ids.displacement = model_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
-  field_ids.velocity = model_data.AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
-  field_ids.acceleration =  model_data.AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
-  field_ids.internal_force =  model_data.AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
-  field_ids.contact_force =  model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
-
-  bool store_unrotated_stress(true);
-
-  // Blocks
-  // std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
-  std::map<int, nimble_kokkos::Block> blocks;
-  std::vector<int> block_ids = mesh.GetBlockIds();
-  for (int i=0 ; i<num_blocks ; i++){
-    int block_id = block_ids.at(i);
-    std::string const & macro_material_parameters = parser->GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const & rve_material_parameters = parser->GetMicroscaleMaterialParameters();
-    std::string rve_bc_strategy = parser->GetMicroscaleBoundaryConditionStrategy();
-    int num_elements_in_block = mesh.GetNumElementsInBlock(block_id);
-    blocks[block_id] = nimble_kokkos::Block();
-    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory);
-    //
-    // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
-    //
-    std::vector<double> initial_value(9, 0.0);
-    initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
-    field_ids.deformation_gradient = model_data.AllocateIntegrationPointData(block_id, nimble::FULL_TENSOR,
-                                                                             "deformation_gradient",
-                                                                             num_elements_in_block, initial_value);
-    // volume-averaged quantities for I/O are stored as element data
-    model_data.AllocateElementData(block_id, nimble::FULL_TENSOR, "deformation_gradient", num_elements_in_block);
-
-    field_ids.stress = model_data.AllocateIntegrationPointData(block_id, nimble::SYMMETRIC_TENSOR, "stress",
-                                                               num_elements_in_block);
-    if (store_unrotated_stress) {
-      field_ids.unrotated_stress = model_data.AllocateIntegrationPointData(block_id, nimble::SYMMETRIC_TENSOR, "stress",
-                                                                           num_elements_in_block);
-    }
-
-    // volume-averaged quantities for I/O are stored as element data
-    model_data.AllocateElementData(block_id, nimble::SYMMETRIC_TENSOR, "stress", num_elements_in_block);
-
-    if (parser->GetOutputFieldString().find("volume") != std::string::npos) {
-      model_data.AllocateElementData(block_id, nimble::SCALAR, "volume", num_elements_in_block);
-    }
-  }
-
+  //
   // Initialize the initial- and boundary-condition manager
+  //
   std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
   std::vector<std::string> const & bc_strings = parser->GetBoundaryConditionStrings();
@@ -321,39 +260,33 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
   nimble::BoundaryConditionManager boundary_condition_manager;
   boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
-  // Initialize the exodus-output-manager
-  nimble_kokkos::ExodusOutputManager exodus_output_manager;
-  exodus_output_manager.SpecifyOutputFields(model_data, parser->GetOutputFieldString());
-
-  auto node_data_labels_for_output = exodus_output_manager.GetNodeDataLabelsForOutput();
-  auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
-
-  std::map<int, std::vector<std::string> > derived_elem_data_labels;
-  for (auto block_id : block_ids) {
-    derived_elem_data_labels[block_id] = std::vector<std::string>(); // TODO elliminate this
-  }
-
+  //
   // Initialize the output file
+  //
+
+  std::vector<std::string> global_data_labels;
+
   nimble::ExodusOutput exodus_output;
   exodus_output.Initialize(output_exodus_name, mesh);
+
+  auto model_data = data_manager.GetMacroScaleData();
+  auto &node_data_labels_for_output = model_data->GetNodeDataLabelsForOutput();
+  auto &elem_data_labels_for_output = model_data->GetElementDataLabelsForOutput();
+  auto &derived_elem_data_labels = model_data->GetDerivedElementDataLabelsForOutput();
+
   exodus_output.InitializeDatabase(mesh,
                                    global_data_labels,
                                    node_data_labels_for_output,
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
 
-  model_data.SetDerivedElementDataLabelsForOutput(std::move(derived_elem_data_labels));
-
-  model_data.SetReferenceCoordinates(mesh);
-
   watch_simulation.pop_region_and_report_time();
 
   if (time_integration_scheme == "explicit") {
     details_kokkos::ExplicitTimeIntegrator(*parser, mesh, data_manager,
-                           boundary_condition_manager, blocks,
-                           exodus_output, exodus_output_manager,
+                           boundary_condition_manager,
+                           exodus_output,
                            contact_interface, block_material_interface_factory,
-                           field_ids,
                            num_ranks, my_rank);
   }
   else {
@@ -369,12 +302,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
-                           std::map<int, nimble_kokkos::Block> &blocks,
                            nimble::ExodusOutput & exodus_output,
-                           nimble_kokkos::ExodusOutputManager & exodus_output_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           nimble::FieldIds &field_ids,
                            int num_ranks,
                            int my_rank
 )
@@ -385,7 +315,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
   /// Temporary Solution while refactoring
+  auto &field_ids = data_manager.GetFieldIDs();
   nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
+  auto &exodus_output_manager = model_data.GetExodusOutputManager();
+  auto &blocks = model_data.GetBlocks();
   /////////////////
 
   // Build up block data for stress computation

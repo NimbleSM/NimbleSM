@@ -51,8 +51,10 @@
 #include <memory>
 
 #include "nimble_kokkos_defs.h"
+#include "nimble_exodus_output_manager.h"
 #include "nimble_data_utils.h"
 #include "nimble_model_data_base.h"
+
 
 
 namespace nimble_kokkos {
@@ -170,11 +172,34 @@ class ModelData : public nimble::ModelDataBase
                                                    DeviceScalarNodeGatheredView gathered_view_d);
 #endif
 
+  std::map<int, nimble_kokkos::Block>& GetBlocks() { return blocks_; }
+
+  void SetNodeDataLabelsForOutput(std::vector<std::string> &&ref)
+  {
+    output_node_component_labels_ = ref;
+  }
+
+  void SetElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
+  {
+    output_element_component_labels_ = ref;
+  }
+
+  void SetDerivedElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
+  {
+    derived_output_element_data_labels_ = ref;
+  }
+
+  nimble_kokkos::ExodusOutputManager& GetExodusOutputManager()
+  { return exodus_output_manager_; }
+
  protected:
 
   using Data = std::unique_ptr< FieldBase >;
 
   std::map<std::string, int> field_label_to_field_id_map_;
+
+  //! Blocks
+  std::map<int, nimble_kokkos::Block> blocks_;
 
   std::vector< Data > host_node_data_;
   std::vector< Data > device_node_data_;
@@ -194,6 +219,9 @@ class ModelData : public nimble::ModelDataBase
   std::vector< std::vector< Data > > device_integration_point_data_step_np1_;
   std::vector< std::map<int, int> > field_id_to_host_integration_point_data_index_;
   std::vector< std::map<int, int> > field_id_to_device_integration_point_data_index_;
+
+  nimble_kokkos::ExodusOutputManager exodus_output_manager_;
+
 };
 
 } // namespace
