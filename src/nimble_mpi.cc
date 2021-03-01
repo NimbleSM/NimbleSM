@@ -108,9 +108,6 @@ int ExplicitTimeIntegrator(
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
-#ifdef NIMBLE_HAVE_UQ
-    , nimble::UqModel &uq_model
-#endif
 );
 
 int QuasistaticTimeIntegrator(
@@ -337,9 +334,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                              exodus_output, contact_interface,
                                              block_material,
                                              num_ranks, my_rank, myCommunicator
-#ifdef NIMBLE_HAVE_UQ
-                          , uq_model
-#endif
                           );
   }
   else if (time_integration_scheme == "quasistatic") {
@@ -393,9 +387,6 @@ int ExplicitTimeIntegrator(
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
-#ifdef NIMBLE_HAVE_UQ
-    , nimble::UqModel &uq_model
-#endif
 )
 {
 
@@ -499,6 +490,7 @@ int ExplicitTimeIntegrator(
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
+  auto uq_model = *( data_manager.GetUqModel() );
   std::vector<Viewify> bc_offnom_velocity_views(0);
   if(uq_model.Initialized()) {
     uq_model.Setup();

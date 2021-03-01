@@ -66,6 +66,10 @@ namespace nimble {
 class GenesisMesh;
 class ModelDataBase;
 
+#ifdef NIMBLE_HAVE_UQ
+class UqModel;
+#endif
+
 struct RVEData {
   nimble::ModelData model_data_;
   std::vector<double> residual_vector_;
@@ -123,6 +127,11 @@ public:
   const nimble::FieldIds& GetFieldIDs() const
   { return field_ids_; }
 
+#ifdef NIMBLE_HAVE_UQ
+  std::shared_ptr< nimble::UqModel > GetUqModel()
+  { return uq_model_; }
+#endif
+
 protected:
 
   void Initialize_Blocks(const std::shared_ptr<MaterialFactoryType>& material_factory);
@@ -136,6 +145,10 @@ protected:
   const nimble::GenesisMesh &rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
   std::map<std::pair<int,int>, RVEData> rve_data_;
+
+#ifdef NIMBLE_HAVE_UQ
+  std::shared_ptr< nimble::UqModel > uq_model_;
+#endif
 
   //// Temporary solution while refactoring
   nimble::FieldIds field_ids_;
