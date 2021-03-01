@@ -404,26 +404,7 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
 
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  auto reference_coordinate = Viewify(model_data.GetNodeData(reference_coordinate_field_id), dim);
-  if (dim == 2) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate(i, 0) = ref_coord_x[i];
-      reference_coordinate(i, 1) = ref_coord_y[i];
-    }
-  }
-  else if (dim == 3) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate(i, 0) = ref_coord_x[i];
-      reference_coordinate(i, 1) = ref_coord_y[i];
-      reference_coordinate(i, 2) = ref_coord_z[i];
-    }
-  }
-  else {
-    throw std::runtime_error(" -- Inappropriate Spatial Dimension");
-  }
+  model_data.SetReferenceCoordinates(mesh);
 
 #ifdef NIMBLE_HAVE_TRILINOS
   auto comm = (parser.UseTpetra()) ? Tpetra::getDefaultComm()

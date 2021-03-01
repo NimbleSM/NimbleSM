@@ -44,7 +44,7 @@
 #ifndef NIMBLE_ELEMENT_H
 #define NIMBLE_ELEMENT_H
 
-#include "nimble_kokkos_defs.h"
+#include "nimble_defs.h"
 
 namespace nimble {
 

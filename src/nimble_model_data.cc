@@ -43,6 +43,8 @@
 
 #include "nimble_model_data.h"
 
+#include "nimble_view.h"
+
 #include <set>
 #include <sstream>
 #include <algorithm>
@@ -385,13 +387,25 @@ void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
   const double * const ref_coord_x = mesh.GetCoordinatesX();
   const double * const ref_coord_y = mesh.GetCoordinatesY();
   const double * const ref_coord_z = mesh.GetCoordinatesZ();
+
   auto field_id = GetFieldId("reference_coordinate");
-  double* reference_coordinate = GetNodeData(field_id);
+  auto reference_coordinate = Viewify(GetNodeData(field_id), dim_);
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  for (int i=0 ; i < num_nodes ; i++) {
-    reference_coordinate[3*i]   = ref_coord_x[i];
-    reference_coordinate[3*i+1] = ref_coord_y[i];
-    reference_coordinate[3*i+2] = ref_coord_z[i];
+  if (dim_ == 2) {
+    for (int i=0 ; i<num_nodes ; i++) {
+      reference_coordinate(i, 0) = ref_coord_x[i];
+      reference_coordinate(i, 1) = ref_coord_y[i];
+    }
+  }
+  else if (dim_ == 3) {
+    for (int i=0 ; i<num_nodes ; i++) {
+      reference_coordinate(i, 0) = ref_coord_x[i];
+      reference_coordinate(i, 1) = ref_coord_y[i];
+      reference_coordinate(i, 2) = ref_coord_z[i];
+    }
+  }
+  else {
+    throw std::runtime_error(" -- Inappropriate Spatial Dimension");
   }
 }
 
