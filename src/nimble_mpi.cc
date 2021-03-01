@@ -297,7 +297,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
   nimble::DataManager data_manager(parser, mesh, rve_mesh);
 

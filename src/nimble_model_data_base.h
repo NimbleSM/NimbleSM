@@ -110,11 +110,6 @@ public:
     return derived_output_element_data_labels_;
   }
 
-  void SetDerivedElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
-  {
-    derived_output_element_data_labels_ = ref;
-  }
-
   virtual int AllocateNodeData(Length length,
                                std::string label,
                                int num_objects) = 0;

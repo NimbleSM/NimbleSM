@@ -120,6 +120,9 @@ public:
   std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
   { return macroscale_data_; }
 
+  const nimble::FieldIds& GetFieldIDs() const
+  { return field_ids_; }
+
 protected:
 
   void Initialize_Blocks(const std::shared_ptr<MaterialFactoryType>& material_factory);
@@ -133,6 +136,11 @@ protected:
   const nimble::GenesisMesh &rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
   std::map<std::pair<int,int>, RVEData> rve_data_;
+
+  //// Temporary solution while refactoring
+  nimble::FieldIds field_ids_;
+  ///////
+
 
  };
 
