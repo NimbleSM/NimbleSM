@@ -44,12 +44,12 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
+#include "nimble_defs.h"
+
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
-#include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
-#include "nimble_model_data_base.h"
 #include "nimble_model_data.h"
 #include "nimble_parser.h"
 
@@ -63,6 +63,7 @@
 
 namespace nimble {
 
+class GenesisMesh;
 class ModelDataBase;
 
 struct RVEData {
@@ -86,7 +87,9 @@ class DataManager {
 
 public:
 
-  explicit DataManager(const nimble::Parser &parser);
+  DataManager(const nimble::Parser &parser,
+              const nimble::GenesisMesh &mesh,
+              const nimble::GenesisMesh &rve_mesh);
 
   virtual ~DataManager() = default;
 
@@ -97,8 +100,7 @@ public:
   }
 #endif
 
-  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
-  { return macroscale_data_; }
+  void Initialize(const std::shared_ptr<MaterialFactoryType>& material_factory);
 
   RVEData& AllocateRVEData(int global_element_id,
                            int integration_point_id);
@@ -106,9 +108,29 @@ public:
   RVEData& GetRVEData(int global_element_id,
                       int integration_point_id);
 
- protected:
+  const nimble::Parser &GetParser() const
+  { return parser_; }
+
+  const nimble::GenesisMesh &GetMesh() const
+  { return mesh_; }
+
+  const nimble::GenesisMesh &GetRVEMesh() const
+  { return rve_mesh_; }
+
+  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
+  { return macroscale_data_; }
+
+protected:
+
+  void Initialize_Blocks(const std::shared_ptr<MaterialFactoryType>& material_factory);
+
+  void Initialize_Blocks_Kokkos(const std::shared_ptr<MaterialFactoryType>& material_factory);
+
+protected:
 
   const nimble::Parser &parser_;
+  const nimble::GenesisMesh &mesh_;
+  const nimble::GenesisMesh &rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
   std::map<std::pair<int,int>, RVEData> rve_data_;
 

@@ -44,6 +44,14 @@
 #ifndef NIMBLESM_NIMBLE_DEFS_H
 #define NIMBLESM_NIMBLE_DEFS_H
 
+#ifdef NIMBLE_HAVE_EXTRAS
+using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
+#include "nimble_material_factory_base.h"
+using MaterialFactoryType = nimble::MaterialFactoryBase;
+#endif
+
+
 #ifndef NIMBLE_HAVE_KOKKOS
 
 #define NIMBLE_FUNCTION

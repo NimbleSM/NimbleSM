@@ -47,6 +47,7 @@
 #include <string>
 #include <memory>
 
+#include "nimble_defs.h"
 #include "nimble_parser.h"
 #include "nimble_material_factory_base.h"
 
@@ -56,12 +57,6 @@ class BlockMaterialInterfaceFactoryBase;
 class ContactInterface;
 
 }
-
-#ifdef NIMBLE_HAVE_EXTRAS
-using MaterialFactoryType = nimble::ExtrasMaterialFactory;
-#else
-using MaterialFactoryType = nimble::MaterialFactoryBase;
-#endif
 
 namespace nimble {
 
