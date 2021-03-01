@@ -44,9 +44,9 @@
 #ifndef NIMBLE_VIEW_H
 #define NIMBLE_VIEW_H
 
-#include "nimble_kokkos_defs.h"
-
 #include <memory>
+
+#include "nimble_defs.h"
 
 class Viewify {
 

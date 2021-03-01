@@ -44,8 +44,6 @@
 #ifndef NIMBLE_KOKKOS_DEFS_H
 #define NIMBLE_KOKKOS_DEFS_H
 
-#ifdef NIMBLE_HAVE_KOKKOS
-
 #define NIMBLE_FUNCTION KOKKOS_FUNCTION
 #define NIMBLE_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 
@@ -605,14 +603,6 @@ typedef Kokkos::View< int*, kokkos_device >                                     
 typedef Kokkos::View< int*, kokkos_device >                                           DeviceElementConnectivityView;
 }
 
-// else for NIMBLE_HAVE_KOKKOS
-#else
-
-#define NIMBLE_FUNCTION
-#define NIMBLE_INLINE_FUNCTION inline
-
-// endif for NIMBLE_HAVE_KOKKOS
-#endif
 
 // endif for NIMBLE_KOKKOS_DEFS_H
 #endif
