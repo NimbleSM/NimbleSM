@@ -51,6 +51,10 @@
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
+#endif
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -146,22 +150,21 @@ void DataManager::Initialize_Blocks(const std::shared_ptr<MaterialFactoryType>& 
     macro_data->DeclareElementData(block_id, data_labels_and_lengths);
   }
 
-
 #ifdef NIMBLE_HAVE_UQ
   // configure & allocate
   if (parser_.HasUq())
   {
     uq_model_ = std::shared_ptr< nimble::UqModel >(new nimble::UqModel(dim,num_nodes,num_blocks));
-    uq_model.ParseConfiguration(parser->UqModelString());
+    uq_model_->ParseConfiguration(parser->UqModelString());
     std::map<std::string, std::string> lines = parser_.UqParamsStrings();
     for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
       std::string material_key = it->first;
       int block_id = parser->GetBlockIdFromMaterial( material_key );
       std::string uq_params_this_material = it->second;
-      uq_model.ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+      uq_model_->ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
     }
     // initialize
-    uq_model.Initialize(*mesh_,macro_data);
+    uq_model_->Initialize(mesh_,macro_data);
   }
 #endif
 
