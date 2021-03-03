@@ -103,7 +103,12 @@ public:
               const nimble::GenesisMesh &rve_mesh);
 
   /// \brief Destructor
-  virtual ~DataManager() = default;
+  virtual ~DataManager()
+  {
+#ifdef NIMBLE_HAVE_UQ
+    uq_model_->Finalize();
+#endif
+  }
 
 #ifdef NIMBLE_HAVE_DARMA
   template<typename ArchiveType>

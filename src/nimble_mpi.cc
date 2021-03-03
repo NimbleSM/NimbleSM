@@ -345,10 +345,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                                 my_rank, num_ranks, myCommunicator);
   }
 
-#ifdef NIMBLE_HAVE_UQ
-  uq_model.Finalize();
-#endif
-
   return status;
 }
 
