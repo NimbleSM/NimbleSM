@@ -91,10 +91,18 @@ class DataManager {
 
 public:
 
+  /// \brief Constructor
+  ///
+  /// \param parser Reference to parser information
+  /// \param mesh Reference to mesh
+  /// \param rve_mesh Reference to RVE mesh
+  ///
+  /// \note The RVE mesh could be empty.
   DataManager(const nimble::Parser &parser,
               const nimble::GenesisMesh &mesh,
               const nimble::GenesisMesh &rve_mesh);
 
+  /// \brief Destructor
   virtual ~DataManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -104,39 +112,67 @@ public:
   }
 #endif
 
+  /// \brief Initialize data for simulation
+  ///
+  /// \param material_factory Pointer to the material factory
   void Initialize(const std::shared_ptr<MaterialFactoryType>& material_factory);
 
+  /// \brief Allocate RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
   RVEData& AllocateRVEData(int global_element_id,
                            int integration_point_id);
 
+  /// \brief Get RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
   RVEData& GetRVEData(int global_element_id,
                       int integration_point_id);
 
+  /// \brief Return constant reference to parser information
+  ///
+  /// \return Reference to parser information
   const nimble::Parser &GetParser() const
   { return parser_; }
 
+  /// \brief Return constant reference to mesh
+  ///
+  /// \return Reference to mesh
   const nimble::GenesisMesh &GetMesh() const
   { return mesh_; }
 
+  /// \brief Return constant reference to RVE mesh
+  ///
+  /// \return Reference to RVE mesh
   const nimble::GenesisMesh &GetRVEMesh() const
   { return rve_mesh_; }
 
   std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
   { return macroscale_data_; }
 
+  /// \brief Return a const reference to the field IDs
+  ///
+  /// \return Field IDs
   const nimble::FieldIds& GetFieldIDs() const
   { return field_ids_; }
 
+  /// \brief Return reference to the field IDs
+  ///
+  /// \return Field IDs
+  nimble::FieldIds& GetFieldIDs()
+  { return field_ids_; }
+
 #ifdef NIMBLE_HAVE_UQ
+  /// \brief Return pointer to the UQ model
+  ///
+  /// \return Pointer to UQ model
   std::shared_ptr< nimble::UqModel > GetUqModel()
   { return uq_model_; }
 #endif
-
-protected:
-
-  void Initialize_Blocks(const std::shared_ptr<MaterialFactoryType>& material_factory);
-
-  void Initialize_Blocks_Kokkos(const std::shared_ptr<MaterialFactoryType>& material_factory);
 
 protected:
 
@@ -150,10 +186,7 @@ protected:
   std::shared_ptr< nimble::UqModel > uq_model_;
 #endif
 
-  //// Temporary solution while refactoring
   nimble::FieldIds field_ids_;
-  ///////
-
 
  };
 

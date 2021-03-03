@@ -46,6 +46,7 @@
 
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
+#include "nimble_defs.h"
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
@@ -61,6 +62,8 @@
 
 namespace nimble {
 
+class DataManager;
+
 class ModelData : public ModelDataBase {
 
 public:
@@ -69,6 +72,21 @@ public:
 
   ~ModelData() override = default;
 
+  //--- Common interface from nimble::ModelDataBase
+
+  int GetFieldId(const std::string& label) const override;
+
+  int AllocateNodeData(Length length,
+                       std::string label,
+                       int num_objects) override;
+
+  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
+
+  void InitializeBlocks(nimble::DataManager &data_manager,
+                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+
+  //--- Specific routines
+
 #ifdef NIMBLE_HAVE_DARMA
   template<typename ArchiveType>
     void serialize(ArchiveType& ar) {
@@ -76,13 +94,7 @@ public:
     }
 #endif
 
-  int GetFieldId(const std::string& label) const override;
-
   Field GetField(int field_id);
-
-  int AllocateNodeData(Length length,
-                       std::string label,
-                       int num_objects) override;
 
   double* GetNodeData(int field_id);
 
@@ -117,8 +129,6 @@ public:
     element_data_n_.swap(element_data_np1_);
   }
 
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
-
 protected:
 
   void AssignFieldId(Field& field);
@@ -126,6 +136,8 @@ protected:
   void GetNodeDataComponent(int field_id,
                             int component,
                             double* const component_data);
+
+protected:
 
   //! Block ids
   std::vector<int> block_ids_;
