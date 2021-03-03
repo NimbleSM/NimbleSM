@@ -383,7 +383,7 @@ void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
   if (field_id == -1) {
     throw std::logic_error("\n**** Error in ModelData: label 'reference_coordinate' not found.\n");
   }
-  
+
   auto reference_coordinate = Viewify(GetNodeData(field_id), dim_);
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   if (dim_ == 2) {
@@ -447,24 +447,6 @@ void ModelData::InitializeBlocks(nimble::DataManager &data_manager,
     blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
     DeclareElementData(block_id, data_labels_and_lengths);
   }
-
-#ifdef NIMBLE_HAVE_UQ
-  // configure & allocate
-  if (parser_.HasUq())
-  {
-    uq_model_ = std::shared_ptr< nimble::UqModel >(new nimble::UqModel(dim,num_nodes,num_blocks));
-    uq_model_->ParseConfiguration(parser->UqModelString());
-    std::map<std::string, std::string> lines = parser_.UqParamsStrings();
-    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
-      std::string material_key = it->first;
-      int block_id = parser_.GetBlockIdFromMaterial( material_key );
-      std::string uq_params_this_material = it->second;
-      uq_model_->ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
-    }
-    // initialize
-    uq_model_->Initialize(mesh_, this);
-  }
-#endif
 
   std::map<int, int> num_elem_in_each_block = mesh_.GetNumElementsInBlock();
   AllocateElementData(num_elem_in_each_block);

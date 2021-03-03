@@ -58,8 +58,8 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace nimble {
 
+namespace nimble {
 
 DataManager::DataManager(const nimble::Parser &parser,
                          const nimble::GenesisMesh &mesh,
@@ -102,6 +102,24 @@ void DataManager::Initialize(const std::shared_ptr<MaterialFactoryType> &materia
   }
 
   macroscale_data_->SetReferenceCoordinates(mesh_);
+
+#ifdef NIMBLE_HAVE_UQ
+  // configure & allocate
+  if (parser_.HasUq())
+  {
+    uq_model_ = std::shared_ptr< nimble::UqModel >(new nimble::UqModel(dim,num_nodes,num_blocks));
+    uq_model_->ParseConfiguration(parser->UqModelString());
+    std::map<std::string, std::string> lines = parser_.UqParamsStrings();
+    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
+      std::string material_key = it->first;
+      int block_id = parser_.GetBlockIdFromMaterial( material_key );
+      std::string uq_params_this_material = it->second;
+      uq_model_->ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+    }
+    // initialize
+    uq_model_->Initialize(mesh_, this);
+  }
+#endif
 
 }
 
