@@ -50,12 +50,18 @@
 #include <vector>
 #include <memory>
 
-#include "nimble_kokkos_defs.h"
+#include "nimble_defs.h"
 #include "nimble_exodus_output_manager.h"
 #include "nimble_data_utils.h"
 #include "nimble_model_data_base.h"
 
 
+namespace nimble {
+
+class GenesisMesh;
+class DataManager;
+
+}
 
 namespace nimble_kokkos {
 
@@ -85,6 +91,9 @@ class ModelData : public nimble::ModelDataBase
 
   int GetFieldId(const std::string& field_label) const override
   { return field_label_to_field_id_map_.at(field_label); }
+
+  void InitializeBlocks(nimble::DataManager &data_manager,
+                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
 
   std::vector<int> GetBlockIds() const ;
 
@@ -173,21 +182,6 @@ class ModelData : public nimble::ModelDataBase
 #endif
 
   std::map<int, nimble_kokkos::Block>& GetBlocks() { return blocks_; }
-
-  void SetNodeDataLabelsForOutput(std::vector<std::string> &&ref)
-  {
-    output_node_component_labels_ = ref;
-  }
-
-  void SetElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
-  {
-    output_element_component_labels_ = ref;
-  }
-
-  void SetDerivedElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
-  {
-    derived_output_element_data_labels_ = ref;
-  }
 
   nimble_kokkos::ExodusOutputManager& GetExodusOutputManager()
   { return exodus_output_manager_; }

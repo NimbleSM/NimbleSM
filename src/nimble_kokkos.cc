@@ -247,6 +247,9 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
 
   data_manager.Initialize(material_factory_base);
 
+  auto macroscale_data = data_manager.GetMacroScaleData();
+  macroscale_data->InitializeBlocks(data_manager, material_factory_base);
+
   //
   // Initialize the initial- and boundary-condition manager
   //
