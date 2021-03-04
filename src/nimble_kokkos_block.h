@@ -72,7 +72,7 @@ class Block : public nimble::BlockBase {
 
     Block() : BlockBase(),
       elem_conn_d("element_connectivity_d", 0),
-      element_device_(0), material_device_(0)
+      element_device_(nullptr), material_device_(nullptr)
     {}
 
     ~Block() override {
@@ -88,8 +88,7 @@ class Block : public nimble::BlockBase {
     }
 
     void Initialize(std::string const & macro_material_parameters,
-                    int num_elements,
-                    MaterialFactory& factory);
+                    int num_elements, MaterialFactory& factory);
 
     void InstantiateMaterialModel(int num_material_points,
                                   MaterialFactory& factory);
@@ -100,37 +99,44 @@ class Block : public nimble::BlockBase {
 
     nimble::Element* GetDeviceElement() { return element_device_; }
 
-    std::shared_ptr<nimble::Material> GetHostMaterialModel() { return material_; }
+    std::shared_ptr<nimble::Material> GetHostMaterialModel()
+    { return material_; }
 
-    nimble::Material* GetDeviceMaterialModel() { return material_device_; }
+    nimble::Material* GetDeviceMaterialModel()
+    { return material_device_; }
 
-    DeviceElementConnectivityView& GetDeviceElementConnectivityView() { return elem_conn_d; }
+    DeviceElementConnectivityView& GetDeviceElementConnectivityView()
+    { return elem_conn_d; }
 
-    double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
-                                   const double * const node_displacements,
+    double ComputeCriticalTimeStep(const double * node_reference_coordinates,
+                                   const double * node_displacements,
                                    int num_elem,
-                                   const int * const elem_conn) const;
+                                   const int * elem_conn) const;
 
     template <typename MatT>
     void ComputeTangentStiffnessMatrix(int num_global_unknowns,
-                                       const double * const reference_coordinates,
-                                       const double * const displacement,
+                                       const double * reference_coordinates,
+                                       const double * displacement,
                                        int num_elem,
-                                       const int * const elem_conn,
-                                       const int * const global_node_ids,
+                                       const int * elem_conn,
+                                       const int * global_node_ids,
                                        MatT & tangent_stiffness) const ;
 
-    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
+    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData()
+    { return ngp_lame_data_; }
 
   private:
 
-    // element connectivity
+    /// \brief Element connectivity
     DeviceElementConnectivityView elem_conn_d;
 
-    nimble::Element* element_device_;
+    /// \brief
+    nimble::Element *element_device_;
 
-    nimble::Material* material_device_;
+    /// \brief
+    nimble::Material *material_device_;
 
+    /// \brief
     std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
 
   };

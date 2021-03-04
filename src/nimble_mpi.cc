@@ -475,7 +475,6 @@ int ExplicitTimeIntegrator(
   
   nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
 
-  int lumped_mass_field_id = model_data.GetFieldId("lumped_mass");
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
   int displacement_field_id = model_data.GetFieldId("displacement");
   int velocity_field_id =  model_data.GetFieldId("velocity");
@@ -487,7 +486,6 @@ int ExplicitTimeIntegrator(
   int status = 0;
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();
-  double* lumped_mass = model_data.GetNodeData(lumped_mass_field_id);
   double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
   double* displacement = model_data.GetNodeData(displacement_field_id);
   double* velocity = model_data.GetNodeData(velocity_field_id);
@@ -514,31 +512,13 @@ int ExplicitTimeIntegrator(
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
 
-  // Computed the lumped mass matrix (diagonal matrix) and the critical time step
-  double critical_time_step = std::numeric_limits<double>::max();
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
-  for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-    int block_id = block_it->first;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int const * elem_conn = mesh.GetConnectivity(block_id);
-    nimble::Block& block = block_it->second;
-    block.ComputeLumpedMassMatrix(reference_coordinate,
-                                  num_elem_in_block,
-                                  elem_conn,
-                                  lumped_mass);
-    double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
-                                                                    displacement,
-                                                                    num_elem_in_block,
-                                                                    elem_conn);
-    if (block_critical_time_step < critical_time_step) {
-      critical_time_step = block_critical_time_step;
-    }
-  }
 
-  // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
-  int scalar_dimension = 1;
-  myVectorCommunicator.VectorReduction(scalar_dimension, lumped_mass);
+  model_data.ComputeLumpedMass(data_manager);
+
+  double critical_time_step = model_data.GetCriticalTimeStep();
+  Viewify lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
   double time_current(0.0), time_previous(0.0);
   double final_time = parser.FinalTime();
@@ -783,7 +763,7 @@ int ExplicitTimeIntegrator(
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     for (int i = 0; i < num_unknowns; ++i) {
       acceleration[i] =
-          (1.0 / lumped_mass[i / 3]) *
+          (1.0 / lumped_mass(i/3, 0)) *
           (internal_force[i] + external_force[i] + contact_force[i]);
     }
 

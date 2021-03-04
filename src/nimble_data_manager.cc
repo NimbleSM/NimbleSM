@@ -50,6 +50,7 @@
 
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
+#include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_UQ
 #include "nimble_uq.h"
@@ -65,8 +66,34 @@ DataManager::DataManager(const nimble::Parser &parser,
                          const nimble::GenesisMesh &mesh,
                          const nimble::GenesisMesh &rve_mesh)
     : parser_(parser), mesh_(mesh), rve_mesh_(rve_mesh),
-      macroscale_data_(), rve_data_()
+      macroscale_data_(), rve_data_(), field_ids_(),
+      vector_communicator_(nullptr)
 {
+  const auto dim = static_cast<int>(mesh_.GetDim());
+  const auto num_nodes = static_cast<int>(mesh_.GetNumNodes());
+
+  //--- Create VectorCommunicator
+#ifdef NIMBLE_HAVE_TRILINOS
+  auto comm = (parser_.UseTpetra()) ? Tpetra::getDefaultComm()
+                                    : Teuchos::RCP<const Teuchos::Comm<int>>();
+#else
+  int comm = 0;
+#endif
+  vector_communicator_ = std::make_shared< nimble::VectorCommunicator >(dim, num_nodes, comm);
+
+  std::vector<int> global_node_ids(num_nodes);
+  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
+  for (int n=0 ; n<num_nodes ; ++n) {
+    global_node_ids[n] = global_node_ids_ptr[n];
+  }
+
+  // DJL
+  // Here is where the initialization occurs for MPI operations
+  // In this call, each rank determines which nodes are shared with which other ranks
+  // This information is stored so that the vector reductions will work later
+  vector_communicator_->Initialize(global_node_ids);
+
+  //--- Create ModelData
 #ifdef NIMBLE_HAVE_KOKKOS
   if (parser_.UseKokkos()) {
     macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();

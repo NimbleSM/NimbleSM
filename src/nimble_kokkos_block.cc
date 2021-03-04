@@ -51,8 +51,7 @@
 namespace nimble_kokkos {
 
   void Block::Initialize(std::string const & macro_material_parameters,
-                         int num_elements,
-                         MaterialFactory& factory) {
+                         int num_elements, MaterialFactory& factory) {
     macro_material_parameters_ = macro_material_parameters;
     InstantiateElement();
     int num_material_points = num_elements * element_->NumIntegrationPointsPerElement();

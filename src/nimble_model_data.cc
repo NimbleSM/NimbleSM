@@ -45,6 +45,7 @@
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_parser.h"
+#include "nimble_vector_communicator.h"
 #include "nimble_view.h"
 
 #include <set>
@@ -474,6 +475,59 @@ void ModelData::InitializeBlocks(nimble::DataManager &data_manager,
                                 data_manager);
   }
 
+}
+
+void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
+{
+  const auto& mesh_ = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+
+  auto lumped_mass_field_id = GetFieldId("lumped_mass");
+  auto reference_coordinate_field_id = GetFieldId("reference_coordinate");
+  auto displacement_field_id = GetFieldId("displacement");
+
+  auto lumped_mass = GetNodeData(lumped_mass_field_id);
+  auto reference_coordinate = GetNodeData(reference_coordinate_field_id);
+  auto displacement = GetNodeData(displacement_field_id);
+
+  //
+  // Computed the lumped mass matrix (diagonal matrix) and the critical time step
+  //
+  double critical_time_step = std::numeric_limits<double>::max();
+  std::map<int, nimble::Block>& blocks = GetBlocks();
+  std::map<int, nimble::Block>::iterator block_it;
+  for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
+    int block_id = block_it->first;
+    int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    int const * elem_conn = mesh_.GetConnectivity(block_id);
+    nimble::Block& block = block_it->second;
+    block.ComputeLumpedMassMatrix(reference_coordinate,
+                                  num_elem_in_block,
+                                  elem_conn,
+                                  lumped_mass);
+    double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
+                                                                    displacement,
+                                                                    num_elem_in_block,
+                                                                    elem_conn);
+    if (block_critical_time_step < critical_time_step) {
+      critical_time_step = block_critical_time_step;
+    }
+  }
+
+  // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
+  auto vector_comm = data_manager.GetVectorCommunicator();
+  int scalar_dimension = 1;
+  vector_comm->VectorReduction(scalar_dimension, lumped_mass);
+}
+
+Viewify ModelData::GetScalarNodeData(const std::string& label)
+{
+  auto field_id = GetFieldId(label);
+  if (field_id < 0) {
+    std::string code = " Field " + label + " Not Allocated ";
+    throw std::runtime_error(code);
+  }
+  return {GetNodeData(field_id), 1};
 }
 
 } // namespace nimble

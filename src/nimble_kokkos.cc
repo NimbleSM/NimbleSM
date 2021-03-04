@@ -333,32 +333,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     block_data.emplace_back(&block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
   }
 
-  // Containers for gathered data
-  std::vector<nimble_kokkos::DeviceScalarNodeGatheredView> gathered_lumped_mass_d(num_blocks, nimble_kokkos::DeviceScalarNodeGatheredView("gathred_lumped_mass", 1));
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_reference_coordinates", 1));
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
-
-  int block_index;
-  std::map<int, nimble_kokkos::Block>::iterator block_it;
-  for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
-    int block_id = block_it->first;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    Kokkos::resize(gathered_lumped_mass_d.at(block_index), num_elem_in_block);
-    Kokkos::resize(gathered_reference_coordinate_d.at(block_index), num_elem_in_block);
-    Kokkos::resize(gathered_displacement_d.at(block_index), num_elem_in_block);
-    Kokkos::resize(gathered_internal_force_d.at(block_index), num_elem_in_block);
-    Kokkos::resize(gathered_contact_force_d.at(block_index), num_elem_in_block);
-  }
-
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Lumped mass gather and compute");
-
-  nimble_kokkos::HostScalarNodeView lumped_mass_h = model_data.GetHostScalarNodeData(field_ids.lumped_mass);
-  nimble_kokkos::DeviceScalarNodeView lumped_mass_d = model_data.GetDeviceScalarNodeData(field_ids.lumped_mass);
-  Kokkos::deep_copy(lumped_mass_h, (double)(0.0));
-  Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
 
   nimble_kokkos::HostVectorNodeView reference_coordinate_h = model_data.GetHostVectorNodeData(field_ids.reference_coordinates);
   nimble_kokkos::DeviceVectorNodeView reference_coordinate_d = model_data.GetDeviceVectorNodeData(field_ids.reference_coordinates);
@@ -382,64 +358,15 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(field_ids.contact_force);
   Kokkos::deep_copy(contact_force_h, (double)(0.0));
 
-  // Compute the lumped mass
-  for (block_index=0, block_it=blocks.begin(); block_it!=blocks.end() ; block_index++, block_it++) {
-    int block_id = block_it->first;
-    nimble_kokkos::Block& block = block_it->second;
-    nimble::Element* element_d = block.GetDeviceElement();
-    double density = block.GetDensity();
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
-    int elem_conn_length = num_elem_in_block * num_nodes_per_elem;
-    int const * elem_conn = mesh.GetConnectivity(block_id);
+  model_data.ComputeLumpedMass(data_manager);
+  Viewify lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
-    nimble_kokkos::HostElementConnectivityView elem_conn_h("element_connectivity_h", elem_conn_length);
-    for (int i=0 ; i<elem_conn_length ; i++) {
-      elem_conn_h(i) = elem_conn[i];
-    }
-    nimble_kokkos::DeviceElementConnectivityView& elem_conn_d = block.GetDeviceElementConnectivityView();
-    Kokkos::resize(elem_conn_d, elem_conn_length);
-    Kokkos::deep_copy(elem_conn_d, elem_conn_h);
+  auto gathered_reference_coordinate_d = model_data.GetGatheredRefCoord();
+  auto &gathered_displacement_d = model_data.GetGatheredDisp();
+  auto &gathered_internal_force_d = model_data.GetGatheredInternalForce();
+  auto &gathered_contact_force_d = model_data.GetGatheredContactForce();
 
-    nimble_kokkos::DeviceVectorNodeGatheredView gathered_reference_coordinate_block_d = gathered_reference_coordinate_d.at(block_index);
-    nimble_kokkos::DeviceScalarNodeGatheredView gathered_lumped_mass_block_d = gathered_lumped_mass_d.at(block_index);
-
-    model_data.GatherVectorNodeData(field_ids.reference_coordinates,
-                                    num_elem_in_block,
-                                    num_nodes_per_elem,
-                                    elem_conn_d,
-                                    gathered_reference_coordinate_block_d);
-
-    // COMPUTE LUMPED MASS
-    Kokkos::parallel_for("Lumped Mass", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
-      nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
-      nimble_kokkos::DeviceScalarNodeGatheredSubView element_lumped_mass_d = Kokkos::subview(gathered_lumped_mass_block_d, i_elem, Kokkos::ALL);
-      element_d->ComputeLumpedMass(density, element_reference_coordinate_d, element_lumped_mass_d);
-    });
-
-    // SCATTER TO NODE DATA
-    model_data.ScatterScalarNodeData(field_ids.lumped_mass,
-                                     num_elem_in_block,
-                                     num_nodes_per_elem,
-                                     elem_conn_d,
-                                     gathered_lumped_mass_block_d);
-  }
-  Kokkos::deep_copy(lumped_mass_h, lumped_mass_d);
-
-  watch_simulation.pop_region_and_report_time();
-
-  // Initialize the MPI container
-  std::vector<int> global_node_ids(num_nodes);
-  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
-  for (int n=0 ; n<num_nodes ; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
-  nimble::VectorCommunicator myVectorCommunicator;
-  myVectorCommunicator.Initialize(global_node_ids);
-
-  int mpi_scalar_dimension = 1;
-  std::vector<double> mpi_scalar_buffer(mpi_scalar_dimension * num_nodes);
-  int mpi_vector_dimension = 3;
+  double critical_time_step = model_data.GetCriticalTimeStep();
 
   watch_simulation.push_region("Contact setup");
 
@@ -452,6 +379,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 #else
   nimble::ContactManager contact_manager(contact_interface);
 #endif // NIMBLE_HAVE_ARBORX
+
+  auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
@@ -469,7 +398,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     contact_manager.CreateContactEntities(mesh,
-                                          myVectorCommunicator,
+                                          *myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
@@ -485,19 +414,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
   watch_simulation.pop_region_and_report_time();
 
-  watch_simulation.push_region("Lumped mass gather and compute");
-
-  // MPI vector reduction on lumped mass
-  for (unsigned int i=0 ; i<num_nodes ; i++) {
-    mpi_scalar_buffer[i] = lumped_mass_h(i);
-  }
-  myVectorCommunicator.VectorReduction(mpi_scalar_dimension, mpi_scalar_buffer.data());
-  for (int i=0 ; i<num_nodes ; i++) {
-    lumped_mass_h(i) = mpi_scalar_buffer[i];
-  }
-
-  watch_simulation.pop_region_and_report_time();
-
   watch_simulation.push_region("BC enforcement");
 
   double time_current(0.0), time_previous(0.0);
@@ -507,7 +423,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   int output_frequency = parser.OutputFrequency();
 
   boundary_condition_manager.ApplyInitialConditions(reference_coordinate_h, velocity_h);
-  boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
+  boundary_condition_manager.ApplyKinematicBC(time_current, time_previous,
+                                              reference_coordinate_h, displacement_h,
+                                              velocity_h);
   Kokkos::deep_copy(displacement_d, displacement_h);
   Kokkos::deep_copy(velocity_d, velocity_h);
 
@@ -516,7 +434,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   // Output to Exodus file
   watch_simulation.push_region("Output");
 
-  exodus_output_manager.ComputeElementData(mesh, model_data, blocks, gathered_reference_coordinate_d, gathered_displacement_d);
+  exodus_output_manager.ComputeElementData(mesh, model_data, blocks,
+                                           gathered_reference_coordinate_d,
+                                           gathered_displacement_d);
   std::vector<double> global_data;
   std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
 
@@ -551,11 +471,15 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
   watch_simulation.push_region("Time stepping loop");
   nimble_kokkos::ProfilingTimer watch_internal;
 
+  int block_index = 0;
+  std::map<int, nimble_kokkos::Block>::iterator block_it;
+
   for (int step = 0 ; step < num_load_steps ; ++step) {
 
     if (my_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
-        std::cout << "   " << static_cast<int>( 100.0 * static_cast<double>(step+1)/num_load_steps ) << "% complete" << std::endl << std::flush;
+        std::cout << "   " << static_cast<int>( 100.0 * static_cast<double>(step+1)/num_load_steps )
+                  << "% complete" << std::endl << std::flush;
       }
       else if (step == num_load_steps - 1) {
         std::cout << "  100% complete\n" << std::endl << std::flush;
@@ -622,8 +546,8 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       nimble_kokkos::DeviceVectorNodeGatheredView gathered_displacement_block_d = gathered_displacement_d.at(block_index);
       nimble_kokkos::DeviceVectorNodeGatheredView gathered_internal_force_block_d = gathered_internal_force_d.at(block_index);
 
-      model_data.GatherVectorNodeData(field_ids.reference_coordinates, /* TODO SHOULD JUST PASS IN VIEW? */
-                                      num_elem_in_block, /* TODO SHOULD BE ABLE TO GET THIS OFF VIEW "EXTENT" */
+      model_data.GatherVectorNodeData(field_ids.reference_coordinates, // TODO SHOULD JUST PASS IN VIEW?
+                                      num_elem_in_block, // TODO SHOULD BE ABLE TO GET THIS OFF VIEW "EXTENT"
                                       num_nodes_per_elem,
                                       elem_conn_d,
                                       gathered_reference_coordinate_block_d);
@@ -634,7 +558,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                                       elem_conn_d,
                                       gathered_displacement_block_d);
 
-      nimble_kokkos::DeviceFullTensorIntPtView deformation_gradient_step_np1_d = model_data
+      auto deformation_gradient_step_np1_d = model_data
           .GetDeviceFullTensorIntegrationPointData(block_id, field_ids.deformation_gradient, nimble::STEP_NP1);
 
       // COMPUTE DEFORMATION GRADIENTS
@@ -649,12 +573,10 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
     watch_internal_details.pop_region_and_report_time();
 
-    {
-      watch_internal_details.push_region("Material stress calculation");
-      auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data, &model_data);
-      block_material_interface->ComputeStress();
-      watch_internal_details.pop_region_and_report_time();
-    }
+    watch_internal_details.push_region("Material stress calculation");
+    auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data, &model_data);
+    block_material_interface->ComputeStress();
+    watch_internal_details.pop_region_and_report_time();
 
     // Stress divergence
     watch_internal_details.push_region("Stress divergence calculation");
@@ -701,7 +623,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
     // Perform a reduction to obtain correct values on MPI boundaries
     watch_internal.push_region("MPI reduction");
-    myVectorCommunicator.VectorReduction(mpi_vector_dimension, internal_force_h);
+    myVectorCommunicator->VectorReduction(3, internal_force_h);
     total_vector_reduction_time += watch_internal.pop_region_and_report_time();
     //
 
@@ -719,7 +641,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
       // Perform a reduction to obtain correct values on MPI boundaries
       {
         watch_internal_details.push_region("MPI reduction");
-        myVectorCommunicator.VectorReduction(mpi_vector_dimension, contact_force_h);
+        myVectorCommunicator->VectorReduction(3, contact_force_h);
         total_vector_reduction_time +=
             watch_internal_details.pop_region_and_report_time();
       }
@@ -735,9 +657,9 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     watch_internal.push_region("Central difference");
     for (int i=0 ; i<num_nodes ; ++i) {
-      acceleration_h(i,0) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,0) + contact_force_h(i,0));
-      acceleration_h(i,1) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,1) + contact_force_h(i,1));
-      acceleration_h(i,2) = (1.0/lumped_mass_h(i)) * (internal_force_h(i,2) + contact_force_h(i,2));
+      acceleration_h(i,0) = (1.0/lumped_mass(i, 0)) * (internal_force_h(i,0) + contact_force_h(i,0));
+      acceleration_h(i,1) = (1.0/lumped_mass(i, 0)) * (internal_force_h(i,1) + contact_force_h(i,1));
+      acceleration_h(i,2) = (1.0/lumped_mass(i, 0)) * (internal_force_h(i,2) + contact_force_h(i,2));
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}

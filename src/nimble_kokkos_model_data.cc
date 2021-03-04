@@ -46,6 +46,7 @@
 #include "nimble_data_manager.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_material_factory.h"
+#include "nimble_vector_communicator.h"
 
 #include <Kokkos_ScatterView.hpp>
 
@@ -358,7 +359,6 @@ void ModelData::InitializeBlocks(
   //
   // Blocks
   //
-  auto &blocks = GetBlocks();
   std::vector<int> block_ids = mesh_.GetBlockIds();
   for (int i=0 ; i<num_blocks ; i++){
     int block_id = block_ids.at(i);
@@ -366,8 +366,8 @@ void ModelData::InitializeBlocks(
     std::map<int, std::string> const & rve_material_parameters = parser_.GetMicroscaleMaterialParameters();
     std::string rve_bc_strategy = parser_.GetMicroscaleBoundaryConditionStrategy();
     int num_elements_in_block = mesh_.GetNumElementsInBlock(block_id);
-    blocks[block_id] = nimble_kokkos::Block();
-    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory_ptr);
+    blocks_[block_id] = nimble_kokkos::Block();
+    blocks_.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory_ptr);
     //
     // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
     //
@@ -406,10 +406,132 @@ void ModelData::InitializeBlocks(
     derived_output_element_data_labels_[block_id] = std::vector<std::string>(); // TODO eliminate this
   }
 
+  // Initialize gathered containers when using explicit scheme
+  if (parser_.TimeIntegrationScheme() == "explicit")
+    InitializeGatheredVectors(mesh_);
+
 }
 
 
-  std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
+Viewify ModelData::GetScalarNodeData(const std::string& label)
+{
+  auto field_id = GetFieldId(label);
+  if (field_id < 0) {
+    std::string code = " Field " + label + " Not Allocated ";
+    throw std::runtime_error(code);
+  }
+  return {GetHostScalarNodeData(field_id).data(), 1};
+}
+
+
+void ModelData::InitializeGatheredVectors(const nimble::GenesisMesh &mesh_)
+{
+  int num_blocks = static_cast<int>(mesh_.GetNumBlocks());
+
+  gathered_reference_coordinate_d.resize(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_reference_coordinates", 1));
+  gathered_displacement_d.resize(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_displacement", 1));
+  gathered_internal_force_d.resize(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_internal_force", 1));
+  gathered_contact_force_d.resize(num_blocks, nimble_kokkos::DeviceVectorNodeGatheredView("gathered_contact_force", 1));
+
+
+  int block_index = 0;
+  for (const auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    Kokkos::resize(gathered_reference_coordinate_d.at(block_index), num_elem_in_block);
+    Kokkos::resize(gathered_displacement_d.at(block_index), num_elem_in_block);
+    Kokkos::resize(gathered_internal_force_d.at(block_index), num_elem_in_block);
+    Kokkos::resize(gathered_contact_force_d.at(block_index), num_elem_in_block);
+    block_index += 1;
+  }
+
+}
+
+
+void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
+{
+
+  const auto& mesh_ = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+  auto &field_ids_ = data_manager.GetFieldIDs();
+  auto vector_communicator = data_manager.GetVectorCommunicator();
+
+  int num_nodes = static_cast<int>(mesh_.GetNumNodes());
+  int num_blocks = static_cast<int>(mesh_.GetNumBlocks());
+
+  std::vector<nimble_kokkos::DeviceScalarNodeGatheredView> gathered_lumped_mass_d(num_blocks, nimble_kokkos::DeviceScalarNodeGatheredView("gathered_lumped_mass", 1));
+  int block_index = 0;
+  for (const auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    Kokkos::resize(gathered_lumped_mass_d.at(block_index), num_elem_in_block);
+    block_index += 1;
+  }
+
+  auto lumped_mass_h = GetHostScalarNodeData(field_ids_.lumped_mass);
+  Kokkos::deep_copy(lumped_mass_h, (double)(0.0));
+
+  auto lumped_mass_d = GetDeviceScalarNodeData(field_ids_.lumped_mass);
+  Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
+
+  block_index = 0;
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    nimble_kokkos::Block& block = block_it.second;
+    nimble::Element* element_d = block.GetDeviceElement();
+    double density = block.GetDensity();
+    int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    int num_nodes_per_elem = mesh_.GetNumNodesPerElement(block_id);
+    int elem_conn_length = num_elem_in_block * num_nodes_per_elem;
+    int const * elem_conn = mesh_.GetConnectivity(block_id);
+
+    nimble_kokkos::HostElementConnectivityView elem_conn_h("element_connectivity_h", elem_conn_length);
+    for (int i=0 ; i<elem_conn_length ; i++) {
+      elem_conn_h(i) = elem_conn[i];
+    }
+    auto &&elem_conn_d = block.GetDeviceElementConnectivityView();
+    Kokkos::resize(elem_conn_d, elem_conn_length);
+    Kokkos::deep_copy(elem_conn_d, elem_conn_h);
+
+    auto gathered_reference_coordinate_block_d = gathered_reference_coordinate_d.at(block_index);
+    auto gathered_lumped_mass_block_d = gathered_lumped_mass_d.at(block_index);
+
+    GatherVectorNodeData(field_ids_.reference_coordinates,
+                         num_elem_in_block,
+                         num_nodes_per_elem,
+                         elem_conn_d,
+                         gathered_reference_coordinate_block_d);
+
+    // COMPUTE LUMPED MASS
+    Kokkos::parallel_for("Lumped Mass", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+          auto element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL, Kokkos::ALL);
+          auto element_lumped_mass_d = Kokkos::subview(gathered_lumped_mass_block_d, i_elem, Kokkos::ALL);
+          element_d->ComputeLumpedMass(density, element_reference_coordinate_d, element_lumped_mass_d);
+    });
+
+    // SCATTER TO NODE DATA
+    ScatterScalarNodeData(field_ids_.lumped_mass, num_elem_in_block,
+                          num_nodes_per_elem, elem_conn_d,
+                          gathered_lumped_mass_block_d);
+
+    block_index += 1;
+  }
+  Kokkos::deep_copy(lumped_mass_h, lumped_mass_d);
+
+  // MPI vector reduction on lumped mass
+  std::vector<double> mpi_scalar_buffer(num_nodes);
+  for (unsigned int i=0 ; i<num_nodes ; i++) {
+    mpi_scalar_buffer[i] = lumped_mass_h(i);
+  }
+  vector_communicator->VectorReduction(1, mpi_scalar_buffer.data());
+  for (int i=0 ; i<num_nodes ; i++) {
+    lumped_mass_h(i) = mpi_scalar_buffer[i];
+  }
+
+}
+
+
+std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
     std::vector<std::string> node_data_labels;
     for (auto const & entry : field_label_to_field_id_map_) {
       std::string const & field_label = entry.first;
@@ -496,7 +618,7 @@ void ModelData::InitializeBlocks(
   HostVectorNodeView ModelData::GetHostVectorNodeData(int field_id) {
     int index = field_id_to_host_node_data_index_.at(field_id);
     FieldBase* base_field_ptr = host_node_data_.at(index).get();
-    Field< FieldType::HostVectorNode >* derived_field_ptr = static_cast< Field< FieldType::HostVectorNode >* >(base_field_ptr);
+    Field< FieldType::HostVectorNode >* derived_field_ptr = dynamic_cast< Field< FieldType::HostVectorNode >* >(base_field_ptr);
     return derived_field_ptr->data();
   }
 
@@ -506,7 +628,7 @@ void ModelData::InitializeBlocks(
     int data_index = field_id_to_host_element_data_index_.at(block_index).at(field_id);
     FieldBase* base_field_ptr(0);
     base_field_ptr = host_element_data_.at(block_index).at(data_index).get();
-    Field< FieldType::HostScalarElem >* derived_field_ptr = static_cast< Field< FieldType::HostScalarElem >* >(base_field_ptr);
+    Field< FieldType::HostScalarElem >* derived_field_ptr = dynamic_cast< Field< FieldType::HostScalarElem >* >(base_field_ptr);
     return derived_field_ptr->data();
   }
 
@@ -522,7 +644,7 @@ void ModelData::InitializeBlocks(
     else if (step == nimble::STEP_NP1) {
       base_field_ptr = host_integration_point_data_step_np1_.at(block_index).at(data_index).get();
     }
-    Field< FieldType::HostSymTensorIntPt >* derived_field_ptr = static_cast< Field< FieldType::HostSymTensorIntPt >* >(base_field_ptr);
+    Field< FieldType::HostSymTensorIntPt >* derived_field_ptr = dynamic_cast< Field< FieldType::HostSymTensorIntPt >* >(base_field_ptr);
     return derived_field_ptr->data();
   }
 
@@ -661,17 +783,18 @@ void ModelData::InitializeBlocks(
                                                                DeviceElementConnectivityView elem_conn_d,
                                                                DeviceVectorNodeGatheredView gathered_view_d) {
     int index = field_id_to_device_node_data_index_.at(field_id);
-    FieldBase* base_field_ptr = device_node_data_.at(index).get();
-    Field< FieldType::DeviceVectorNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
+    FieldBase *base_field_ptr = device_node_data_.at(index).get();
+    auto derived_field_ptr =
+        dynamic_cast<Field<FieldType::DeviceVectorNode> *>(base_field_ptr);
     auto data = derived_field_ptr->data();
     Kokkos::parallel_for("GatherVectorNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
-        for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
-          int node_index = elem_conn_d(num_nodes_per_element*i_elem + i_node);
-          for (int i_coord=0 ; i_coord < 3 ; i_coord++) {
-            gathered_view_d(i_elem, i_node, i_coord) = data(node_index, i_coord);
-          }
+      for (int i_node = 0; i_node < num_nodes_per_element; i_node++) {
+        int node_index = elem_conn_d(num_nodes_per_element * i_elem + i_node);
+        for (int i_coord = 0; i_coord < 3; i_coord++) {
+         gathered_view_d(i_elem, i_node, i_coord) = data(node_index, i_coord);
         }
-      });
+      }
+    });
     return gathered_view_d;
   }
 

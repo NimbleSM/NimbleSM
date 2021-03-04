@@ -65,6 +65,7 @@ namespace nimble {
 
 class GenesisMesh;
 class ModelDataBase;
+class VectorCommunicator;
 
 #ifdef NIMBLE_HAVE_UQ
 class UqModel;
@@ -156,6 +157,9 @@ public:
   const nimble::GenesisMesh &GetRVEMesh() const
   { return rve_mesh_; }
 
+  /// \brief Return shared pointer to ModelData objet
+  ///
+  /// \return Shared pointer
   std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
   { return macroscale_data_; }
 
@@ -170,6 +174,12 @@ public:
   /// \return Field IDs
   nimble::FieldIds& GetFieldIDs()
   { return field_ids_; }
+
+  /// \brief Return shared pointer to VectorCommunicator objet
+  ///
+  /// \return Shared pointer
+  std::shared_ptr< nimble::VectorCommunicator > GetVectorCommunicator()
+  { return vector_communicator_; }
 
 #ifdef NIMBLE_HAVE_UQ
   /// \brief Return pointer to the UQ model
@@ -192,6 +202,8 @@ protected:
 #endif
 
   nimble::FieldIds field_ids_;
+
+  std::shared_ptr< nimble::VectorCommunicator > vector_communicator_;
 
  };
 
