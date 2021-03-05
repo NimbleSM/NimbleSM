@@ -409,6 +409,36 @@ void ModelData::InitializeBlocks(
 }
 
 
+void ModelData::SwapStates(const nimble::DataManager &data_manager)
+{
+  const auto &field_ids_ = data_manager.GetFieldIDs();
+
+  // Copy STEP_NP1 data to STEP_N
+  int block_index = 0;
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    auto deformation_gradient_step_n_d = GetDeviceFullTensorIntegrationPointData(
+        block_id, field_ids_.deformation_gradient, nimble::STEP_N);
+    auto unrotated_stress_step_n_d = GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                            field_ids_.unrotated_stress,
+                                                                            nimble::STEP_N);
+    auto stress_step_n_d = GetDeviceSymTensorIntegrationPointData(block_id, field_ids_.stress,
+                                                                  nimble::STEP_N);
+    auto deformation_gradient_step_np1_d = GetDeviceFullTensorIntegrationPointData(
+        block_id, field_ids_.deformation_gradient, nimble::STEP_NP1);
+    auto unrotated_stress_step_np1_d = GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                              field_ids_.unrotated_stress,
+                                                                              nimble::STEP_NP1);
+    auto stress_step_np1_d = GetDeviceSymTensorIntegrationPointData(block_id, field_ids_.stress,
+                                                                    nimble::STEP_NP1);
+    Kokkos::deep_copy(deformation_gradient_step_n_d, deformation_gradient_step_np1_d);
+    Kokkos::deep_copy(unrotated_stress_step_n_d, unrotated_stress_step_np1_d);
+    Kokkos::deep_copy(stress_step_n_d, stress_step_np1_d);
+    block_index += 1;
+  }
+}
+
+
   std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
     std::vector<std::string> node_data_labels;
     for (auto const & entry : field_label_to_field_id_map_) {

@@ -74,9 +74,43 @@ class ModelData : public nimble::ModelDataBase
 
   ~ModelData() override = default;
 
+  //--- Common interface from nimble::ModelDataBase
+
+  /// \brief Allocate data storage for a node-based quantity
+  ///
+  /// \param length
+  /// \param label
+  /// \param num_objects
+  /// \return Field ID for the data allocated
   int AllocateNodeData(nimble::Length length,
                        std::string label,
                        int num_objects) override;
+
+  /// \brief Returns the field ID for a specific label
+  ///
+  /// \param field_label Label for a stored quantity
+  /// \return Field ID to identify the data storage
+  int GetFieldId(const std::string& field_label) const override
+  { return field_label_to_field_id_map_.at(field_label); }
+
+  /// \brief Set the reference coordinates
+  ///
+  /// \param mesh Reference to the global mesh
+  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
+
+  /// \brief Initialize the different blocks in the mesh
+  ///
+  /// \param data_manager Reference to the data manager
+  /// \param material_factory_base Shared pointer to the material factory
+  void InitializeBlocks(nimble::DataManager &data_manager,
+                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+
+  /// \brief Swap states between time n and time (n+1)
+  ///
+  /// \param data_manager Reference to the data manager
+  virtual void SwapStates(const nimble::DataManager &data_manager) override;
+
+  //--- Specific routines
 
   int AllocateElementData(int block_id,
                           nimble::Length length,
@@ -88,12 +122,6 @@ class ModelData : public nimble::ModelDataBase
                                    std::string label,
                                    int num_objects,
                                    std::vector<double> initial_value = std::vector<double>());
-
-  int GetFieldId(const std::string& field_label) const override
-  { return field_label_to_field_id_map_.at(field_label); }
-
-  void InitializeBlocks(nimble::DataManager &data_manager,
-                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
 
   std::vector<int> GetBlockIds() const ;
 
@@ -170,8 +198,6 @@ class ModelData : public nimble::ModelDataBase
                              int num_nodes_per_element,
                              DeviceElementConnectivityView elem_conn_d,
                              DeviceVectorNodeGatheredView gathered_view_d);
-
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
 
 #ifndef KOKKOS_ENABLE_QTHREADS
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,

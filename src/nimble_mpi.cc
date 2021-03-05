@@ -850,7 +850,7 @@ int ExplicitTimeIntegrator(
     }
 #endif
 
-    model_data.SwapStates();
+    model_data.SwapStates(data_manager);
     total_step_time.Stop();
   }
 
@@ -1296,7 +1296,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
     }
 
     // swap states
-    model_data.SwapStates();
+    model_data.SwapStates(data_manager);
 
   }
 
