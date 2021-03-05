@@ -105,9 +105,7 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
-    int num_ranks, int my_rank,
-    nimble::VectorCommunicator &myVectorCommunicator
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 );
 
 int QuasistaticTimeIntegrator(
@@ -115,9 +113,7 @@ int QuasistaticTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    nimble::ExodusOutput &exodus_output,
-    int my_rank, int num_ranks,
-    nimble::VectorCommunicator &myVectorCommunicator
+    nimble::ExodusOutput &exodus_output
 );
 
 double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
@@ -262,8 +258,8 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                const nimble::Parser &parser)
 {
 
-  int my_rank = parser.GetRankID();
-  int num_ranks = parser.GetNumRanks();
+  const int my_rank = parser.GetRankID();
+  const int num_ranks = parser.GetNumRanks();
 
 #ifdef NIMBLE_HAVE_BVH
   auto comm_mpi = MPI_COMM_WORLD;
@@ -289,8 +285,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
 
   nimble::DataManager data_manager(parser, mesh, rve_mesh);
-
-  data_manager.Initialize(material_factory_base);
 
   auto macroscale_data = data_manager.GetMacroScaleData();
   macroscale_data->InitializeBlocks(data_manager, material_factory_base);
@@ -324,26 +318,15 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
 
-#ifdef NIMBLE_HAVE_TRILINOS
-  auto comm = (parser.UseTpetra()) ? Tpetra::getDefaultComm()
-                                    : Teuchos::RCP<const Teuchos::Comm<int>>();
-#else
-  int comm = 0;
-#endif
-  nimble::VectorCommunicator myCommunicator(dim, num_nodes, comm);
-
   int status = 0;
   if (time_integration_scheme == "explicit") {
     status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
                                              exodus_output, contact_interface,
-                                             block_material,
-                                             num_ranks, my_rank, myCommunicator
-                          );
+                                             block_material);
   }
   else if (time_integration_scheme == "quasistatic") {
     status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager, bc,
-                                                exodus_output,
-                                                my_rank, num_ranks, myCommunicator);
+                                                exodus_output);
   }
 
   return status;
@@ -362,9 +345,9 @@ void NimbleFinalize(const nimble::Parser &parser) {
 
 #ifdef NIMBLE_HAVE_TRILINOS
   if (!parser.UseTpetra()) {
-    #ifdef NIMBLE_HAVE_MPI
-      MPI_Finalize();
-    #endif
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Finalize();
+#endif
   }
 #else
   #ifdef NIMBLE_HAVE_MPI
@@ -384,15 +367,16 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
-    int num_ranks, int my_rank,
-    nimble::VectorCommunicator &myVectorCommunicator
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 )
 {
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
+  const int my_rank = parser.GetRankID();
+  const int num_ranks = parser.GetNumRanks();
+
 
 #ifdef NIMBLE_HAVE_BVH
   nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
@@ -429,17 +413,7 @@ int ExplicitTimeIntegrator(
 */
 #endif
 
-  std::vector<int> global_node_ids(num_nodes);
-  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
-  for (int n=0 ; n<num_nodes ; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
-
-  // DJL
-  // Here is where the initialization occurs for MPI operations
-  // In this call, each rank determines which nodes are shared with which other ranks
-  // This information is stored so that the vector reductions will work later
-  myVectorCommunicator.Initialize(global_node_ids);
+  auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
@@ -454,7 +428,7 @@ int ExplicitTimeIntegrator(
     mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh, myVectorCommunicator,
+    contact_manager.CreateContactEntities(mesh, *myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
@@ -465,10 +439,9 @@ int ExplicitTimeIntegrator(
   }
 
   std::vector<double> global_data;
-  
+
   nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
 
-  int lumped_mass_field_id = model_data.GetFieldId("lumped_mass");
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
   int displacement_field_id = model_data.GetFieldId("displacement");
   int velocity_field_id =  model_data.GetFieldId("velocity");
@@ -480,14 +453,14 @@ int ExplicitTimeIntegrator(
   int status = 0;
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();
-  double* lumped_mass = model_data.GetNodeData(lumped_mass_field_id);
   double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
   double* displacement = model_data.GetNodeData(displacement_field_id);
   double* velocity = model_data.GetNodeData(velocity_field_id);
   double* acceleration = model_data.GetNodeData(acceleration_field_id);
   double* internal_force = model_data.GetNodeData(internal_force_field_id);
   double* external_force = model_data.GetNodeData(external_force_field_id);
-  double* contact_force = model_data.GetNodeData(contact_force_field_id);
+  double* contact_force = (contact_enabled) ? model_data.GetNodeData(contact_force_field_id)
+                           : nullptr;
 
 #ifdef NIMBLE_HAVE_UQ
   auto uq_model = *( data_manager.GetUqModel() );
@@ -507,31 +480,13 @@ int ExplicitTimeIntegrator(
   std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
   std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
 
-  // Computed the lumped mass matrix (diagonal matrix) and the critical time step
-  double critical_time_step = std::numeric_limits<double>::max();
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
-  for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-    int block_id = block_it->first;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int const * elem_conn = mesh.GetConnectivity(block_id);
-    nimble::Block& block = block_it->second;
-    block.ComputeLumpedMassMatrix(reference_coordinate,
-                                  num_elem_in_block,
-                                  elem_conn,
-                                  lumped_mass);
-    double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
-                                                                    displacement,
-                                                                    num_elem_in_block,
-                                                                    elem_conn);
-    if (block_critical_time_step < critical_time_step) {
-      critical_time_step = block_critical_time_step;
-    }
-  }
 
-  // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
-  int scalar_dimension = 1;
-  myVectorCommunicator.VectorReduction(scalar_dimension, lumped_mass);
+  model_data.ComputeLumpedMass(data_manager);
+
+  double critical_time_step = model_data.GetCriticalTimeStep();
+  Viewify lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
   double time_current(0.0), time_previous(0.0);
   double final_time = parser.FinalTime();
@@ -541,16 +496,16 @@ int ExplicitTimeIntegrator(
 
   bc.ApplyInitialConditions(Viewify(reference_coordinate,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                           ,bc_offnom_velocity_views
+      ,bc_offnom_velocity_views
 #endif
-                           );
+  );
 
   // Allow prescribed velocities to trump initial velocities
   bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                     , bc_offnom_velocity_views
+      , bc_offnom_velocity_views
 #endif
-                     );
+  );
 
   // For explicit dynamics, the macroscale model is never treated as an RVE
   // so rve_macroscale_deformation_gradient will always be the identity matrix
@@ -589,7 +544,7 @@ int ExplicitTimeIntegrator(
                           derived_elem_data);
   if (contact_visualization) {
     contact_manager.ContactVisualizationWriteStep(time_current);
-  } 
+  }
 
   double user_specified_time_step = final_time/num_load_steps;
 
@@ -611,7 +566,7 @@ int ExplicitTimeIntegrator(
   nimble::TimeKeeper total_dynamics_time;
 
   double total_exodus_write_time = 0.0,
-         total_vector_reduction_time = 0.0;
+      total_vector_reduction_time = 0.0;
   for (int step=0 ; step<num_load_steps ; step++) {
     total_step_time.Start();
 
@@ -649,9 +604,9 @@ int ExplicitTimeIntegrator(
 
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                     , bc_offnom_velocity_views
+        , bc_offnom_velocity_views
 #endif
-                       );
+    );
 
     // Evaluate external body forces
     for (int i=0 ; i<num_unknowns ; ++i) {
@@ -664,7 +619,7 @@ int ExplicitTimeIntegrator(
     }
 
 #ifdef NIMBLE_HAVE_UQ
-   // advance approximate trajectories
+    // advance approximate trajectories
    uq_model.UpdateDisplacement(delta_time);
    uq_model.Prep();
 #endif
@@ -690,7 +645,7 @@ int ExplicitTimeIntegrator(
            double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
            double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
            double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
-           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1); 
+           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
            block.ComputeInternalForce(reference_coordinate,
                                       disp_ptr,
                                       vel_ptr,
@@ -727,7 +682,7 @@ int ExplicitTimeIntegrator(
                                  elem_data_np1,
                                  data_manager,
                                  is_output_step
-                                ); 
+      );
 #endif
     }
 
@@ -744,7 +699,7 @@ int ExplicitTimeIntegrator(
 #endif
       contact_manager.GetForces(contact_force);
       int vector_dimension = 3;
-      myVectorCommunicator.VectorReduction(vector_dimension, contact_force);
+      myVectorCommunicator->VectorReduction(vector_dimension, contact_force);
       total_contact_time.Stop();
     }
 
@@ -757,13 +712,13 @@ int ExplicitTimeIntegrator(
       // Perform a vector reduction on internal force.  This is a vector nodal
       // quantity.
       int vector_dimension = 3;
-      myVectorCommunicator.VectorReduction(vector_dimension, internal_force);
+      myVectorCommunicator->VectorReduction(vector_dimension, internal_force);
       total_vector_reduction_time += vector_reduction_timer.age();
 #ifdef NIMBLE_HAVE_UQ
       if (uq_model.Initialized()) {
         for (int ntraj = 0; ntraj < uq_model.GetNumExactSamples(); ntraj++) {
           double *internal_force_ptr = uq_model.Forces()[ntraj];
-          myVectorCommunicator.VectorReduction(vector_dimension, internal_force_ptr);
+          myVectorCommunicator->VectorReduction(vector_dimension, internal_force_ptr);
         }
         // Now apply closure to estimate approximate sample forces from the
         // exact samples
@@ -774,10 +729,18 @@ int ExplicitTimeIntegrator(
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
-    for (int i = 0; i < num_unknowns; ++i) {
-      acceleration[i] =
-          (1.0 / lumped_mass[i / 3]) *
-          (internal_force[i] + external_force[i] + contact_force[i]);
+    if (contact_enabled) {
+      for (int i = 0; i < num_unknowns; ++i) {
+        acceleration[i] =
+            (1.0 / lumped_mass(i / 3, 0)) *
+            (internal_force[i] + external_force[i] + contact_force[i]);
+      }
+    }
+    else {
+      for (int i = 0; i < num_unknowns; ++i) {
+        acceleration[i] = (1.0 / lumped_mass(i / 3, 0)) *
+                          (internal_force[i] + external_force[i]);
+      }
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
@@ -792,8 +755,8 @@ int ExplicitTimeIntegrator(
     total_dynamics_time.Stop();
 
     if (is_output_step) {
-	  nimble::quanta::stopwatch exodus_write_timer;
-	  exodus_write_timer.reset();
+      nimble::quanta::stopwatch exodus_write_timer;
+      exodus_write_timer.reset();
 
       for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
         int block_id = block_it->first;
@@ -813,9 +776,9 @@ int ExplicitTimeIntegrator(
 
       bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                     , bc_offnom_velocity_views
+          , bc_offnom_velocity_views
 #endif
-                         );
+      );
 
       // Write output
       model_data.GetNodeDataForOutput(node_data_for_output);
@@ -880,13 +843,14 @@ int ExplicitTimeIntegrator(
 
 int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                               nimble::GenesisMesh & mesh,
-			      nimble::DataManager & data_manager,
-			      nimble::BoundaryConditionManager & bc,
-			      nimble::ExodusOutput & exodus_output,
-                              int my_rank, int num_ranks,
-                              nimble::VectorCommunicator &myVectorCommunicator
+                              nimble::DataManager & data_manager,
+                              nimble::BoundaryConditionManager & bc,
+                              nimble::ExodusOutput & exodus_output
 )
 {
+
+  const int my_rank = parser.GetRankID();
+  const int num_ranks = parser.GetNumRanks();
 
   if (num_ranks > 1) {
     std::cerr << "Error:  Quasi-statics currently not implemented (work in progress).\n" << std::endl;
@@ -923,10 +887,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   }
   int linear_system_num_nodes = static_cast<int>(map_from_linear_system.size());
   int linear_system_num_unknowns = linear_system_num_nodes * dim;
-
-#ifdef NIMBLE_HAVE_TRILINOS
-//  myVectorCommunicator.Initialize(linear_system_global_node_ids);
-#endif
 
   std::vector<double> global_data;
 
@@ -993,9 +953,9 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3),
                       Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                       , bc_offnom_velocity_views
+      , bc_offnom_velocity_views
 #endif
-                      );
+  );
 
   std::vector<double> rve_macroscale_deformation_gradient(dim*dim, 0.0);
   std::vector<double> identity(dim*dim, 0.0);
@@ -1057,9 +1017,9 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
     bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3),
                         Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
-                        , bc_offnom_velocity_views
+        , bc_offnom_velocity_views
 #endif
-                        );
+    );
 
     bc.GetRVEMacroscaleDeformationGradient(time_current, rve_macroscale_deformation_gradient.data());
 

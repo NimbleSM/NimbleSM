@@ -47,29 +47,31 @@
 #include <string>
 #include <memory>
 
-namespace nimble { class MaterialFactoryBase; }
-namespace nimble { class ContactInterface; }
-namespace nimble_kokkos { class BlockMaterialInterfaceFactory; }
-namespace nimble { class Parser; }
+#include "nimble_defs.h"
+#include "nimble_parser.h"
 
 namespace nimble {
 
-struct NimbleKokkosInitData {
-  std::string input_deck_name = "";
-  int my_mpi_rank = -1;
-  int num_mpi_ranks = -1;
-};
+class BlockMaterialInterfaceFactoryBase;
+class ContactInterface;
 
+/// \brief Initialization routine that parses the input parameters
+///
+/// \param argc  Number of parameters on the command line
+/// \param argv  List of parameters on the command line
+/// \param parser  Parsing variable
+///
+/// \note The variable 'parser' should not be modified after calling
+///  this function.
+///
+void NimbleKokkosInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
-NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
+void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
+                      std::shared_ptr<nimble::ContactInterface> contact_interface,
+                      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
+                      const nimble::Parser &parser);
 
-void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_factory_base,
-                     std::shared_ptr<nimble::ContactInterface> contact_interface,
-                     std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                     std::shared_ptr<nimble::Parser> parser,
-                     const NimbleKokkosInitData& init_data);
-
-int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data);
+int NimbleKokkosFinalize(const nimble::Parser &parser);
 
 }
 
