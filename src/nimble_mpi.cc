@@ -137,13 +137,13 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step);
 
-int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
+int parseCommandLine(int argc, char **argv, nimble::Parser &parser)
 {
   for (int ia = 1; ia < argc; ++ia) {
     std::string my_arg = std::string(argv[ia]);
     if (my_arg == "--use_vt") {
 #ifdef NIMBLE_HAVE_VT
-      init_data.use_vt_ = true;
+      parser.SetToUseVT();
 #else
       std::cerr << "\n Flag '--use_vt' ignored \n\n";
 #endif
@@ -151,7 +151,7 @@ int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
     }
     if (my_arg == "--use_kokkos") {
 #ifdef NIMBLE_HAVE_KOKKOS
-      init_data.use_kokkos_ = true;
+      parser.SetToUseKokkos();
 #else
       std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
 #endif
@@ -159,22 +159,14 @@ int parseCommandLine(int argc, char **argv, NimbleInitData &init_data)
     }
     if (my_arg == "--use_tpetra") {
 #ifdef NIMBLE_HAVE_TRILINOS
-      init_data.use_tpetra_ = true;
+      parser.SetToUseTpetra();
 #else
       std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
 #endif
       continue;
     }
     //
-    init_data.file_name_ = my_arg;
-  }
-  //
-  // Throw an error when multiple flags are specified
-  //
-  int iflag = (init_data.use_vt_ == true) + (init_data.use_kokkos_ == true)
-              + (init_data.use_tpetra_ == true);
-  if (iflag > 1) {
-    throw std::runtime_error("\nError: Too many command line arguments !!\n");
+    parser.SetInputFilename(std::string(my_arg));
   }
   return 0;
 }
@@ -187,12 +179,12 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   int my_rank = 0, num_ranks = 1;
 
   // --- Parse the command line
-  NimbleInitData init_data;
-  details::parseCommandLine(argc, argv, init_data);
+  details::parseCommandLine(argc, argv, parser);
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (init_data.use_tpetra_) {
-    init_data.tpetra_scope_.reset(new Tpetra::ScopeGuard(&argc,&argv));
+  if (parser.UseTpetra()) {
+    auto sguard = new Tpetra::ScopeGuard(&argc,&argv);
+    parser.ResetTpetraScope(sguard);
     auto comm = Tpetra::getDefaultComm();
     num_ranks = comm->getSize();
     my_rank = comm->getRank();
@@ -234,13 +226,13 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   if (my_rank == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n";
-    if (init_data.use_kokkos_) {
+    if (parser.UseKokkos()) {
       std::cout << "-- Using Kokkos interface \n";
     }
-    else if (init_data.use_tpetra_) {
+    else if (parser.UseTpetra()) {
       std::cout << "-- Using Tpetra interface \n";
     }
-    else if (init_data.use_vt_) {
+    else if (parser.UseVT()) {
       std::cout << "-- Using VT runtime \n";
     }
     std::cout << "-- Number of rank";
@@ -252,16 +244,17 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
 
   // Initialize VT if needed
 #ifdef NIMBLE_HAVE_VT
-  if (init_data.use_vt == true) {
+  if (parser.UseVT() == true) {
     MPI_Comm vt_comm = MPI_COMM_WORLD;
     ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm );
   }
 #endif
 
-  init_data.my_rank_ = my_rank;
-  init_data.num_ranks_ = num_ranks;
+  parser.SetRankID(my_rank);
+  parser.SetNumRanks(num_ranks);
 
-  parser.Initialize(init_data);
+  parser.Initialize();
+
 }
 
 int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base,

@@ -182,21 +182,6 @@ namespace nimble {
   }
 
 
-  std::string NimbleInitData::GetOutputTag() const {
-
-    std::string tag = std::string("mpi");
-    if (use_kokkos_) {
-      tag = std::string("kokkos");
-    }
-    else if (use_tpetra_) {
-      tag = std::string("tpetra");
-    }
-
-    return tag;
-
-  }
-
-
 Parser::Parser()
     :
     genesis_file_name_("none"),
@@ -217,21 +202,7 @@ Parser::Parser()
   material_strings_["rve"] = "none";
 }
 
-  void Parser::Initialize(NimbleInitData &init_data) {
-    run_data_.file_name_ = init_data.file_name_;
-    run_data_.use_vt_ = init_data.use_vt_;
-    run_data_.use_kokkos_ = init_data.use_kokkos_;
-    run_data_.use_tpetra_ = init_data.use_tpetra_;
-    run_data_.my_rank_ = init_data.my_rank_;
-    run_data_.num_ranks_ = init_data.num_ranks_;
-#ifdef NIMBLE_HAVE_TRILINOS
-    run_data_.tpetra_scope_.reset(init_data.tpetra_scope_.release());
-#endif
-    ReadFile();
-  }
-
-  void Parser::Initialize(const std::string &fileName) {
-    run_data_.file_name_ = fileName;
+  void Parser::Initialize() {
     ReadFile();
   }
 
@@ -241,9 +212,9 @@ Parser::Parser()
     std::string delimiter(" ");
 
     std::ifstream fin;
-    fin.open(run_data_.file_name_.c_str());
+    fin.open(file_name_.c_str());
     if ( !fin.good() ) {
-      std::string msg = "\n**** Error in Parser::ReadFile(), unable to read file " + run_data_.file_name_ + "\n";
+      std::string msg = "\n**** Error in Parser::ReadFile(), unable to read file " + file_name_ + "\n";
       throw std::logic_error(msg);
     }
 
@@ -425,5 +396,20 @@ else if (key == "uq parameters") {
     throw std::logic_error(msg);
   }
 }
+
+std::string Parser::GetOutputTag() const {
+
+  std::string tag = std::string("mpi");
+  if (use_kokkos_) {
+    tag = std::string("kokkos");
+  }
+  else if (use_tpetra_) {
+    tag = std::string("tpetra");
+  }
+
+  return tag;
+
+}
+
 
 }

@@ -52,6 +52,11 @@
 int main(int argc, char *argv[]) {
 
   nimble::Parser myParser;
+  //
+  // note: If the command line does not specify any parameter '--use-kokkos', '--use-tpetra', or '--use-vt',
+  // we could choose to specify one of them with either
+  // myParser.SetToUseKokkos() or myParser.SetToUseTpetra() or myParser.SetToUseVT()
+  //
   nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
 
   std::shared_ptr<MaterialFactoryType> material_factory(new nimble::MaterialFactory);
