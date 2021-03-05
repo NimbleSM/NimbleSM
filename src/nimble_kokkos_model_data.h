@@ -90,7 +90,12 @@ class ModelData : public nimble::ModelDataBase
 
   Viewify GetScalarNodeData(const std::string& label) override;
 
+  /// \brief Compute the lumped mass for explicit time-integration
   void ComputeLumpedMass(nimble::DataManager &data_manager) override;
+
+  /// \brief Swap states between time n and time (n+1)
+  void SwapStates(const nimble::DataManager &data_manager) override;
+
 
   //--- Specific routines
 

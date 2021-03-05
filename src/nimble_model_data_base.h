@@ -135,6 +135,11 @@ public:
   /// \param data_manager Reference to the data manager
   virtual void ComputeLumpedMass(nimble::DataManager &data_manager) = 0;
 
+  /// \brief Swap states between time n and time (n+1)
+  ///
+  /// \param data_manager Reference to the data manager
+  virtual void SwapStates(const nimble::DataManager &data_manager) = 0;
+
   //--- Common interface routines
 
   /// \brief Get the spatial dimension

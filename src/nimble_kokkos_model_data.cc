@@ -226,12 +226,12 @@ namespace nimble_kokkos {
     FieldBase * d_field_step_np1 = device_integration_point_data_step_np1_.at(block_index).back().get();
 
     if (d_field_step_n->type() == FieldType::DeviceScalarNode) {
-      Field< FieldType::DeviceScalarNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_n );
+      auto * field_step_n = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_n );
       Field< FieldType::DeviceScalarNode >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
       host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_n ) );
 
-      Field< FieldType::DeviceScalarNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_np1 );
+      auto * field_step_np1 = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_np1 );
       Field< FieldType::DeviceScalarNode >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
       host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_np1 ) );
@@ -247,12 +247,12 @@ namespace nimble_kokkos {
       }
     }
     else if (d_field_step_n->type() == FieldType::DeviceVectorNode) {
-      Field< FieldType::DeviceVectorNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_n );
+      auto * field_step_n = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_n );
       Field< FieldType::DeviceVectorNode >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
       host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_n ) );
 
-      Field< FieldType::DeviceVectorNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_np1 );
+      auto * field_step_np1 = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_np1 );
       Field< FieldType::DeviceVectorNode >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
       host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_np1 ) );
@@ -271,12 +271,12 @@ namespace nimble_kokkos {
       }
     }
     else if (d_field_step_n->type() == FieldType::DeviceSymTensorIntPt) {
-      Field< FieldType::DeviceSymTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_n );
+      auto * field_step_n = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_n );
       Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
       host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_n ) );
 
-      Field< FieldType::DeviceSymTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_np1 );
+      auto * field_step_np1 = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_np1 );
       Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
       host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_np1 ) );
@@ -298,12 +298,12 @@ namespace nimble_kokkos {
       }
     }
     else if (d_field_step_n->type() == FieldType::DeviceFullTensorIntPt) {
-      Field< FieldType::DeviceFullTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_n );
+      auto * field_step_n = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_n );
       Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_n = field_step_n->data();
       auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
       host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_n ) );
 
-      Field< FieldType::DeviceFullTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_np1 );
+      auto * field_step_np1 = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_np1 );
       Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
       auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
       host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_np1 ) );
@@ -526,6 +526,37 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
   vector_communicator->VectorReduction(1, mpi_scalar_buffer.data());
   for (int i=0 ; i<num_nodes ; i++) {
     lumped_mass_h(i) = mpi_scalar_buffer[i];
+  }
+
+}
+
+
+void ModelData::SwapStates(const nimble::DataManager &data_manager)
+{
+  const auto &field_ids_ = data_manager.GetFieldIDs();
+
+  // Copy STEP_NP1 data to STEP_N
+  int block_index = 0;
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    auto deformation_gradient_step_n_d = GetDeviceFullTensorIntegrationPointData(
+        block_id, field_ids_.deformation_gradient, nimble::STEP_N);
+    auto unrotated_stress_step_n_d = GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                            field_ids_.unrotated_stress,
+                                                                            nimble::STEP_N);
+    auto stress_step_n_d = GetDeviceSymTensorIntegrationPointData(block_id, field_ids_.stress,
+                                                                             nimble::STEP_N);
+    auto deformation_gradient_step_np1_d = GetDeviceFullTensorIntegrationPointData(
+        block_id, field_ids_.deformation_gradient, nimble::STEP_NP1);
+    auto unrotated_stress_step_np1_d = GetDeviceSymTensorIntegrationPointData(block_id,
+                                                                              field_ids_.unrotated_stress,
+                                                                              nimble::STEP_NP1);
+    auto stress_step_np1_d = GetDeviceSymTensorIntegrationPointData(block_id, field_ids_.stress,
+                                                                               nimble::STEP_NP1);
+    Kokkos::deep_copy(deformation_gradient_step_n_d, deformation_gradient_step_np1_d);
+    Kokkos::deep_copy(unrotated_stress_step_n_d, unrotated_stress_step_np1_d);
+    Kokkos::deep_copy(stress_step_n_d, stress_step_np1_d);
+    block_index += 1;
   }
 
 }

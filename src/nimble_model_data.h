@@ -91,6 +91,10 @@ public:
 
   void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 
+  void SwapStates(const nimble::DataManager &data_manager) override {
+    element_data_n_.swap(element_data_np1_);
+  }
+
   //--- Specific routines
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -130,10 +134,6 @@ public:
   std::vector<int>& GetGloballySharedNodes() { return globally_shared_nodes_; }
 
   std::map<int, int>& GetGlobalNodeIdToLocalNodeIdMap() { return global_node_id_to_local_node_id_; }
-
-  void SwapStates() {
-    element_data_n_.swap(element_data_np1_);
-  }
 
 protected:
 

@@ -692,27 +692,7 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
     }
 
     watch_internal.push_region("Copy field data new to old");
-    // Copy STEP_NP1 data to STEP_N
-    for (block_index = 0, block_it = blocks.begin(); block_it != blocks.end(); block_index++, block_it++) {
-      int block_id = block_it->first;
-      auto deformation_gradient_step_n_d = model_data.GetDeviceFullTensorIntegrationPointData(
-          block_id, field_ids.deformation_gradient, nimble::STEP_N);
-      auto unrotated_stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-                                                                                         field_ids.unrotated_stress,
-                                                                                         nimble::STEP_N);
-      auto stress_step_n_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_ids.stress,
-                                                                               nimble::STEP_N);
-      auto deformation_gradient_step_np1_d = model_data.GetDeviceFullTensorIntegrationPointData(
-          block_id, field_ids.deformation_gradient, nimble::STEP_NP1);
-      auto unrotated_stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id,
-                                                                                           field_ids.unrotated_stress,
-                                                                                           nimble::STEP_NP1);
-      auto stress_step_np1_d = model_data.GetDeviceSymTensorIntegrationPointData(block_id, field_ids.stress,
-                                                                                 nimble::STEP_NP1);
-      Kokkos::deep_copy(deformation_gradient_step_n_d, deformation_gradient_step_np1_d);
-      Kokkos::deep_copy(unrotated_stress_step_n_d, unrotated_stress_step_np1_d);
-      Kokkos::deep_copy(stress_step_n_d, stress_step_np1_d);
-    }
+    model_data.SwapStates(data_manager);
     watch_internal.pop_region_and_report_time();
 
   } // loop over time steps
