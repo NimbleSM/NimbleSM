@@ -49,7 +49,9 @@
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
+#include "nimble_model_data_base.h"
 #include "nimble_model_data.h"
+#include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -61,14 +63,16 @@
 
 namespace nimble {
 
-  struct RVEData {
-    ModelData model_data_;
-    std::vector<double> residual_vector_;
-    std::vector<double> linear_solver_solution_;
-    CRSMatrixContainer tangent_stiffness_;
-    bool write_exodus_output_;
-    ExodusOutput exodus_output_;
-    std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
+class ModelDataBase;
+
+struct RVEData {
+  nimble::ModelData model_data_;
+  std::vector<double> residual_vector_;
+  std::vector<double> linear_solver_solution_;
+  CRSMatrixContainer tangent_stiffness_;
+  bool write_exodus_output_;
+  ExodusOutput exodus_output_;
+  std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
 
 #ifdef NIMBLE_HAVE_DARMA
     template<typename ArchiveType>
@@ -76,35 +80,38 @@ namespace nimble {
       ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ | exodus_output_ | derived_elem_data_;
     }
 #endif
-  };
+};
 
- class DataManager {
+class DataManager {
 
-  public:
+public:
 
-    DataManager() = default;
+  explicit DataManager(const nimble::Parser &parser);
 
-    virtual ~DataManager() = default;
+  virtual ~DataManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | macroscale_data_ | rve_data_;
-    }
+  template<typename ArchiveType>
+  void serialize(ArchiveType& ar) {
+    ar | macroscale_data_ | rve_data_;
+  }
 #endif
 
-    ModelData& GetMacroScaleData();
+  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
+  { return macroscale_data_; }
 
-    RVEData& AllocateRVEData(int global_element_id,
-                             int integration_point_id);
+  RVEData& AllocateRVEData(int global_element_id,
+                           int integration_point_id);
 
-    RVEData& GetRVEData(int global_element_id,
-                        int integration_point_id);
+  RVEData& GetRVEData(int global_element_id,
+                      int integration_point_id);
 
  protected:
 
-    ModelData macroscale_data_;
-    std::map<std::pair<int,int>, RVEData> rve_data_;
+  const nimble::Parser &parser_;
+  std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
+  std::map<std::pair<int,int>, RVEData> rve_data_;
+
  };
 
 } // namespace nimble

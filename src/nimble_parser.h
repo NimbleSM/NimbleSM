@@ -240,6 +240,7 @@ namespace nimble {
       env_set_ = true;
     }
 
+
     /// \brief Set that VT is used for the simulation
     ///
     /// \note The function will throw an exception when an environment

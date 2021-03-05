@@ -41,13 +41,17 @@
 //@HEADER
 */
 
-#include "nimble_rve.h"
-#include "nimble_utils.h"
-#include "nimble_mesh_utils.h"
-#include "nimble_data_manager.h"
 #include <sstream>
 #include <limits>
 #include <iostream>
+
+#include "nimble_data_manager.h"
+#include "nimble_material.h"
+#include "nimble_material_factory.h"
+#include "nimble_mesh_utils.h"
+#include "nimble_model_data.h"
+#include "nimble_rve.h"
+#include "nimble_utils.h"
 
 namespace nimble {
 
