@@ -94,31 +94,6 @@ namespace nimble {
     std::string material_key_;
   };
 
-  struct NimbleInitData {
-
-    std::string file_name_ = std::string("none");
-    bool use_vt_ = false;
-    bool use_kokkos_ = false;
-    bool use_tpetra_ = false;
-    int my_rank_ = 0;
-    int num_ranks_ = 1;
-
-#ifdef NIMBLE_HAVE_TRILINOS
-    std::unique_ptr<Tpetra::ScopeGuard> tpetra_scope_ = nullptr;
-#endif
-
-    std::string GetOutputTag() const;
-
-#ifdef NIMBLE_HAVE_DARMA
-    template< typename ArchiveType >
-    void serialize(ArchiveType& ar) {
-      ar | inputFile_ | use_vt_ | use_kokkos_ | use_tpetra_;
-      ar | my_rank_ | num_ranks_;
-    }
-#endif
-
-  };
-
   class Parser {
 
   public:
@@ -139,13 +114,13 @@ namespace nimble {
       ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
       ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
       ar | boundary_condition_strings_ | output_field_string_;
-      ar | run_data_;
+      ar | file_name_;
+      ar | env_set_ | use_kokkos_ | use_tpetra_ | use_vt_;
+      ar | my_rank_ | num_ranks_;
     }
 #endif
 
-    void Initialize(NimbleInitData &init_data);
-
-    void Initialize(const std::string &fileName);
+    void Initialize();
 
     std::string GenesisFileName() const { return genesis_file_name_; }
 
@@ -240,28 +215,83 @@ namespace nimble {
       return output_field_string_;
     }
 
-    std::string GetOutputTag() const
-    { return run_data_.GetOutputTag(); }
+    /// \brief Get output prefix for simulation
+    std::string GetOutputTag() const;
 
-#ifdef NIMBLE_HAVE_KOKKOS
-    void SetUseKokkos()
-    { run_data_.use_kokkos_ = true; }
-#endif
+    /// \brief Set that Kokkos is used for the simulation
+    ///
+    /// \note The function will throw an exception when an environment
+    /// has been set previously
+    void SetToUseKokkos() {
+      if (env_set_)
+        throw std::runtime_error(" Conflicting Environment Variable ");
+      use_kokkos_ = true; 
+      env_set_ = true;
+    }
 
+    /// \brief Set that Tpetra is used for the simulation
+    ///
+    /// \note The function will throw an exception when an environment
+    /// has been set previously
+    void SetToUseTpetra() {
+      if (env_set_)
+        throw std::runtime_error(" Conflicting Environment Variable ");
+      use_tpetra_ = true; 
+      env_set_ = true;
+    }
+
+
+    /// \brief Set that VT is used for the simulation
+    ///
+    /// \note The function will throw an exception when an environment
+    /// has been set previously
+    void SetToUseVT() {
+      if (env_set_)
+        throw std::runtime_error(" Conflicting Environment Variable ");
+      use_vt_ = true; 
+      env_set_ = true;
+    }
+
+    /// \brief Indicate whether Kokkos is used for the simulation
     bool UseKokkos() const
-    { return run_data_.use_kokkos_; }
+    { return use_kokkos_; }
 
+    /// \brief Indicate whether Tpetra is used for the simulation
     bool UseTpetra() const
-    { return run_data_.use_tpetra_; }
+    { return use_tpetra_; }
 
+    /// \brief Indicate whether VT is used
     bool UseVT() const
-    { return run_data_.use_vt_; }
+    { return use_vt_; }
 
+    /// \brief Set the rank index
+    /// \param[in] myrank Rank index
+    void SetRankID(int myrank) 
+    { my_rank_ = myrank; }
+
+    /// \brief Get the rank index
     int GetRankID() const
-    { return run_data_.my_rank_; }
+    { return my_rank_; }
 
+    /// \brief Set the number of ranks
+    /// \param[in] nrank Number of MPI ranks
+    void SetNumRanks(int nrank) 
+    { num_ranks_ = nrank; }
+
+    /// \brief Get the number of ranks
     int GetNumRanks() const
-    { return run_data_.num_ranks_; }
+    { return num_ranks_; }
+
+    /// \brief Set the string for the input file
+    /// \param[in] name Input filename
+    void SetInputFilename(const std::string &name)
+    { file_name_ = name; }
+
+#ifdef NIMBLE_HAVE_TRILINOS
+    void ResetTpetraScope(Tpetra::ScopeGuard *ptr_scope) {
+      tpetra_scope_.reset(ptr_scope);
+    }
+#endif
 
 #ifdef NIMBLE_HAVE_BVH
     int ContactDicing() const noexcept { return contact_dicing_; }
@@ -307,15 +337,43 @@ namespace nimble {
     std::string microscale_boundary_condition_strategy_;
     std::vector<std::string> boundary_condition_strings_;
     std::string output_field_string_;
+
 #ifdef NIMBLE_HAVE_BVH
     int contact_dicing_ = 1;
 #endif
+
 #ifdef NIMBLE_HAVE_UQ
     std::map<std::string, std::string> uq_parameters_strings_;
     std::string uq_model_string_;
 #endif
 
-    NimbleInitData run_data_;
+    //--- Variables related to environment
+
+    /// \brief Boolean indicating whether the environment has been set
+    bool env_set_ = false;
+
+    /// \brief Filename for input file to read
+    std::string file_name_ = std::string("none");
+
+    /// \brief Boolean setting the usage of VT
+    bool use_vt_ = false;
+
+    /// \brief Boolean setting the usage of Kokkos
+    bool use_kokkos_ = false;
+
+    /// \brief Boolean setting the usage of Tpetra
+    bool use_tpetra_ = false;
+
+    /// \brief Rank ID when running with MPI
+    int my_rank_ = 0;
+
+    /// \brief Number of ranks when running with MPI
+    int num_ranks_ = 1;
+
+#ifdef NIMBLE_HAVE_TRILINOS
+    std::unique_ptr<Tpetra::ScopeGuard> tpetra_scope_ = nullptr;
+#endif
+
   };
 } // namespace nimble
 

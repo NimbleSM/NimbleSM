@@ -67,10 +67,13 @@ namespace nimble {
 
 /// \brief Initialization routine that parses the input parameters
 ///
-/// \param argc
-/// \param argv
-/// \param parser
+/// \param argc  Number of parameters on the command line
+/// \param argv  List of parameters on the command line
+/// \param parser  Parsing variable
 ///
+/// \note The variable 'parser' should not be modified after calling
+///  this function.  
+///  
 void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
 
 int NimbleMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
