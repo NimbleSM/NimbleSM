@@ -126,7 +126,7 @@ public:
   virtual void InitializeBlocks(nimble::DataManager &data_manager,
                                 const std::shared_ptr<MaterialFactoryType> &material_factory_base) = 0;
 
-  /// \brief Swap states between time n and time (n+1)
+  /// \brief Copy time state (n+1) into time state (n)
   ///
   /// \param data_manager Reference to the data manager
   virtual void UpdateStates(const nimble::DataManager &data_manager) = 0;

@@ -104,7 +104,7 @@ public:
   void InitializeBlocks(nimble::DataManager &data_manager,
                         const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
 
-  /// \brief Swap states between time n and time (n+1)
+  /// \brief Copy time state (n+1) into time state (n)
   ///
   /// \param data_manager Reference to the data manager
   void UpdateStates(const nimble::DataManager &data_manager) override {
