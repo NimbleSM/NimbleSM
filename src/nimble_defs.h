@@ -41,43 +41,26 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_MAIN_H
-#define NIMBLE_MAIN_H
+#ifndef NIMBLESM_NIMBLE_DEFS_H
+#define NIMBLESM_NIMBLE_DEFS_H
 
-#include <string>
-#include <memory>
-
-#include "nimble_defs.h"
-#include "nimble_parser.h"
+#ifdef NIMBLE_HAVE_EXTRAS
+using MaterialFactoryType = nimble::ExtrasMaterialFactory;
+#else
 #include "nimble_material_factory_base.h"
+using MaterialFactoryType = nimble::MaterialFactoryBase;
+#endif
 
-namespace nimble {
 
-class BlockMaterialInterfaceFactoryBase;
-class ContactInterface;
+#ifndef NIMBLE_HAVE_KOKKOS
 
-}
+#define NIMBLE_FUNCTION
+#define NIMBLE_INLINE_FUNCTION inline
 
-namespace nimble {
+#else
 
-/// \brief Initialization routine that parses the input parameters
-///
-/// \param argc  Number of parameters on the command line
-/// \param argv  List of parameters on the command line
-/// \param parser  Parsing variable
-///
-/// \note The variable 'parser' should not be modified after calling
-///  this function.  
-///  
-void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
-
-int NimbleMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
-               std::shared_ptr<nimble::ContactInterface> contact_interface,
-               const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
-               const nimble::Parser &parser);
-
-void NimbleFinalize(const nimble::Parser &parser);
-
-}
+#include "nimble_kokkos_defs.h"
 
 #endif
+
+#endif // NIMBLESM_NIMBLE_DEFS_H

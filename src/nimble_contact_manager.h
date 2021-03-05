@@ -53,12 +53,12 @@
 
 #include "nimble_contact_entity.h"
 #include "nimble_contact_interface.h"
+#include "nimble_defs.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_exodus_output.h"
 #include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  #include "nimble_kokkos_defs.h"
   #include "nimble_kokkos_contact_defs.h"
 #endif
 

@@ -42,19 +42,30 @@
 */
 
 #include "nimble_data_manager.h"
+
 #ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_model_data.h"
+#include "nimble_kokkos_material_factory.h"
 #endif
+
+#include "nimble_material_factory.h"
 #include "nimble_model_data.h"
+
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
+#endif
 
 #include <algorithm>
 #include <stdexcept>
 
+
 namespace nimble {
 
-
-DataManager::DataManager(const nimble::Parser &parser)
-    : parser_(parser), macroscale_data_(), rve_data_()
+DataManager::DataManager(const nimble::Parser &parser,
+                         const nimble::GenesisMesh &mesh,
+                         const nimble::GenesisMesh &rve_mesh)
+    : parser_(parser), mesh_(mesh), rve_mesh_(rve_mesh),
+      macroscale_data_(), rve_data_()
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (parser_.UseKokkos()) {
@@ -63,6 +74,53 @@ DataManager::DataManager(const nimble::Parser &parser)
   }
 #endif
   macroscale_data_ = std::make_shared<nimble::ModelData>();
+}
+
+
+void DataManager::Initialize(const std::shared_ptr<MaterialFactoryType> &material_factory_base)
+{
+
+  const auto dim = static_cast<int>(mesh_.GetDim());
+  const auto num_nodes = static_cast<int>(mesh_.GetNumNodes());
+
+  macroscale_data_->SetDimension(dim);
+
+  field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
+  field_ids_.reference_coordinates = macroscale_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
+  field_ids_.displacement = macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
+  field_ids_.velocity = macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
+  field_ids_.acceleration = macroscale_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
+  field_ids_.internal_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+  field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
+
+  if (!parser_.UseKokkos()) {
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
+  }
+
+  macroscale_data_->SetReferenceCoordinates(mesh_);
+
+#ifdef NIMBLE_HAVE_UQ
+  // configure & allocate
+  if (parser_.HasUq())
+  {
+    uq_model_ = std::shared_ptr< nimble::UqModel >(new nimble::UqModel(dim,num_nodes,num_blocks));
+    uq_model_->ParseConfiguration(parser->UqModelString());
+    std::map<std::string, std::string> lines = parser_.UqParamsStrings();
+    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
+      std::string material_key = it->first;
+      int block_id = parser_.GetBlockIdFromMaterial( material_key );
+      std::string uq_params_this_material = it->second;
+      uq_model_->ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
+    }
+    // initialize
+    uq_model_->Initialize(mesh_, this);
+  }
+#endif
+
 }
 
 
@@ -84,6 +142,5 @@ RVEData& DataManager::GetRVEData(int global_element_id,
   RVEData& rve_data = rve_data_.at(id_pair);
   return rve_data;
 }
-
 
 } // namespace nimble

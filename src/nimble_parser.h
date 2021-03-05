@@ -252,7 +252,6 @@ namespace nimble {
       env_set_ = true;
     }
 
-    /// \brief Indicate whether Kokkos is used for the simulation
     bool UseKokkos() const
     { return use_kokkos_; }
 

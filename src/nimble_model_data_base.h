@@ -77,10 +77,15 @@ class ModelDataBase {
 
 public:
 
+  /// \brief Constructor
   ModelDataBase() = default;
 
+  /// \brief Destructor
   virtual ~ModelDataBase() = default;
 
+  /// \brief Set the spatial dimension
+  ///
+  /// \param dim Dimension
   void SetDimension(int dim) {
     if(dim != 2 && dim != 3){
       throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
@@ -88,10 +93,51 @@ public:
     dim_ = dim;
   }
 
+  //--- Virtual functions
+
+  /// \brief Allocate data storage for a node-based quantity
+  ///
+  /// \param length
+  /// \param label
+  /// \param num_objects
+  /// \return Field ID for the data allocated
+  virtual int AllocateNodeData(Length length,
+                               std::string label,
+                               int num_objects) = 0;
+
+  /// \brief Returns the field ID for a specific label
+  ///
+  /// \param field_label Label for a stored quantity
+  /// \return Field ID to identify the data storage
+  virtual int GetFieldId(const std::string& field_label) const = 0;
+
+  /// \brief Set the reference coordinates
+  ///
+  /// \param mesh Reference to the global mesh
+  virtual void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) = 0;
+
+  /// \brief Initialize the different blocks in the mesh
+  ///
+  /// \param data_manager Reference to the data manager
+  /// \param material_factory_base Shared pointer to the material factory
+  virtual void InitializeBlocks(nimble::DataManager &data_manager,
+                                const std::shared_ptr<MaterialFactoryType> &material_factory_base) = 0;
+
+  //--- Common interface routines
+
+  /// \brief Get the spatial dimension
+  ///
+  /// \return Spatial dimension
   int GetDimension() const {return dim_; }
 
+  /// \brief Set the critical time step
+  ///
+  /// \param time_step Critical time step to use.
   void SetCriticalTimeStep(double time_step) { critical_time_step_ = time_step; }
 
+  /// \brief Get the critical time step
+  ///
+  /// \return Time step
   double GetCriticalTimeStep() const { return critical_time_step_; }
 
   const std::vector<std::string> & GetNodeDataLabelsForOutput() const {
@@ -109,19 +155,6 @@ public:
   const std::map<int, std::vector<std::string> > & GetDerivedElementDataLabelsForOutput() const {
     return derived_output_element_data_labels_;
   }
-
-  void SetDerivedElementDataLabelsForOutput(std::map<int, std::vector<std::string> > &&ref)
-  {
-    derived_output_element_data_labels_ = ref;
-  }
-
-  virtual int AllocateNodeData(Length length,
-                               std::string label,
-                               int num_objects) = 0;
-
-  virtual int GetFieldId(const std::string& field_label) const = 0;
-
-  virtual void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) = 0;
 
 protected:
 
