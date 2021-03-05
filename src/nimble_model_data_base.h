@@ -57,6 +57,7 @@
 
 namespace nimble {
 
+class DataManager;
 
 struct FieldIds {
   int deformation_gradient = -1;
@@ -124,6 +125,11 @@ public:
   /// \param material_factory_base Shared pointer to the material factory
   virtual void InitializeBlocks(nimble::DataManager &data_manager,
                                 const std::shared_ptr<MaterialFactoryType> &material_factory_base) = 0;
+
+  /// \brief Copy time state (n+1) into time state (n)
+  ///
+  /// \param data_manager Reference to the data manager
+  virtual void UpdateStates(const nimble::DataManager &data_manager) = 0;
 
   /// \brief Get view of scalar quantity defined on nodes
   ///
