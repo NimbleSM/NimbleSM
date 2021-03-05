@@ -252,6 +252,11 @@ namespace nimble {
       env_set_ = true;
     }
 
+#ifdef NIMBLE_HAVE_KOKKOS
+    void SetUseKokkos()
+    { run_data_.use_kokkos_ = true; }
+#endif
+
     bool UseKokkos() const
     { return use_kokkos_; }
 
