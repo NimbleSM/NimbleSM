@@ -68,7 +68,7 @@ namespace nimble_kokkos {
 class ModelData : public nimble::ModelDataBase
 {
 
- public:
+public:
 
   ModelData() = default;
 
@@ -104,6 +104,10 @@ class ModelData : public nimble::ModelDataBase
   /// \param material_factory_base Shared pointer to the material factory
   void InitializeBlocks(nimble::DataManager &data_manager,
                         const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+
+  Viewify GetScalarNodeData(const std::string& label) override;
+
+  void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 
   /// \brief Swap states between time n and time (n+1)
   ///
@@ -187,6 +191,17 @@ class ModelData : public nimble::ModelDataBase
                                                     DeviceElementConnectivityView elem_conn_d,
                                                     DeviceVectorNodeGatheredView gathered_view_d);
 
+  int AllocateElementData(int block_id,
+                          nimble::Length length,
+                          std::string label,
+                          int num_objects);
+
+  int AllocateIntegrationPointData(int block_id,
+                                   nimble::Length length,
+                                   std::string label,
+                                   int num_objects,
+                                   std::vector<double> initial_value = std::vector<double>());
+
   void ScatterScalarNodeData(int field_id,
                              int num_elements,
                              int num_nodes_per_element,
@@ -209,10 +224,28 @@ class ModelData : public nimble::ModelDataBase
 
   std::map<int, nimble_kokkos::Block>& GetBlocks() { return blocks_; }
 
+  ////// Temporary Functions
   nimble_kokkos::ExodusOutputManager& GetExodusOutputManager()
   { return exodus_output_manager_; }
 
- protected:
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredRefCoord()
+  { return gathered_reference_coordinate_d; }
+
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredDisp()
+  { return gathered_displacement_d; }
+
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredInternalForce()
+  { return gathered_internal_force_d; }
+
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredContactForce()
+  { return gathered_contact_force_d; }
+  ///////////////////////////
+
+protected:
+
+  void InitializeGatheredVectors(const nimble::GenesisMesh &mesh_);
+
+protected:
 
   using Data = std::unique_ptr< FieldBase >;
 
@@ -241,6 +274,12 @@ class ModelData : public nimble::ModelDataBase
   std::vector< std::map<int, int> > field_id_to_device_integration_point_data_index_;
 
   nimble_kokkos::ExodusOutputManager exodus_output_manager_;
+
+  //--- Work arrays
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d;
 
 };
 
