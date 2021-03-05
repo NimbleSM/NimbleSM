@@ -222,7 +222,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
     }
   }
 
-  parser->SetUseKokkos();
+  parser->SetToUseKokkos();
   nimble::DataManager data_manager(*parser);
 
   //
