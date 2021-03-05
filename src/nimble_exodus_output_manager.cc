@@ -41,10 +41,12 @@
 //@HEADER
 */
 
-#include "nimble_exodus_output_manager.h"
-#include "nimble_utils.h"
 #include <sstream>
-#include <nimble_kokkos_data_manager.h>
+
+#include "nimble_data_manager.h"
+#include "nimble_exodus_output_manager.h"
+#include "nimble_kokkos_model_data.h"
+#include "nimble_utils.h"
 
 #ifndef NIMBLE_HAVE_DARMA
   #include <vector>

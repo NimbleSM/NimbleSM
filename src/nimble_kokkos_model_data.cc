@@ -41,8 +41,9 @@
 //@HEADER
 */
 
-#include "nimble_kokkos_data_manager.h"
 #include <stdexcept>
+
+#include "nimble_kokkos_model_data.h"
 
 #include <Kokkos_ScatterView.hpp>
 
@@ -677,8 +678,5 @@ void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
   }
 #endif
 
-  ModelData& DataManager::GetMacroScaleData() {
-    return macroscale_data_;
-  }
 
-} // namespace nimble
+  } // namespace nimble

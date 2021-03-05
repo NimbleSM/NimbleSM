@@ -41,53 +41,37 @@
 //@HEADER
 */
 
-#ifndef SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
-#define SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
+#include "nimble_model_data_utils.h"
+#include "nimble_model_data.h"
 
-#include "nimble_block_material_interface_base.h"
+namespace nimble { namespace details {
 
-#include "nimble_data_utils.h"
-#include "nimble_kokkos_block.h"
-#include "nimble_kokkos_defs.h"
-#include "nimble_utils.h"
-
-namespace nimble {
-
-class ModelDataBase;
-class FieldIds;
-
-}
-
-namespace nimble_kokkos {
-
-class ModelData;
-
-using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
-inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
+nimble::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr)
 {
-  return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
+  auto *model_data_ptr = dynamic_cast<nimble::ModelData*>(mptr.get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  return *model_data_ptr;
 }
 
-class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
- public:
+}}
 
-  BlockMaterialInterface(double time_n_, double time_np1_,
-                         const nimble::FieldIds &field_ids_,
-                         const std::vector<nimble::BlockData>& blocks_,
-                         nimble::ModelDataBase *model_data_);
+#ifdef NIMBLE_HAVE_KOKKOS
 
-  ~BlockMaterialInterface() override = default;
+#include "nimble_kokkos_model_data.h"
 
-  void ComputeStress() const override;
+namespace nimble_kokkos { namespace details_kokkos {
 
- protected:
-  const double time_n;
-  const double time_np1;
-  const nimble::FieldIds &field_ids;
-  nimble_kokkos::ModelData *model_data;
-  std::vector<nimble::BlockData> blocks;
-};
-
+nimble_kokkos::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr)
+{
+  auto *model_data_ptr = dynamic_cast<nimble_kokkos::ModelData*>(mptr.get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  return *model_data_ptr;
 }
 
-#endif /* SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_ */
+}}
+
+#endif

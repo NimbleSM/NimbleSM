@@ -41,53 +41,43 @@
 //@HEADER
 */
 
-#ifndef SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
-#define SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
+#ifndef NIMBLESM_NIMBLE_MODEL_DATA_UTILS_H
+#define NIMBLESM_NIMBLE_MODEL_DATA_UTILS_H
 
-#include "nimble_block_material_interface_base.h"
+#include <memory>
 
-#include "nimble_data_utils.h"
-#include "nimble_kokkos_block.h"
-#include "nimble_kokkos_defs.h"
-#include "nimble_utils.h"
-
+///
+/// Temporary Solution while refactoring
+///
 namespace nimble {
 
+class ModelData;
 class ModelDataBase;
-class FieldIds;
 
-}
+namespace details {
+
+nimble::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr);
+
+} }
+///////////
+
+
+///
+/// Temporary Solution while refactoring
+///
+#ifdef NIMBLE_HAVE_KOKKOS
 
 namespace nimble_kokkos {
 
 class ModelData;
 
-using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
-inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
-{
-  return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
-}
+namespace details_kokkos {
 
-class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
- public:
+nimble_kokkos::ModelData& to_ModelData(const std::shared_ptr<nimble::ModelDataBase>& mptr);
 
-  BlockMaterialInterface(double time_n_, double time_np1_,
-                         const nimble::FieldIds &field_ids_,
-                         const std::vector<nimble::BlockData>& blocks_,
-                         nimble::ModelDataBase *model_data_);
+} }
+/////////////
+#endif
 
-  ~BlockMaterialInterface() override = default;
+#endif // NIMBLESM_NIMBLE_MODEL_DATA_UTILS_H
 
-  void ComputeStress() const override;
-
- protected:
-  const double time_n;
-  const double time_np1;
-  const nimble::FieldIds &field_ids;
-  nimble_kokkos::ModelData *model_data;
-  std::vector<nimble::BlockData> blocks;
-};
-
-}
-
-#endif /* SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_ */
