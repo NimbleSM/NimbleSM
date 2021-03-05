@@ -44,11 +44,11 @@
 #ifndef NIMBLE_MATERIAL_H
 #define NIMBLE_MATERIAL_H
 
-#include "nimble_kokkos_defs.h"
+#include "nimble_defs.h"
 #include "nimble_data_utils.h"
 #include "nimble_utils.h"
 #include <algorithm>
-#include <string.h>
+#include <string>
 
 namespace nimble {
 
@@ -92,8 +92,8 @@ namespace nimble {
     MaterialParameters() : num_material_points_(0) {
     }
 
-  inline
-  MaterialParameters(const std::string& material_name,
+    NIMBLE_INLINE_FUNCTION
+    MaterialParameters(const std::string& material_name,
                      const std::map<std::string, std::string>& string_params,
                      const std::map<std::string, double>& double_params,
                      int num_material_points = 0)
@@ -316,7 +316,7 @@ namespace nimble {
     static void register_supported_material_parameters(MaterialFactoryBase& factory);
 
     NIMBLE_FUNCTION
-    ElasticMaterial(MaterialParameters const & material_parameters);
+    explicit ElasticMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
     ElasticMaterial(const ElasticMaterial& mat) = default;
@@ -399,7 +399,7 @@ namespace nimble {
     NeohookeanMaterial(const NeohookeanMaterial& mat) = default;
 
     NIMBLE_FUNCTION
-    NeohookeanMaterial(MaterialParameters const & material_parameters);
+    explicit NeohookeanMaterial(MaterialParameters const & material_parameters);
 
     NIMBLE_FUNCTION
     int NumStateVariables() const override { return num_state_variables_; };

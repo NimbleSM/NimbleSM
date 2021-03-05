@@ -44,12 +44,12 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
+#include "nimble_defs.h"
+
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
-#include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
-#include "nimble_model_data_base.h"
 #include "nimble_model_data.h"
 #include "nimble_parser.h"
 
@@ -63,7 +63,12 @@
 
 namespace nimble {
 
+class GenesisMesh;
 class ModelDataBase;
+
+#ifdef NIMBLE_HAVE_UQ
+class UqModel;
+#endif
 
 struct RVEData {
   nimble::ModelData model_data_;
@@ -86,9 +91,24 @@ class DataManager {
 
 public:
 
-  explicit DataManager(const nimble::Parser &parser);
+  /// \brief Constructor
+  ///
+  /// \param parser Reference to parser information
+  /// \param mesh Reference to mesh
+  /// \param rve_mesh Reference to RVE mesh
+  ///
+  /// \note The RVE mesh could be empty.
+  DataManager(const nimble::Parser &parser,
+              const nimble::GenesisMesh &mesh,
+              const nimble::GenesisMesh &rve_mesh);
 
-  virtual ~DataManager() = default;
+  /// \brief Destructor
+  virtual ~DataManager()
+  {
+#ifdef NIMBLE_HAVE_UQ
+    uq_model_->Finalize();
+#endif
+  }
 
 #ifdef NIMBLE_HAVE_DARMA
   template<typename ArchiveType>
@@ -97,20 +117,81 @@ public:
   }
 #endif
 
-  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
-  { return macroscale_data_; }
+  /// \brief Initialize data for simulation
+  ///
+  /// \param material_factory Pointer to the material factory
+  void Initialize(const std::shared_ptr<MaterialFactoryType>& material_factory);
 
+  /// \brief Allocate RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
   RVEData& AllocateRVEData(int global_element_id,
                            int integration_point_id);
 
+  /// \brief Get RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
   RVEData& GetRVEData(int global_element_id,
                       int integration_point_id);
 
- protected:
+  /// \brief Return constant reference to parser information
+  ///
+  /// \return Reference to parser information
+  const nimble::Parser &GetParser() const
+  { return parser_; }
+
+  /// \brief Return constant reference to mesh
+  ///
+  /// \return Reference to mesh
+  const nimble::GenesisMesh &GetMesh() const
+  { return mesh_; }
+
+  /// \brief Return constant reference to RVE mesh
+  ///
+  /// \return Reference to RVE mesh
+  const nimble::GenesisMesh &GetRVEMesh() const
+  { return rve_mesh_; }
+
+  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
+  { return macroscale_data_; }
+
+  /// \brief Return a const reference to the field IDs
+  ///
+  /// \return Field IDs
+  const nimble::FieldIds& GetFieldIDs() const
+  { return field_ids_; }
+
+  /// \brief Return reference to the field IDs
+  ///
+  /// \return Field IDs
+  nimble::FieldIds& GetFieldIDs()
+  { return field_ids_; }
+
+#ifdef NIMBLE_HAVE_UQ
+  /// \brief Return pointer to the UQ model
+  ///
+  /// \return Pointer to UQ model
+  std::shared_ptr< nimble::UqModel > GetUqModel()
+  { return uq_model_; }
+#endif
+
+protected:
 
   const nimble::Parser &parser_;
+  const nimble::GenesisMesh &mesh_;
+  const nimble::GenesisMesh &rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
   std::map<std::pair<int,int>, RVEData> rve_data_;
+
+#ifdef NIMBLE_HAVE_UQ
+  std::shared_ptr< nimble::UqModel > uq_model_;
+#endif
+
+  nimble::FieldIds field_ids_;
 
  };
 

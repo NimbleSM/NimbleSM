@@ -108,9 +108,6 @@ int ExplicitTimeIntegrator(
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
-#ifdef NIMBLE_HAVE_UQ
-    , nimble::UqModel &uq_model
-#endif
 );
 
 int QuasistaticTimeIntegrator(
@@ -290,98 +287,17 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  int num_blocks = static_cast<int>(mesh.GetNumBlocks());
 
-  nimble::DataManager data_manager(parser);
+  nimble::DataManager data_manager(parser, mesh, rve_mesh);
+
+  data_manager.Initialize(material_factory_base);
+
+  auto macroscale_data = data_manager.GetMacroScaleData();
+  macroscale_data->InitializeBlocks(data_manager, material_factory_base);
 
   //
-  /// Temporary solution while refactoring
-  //
-  nimble::ModelData &model_data = details::to_ModelData(data_manager.GetMacroScaleData());
-  auto material_factory = std::dynamic_pointer_cast<nimble::MaterialFactory>(material_factory_base);
-  ////////////////////////////////////////
-
-  model_data.SetDimension(dim);
-
-  // Global data
-  std::vector<std::string> global_data_labels;
-
-  int lumped_mass_field_id = model_data.AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
-  int reference_coordinate_field_id = model_data.AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
-  int displacement_field_id = model_data.AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
-  int trial_displacement_field_id = model_data.AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
-  int displacement_fluctuation_field_id = model_data.AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
-  int velocity_field_id = model_data.AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
-  int acceleration_field_id = model_data.AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
-  int internal_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
-  int trial_internal_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
-  int external_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
-  int contact_force_field_id = model_data.AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
-  int skin_node_field_id = model_data.AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
-
-  // Blocks
-  std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
-  std::map<int, nimble::Block>::iterator block_it;
-  std::vector<int> block_ids = mesh.GetBlockIds();
-  for (int i=0 ; i<num_blocks ; i++){
-    int block_id = block_ids[i];
-    std::string const & macro_material_parameters = parser.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const & rve_material_parameters = parser.GetMicroscaleMaterialParameters();
-    std::string rve_bc_strategy = parser.GetMicroscaleBoundaryConditionStrategy();
-    blocks[block_id] = nimble::Block();
-    blocks[block_id].Initialize(macro_material_parameters, rve_material_parameters, rve_mesh, rve_bc_strategy, *material_factory);
-    std::vector< std::pair<std::string, nimble::Length> > data_labels_and_lengths;
-    blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
-    model_data.DeclareElementData(block_id, data_labels_and_lengths);
-  }
-
-#ifdef NIMBLE_HAVE_UQ
-  // configure & allocate
-  nimble::UqModel uq_model(dim,num_nodes,num_blocks);
-  if(parser->HasUq()) {
-    uq_model.ParseConfiguration(parser->UqModelString());
-    std::map<std::string, std::string> lines = parser->UqParamsStrings();
-    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
-      std::string material_key = it->first;
-      int block_id = parser->GetBlockIdFromMaterial( material_key );
-      std::string uq_params_this_material = it->second;
-      std::string const & nominal_params_string = parser->GetMacroscaleMaterialParameters(block_id);
-      bool block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end() ;
-      uq_model.ParseBlockInput( uq_params_this_material, block_id, nominal_params_string, *material_factory, block_id_present, blocks );
-    }
-    // initialize
-    uq_model.Initialize(mesh,model_data);
-  }
-#endif
-
-  std::map<int, int> num_elem_in_each_block = mesh.GetNumElementsInBlock();
-  model_data.AllocateElementData(num_elem_in_each_block);
-  model_data.SpecifyOutputFields(parser.GetOutputFieldString());
-  std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
-  std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
-
-  // Initialize the element data
-  std::vector<int> rve_output_elem_ids = parser.MicroscaleOutputElementIds();
-  for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-    int block_id = block_it->first;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
-    nimble::Block& block = block_it->second;
-    std::vector<double> & elem_data_n = model_data.GetElementDataOld(block_id);
-    std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
-    block.InitializeElementData(num_elem_in_block,
-                                elem_global_ids,
-                                rve_output_elem_ids,
-                                elem_data_labels.at(block_id),
-                                derived_elem_data_labels.at(block_id),
-                                elem_data_n,
-                                elem_data_np1,
-                                *material_factory,
-                                data_manager);
-  }
-
   // Initialize the initial- and boundary-condition manager
+  //
   std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
   std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
   std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
@@ -389,36 +305,24 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   nimble::BoundaryConditionManager bc;
   bc.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
+  //
   // Initialize the output file
+  //
+
+  std::vector<std::string> global_data_labels;
+
   nimble::ExodusOutput exodus_output;
   exodus_output.Initialize(output_exodus_name, mesh);
-  std::vector<std::string> const & node_data_labels_for_output = model_data.GetNodeDataLabelsForOutput();
+
+  auto model_data = data_manager.GetMacroScaleData();
+  auto &node_data_labels_for_output = model_data->GetNodeDataLabelsForOutput();
+  auto &elem_data_labels_for_output = model_data->GetElementDataLabelsForOutput();
+  auto &derived_elem_data_labels = model_data->GetDerivedElementDataLabelsForOutput();
   exodus_output.InitializeDatabase(mesh,
                                    global_data_labels,
                                    node_data_labels_for_output,
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
-
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  auto reference_coordinate = Viewify(model_data.GetNodeData(reference_coordinate_field_id), dim);
-  if (dim == 2) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate(i, 0) = ref_coord_x[i];
-      reference_coordinate(i, 1) = ref_coord_y[i];
-    }
-  }
-  else if (dim == 3) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate(i, 0) = ref_coord_x[i];
-      reference_coordinate(i, 1) = ref_coord_y[i];
-      reference_coordinate(i, 2) = ref_coord_z[i];
-    }
-  }
-  else {
-    throw std::runtime_error(" -- Inappropriate Spatial Dimension");
-  }
 
 #ifdef NIMBLE_HAVE_TRILINOS
   auto comm = (parser.UseTpetra()) ? Tpetra::getDefaultComm()
@@ -434,9 +338,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                              exodus_output, contact_interface,
                                              block_material,
                                              num_ranks, my_rank, myCommunicator
-#ifdef NIMBLE_HAVE_UQ
-                          , uq_model
-#endif
                           );
   }
   else if (time_integration_scheme == "quasistatic") {
@@ -444,10 +345,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                                 exodus_output,
                                                 my_rank, num_ranks, myCommunicator);
   }
-
-#ifdef NIMBLE_HAVE_UQ
-  uq_model.Finalize();
-#endif
 
   return status;
 }
@@ -490,9 +387,6 @@ int ExplicitTimeIntegrator(
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     int num_ranks, int my_rank,
     nimble::VectorCommunicator &myVectorCommunicator
-#ifdef NIMBLE_HAVE_UQ
-    , nimble::UqModel &uq_model
-#endif
 )
 {
 
@@ -596,6 +490,7 @@ int ExplicitTimeIntegrator(
   double* contact_force = model_data.GetNodeData(contact_force_field_id);
 
 #ifdef NIMBLE_HAVE_UQ
+  auto uq_model = *( data_manager.GetUqModel() );
   std::vector<Viewify> bc_offnom_velocity_views(0);
   if(uq_model.Initialized()) {
     uq_model.Setup();

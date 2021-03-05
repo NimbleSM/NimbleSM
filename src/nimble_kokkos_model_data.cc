@@ -43,7 +43,9 @@
 
 #include <stdexcept>
 
+#include "nimble_data_manager.h"
 #include "nimble_kokkos_model_data.h"
+#include "nimble_kokkos_material_factory.h"
 
 #include <Kokkos_ScatterView.hpp>
 
@@ -337,6 +339,75 @@ namespace nimble_kokkos {
     }
     return block_ids;
   }
+
+
+void ModelData::InitializeBlocks(
+    nimble::DataManager &data_manager,
+    const std::shared_ptr<MaterialFactoryType> &material_factory_base)
+{
+
+  bool store_unrotated_stress(true);
+
+  const auto& mesh_ = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+  auto &field_ids_ = data_manager.GetFieldIDs();
+
+  auto material_factory_ptr = dynamic_cast< nimble_kokkos::MaterialFactory* >(material_factory_base.get());
+  const auto num_blocks = static_cast<int>(mesh_.GetNumBlocks());
+
+  //
+  // Blocks
+  //
+  auto &blocks = GetBlocks();
+  std::vector<int> block_ids = mesh_.GetBlockIds();
+  for (int i=0 ; i<num_blocks ; i++){
+    int block_id = block_ids.at(i);
+    std::string const & macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::map<int, std::string> const & rve_material_parameters = parser_.GetMicroscaleMaterialParameters();
+    std::string rve_bc_strategy = parser_.GetMicroscaleBoundaryConditionStrategy();
+    int num_elements_in_block = mesh_.GetNumElementsInBlock(block_id);
+    blocks[block_id] = nimble_kokkos::Block();
+    blocks.at(block_id).Initialize(macro_material_parameters, num_elements_in_block, *material_factory_ptr);
+    //
+    // MPI version use model_data.DeclareElementData(block_id, data_labels_and_lengths);
+    //
+    std::vector<double> initial_value(9, 0.0);
+    initial_value[0] = initial_value[1] = initial_value[2] = 1.0;
+    field_ids_.deformation_gradient = AllocateIntegrationPointData(block_id, nimble::FULL_TENSOR,
+                                                                   "deformation_gradient",
+                                                                   num_elements_in_block, initial_value);
+    // volume-averaged quantities for I/O are stored as element data
+    AllocateElementData(block_id, nimble::FULL_TENSOR, "deformation_gradient", num_elements_in_block);
+
+    field_ids_.stress = AllocateIntegrationPointData(block_id, nimble::SYMMETRIC_TENSOR, "stress",
+                                                     num_elements_in_block);
+    if (store_unrotated_stress) {
+      field_ids_.unrotated_stress = AllocateIntegrationPointData(block_id, nimble::SYMMETRIC_TENSOR, "stress",
+                                                                 num_elements_in_block);
+    }
+
+    // volume-averaged quantities for I/O are stored as element data
+    AllocateElementData(block_id, nimble::SYMMETRIC_TENSOR, "stress", num_elements_in_block);
+
+    if (parser_.GetOutputFieldString().find("volume") != std::string::npos) {
+      AllocateElementData(block_id, nimble::SCALAR, "volume", num_elements_in_block);
+    }
+  }
+
+  // Initialize the exodus-output-manager
+  auto &exodus_output_manager = GetExodusOutputManager();
+  exodus_output_manager.SpecifyOutputFields(*this, parser_.GetOutputFieldString());
+
+  output_node_component_labels_ = std::move(exodus_output_manager.GetNodeDataLabelsForOutput());
+  output_element_component_labels_ = std::move(exodus_output_manager.GetElementDataLabelsForOutput());
+
+  derived_output_element_data_labels_.clear();
+  for (auto block_id : block_ids) {
+    derived_output_element_data_labels_[block_id] = std::vector<std::string>(); // TODO eliminate this
+  }
+
+}
+
 
   std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
     std::vector<std::string> node_data_labels;

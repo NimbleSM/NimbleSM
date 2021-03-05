@@ -52,7 +52,7 @@
 #include <tuple>
 #include <vector>
 
-#include "nimble_kokkos_defs.h"
+#include "nimble_defs.h"
 #include "nimble_utils.h"
 
 #ifdef NIMBLE_HAVE_BVH

@@ -46,9 +46,10 @@
 
 #include <iostream>
 
+#include "nimble_defs.h"
+
 #ifdef NIMBLE_HAVE_KOKKOS
-  #include <nimble_kokkos_contact_defs.h>
-  #include <nimble_kokkos_defs.h>
+#include "nimble_kokkos_contact_defs.h"
 #endif
 
 namespace nimble {

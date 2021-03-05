@@ -44,9 +44,7 @@
 #ifndef NIMBLE_RVE_H
 #define NIMBLE_RVE_H
 
-#ifdef NIMBLE_HAVE_KOKKOS
-#include "nimble_kokkos_defs.h"
-#endif
+#include "nimble_defs.h"
 
 #include "nimble_genesis_mesh.h"
 #include "nimble_boundary_condition_manager.h"
