@@ -413,7 +413,7 @@ void ModelData::InitializeBlocks(
 }
 
 
-void ModelData::SwapStates(const nimble::DataManager &data_manager)
+void ModelData::UpdateStates(const nimble::DataManager &data_manager)
 {
   const auto &field_ids_ = data_manager.GetFieldIDs();
 

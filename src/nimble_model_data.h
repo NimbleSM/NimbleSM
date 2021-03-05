@@ -107,7 +107,7 @@ public:
   /// \brief Swap states between time n and time (n+1)
   ///
   /// \param data_manager Reference to the data manager
-  void SwapStates(const nimble::DataManager &data_manager) override {
+  void UpdateStates(const nimble::DataManager &data_manager) override {
     element_data_n_.swap(element_data_np1_);
   }
 

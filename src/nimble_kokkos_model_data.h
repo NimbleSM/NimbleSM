@@ -112,7 +112,7 @@ public:
   /// \brief Swap states between time n and time (n+1)
   ///
   /// \param data_manager Reference to the data manager
-  virtual void SwapStates(const nimble::DataManager &data_manager) override;
+  void UpdateStates(const nimble::DataManager &data_manager) override;
 
   //--- Specific routines
 
@@ -190,17 +190,6 @@ public:
                                                     int num_nodes_per_element,
                                                     DeviceElementConnectivityView elem_conn_d,
                                                     DeviceVectorNodeGatheredView gathered_view_d);
-
-  int AllocateElementData(int block_id,
-                          nimble::Length length,
-                          std::string label,
-                          int num_objects);
-
-  int AllocateIntegrationPointData(int block_id,
-                                   nimble::Length length,
-                                   std::string label,
-                                   int num_objects,
-                                   std::vector<double> initial_value = std::vector<double>());
 
   void ScatterScalarNodeData(int field_id,
                              int num_elements,

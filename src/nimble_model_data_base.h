@@ -129,7 +129,7 @@ public:
   /// \brief Swap states between time n and time (n+1)
   ///
   /// \param data_manager Reference to the data manager
-  virtual void SwapStates(const nimble::DataManager &data_manager) = 0;
+  virtual void UpdateStates(const nimble::DataManager &data_manager) = 0;
 
   /// \brief Get view of scalar quantity defined on nodes
   ///

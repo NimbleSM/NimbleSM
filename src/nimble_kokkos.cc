@@ -751,7 +751,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     }
 
     watch_internal.push_region("Copy field data new to old");
-    model_data.SwapStates(data_manager);
+    model_data.UpdateStates(data_manager);
     watch_internal.pop_region_and_report_time();
 
   } // loop over time steps
