@@ -51,6 +51,7 @@
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
 #include "nimble_model_data_base.h"
+#include "nimble_view.h"
 
 #ifdef NIMBLE_HAVE_DARMA
 #include "darma.h"
@@ -63,6 +64,7 @@
 namespace nimble {
 
 class DataManager;
+class VectorCommunicator;
 
 class ModelData : public ModelDataBase {
 
@@ -72,7 +74,7 @@ public:
 
   ~ModelData() override = default;
 
-  //--- Common interface from nimble::ModelDataBase
+  //--- Common interface from base class
 
   int GetFieldId(const std::string& label) const override;
 
@@ -84,6 +86,10 @@ public:
 
   void InitializeBlocks(nimble::DataManager &data_manager,
                         const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+
+  Viewify GetScalarNodeData(const std::string& label) override;
+
+  void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 
   //--- Specific routines
 

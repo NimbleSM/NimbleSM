@@ -50,6 +50,7 @@
 
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
+#include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_UQ
 #include "nimble_uq.h"
@@ -65,40 +66,74 @@ DataManager::DataManager(const nimble::Parser &parser,
                          const nimble::GenesisMesh &mesh,
                          const nimble::GenesisMesh &rve_mesh)
     : parser_(parser), mesh_(mesh), rve_mesh_(rve_mesh),
-      macroscale_data_(), rve_data_()
+      macroscale_data_(), rve_data_(), field_ids_(),
+      vector_communicator_(nullptr)
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (parser_.UseKokkos()) {
-    macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();
-    return;
-  }
-#endif
-  macroscale_data_ = std::make_shared<nimble::ModelData>();
+  Initialize();
 }
 
 
-void DataManager::Initialize(const std::shared_ptr<MaterialFactoryType> &material_factory_base)
+void DataManager::Initialize()
 {
 
   const auto dim = static_cast<int>(mesh_.GetDim());
   const auto num_nodes = static_cast<int>(mesh_.GetNumNodes());
 
+  //--- Create VectorCommunicator
+ #ifdef NIMBLE_HAVE_TRILINOS
+  auto comm = (parser_.UseTpetra()) ? Tpetra::getDefaultComm()
+                                     : Teuchos::RCP<const Teuchos::Comm<int>>();
+ #else
+  int comm = 0;
+ #endif
+  vector_communicator_ = std::make_shared< nimble::VectorCommunicator >(dim, num_nodes, comm);
+
+  std::vector<int> global_node_ids(num_nodes);
+  int const * const global_node_ids_ptr = mesh_.GetNodeGlobalIds();
+  for (int n=0 ; n<num_nodes ; ++n) {
+    global_node_ids[n] = global_node_ids_ptr[n];
+  }
+
+  // DJL
+  // Here is where the initialization occurs for MPI operations
+  // In this call, each rank determines which nodes are shared with which other ranks
+  // This information is stored so that the vector reductions will work later
+  vector_communicator_->Initialize(global_node_ids);
+
+  //--- Create ModelData
+  if (parser_.UseKokkos()) {
+#ifdef NIMBLE_HAVE_KOKKOS
+    macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();
+#else
+    throw std::runtime_error(" Wrong environment !\n");
+#endif
+  }
+  else {
+    macroscale_data_ = std::make_shared<nimble::ModelData>();
+  }
+
   macroscale_data_->SetDimension(dim);
 
-  field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
+  if (parser_.TimeIntegrationScheme() == "explicit")
+    field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
+
   field_ids_.reference_coordinates = macroscale_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
   field_ids_.displacement = macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
   field_ids_.velocity = macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
   field_ids_.acceleration = macroscale_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
   field_ids_.internal_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+
   field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
 
   if (!parser_.UseKokkos()) {
+    //
+    // These variables are not used in the Kokkos-based simulations
+    //
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
-    macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
+    field_ids_.external_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
   }
 
   macroscale_data_->SetReferenceCoordinates(mesh_);

@@ -61,7 +61,9 @@ int main(int argc, char *argv[]) {
 
   std::shared_ptr<MaterialFactoryType> material_factory(new nimble::MaterialFactory);
   std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material = nullptr;
-  std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
+  std::shared_ptr<nimble::ContactInterface> contact_interface = nullptr;
+  if (myParser.HasContact())
+    contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
   int status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
 
