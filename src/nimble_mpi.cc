@@ -105,9 +105,7 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
-    int num_ranks, int my_rank,
-    nimble::VectorCommunicator &myVectorCommunicator
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 );
 
 int QuasistaticTimeIntegrator(
@@ -115,9 +113,7 @@ int QuasistaticTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    nimble::ExodusOutput &exodus_output,
-    int my_rank, int num_ranks,
-    nimble::VectorCommunicator &myVectorCommunicator
+    nimble::ExodusOutput &exodus_output
 );
 
 double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
@@ -331,26 +327,15 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
                                    elem_data_labels_for_output,
                                    derived_elem_data_labels);
 
-#ifdef NIMBLE_HAVE_TRILINOS
-  auto comm = (parser.UseTpetra()) ? Tpetra::getDefaultComm()
-                                    : Teuchos::RCP<const Teuchos::Comm<int>>();
-#else
-  int comm = 0;
-#endif
-  nimble::VectorCommunicator myCommunicator(dim, num_nodes, comm);
-
   int status = 0;
   if (time_integration_scheme == "explicit") {
     status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
                                              exodus_output, contact_interface,
-                                             block_material,
-                                             num_ranks, my_rank, myCommunicator
-                          );
+                                             block_material);
   }
   else if (time_integration_scheme == "quasistatic") {
     status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager, bc,
-                                                exodus_output,
-                                                my_rank, num_ranks, myCommunicator);
+                                                exodus_output);
   }
 
   return status;
@@ -391,15 +376,15 @@ int ExplicitTimeIntegrator(
     nimble::BoundaryConditionManager &bc,
     nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
-    int num_ranks, int my_rank,
-    nimble::VectorCommunicator &myVectorCommunicator
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 )
 {
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
+  int my_rank = parser.GetRankID();
+  int num_ranks = parser.GetNumRanks();
 
 #ifdef NIMBLE_HAVE_BVH
   nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
@@ -436,17 +421,7 @@ int ExplicitTimeIntegrator(
 */
 #endif
 
-  std::vector<int> global_node_ids(num_nodes);
-  int const * const global_node_ids_ptr = mesh.GetNodeGlobalIds();
-  for (int n=0 ; n<num_nodes ; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
-
-  // DJL
-  // Here is where the initialization occurs for MPI operations
-  // In this call, each rank determines which nodes are shared with which other ranks
-  // This information is stored so that the vector reductions will work later
-  myVectorCommunicator.Initialize(global_node_ids);
+  auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
   if (contact_enabled) {
     std::vector<std::string> contact_master_block_names, contact_slave_block_names;
@@ -461,7 +436,7 @@ int ExplicitTimeIntegrator(
     mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
                                          contact_slave_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh, myVectorCommunicator,
+    contact_manager.CreateContactEntities(mesh, *myVectorCommunicator,
                                           contact_master_block_ids,
                                           contact_slave_block_ids);
     if (contact_visualization) {
@@ -731,7 +706,7 @@ int ExplicitTimeIntegrator(
 #endif
       contact_manager.GetForces(contact_force);
       int vector_dimension = 3;
-      myVectorCommunicator.VectorReduction(vector_dimension, contact_force);
+      myVectorCommunicator->VectorReduction(vector_dimension, contact_force);
       total_contact_time.Stop();
     }
 
@@ -744,13 +719,13 @@ int ExplicitTimeIntegrator(
       // Perform a vector reduction on internal force.  This is a vector nodal
       // quantity.
       int vector_dimension = 3;
-      myVectorCommunicator.VectorReduction(vector_dimension, internal_force);
+      myVectorCommunicator->VectorReduction(vector_dimension, internal_force);
       total_vector_reduction_time += vector_reduction_timer.age();
 #ifdef NIMBLE_HAVE_UQ
       if (uq_model.Initialized()) {
         for (int ntraj = 0; ntraj < uq_model.GetNumExactSamples(); ntraj++) {
           double *internal_force_ptr = uq_model.Forces()[ntraj];
-          myVectorCommunicator.VectorReduction(vector_dimension, internal_force_ptr);
+          myVectorCommunicator->VectorReduction(vector_dimension, internal_force_ptr);
         }
         // Now apply closure to estimate approximate sample forces from the
         // exact samples
@@ -869,11 +844,12 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                               nimble::GenesisMesh & mesh,
 			      nimble::DataManager & data_manager,
 			      nimble::BoundaryConditionManager & bc,
-			      nimble::ExodusOutput & exodus_output,
-                              int my_rank, int num_ranks,
-                              nimble::VectorCommunicator &myVectorCommunicator
+			      nimble::ExodusOutput & exodus_output
 )
 {
+
+  int my_rank = parser.GetRankID();
+  int num_ranks = parser.GetNumRanks();
 
   if (num_ranks > 1) {
     std::cerr << "Error:  Quasi-statics currently not implemented (work in progress).\n" << std::endl;
@@ -910,10 +886,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   }
   int linear_system_num_nodes = static_cast<int>(map_from_linear_system.size());
   int linear_system_num_unknowns = linear_system_num_nodes * dim;
-
-#ifdef NIMBLE_HAVE_TRILINOS
-//  myVectorCommunicator.Initialize(linear_system_global_node_ids);
-#endif
 
   std::vector<double> global_data;
 

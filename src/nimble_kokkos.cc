@@ -84,16 +84,14 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
                            nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
-                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           int num_ranks,
-                           int my_rank
+                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory
 );
 
 
 }
 
 
-NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
+NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 
 #ifdef NIMBLE_HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -103,25 +101,25 @@ NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
   Kokkos::initialize(argc, argv);
 #endif
 
-  NimbleKokkosInitData init_data;
+  NimbleInitData init_data;
 
 #ifdef NIMBLE_HAVE_MPI
   int mpi_err;
-  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &init_data.num_mpi_ranks);
+  mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &init_data.num_ranks_);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n");
   }
-  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &init_data.my_mpi_rank);
+  mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &init_data.my_rank_);
   if (mpi_err != MPI_SUCCESS) {
     throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n");
   }
 #else
-  init_data.num_mpi_ranks = 1;
-  init_data.my_mpi_rank = 0;
+  init_data.num_ranks_ = 1;
+  init_data.my_rank_ = 0;
 #endif
   
   // Banner
-  if (init_data.my_mpi_rank == 0) {
+  if (init_data.my_rank_ == 0) {
     std::string nimble_have_kokkos("false");
 #ifdef NIMBLE_HAVE_KOKKOS
     nimble_have_kokkos = "true";
@@ -145,7 +143,7 @@ NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
 #endif
       exit(1);
     }
-    std::cout << "NimbleSM_Kokkos initialized on " << init_data.num_mpi_ranks << " mpi rank(s)." << std::endl;
+    std::cout << "NimbleSM_Kokkos initialized on " << init_data.num_ranks_ << " mpi rank(s)." << std::endl;
 
     std::cout << "\nKokkos configuration:" << std::endl;
     std::cout << "  NIMBLE_HAVE_KOKKOS               " << nimble_have_kokkos << std::endl;
@@ -164,13 +162,13 @@ NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]) {
     std::cout << std::endl;
   }
 
-  init_data.input_deck_name = std::string(argv[1]);
+  init_data.file_name_ = std::string(argv[1]);
 
   return init_data;
 }
 
-int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data) {
-  if (init_data.my_mpi_rank == 0) {
+int NimbleKokkosFinalize(const NimbleInitData& init_data) {
+  if (init_data.my_rank_ == 0) {
     std::cout << "\ncomplete.\n" << std::endl;
   }
 
@@ -189,17 +187,17 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleKokkosInitData& init_data) {
+                     NimbleInitData& init_data) {
 
-  const int num_ranks = init_data.num_mpi_ranks;
-  const int my_rank = init_data.my_mpi_rank;
-  const std::string& input_deck_name = init_data.input_deck_name;
+  const int num_ranks = init_data.num_ranks_;
+  const int my_rank = init_data.my_rank_;
+  const std::string& input_deck_name = init_data.file_name_;
 
   //--- Define timers
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Parse and read mesh");
   
-  parser->Initialize(init_data.input_deck_name);
+  parser->Initialize(init_data);
 
   // Read the mesh
   nimble::GenesisMesh mesh;
@@ -286,8 +284,7 @@ void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_fact
     details_kokkos::ExplicitTimeIntegrator(*parser, mesh, data_manager,
                            boundary_condition_manager,
                            exodus_output,
-                           contact_interface, block_material_interface_factory,
-                           num_ranks, my_rank);
+                           contact_interface, block_material_interface_factory);
   }
   else {
     throw std::runtime_error("\n Time Integration Scheme Not Implemented \n");
@@ -304,15 +301,16 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
                            nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
-                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
-                           int num_ranks,
-                           int my_rank
+                           std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory
 )
 {
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
+
+  int num_ranks = parser.GetNumRanks();
+  int my_rank = parser.GetRankID();
 
   /// Temporary Solution while refactoring
   auto &field_ids = data_manager.GetFieldIDs();
@@ -524,11 +522,6 @@ int ExplicitTimeIntegrator(nimble::Parser & parser,
 
     nimble_kokkos::ProfilingTimer watch_internal_details;
     Kokkos::deep_copy(internal_force_d, (double)(0.0));
-    if (contact_enabled) {
-      watch_internal_details.push_region("Contact");
-      Kokkos::deep_copy(contact_force_d, (double)(0.0));
-      watch_internal_details.pop_region_and_report_time();
-    }
 
     // Compute element-level kinematics
 

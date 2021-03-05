@@ -51,25 +51,20 @@ namespace nimble { class MaterialFactoryBase; }
 namespace nimble { class ContactInterface; }
 namespace nimble_kokkos { class BlockMaterialInterfaceFactory; }
 namespace nimble { class Parser; }
+namespace nimble { class NimbleInitData; }
 
 namespace nimble {
 
-struct NimbleKokkosInitData {
-  std::string input_deck_name = "";
-  int my_mpi_rank = -1;
-  int num_mpi_ranks = -1;
-};
 
-
-NimbleKokkosInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
+NimbleInitData NimbleKokkosInitializeAndGetInput(int argc, char* argv[]);
 
 void NimbleKokkosMain(std::shared_ptr<nimble::MaterialFactoryBase> material_factory_base,
                      std::shared_ptr<nimble::ContactInterface> contact_interface,
                      std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory,
                      std::shared_ptr<nimble::Parser> parser,
-                     const NimbleKokkosInitData& init_data);
+                     NimbleInitData& init_data);
 
-int NimbleKokkosFinalize(const NimbleKokkosInitData& init_data);
+int NimbleKokkosFinalize(const NimbleInitData& init_data);
 
 }
 
