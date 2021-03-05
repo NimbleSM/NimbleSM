@@ -49,6 +49,7 @@
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
+#include "nimble_view.h"
 
 #include <vector>
 #include <string>
@@ -70,6 +71,7 @@ struct FieldIds {
   int lumped_mass = -1;
   int internal_force = -1;
   int contact_force = -1;
+  int external_force = -1;
 };
 
 
@@ -122,6 +124,17 @@ public:
   /// \param material_factory_base Shared pointer to the material factory
   virtual void InitializeBlocks(nimble::DataManager &data_manager,
                                 const std::shared_ptr<MaterialFactoryType> &material_factory_base) = 0;
+
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify object for scalar quantity
+  virtual Viewify GetScalarNodeData(const std::string& label) { return {}; }
+
+  /// \brief Compute the lumped mass
+  ///
+  /// \param data_manager Reference to the data manager
+  virtual void ComputeLumpedMass(nimble::DataManager &data_manager) = 0;
 
   //--- Common interface routines
 

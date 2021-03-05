@@ -52,25 +52,26 @@ class Viewify {
 
  public:
 
- Viewify() {} // for NIMBLE_HAVE_UQ?
+  Viewify() : data_(nullptr), dim_(0)
+  {} // for NIMBLE_HAVE_UQ?
 
- Viewify(double* data, int dim)
-   : data_(data), dim_(dim) {}
+  Viewify(double * const data, int dim)
+      : data_(data), dim_(dim) {}
 
-   NIMBLE_INLINE_FUNCTION
-   double& operator()(int i, int j) {
-     return data_[i*dim_ + j];
-   }
+  NIMBLE_INLINE_FUNCTION
+  double& operator()(int i, int j) {
+    return data_[i*dim_ + j];
+  }
 
-   NIMBLE_INLINE_FUNCTION
-   const double& operator()(int i, int j) const {
-     return data_[i*dim_ + j];
-   }
+  NIMBLE_INLINE_FUNCTION
+  const double& operator()(int i, int j) const {
+    return data_[i*dim_ + j];
+  }
 
- private:
+private:
 
- double * data_;
- int dim_;
+  double* const data_;
+  int dim_;
 };
 
 enum class FieldEnum : int

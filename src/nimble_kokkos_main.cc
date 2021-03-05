@@ -43,24 +43,36 @@
 
 #include <memory>
 
-#include <nimble_kokkos.h>
-#include <nimble_kokkos_material_factory.h>
-#include <nimble_contact_interface.h>
-#include <nimble_kokkos_block_material_interface_factory.h>
-#include <nimble_parser.h>
+#include "nimble_kokkos.h"
+#include "nimble_kokkos_material_factory.h"
+#include "nimble_contact_interface.h"
+#include "nimble_kokkos_block_material_interface_factory.h"
 
-int main(int argc, char *argv[]) {
-  auto init_data = nimble::NimbleKokkosInitializeAndGetInput(argc, argv);
+
+int main(int argc, char **argv) {
+
+  nimble::Parser myParser;
+  myParser.SetToUseKokkos();
+  //
+  // note: If the command line does not specify any parameter '--use-kokkos', '--use-tpetra', or '--use-vt',
+  // we could choose to specify one of them with either
+  // myParser.SetToUseKokkos() or myParser.SetToUseTpetra() or myParser.SetToUseVT()
+  //
+  nimble::NimbleKokkosInitializeAndGetInput(argc, argv, myParser);
 
   {
-    std::shared_ptr<nimble::MaterialFactoryBase> material_factory(new nimble_kokkos::MaterialFactory);
-    std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
-    std::shared_ptr<nimble_kokkos::BlockMaterialInterfaceFactory> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
-    std::shared_ptr<nimble::Parser> parser(new nimble::Parser);
+    std::shared_ptr<MaterialFactoryType> material_factory(new nimble_kokkos::MaterialFactory);
+    std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_interface_factory(new nimble_kokkos::BlockMaterialInterfaceFactory);
+    std::shared_ptr<nimble::ContactInterface> contact_interface = nullptr;
+    if (myParser.HasContact())
+      contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
-    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, parser, init_data);
+    nimble::NimbleKokkosMain(material_factory, contact_interface,
+                             block_material_interface_factory, myParser);
   }
 
-  int status = nimble::NimbleKokkosFinalize(init_data);
-  return status;
+  nimble::NimbleKokkosFinalize(myParser);
+
+  return 0;
+
 }
