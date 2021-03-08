@@ -105,14 +105,19 @@ public:
   void InitializeBlocks(nimble::DataManager &data_manager,
                         const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
 
-  Viewify GetScalarNodeData(const std::string& label) override;
-
-  void ComputeLumpedMass(nimble::DataManager &data_manager) override;
-
   /// \brief Copy time state (n+1) into time state (n)
   ///
   /// \param data_manager Reference to the data manager
   void UpdateStates(const nimble::DataManager &data_manager) override;
+
+  Viewify GetScalarNodeData(const std::string& label) override;
+
+  void ComputeLumpedMass(nimble::DataManager &data_manager) override;
+
+  void InitializeExodusOutput(nimble::DataManager &data_manager) override;
+
+  void WriteExodusOutput(nimble::DataManager &data_manager,
+                         double time_current) override;
 
   //--- Specific routines
 
@@ -269,6 +274,13 @@ protected:
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d;
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d;
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d;
+
+  //--- Data for Exodus output
+  nimble_kokkos::HostVectorNodeView displacement_h_;
+  nimble_kokkos::DeviceVectorNodeView displacement_d_;
+
+  nimble_kokkos::HostVectorNodeView velocity_h_;
+  nimble_kokkos::DeviceVectorNodeView velocity_d_;
 
 };
 

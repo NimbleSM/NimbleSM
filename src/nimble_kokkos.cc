@@ -46,7 +46,6 @@
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_contact_manager.h"
 #include "nimble_data_manager.h"
-#include "nimble_exodus_output.h"
 #include "nimble_kokkos_block.h"
 #include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_material_factory.h"
@@ -82,7 +81,6 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
-                           nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_interface_factory
 );
@@ -309,28 +307,13 @@ void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_facto
   // Initialize the output file
   //
 
-  std::vector<std::string> global_data_labels;
-
-  nimble::ExodusOutput exodus_output;
-  exodus_output.Initialize(output_exodus_name, mesh);
-
-  auto model_data = data_manager.GetMacroScaleData();
-  auto &node_data_labels_for_output = model_data->GetNodeDataLabelsForOutput();
-  auto &elem_data_labels_for_output = model_data->GetElementDataLabelsForOutput();
-  auto &derived_elem_data_labels = model_data->GetDerivedElementDataLabelsForOutput();
-
-  exodus_output.InitializeDatabase(mesh,
-                                   global_data_labels,
-                                   node_data_labels_for_output,
-                                   elem_data_labels_for_output,
-                                   derived_elem_data_labels);
+  data_manager.InitializeExodusOutput(output_exodus_name);
 
   watch_simulation.pop_region_and_report_time();
 
   if (time_integration_scheme == "explicit") {
     details_kokkos::ExplicitTimeIntegrator(parser, mesh, data_manager,
                                            boundary_condition_manager,
-                                           exodus_output,
                                            contact_interface, block_material);
   }
   else {
@@ -346,7 +329,6 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
                            nimble::BoundaryConditionManager & boundary_condition_manager,
-                           nimble::ExodusOutput & exodus_output,
                            std::shared_ptr<nimble::ContactInterface> contact_interface,
                            std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_interface_factory
 )
@@ -361,7 +343,6 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   /// Temporary Solution while refactoring
   auto &field_ids = data_manager.GetFieldIDs();
   nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
-  auto &exodus_output_manager = model_data.GetExodusOutputManager();
   auto &blocks = model_data.GetBlocks();
   /////////////////
 
@@ -478,25 +459,8 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   // Output to Exodus file
   watch_simulation.push_region("Output");
 
-  exodus_output_manager.ComputeElementData(mesh, model_data, blocks,
-                                           gathered_reference_coordinate_d,
-                                           gathered_displacement_d);
-  std::vector<double> global_data;
-  std::vector< std::vector<double> > const & node_data_for_output = exodus_output_manager.GetNodeDataForOutput(model_data);
+  data_manager.WriteExodusOutput(time_current);
 
-  std::map<int, std::vector< std::vector<double> > > const & elem_data_for_output = exodus_output_manager.GetElementDataForOutput(model_data);
-  auto elem_data_labels_for_output = exodus_output_manager.GetElementDataLabelsForOutput();
-
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-  auto const &derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
-
-  exodus_output.WriteStep(time_current,
-                          global_data,
-                          node_data_for_output,
-                          elem_data_labels_for_output,
-                          elem_data_for_output,
-                          derived_elem_data_labels,
-                          derived_elem_data);
   if (contact_visualization) {
     contact_manager.ContactVisualizationWriteStep(time_current);
   }
@@ -725,23 +689,9 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     if (is_output_step) {
       //
       watch_internal.push_region("Output");
-
       boundary_condition_manager.ApplyKinematicBC(time_current, time_previous, reference_coordinate_h, displacement_h, velocity_h);
-      Kokkos::deep_copy(displacement_d, displacement_h);
-      Kokkos::deep_copy(velocity_d, velocity_h);
-      exodus_output_manager.ComputeElementData(mesh, model_data, blocks, gathered_reference_coordinate_d, gathered_displacement_d);
-      std::vector<double> glbl_data;
-      std::vector< std::vector<double> > const &node_data_output = exodus_output_manager.GetNodeDataForOutput(model_data);
-      std::map<int, std::vector< std::vector<double> > > const &elem_data_output = exodus_output_manager.GetElementDataForOutput(model_data);
-      std::map<int, std::vector< std::vector<double> > > drvd_elem_data;
-      exodus_output.WriteStep(time_current,
-                              glbl_data,
-                              node_data_output,
-                              elem_data_labels_for_output,
-                              elem_data_output,
-                              derived_elem_data_labels,
-                              drvd_elem_data);
       //
+      data_manager.WriteExodusOutput(time_current);
       //
       if (contact_visualization) {
         contact_manager.ContactVisualizationWriteStep(time_current);

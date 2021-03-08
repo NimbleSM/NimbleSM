@@ -394,18 +394,6 @@ void ModelData::InitializeBlocks(
     }
   }
 
-  // Initialize the exodus-output-manager
-  auto &exodus_output_manager = GetExodusOutputManager();
-  exodus_output_manager.SpecifyOutputFields(*this, parser_.GetOutputFieldString());
-
-  output_node_component_labels_ = std::move(exodus_output_manager.GetNodeDataLabelsForOutput());
-  output_element_component_labels_ = std::move(exodus_output_manager.GetElementDataLabelsForOutput());
-
-  derived_output_element_data_labels_.clear();
-  for (auto block_id : block_ids) {
-    derived_output_element_data_labels_[block_id] = std::vector<std::string>(); // TODO eliminate this
-  }
-
   // Initialize gathered containers when using explicit scheme
   if (parser_.TimeIntegrationScheme() == "explicit")
     InitializeGatheredVectors(mesh_);
@@ -559,6 +547,67 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
   }
 
 }
+
+
+void ModelData::InitializeExodusOutput(nimble::DataManager &data_manager)
+{
+  const auto& mesh_ = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+
+  // Initialize the exodus-output-manager
+  auto &exodus_output_manager = GetExodusOutputManager();
+  exodus_output_manager.SpecifyOutputFields(*this, parser_.GetOutputFieldString());
+
+  output_node_component_labels_ = std::move(exodus_output_manager.GetNodeDataLabelsForOutput());
+  output_element_component_labels_ = std::move(exodus_output_manager.GetElementDataLabelsForOutput());
+
+  derived_output_element_data_labels_.clear();
+  std::vector<int> block_ids = mesh_.GetBlockIds();
+  for (auto block_id : block_ids) {
+    derived_output_element_data_labels_[block_id] = std::vector<std::string>(); // TODO eliminate this
+  }
+
+  auto &field_ids = data_manager.GetFieldIDs();
+  displacement_h_ = GetHostVectorNodeData(field_ids.displacement);
+  displacement_d_ = GetDeviceVectorNodeData(field_ids.displacement);
+
+  displacement_h_ = GetHostVectorNodeData(field_ids.displacement);
+  displacement_d_ = GetDeviceVectorNodeData(field_ids.displacement);
+
+}
+
+
+
+void ModelData::WriteExodusOutput(nimble::DataManager &data_manager,
+                                  double time_current)
+{
+  auto mesh_ = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+  auto exodus_output = data_manager.GetExodusOutput();
+
+  Kokkos::deep_copy(displacement_d_, displacement_h_);
+  Kokkos::deep_copy(velocity_d_, velocity_h_);
+
+  exodus_output_manager_.ComputeElementData(mesh_, (*this),
+                                            blocks_,
+                                            gathered_reference_coordinate_d,
+                                            gathered_displacement_d);
+
+  auto const &node_data_output = exodus_output_manager_.GetNodeDataForOutput(*this);
+  auto const &elem_data_output = exodus_output_manager_.GetElementDataForOutput(*this);
+
+  std::vector<double> glbl_data;
+  std::map<int, std::vector< std::vector<double> > > drvd_elem_data;
+
+  exodus_output->WriteStep(time_current,
+                           glbl_data,
+                           node_data_output,
+                           output_element_component_labels_,
+                           elem_data_output,
+                           derived_output_element_data_labels_,
+                           drvd_elem_data);
+}
+
 
 
 std::vector<std::string> ModelData::GetScalarNodeDataLabels() const {
