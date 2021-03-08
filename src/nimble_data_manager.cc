@@ -178,4 +178,31 @@ RVEData& DataManager::GetRVEData(int global_element_id,
   return rve_data;
 }
 
+
+void DataManager::InitializeExodusOutput(const std::string &filename)
+{
+  std::vector<std::string> global_data_labels;
+
+  exodus_output_ = std::shared_ptr<nimble::ExodusOutput>(new nimble::ExodusOutput);
+  exodus_output_->Initialize(filename, mesh_);
+
+  auto &node_data_labels_for_output = macroscale_data_->GetNodeDataLabelsForOutput();
+  auto &elem_data_labels_for_output = macroscale_data_->GetElementDataLabelsForOutput();
+  auto &derived_elem_data_labels = macroscale_data_->GetDerivedElementDataLabelsForOutput();
+
+  macroscale_data_->InitializeExodusOutput(*this);
+
+  exodus_output_->InitializeDatabase(mesh_, global_data_labels,
+                                     node_data_labels_for_output,
+                                     elem_data_labels_for_output,
+                                     derived_elem_data_labels);
+}
+
+
+void DataManager::WriteExodusOutput(double time_current)
+{
+  macroscale_data_->WriteExodusOutput(*this, time_current);
+}
+
+
 } // namespace nimble

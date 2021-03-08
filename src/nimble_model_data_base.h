@@ -142,6 +142,13 @@ public:
   /// \param data_manager Reference to the data manager
   virtual void ComputeLumpedMass(nimble::DataManager &data_manager) = 0;
 
+  virtual void InitializeExodusOutput(nimble::DataManager &data_manager)
+  {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
+
+  virtual void WriteExodusOutput(nimble::DataManager &data_manager,
+                                 double time_current)
+  {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
+
   //--- Common interface routines
 
   /// \brief Get the spatial dimension
