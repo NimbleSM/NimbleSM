@@ -44,7 +44,6 @@
 #include "nimble_version.h"
 #include "nimble_parser.h"
 #include "nimble_genesis_mesh.h"
-#include "nimble_exodus_output.h"
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_data_manager.h"
 #include "nimble_linear_solver.h"
@@ -103,7 +102,6 @@ int ExplicitTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 );
@@ -112,8 +110,7 @@ int QuasistaticTimeIntegrator(
     const nimble::Parser &parser,
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &bc,
-    nimble::ExodusOutput &exodus_output
+    nimble::BoundaryConditionManager &bc
 );
 
 double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
@@ -303,30 +300,16 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   // Initialize the output file
   //
 
-  std::vector<std::string> global_data_labels;
-
-  nimble::ExodusOutput exodus_output;
-  exodus_output.Initialize(output_exodus_name, mesh);
-
-  auto model_data = data_manager.GetMacroScaleData();
-  auto &node_data_labels_for_output = model_data->GetNodeDataLabelsForOutput();
-  auto &elem_data_labels_for_output = model_data->GetElementDataLabelsForOutput();
-  auto &derived_elem_data_labels = model_data->GetDerivedElementDataLabelsForOutput();
-  exodus_output.InitializeDatabase(mesh,
-                                   global_data_labels,
-                                   node_data_labels_for_output,
-                                   elem_data_labels_for_output,
-                                   derived_elem_data_labels);
+  data_manager.InitializeExodusOutput(output_exodus_name);
 
   int status = 0;
   if (time_integration_scheme == "explicit") {
     status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
-                                             exodus_output, contact_interface,
-                                             block_material);
+                                             contact_interface, block_material);
   }
   else if (time_integration_scheme == "quasistatic") {
-    status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager, bc,
-                                                exodus_output);
+    status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager,
+                                                bc);
   }
 
   return status;
@@ -365,7 +348,6 @@ int ExplicitTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    nimble::ExodusOutput &exodus_output,
     std::shared_ptr<nimble::ContactInterface> contact_interface,
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
 )
@@ -376,7 +358,6 @@ int ExplicitTimeIntegrator(
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
   const int my_rank = parser.GetRankID();
   const int num_ranks = parser.GetNumRanks();
-
 
 #ifdef NIMBLE_HAVE_BVH
   nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
@@ -438,8 +419,6 @@ int ExplicitTimeIntegrator(
     }
   }
 
-  std::vector<double> global_data;
-
   nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
 
   int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
@@ -477,8 +456,6 @@ int ExplicitTimeIntegrator(
 #endif
 
   std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
-  std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
 
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -514,34 +491,8 @@ int ExplicitTimeIntegrator(
     rve_macroscale_deformation_gradient[i] = 1.0;
   }
 
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-  for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-    int block_id = block_it->first;
-    nimble::Block& block = block_it->second;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int const * elem_conn = mesh.GetConnectivity(block_id);
-    std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-    derived_elem_data[block_id] = std::vector< std::vector<double> >();
-    block.ComputeDerivedElementData(reference_coordinate,
-                                    displacement,
-                                    num_elem_in_block,
-                                    elem_conn,
-                                    elem_data_labels.at(block_id).size(),
-                                    elem_data_np1,
-                                    derived_elem_data_labels.at(block_id).size(),
-                                    derived_elem_data.at(block_id));
-  }
-  std::vector< std::vector<double> > node_data_for_output;
-  model_data.GetNodeDataForOutput(node_data_for_output);
-  std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
-  model_data.GetElementDataForOutput(elem_data_for_output);
-  exodus_output.WriteStep(time_current,
-                          global_data,
-                          node_data_for_output,
-                          elem_data_labels_for_output,
-                          elem_data_for_output,
-                          derived_elem_data_labels,
-                          derived_elem_data);
+  data_manager.WriteExodusOutput(time_current);
+
   if (contact_visualization) {
     contact_manager.ContactVisualizationWriteStep(time_current);
   }
@@ -758,38 +709,14 @@ int ExplicitTimeIntegrator(
       nimble::quanta::stopwatch exodus_write_timer;
       exodus_write_timer.reset();
 
-      for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-        int block_id = block_it->first;
-        nimble::Block& block = block_it->second;
-        int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-        int const * elem_conn = mesh.GetConnectivity(block_id);
-        std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-        block.ComputeDerivedElementData(reference_coordinate,
-                                        displacement,
-                                        num_elem_in_block,
-                                        elem_conn,
-                                        elem_data_labels.at(block_id).size(),
-                                        elem_data_np1,
-                                        derived_elem_data_labels.at(block_id).size(),
-                                        derived_elem_data.at(block_id));
-      }
-
       bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
           , bc_offnom_velocity_views
 #endif
       );
 
-      // Write output
-      model_data.GetNodeDataForOutput(node_data_for_output);
-      model_data.GetElementDataForOutput(elem_data_for_output);
-      exodus_output.WriteStep(time_current,
-                              global_data,
-                              node_data_for_output,
-                              elem_data_labels_for_output,
-                              elem_data_for_output,
-                              derived_elem_data_labels,
-                              derived_elem_data);
+      data_manager.WriteExodusOutput(time_current);
+
       if (contact_visualization) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
@@ -844,8 +771,7 @@ int ExplicitTimeIntegrator(
 int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                               nimble::GenesisMesh & mesh,
                               nimble::DataManager & data_manager,
-                              nimble::BoundaryConditionManager & bc,
-                              nimble::ExodusOutput & exodus_output
+                              nimble::BoundaryConditionManager & bc
 )
 {
 
@@ -968,6 +894,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   }
 
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
+  auto exodus_output = *( data_manager.GetExodusOutput() );
+
   std::map<int, std::vector< std::vector<double> > > derived_elem_data;
   for (auto& block_it : blocks) {
     int block_id = block_it.first;

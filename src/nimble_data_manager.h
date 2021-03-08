@@ -134,6 +134,11 @@ public:
   RVEData& GetRVEData(int global_element_id,
                       int integration_point_id);
 
+  /// \brief Initialize the data for Exodus output
+  ///
+  /// \param filename File name for the output files
+  void InitializeExodusOutput(const std::string &filename);
+
   /// \brief Return constant reference to parser information
   ///
   /// \return Reference to parser information
@@ -184,6 +189,13 @@ public:
   { return uq_model_; }
 #endif
 
+  ////////// Temporary
+  void WriteExodusOutput(double time_current);
+
+  std::shared_ptr< nimble::ExodusOutput > GetExodusOutput()
+  { return exodus_output_; }
+  /////////////////////
+
 protected:
 
   /// \brief Initialize data for simulation
@@ -204,6 +216,7 @@ protected:
   nimble::FieldIds field_ids_;
 
   std::shared_ptr< nimble::VectorCommunicator > vector_communicator_;
+  std::shared_ptr< nimble::ExodusOutput > exodus_output_;
 
  };
 

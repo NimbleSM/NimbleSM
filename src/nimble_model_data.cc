@@ -531,4 +531,67 @@ Viewify ModelData::GetScalarNodeData(const std::string& label)
 }
 
 
+void ModelData::InitializeExodusOutput(nimble::DataManager &data_manager)
+{
+  const auto& mesh_ = data_manager.GetMesh();
+
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    derived_elem_data_[block_id] = std::vector<std::vector<double>>();
+  }
+
+  int reference_coordinate_field_id = GetFieldId("reference_coordinate");
+  int displacement_field_id = GetFieldId("displacement");
+
+  output_reference_coor_ = GetNodeData(reference_coordinate_field_id);
+  output_displacement_ = GetNodeData(displacement_field_id);
+
+}
+
+void ModelData::WriteExodusOutput(
+                nimble::DataManager &data_manager,
+                double time_current
+)
+{
+  const auto& mesh_ = data_manager.GetMesh();
+  auto exodus_output = data_manager.GetExodusOutput();
+
+  std::vector<double> global_data;
+
+  int reference_coordinate_field_id = GetFieldId("reference_coordinate");
+  int displacement_field_id = GetFieldId("displacement");
+
+  output_reference_coor_ = GetNodeData(reference_coordinate_field_id);
+  output_displacement_ = GetNodeData(displacement_field_id);
+
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    nimble::Block& block = block_it.second;
+    int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    int const * elem_conn = mesh_.GetConnectivity(block_id);
+    const auto &elem_data_np1 = GetElementDataNew(block_id);
+    block.ComputeDerivedElementData(output_reference_coor_,
+                                    output_displacement_,
+                                    num_elem_in_block,
+                                    elem_conn,
+                                    element_component_labels_.at(block_id).size(),
+                                    elem_data_np1,
+                                    derived_output_element_data_labels_.at(block_id).size(),
+                                    derived_elem_data_.at(block_id));
+  }
+
+  GetNodeDataForOutput(node_data_for_output_);
+  GetElementDataForOutput(elem_data_for_output_);
+
+  exodus_output->WriteStep(time_current,
+                           global_data,
+                           node_data_for_output_,
+                           output_element_component_labels_,
+                           elem_data_for_output_,
+                           derived_output_element_data_labels_,
+                           derived_elem_data_);
+
+}
+
+
 } // namespace nimble

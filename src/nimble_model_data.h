@@ -115,6 +115,11 @@ public:
 
   void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 
+  void InitializeExodusOutput(nimble::DataManager &data_manager) override;
+
+  void WriteExodusOutput(nimble::DataManager &data_manager,
+                         double time_current) override;
+
   //--- Specific routines
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -191,6 +196,21 @@ protected:
 
   //! Map from global node it to local node id
   std::map<int, int> global_node_id_to_local_node_id_;
+
+  //! Information for Exodus output about node data
+  std::vector< std::vector<double> > node_data_for_output_;
+
+  //! Information for Exodus output about element data
+  std::map<int, std::vector< std::vector<double> > > elem_data_for_output_;
+
+  //! Information for Exodus output about element data
+  std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
+
+  //! Pointer for reference coordinates into the Exodus output
+  double *output_reference_coor_ = nullptr;
+
+  //! Pointer for displacements into the Exodus output
+  double *output_displacement_ = nullptr;
 
 };
 
