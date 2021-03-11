@@ -53,6 +53,38 @@
 #include "nimble_rve.h"
 #include "nimble_utils.h"
 
+
+/////////////////////////////
+//
+// Temporary position while refactoring
+//
+class Viewify {
+
+public:
+
+  Viewify() : data_(nullptr), dim_(0)
+  {} // for NIMBLE_HAVE_UQ?
+
+  Viewify(double * const data, int dim)
+      : data_(data), dim_(dim) {}
+
+  NIMBLE_INLINE_FUNCTION
+  double& operator()(int i, int j) {
+    return data_[i*dim_ + j];
+  }
+
+  NIMBLE_INLINE_FUNCTION
+  const double& operator()(int i, int j) const {
+    return data_[i*dim_ + j];
+  }
+
+private:
+
+  double* const data_;
+  int dim_;
+};
+/////////////////////////////
+
 namespace nimble {
 
   RVE::RVE(std::map<int, std::string> const & material_parameters_string,
@@ -375,7 +407,7 @@ namespace nimble {
       }
 
 #ifdef NIMBLE_HAVE_UQ
-      std::vector<Viewify> bc_offnom_velocity_views(0);
+      std::vector<::Viewify> bc_offnom_velocity_views(0);
 #endif
 
       std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
@@ -463,7 +495,7 @@ namespace nimble {
 
         std::vector<double> rve_center = rve_mesh_.BoundingBoxCenter();
 
-        bc_.ApplyKinematicBC(time_current, time_previous, Viewify(coord,3), Viewify(displacement,3), Viewify(velocity,3)
+        bc_.ApplyKinematicBC(time_current, time_previous, ::Viewify(coord,3), ::Viewify(displacement,3), ::Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
                            , bc_offnom_velocity_views
 #endif

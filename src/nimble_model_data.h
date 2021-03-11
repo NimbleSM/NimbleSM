@@ -111,7 +111,17 @@ public:
     element_data_n_.swap(element_data_np1_);
   }
 
-  Viewify GetScalarNodeData(const std::string& label) override;
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<1> object for scalar quantity
+  nimble::Viewify<1> GetScalarNodeData(const std::string& label) override;
+
+  /// \brief Get view of vector quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<2> object for vector quantity
+  nimble::Viewify<2> GetVectorNodeData(const std::string& label) override;
 
   void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 

@@ -431,14 +431,33 @@ void ModelData::UpdateStates(const nimble::DataManager &data_manager)
 }
 
 
-Viewify ModelData::GetScalarNodeData(const std::string& label)
+nimble::Viewify<1> ModelData::GetScalarNodeData(const std::string& label)
 {
   auto field_id = GetFieldId(label);
   if (field_id < 0) {
     std::string code = " Field " + label + " Not Allocated ";
     throw std::runtime_error(code);
   }
-  return {GetHostScalarNodeData(field_id).data(), 1};
+  auto field_view = GetHostScalarNodeData(field_id);
+  auto field_size = static_cast<int>(field_view.extent(0));
+  auto field_stride = static_cast<int>(field_view.extent(0));
+  return {field_view.data(), {field_size}, {field_stride}};
+}
+
+
+nimble::Viewify<2> ModelData::GetVectorNodeData(const std::string& label)
+{
+  auto field_id = GetFieldId(label);
+  if (field_id < 0) {
+    std::string code = " Field " + label + " Not Allocated ";
+    throw std::runtime_error(code);
+  }
+  auto field_view = GetHostVectorNodeData(field_id);
+  auto size0 = static_cast<int>(field_view.extent(0));
+  auto size1 = static_cast<int>(field_view.extent(1));
+  auto stride0 = static_cast<int>(field_view.stride_0());
+  auto stride1 = static_cast<int>(field_view.stride_1());
+  return {field_view.data(), {size0, size1}, {stride0, stride1}};
 }
 
 

@@ -134,8 +134,14 @@ public:
   /// \brief Get view of scalar quantity defined on nodes
   ///
   /// \param field_id
-  /// \return Viewify object for scalar quantity
-  virtual Viewify GetScalarNodeData(const std::string& label) { return {}; }
+  /// \return Viewify<1> object for scalar quantity
+  virtual nimble::Viewify<1> GetScalarNodeData(const std::string& label) = 0;
+
+  /// \brief Get view of vector quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<2> object for vector quantity
+  virtual nimble::Viewify<2> GetVectorNodeData(const std::string& label) = 0;
 
   /// \brief Compute the lumped mass
   ///

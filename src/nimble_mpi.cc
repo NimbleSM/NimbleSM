@@ -421,36 +421,32 @@ int ExplicitTimeIntegrator(
 
   nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
 
-  int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
-  int displacement_field_id = model_data.GetFieldId("displacement");
-  int velocity_field_id =  model_data.GetFieldId("velocity");
-  int acceleration_field_id =  model_data.GetFieldId("acceleration");
-  int internal_force_field_id =  model_data.GetFieldId("internal_force");
-  int external_force_field_id =  model_data.GetFieldId("external_force");
-  int contact_force_field_id =  model_data.GetFieldId("contact_force");
-
   int status = 0;
+
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();
-  double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
-  double* displacement = model_data.GetNodeData(displacement_field_id);
-  double* velocity = model_data.GetNodeData(velocity_field_id);
-  double* acceleration = model_data.GetNodeData(acceleration_field_id);
-  double* internal_force = model_data.GetNodeData(internal_force_field_id);
-  double* external_force = model_data.GetNodeData(external_force_field_id);
-  double* contact_force = (contact_enabled) ? model_data.GetNodeData(contact_force_field_id)
-                           : nullptr;
+
+  auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
+  auto displacement = model_data.GetVectorNodeData("displacement");
+  auto velocity = model_data.GetVectorNodeData("velocity");
+  auto acceleration = model_data.GetVectorNodeData("acceleration");
+  auto internal_force = model_data.GetVectorNodeData("internal_force");
+  auto external_force = model_data.GetVectorNodeData("external_force");
+
+  nimble::Viewify<2> contact_force;
+  if (contact_enabled)
+    contact_force = model_data.GetVectorNodeData("contact_force");
 
 #ifdef NIMBLE_HAVE_UQ
   auto uq_model = *( data_manager.GetUqModel() );
-  std::vector<Viewify> bc_offnom_velocity_views(0);
+  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views(0);
   if(uq_model.Initialized()) {
     uq_model.Setup();
 /// FOR CALL TO BCS ===================
     int num_samples = uq_model.GetNumSamples();
     for(int nuq=0; nuq<num_samples; nuq++){
        double * v = uq_model.Velocities()[nuq];
-       bc_offnom_velocity_views.push_back( Viewify(v,3) );
+       bc_offnom_velocity_views.push_back( nimble::Viewify<2>(v, {0, 3}, {3, 1}) );
     }
   }
 #endif
@@ -463,7 +459,7 @@ int ExplicitTimeIntegrator(
   model_data.ComputeLumpedMass(data_manager);
 
   double critical_time_step = model_data.GetCriticalTimeStep();
-  Viewify lumped_mass = model_data.GetScalarNodeData("lumped_mass");
+  const auto lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
   double time_current(0.0), time_previous(0.0);
   double final_time = parser.FinalTime();
@@ -471,14 +467,14 @@ int ExplicitTimeIntegrator(
   int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
 
-  bc.ApplyInitialConditions(Viewify(reference_coordinate,3), Viewify(velocity,3)
+  bc.ApplyInitialConditions(reference_coordinate, velocity
 #ifdef NIMBLE_HAVE_UQ
       ,bc_offnom_velocity_views
 #endif
   );
 
   // Allow prescribed velocities to trump initial velocities
-  bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+  bc.ApplyKinematicBC(0.0, 0.0, reference_coordinate, displacement, velocity
 #ifdef NIMBLE_HAVE_UQ
       , bc_offnom_velocity_views
 #endif
@@ -544,8 +540,13 @@ int ExplicitTimeIntegrator(
     half_delta_time = 0.5*delta_time;
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      velocity[i] += half_delta_time * acceleration[i];
+    //for (int i=0 ; i<num_unknowns ; ++i) {
+    //  velocity[i] += half_delta_time * acceleration[i];
+    //}
+    for (int i = 0; i < num_nodes; ++i) {
+      velocity(i, 0) += half_delta_time * acceleration(i, 0);
+      velocity(i, 1) += half_delta_time * acceleration(i, 1);
+      velocity(i, 2) += half_delta_time * acceleration(i, 2);
     }
 
 #ifdef NIMBLE_HAVE_UQ
@@ -553,20 +554,21 @@ int ExplicitTimeIntegrator(
     uq_model.UpdateVelocity(half_delta_time);
 #endif
 
-    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+    bc.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
+                        displacement, velocity
 #ifdef NIMBLE_HAVE_UQ
         , bc_offnom_velocity_views
 #endif
     );
 
     // Evaluate external body forces
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      external_force[i] = 0.0;
-    }
+    external_force.zero();
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      displacement[i] += delta_time * velocity[i];
+    for (int i=0 ; i < num_nodes; ++i) {
+      displacement(i, 0) += delta_time * velocity(i, 0);
+      displacement(i, 1) += delta_time * velocity(i, 1);
+      displacement(i, 2) += delta_time * velocity(i, 2);
     }
 
 #ifdef NIMBLE_HAVE_UQ
@@ -576,9 +578,8 @@ int ExplicitTimeIntegrator(
 #endif
 
     // Evaluate the internal force
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      internal_force[i] = 0.0;
-    }
+    internal_force.zero();
+
     for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
       int block_id = block_it->first;
       int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -593,9 +594,9 @@ int ExplicitTimeIntegrator(
          for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
            //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
            bool is_off_nominal = (ntraj > 0);
-           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement;
-           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity;
-           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force;
+           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement.data();
+           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity.data();
+           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force.data();
            std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
            block.ComputeInternalForce(reference_coordinate,
                                       disp_ptr,
@@ -618,11 +619,11 @@ int ExplicitTimeIntegrator(
          }
       }
 #else
-      block.ComputeInternalForce(reference_coordinate,
-                                 displacement,
-                                 velocity,
+      block.ComputeInternalForce(reference_coordinate.data(),
+                                 displacement.data(),
+                                 velocity.data(),
                                  rve_macroscale_deformation_gradient.data(),
-                                 internal_force,
+                                 internal_force.data(),
                                  time_previous,
                                  time_current,
                                  num_elem_in_block,
@@ -642,15 +643,15 @@ int ExplicitTimeIntegrator(
     // Evaluate the contact force
     if (contact_enabled) {
       total_contact_time.Start();
-      contact_manager.ApplyDisplacements(displacement);
+      contact_manager.ApplyDisplacements(displacement.data());
 #ifdef NIMBLE_HAVE_BVH
       contact_manager.ComputeParallelContactForce(step + 1, is_output_step);
 #else
       contact_manager.ComputeContactForce(step+1, contact_visualization && is_output_step);
 #endif
-      contact_manager.GetForces(contact_force);
-      int vector_dimension = 3;
-      myVectorCommunicator->VectorReduction(vector_dimension, contact_force);
+      contact_manager.GetForces(contact_force.data());
+      const int vector_dimension = 3;
+      myVectorCommunicator->VectorReduction(vector_dimension, contact_force.data());
       total_contact_time.Stop();
     }
 
@@ -662,8 +663,8 @@ int ExplicitTimeIntegrator(
       // DJL
       // Perform a vector reduction on internal force.  This is a vector nodal
       // quantity.
-      int vector_dimension = 3;
-      myVectorCommunicator->VectorReduction(vector_dimension, internal_force);
+      const int vector_dimension = 3;
+      myVectorCommunicator->VectorReduction(vector_dimension, internal_force.data());
       total_vector_reduction_time += vector_reduction_timer.age();
 #ifdef NIMBLE_HAVE_UQ
       if (uq_model.Initialized()) {
@@ -681,22 +682,36 @@ int ExplicitTimeIntegrator(
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     if (contact_enabled) {
-      for (int i = 0; i < num_unknowns; ++i) {
-        acceleration[i] =
-            (1.0 / lumped_mass(i / 3, 0)) *
-            (internal_force[i] + external_force[i] + contact_force[i]);
+      for (int i = 0; i < num_nodes; ++i) {
+        const double oneOverM = 1.0 / lumped_mass(i);
+        acceleration(i, 0) = oneOverM * (internal_force(i, 0)
+                                         + external_force(i, 0)
+                                         + contact_force(i, 0));
+        acceleration(i, 1) = oneOverM * (internal_force(i, 1)
+                                         + external_force(i, 1)
+                                           + contact_force(i, 1));
+        acceleration(i, 2) = oneOverM * (internal_force(i, 2)
+                                         + external_force(i, 2)
+                                           + contact_force(i, 2));
       }
     }
     else {
-      for (int i = 0; i < num_unknowns; ++i) {
-        acceleration[i] = (1.0 / lumped_mass(i / 3, 0)) *
-                          (internal_force[i] + external_force[i]);
+      for (int i = 0; i < num_nodes; ++i) {
+        const double oneOverM = 1.0 / lumped_mass(i);
+        acceleration(i, 0) = oneOverM * (internal_force(i, 0)
+                                         + external_force(i, 0));
+        acceleration(i, 1) = oneOverM * (internal_force(i, 1)
+                                         + external_force(i, 1));
+        acceleration(i, 2) = oneOverM * (internal_force(i, 2)
+                                         + external_force(i, 2));
       }
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
-    for (int i=0 ; i<num_unknowns ; ++i) {
-      velocity[i] += half_delta_time * acceleration[i];
+    for (int i = 0; i < num_nodes; ++i) {
+      velocity(i, 0) += half_delta_time * acceleration(i, 0);
+      velocity(i, 1) += half_delta_time * acceleration(i, 1);
+      velocity(i, 2) += half_delta_time * acceleration(i, 2);
     }
 
 #ifdef NIMBLE_HAVE_UQ
@@ -709,7 +724,8 @@ int ExplicitTimeIntegrator(
       nimble::quanta::stopwatch exodus_write_timer;
       exodus_write_timer.reset();
 
-      bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3), Viewify(displacement,3), Viewify(velocity,3)
+      bc.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
+                          displacement, velocity
 #ifdef NIMBLE_HAVE_UQ
           , bc_offnom_velocity_views
 #endif
@@ -767,6 +783,40 @@ int ExplicitTimeIntegrator(
   }
   return status;
 }
+
+
+/////////////////////////////
+//
+// Temporary position while refactoring
+// This class is used in the quasi-static integration
+//
+class Viewify {
+
+public:
+
+  Viewify() : data_(nullptr), dim_(0)
+  {} // for NIMBLE_HAVE_UQ?
+
+  Viewify(double * const data, int dim)
+      : data_(data), dim_(dim) {}
+
+  NIMBLE_INLINE_FUNCTION
+  double& operator()(int i, int j) {
+    return data_[i*dim_ + j];
+  }
+
+  NIMBLE_INLINE_FUNCTION
+  const double& operator()(int i, int j) const {
+    return data_[i*dim_ + j];
+  }
+
+private:
+
+  double* const data_;
+  int dim_;
+};
+/////////////////////////////
+
 
 int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                               nimble::GenesisMesh & mesh,
@@ -873,11 +923,11 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
 #ifdef NIMBLE_HAVE_UQ
   if (parser.HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
-  std::vector<Viewify> bc_offnom_velocity_views(0);
+  std::vector<details::Viewify> bc_offnom_velocity_views(0);
 #endif
 
-  bc.ApplyKinematicBC(0.0, 0.0, Viewify(reference_coordinate,3),
-                      Viewify(displacement,3), Viewify(velocity,3)
+  bc.ApplyKinematicBC(0.0, 0.0, details::Viewify(reference_coordinate,3),
+                      details::Viewify(displacement,3), details::Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
       , bc_offnom_velocity_views
 #endif
@@ -942,8 +992,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       }
     }
 
-    bc.ApplyKinematicBC(time_current, time_previous, Viewify(reference_coordinate,3),
-                        Viewify(displacement,3), Viewify(velocity,3)
+    bc.ApplyKinematicBC(time_current, time_previous, details::Viewify(reference_coordinate,3),
+                        details::Viewify(displacement,3), details::Viewify(velocity,3)
 #ifdef NIMBLE_HAVE_UQ
         , bc_offnom_velocity_views
 #endif

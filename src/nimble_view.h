@@ -44,35 +44,11 @@
 #ifndef NIMBLE_VIEW_H
 #define NIMBLE_VIEW_H
 
+#include <array>
 #include <memory>
+#include <type_traits>
 
 #include "nimble_defs.h"
-
-class Viewify {
-
- public:
-
-  Viewify() : data_(nullptr), dim_(0)
-  {} // for NIMBLE_HAVE_UQ?
-
-  Viewify(double * const data, int dim)
-      : data_(data), dim_(dim) {}
-
-  NIMBLE_INLINE_FUNCTION
-  double& operator()(int i, int j) {
-    return data_[i*dim_ + j];
-  }
-
-  NIMBLE_INLINE_FUNCTION
-  const double& operator()(int i, int j) const {
-    return data_[i*dim_ + j];
-  }
-
-private:
-
-  double* const data_;
-  int dim_;
-};
 
 enum class FieldEnum : int
 {
@@ -84,21 +60,82 @@ enum class FieldEnum : int
 
 namespace nimble {
 
-  template <FieldEnum FieldT>
+
+template< std::size_t N = 2>
+class Viewify {
+
+public:
+
+  Viewify() : data_(nullptr)
+  {
+    len_.fill(0);
+    stride_.fill(0);
+  }
+
+  Viewify(double * const data, std::array<int, N> len, std::array<int, N> stride)
+      : data_(data), len_(len), stride_(stride)
+  {}
+
+  template <std::size_t NN = N>
+  NIMBLE_INLINE_FUNCTION
+  typename std::enable_if<(NN == 1), double>::type &operator()(int i)
+  {
+    return data_[i];
+  }
+
+  template <std::size_t NN = N>
+  NIMBLE_INLINE_FUNCTION
+  typename std::enable_if<(NN == 1), const double>::type operator()(int i) const
+  {
+    return data_[i];
+  }
+
+  template <std::size_t NN = N>
+  NIMBLE_INLINE_FUNCTION
+  typename std::enable_if<(NN == 2), double>::type &operator()(int i, int j)
+  {
+    return data_[i * stride_[0] + j * stride_[1]];
+  }
+
+  template <std::size_t NN = N>
+  NIMBLE_INLINE_FUNCTION
+  typename std::enable_if<(NN == 2), const double>::type operator()(int i, int j) const
+  {
+    return data_[i * stride_[0] + j * stride_[1]];
+  }
+
+  void zero() {
+    int mySize = stride_[0] * len_[0];
+    for (int ii = 0; ii < mySize; ++ii)
+      data_[ii] = 0.0;
+  }
+
+  double* data() const { return data_; }
+
+protected:
+
+  double* data_;
+  std::array<int, N> len_;
+  std::array<int, N> stride_;
+
+};
+
+
+template <FieldEnum FieldT>
   class View {
 
   public:
 
-    View(int num_entries) : num_entries_(num_entries) {
+    explicit View(int num_entries) : num_entries_(num_entries) {
       data_ = std::shared_ptr<double>(new double[num_entries_ * static_cast<int>(FieldT)], [](double* p){ delete[] p; });
       data_ptr_ = data_.get();
     }
 
     ~View() = default;
     View(const View &) = default;
-    View(View &&) = default;
+    View(View &&)  noexcept = default;
     View & operator=(const View &) = default;
-    View & operator=(View &&) = default;
+    View & operator=(View &&)  noexcept = default;
 
     double & operator() (int i_entry) const {
       static_assert(FieldT == FieldEnum::Scalar, "Operator(int i_entry) called for non-scalar data.");

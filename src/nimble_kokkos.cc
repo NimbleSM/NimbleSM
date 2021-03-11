@@ -372,8 +372,8 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   nimble_kokkos::DeviceVectorNodeView velocity_d = model_data.GetDeviceVectorNodeData(field_ids.velocity);
   Kokkos::deep_copy(velocity_h, (double)(0.0));
 
-  nimble_kokkos::HostVectorNodeView acceleration_h = model_data.GetHostVectorNodeData(field_ids.acceleration);
-  Kokkos::deep_copy(acceleration_h, (double)(0.0));
+  auto acceleration = model_data.GetVectorNodeData("acceleration");
+  acceleration.zero();
 
   nimble_kokkos::HostVectorNodeView internal_force_h = model_data.GetHostVectorNodeData(field_ids.internal_force);
   nimble_kokkos::DeviceVectorNodeView internal_force_d = model_data.GetDeviceVectorNodeData(field_ids.internal_force);
@@ -381,10 +381,10 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
 
   nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(field_ids.contact_force);
   nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(field_ids.contact_force);
-  Kokkos::deep_copy(internal_force_h, (double)(0.0));
+  Kokkos::deep_copy(contact_force_h, (double)(0.0));
 
   model_data.ComputeLumpedMass(data_manager);
-  Viewify lumped_mass = model_data.GetScalarNodeData("lumped_mass");
+  auto lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
   auto gathered_reference_coordinate_d = model_data.GetGatheredRefCoord();
   auto &gathered_displacement_d = model_data.GetGatheredDisp();
@@ -503,9 +503,9 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
     for (int i=0 ; i<num_nodes ; ++i) {
-      velocity_h(i,0) += half_delta_time * acceleration_h(i,0);
-      velocity_h(i,1) += half_delta_time * acceleration_h(i,1);
-      velocity_h(i,2) += half_delta_time * acceleration_h(i,2);
+      velocity_h(i,0) += half_delta_time * acceleration(i,0);
+      velocity_h(i,1) += half_delta_time * acceleration(i,1);
+      velocity_h(i,2) += half_delta_time * acceleration(i,2);
     }
     total_update_avu_time += watch_internal.pop_region_and_report_time();
 
@@ -662,27 +662,27 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     watch_internal.push_region("Central difference");
     if (contact_enabled) {
       for (int i = 0; i < num_nodes; ++i) {
-        acceleration_h(i, 0) = (1.0 / lumped_mass(i, 0)) *
+        acceleration(i, 0) = (1.0 / lumped_mass(i)) *
                                (internal_force_h(i, 0) + contact_force_h(i, 0));
-        acceleration_h(i, 1) = (1.0 / lumped_mass(i, 0)) *
+        acceleration(i, 1) = (1.0 / lumped_mass(i)) *
                                (internal_force_h(i, 1) + contact_force_h(i, 1));
-        acceleration_h(i, 2) = (1.0 / lumped_mass(i, 0)) *
+        acceleration(i, 2) = (1.0 / lumped_mass(i)) *
                                (internal_force_h(i, 2) + contact_force_h(i, 2));
       }
     }
     else {
       for (int i = 0; i < num_nodes; ++i) {
-        acceleration_h(i, 0) = (1.0 / lumped_mass(i, 0)) * internal_force_h(i, 0);
-        acceleration_h(i, 1) = (1.0 / lumped_mass(i, 0)) * internal_force_h(i, 1);
-        acceleration_h(i, 2) = (1.0 / lumped_mass(i, 0)) * internal_force_h(i, 2);
+        acceleration(i, 0) = (1.0 / lumped_mass(i)) * internal_force_h(i, 0);
+        acceleration(i, 1) = (1.0 / lumped_mass(i)) * internal_force_h(i, 1);
+        acceleration(i, 2) = (1.0 / lumped_mass(i)) * internal_force_h(i, 2);
       }
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
     for (int i=0 ; i<num_nodes ; ++i) {
-      velocity_h(i,0) += half_delta_time * acceleration_h(i,0);
-      velocity_h(i,1) += half_delta_time * acceleration_h(i,1);
-      velocity_h(i,2) += half_delta_time * acceleration_h(i,2);
+      velocity_h(i,0) += half_delta_time * acceleration(i,0);
+      velocity_h(i,1) += half_delta_time * acceleration(i,1);
+      velocity_h(i,2) += half_delta_time * acceleration(i,2);
     }
     total_update_avu_time += watch_internal.pop_region_and_report_time();
 
