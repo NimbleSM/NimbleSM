@@ -93,11 +93,6 @@ public:
   int GetFieldId(const std::string& field_label) const override
   { return field_label_to_field_id_map_.at(field_label); }
 
-  /// \brief Set the reference coordinates
-  ///
-  /// \param mesh Reference to the global mesh
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
-
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager
@@ -110,7 +105,17 @@ public:
   /// \param data_manager Reference to the data manager
   void UpdateStates(const nimble::DataManager &data_manager) override;
 
-  Viewify GetScalarNodeData(const std::string& label) override;
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<1> object for scalar quantity
+  nimble::Viewify<1> GetScalarNodeData(const std::string& label) override;
+
+  /// \brief Get view of vector quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<2> object for vector quantity
+  nimble::Viewify<2> GetVectorNodeData(const std::string& label) override;
 
   void ComputeLumpedMass(nimble::DataManager &data_manager) override;
 

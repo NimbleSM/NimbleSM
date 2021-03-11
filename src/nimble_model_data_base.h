@@ -86,16 +86,6 @@ public:
   /// \brief Destructor
   virtual ~ModelDataBase() = default;
 
-  /// \brief Set the spatial dimension
-  ///
-  /// \param dim Dimension
-  void SetDimension(int dim) {
-    if(dim != 2 && dim != 3){
-      throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
-    }
-    dim_ = dim;
-  }
-
   //--- Virtual functions
 
   /// \brief Allocate data storage for a node-based quantity
@@ -114,11 +104,6 @@ public:
   /// \return Field ID to identify the data storage
   virtual int GetFieldId(const std::string& field_label) const = 0;
 
-  /// \brief Set the reference coordinates
-  ///
-  /// \param mesh Reference to the global mesh
-  virtual void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) = 0;
-
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager
@@ -134,8 +119,14 @@ public:
   /// \brief Get view of scalar quantity defined on nodes
   ///
   /// \param field_id
-  /// \return Viewify object for scalar quantity
-  virtual Viewify GetScalarNodeData(const std::string& label) { return {}; }
+  /// \return Viewify<1> object for scalar quantity
+  virtual nimble::Viewify<1> GetScalarNodeData(const std::string& label) = 0;
+
+  /// \brief Get view of vector quantity defined on nodes
+  ///
+  /// \param field_id
+  /// \return Viewify<2> object for vector quantity
+  virtual nimble::Viewify<2> GetVectorNodeData(const std::string& label) = 0;
 
   /// \brief Compute the lumped mass
   ///
@@ -160,6 +151,16 @@ public:
   ///
   /// \param time_step Critical time step to use.
   void SetCriticalTimeStep(double time_step) { critical_time_step_ = time_step; }
+
+  /// \brief Set spatial dimension
+  ///
+  /// \param dim Spatial dimension
+  void SetDimension(int dim);
+
+  /// \brief Set reference coordinates
+  ///
+  /// \param mesh Mesh
+  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh);
 
   /// \brief Get the critical time step
   ///
