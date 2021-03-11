@@ -93,11 +93,6 @@ public:
   int GetFieldId(const std::string& field_label) const override
   { return field_label_to_field_id_map_.at(field_label); }
 
-  /// \brief Set the reference coordinates
-  ///
-  /// \param mesh Reference to the global mesh
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
-
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager

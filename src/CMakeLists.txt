@@ -17,6 +17,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc

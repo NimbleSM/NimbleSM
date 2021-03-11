@@ -92,11 +92,6 @@ public:
   /// \return Field ID to identify the data storage
   int GetFieldId(const std::string& label) const override;
 
-  /// \brief Set the reference coordinates
-  ///
-  /// \param mesh Reference to the global mesh
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh) override;
-
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager

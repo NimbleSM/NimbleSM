@@ -372,37 +372,6 @@ void ModelData::AssignFieldId(Field& field) {
   }
 }
 
-void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
-{
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-
-  auto field_id = GetFieldId("reference_coordinate");
-  if (field_id == -1) {
-    throw std::logic_error("\n**** Error in ModelData: label 'reference_coordinate' not found.\n");
-  }
-
-  auto reference_coordinate = GetNodeData(field_id);
-  int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  if (dim_ == 2) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate[i * dim_ + 0] = ref_coord_x[i];
-      reference_coordinate[i * dim_ + 1] = ref_coord_y[i];
-    }
-  }
-  else if (dim_ == 3) {
-    for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate[i * dim_ + 0] = ref_coord_x[i];
-      reference_coordinate[i * dim_ + 1] = ref_coord_y[i];
-      reference_coordinate[i * dim_ + 2] = ref_coord_z[i];
-    }
-  }
-  else {
-    throw std::runtime_error(" -- Inappropriate Spatial Dimension");
-  }
-}
-
 void ModelData::GetNodeDataComponent(int field_id,
                                      int component,
                                      double* const component_data) {

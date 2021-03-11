@@ -540,9 +540,6 @@ int ExplicitTimeIntegrator(
     half_delta_time = 0.5*delta_time;
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
-    //for (int i=0 ; i<num_unknowns ; ++i) {
-    //  velocity[i] += half_delta_time * acceleration[i];
-    //}
     for (int i = 0; i < num_nodes; ++i) {
       velocity(i, 0) += half_delta_time * acceleration(i, 0);
       velocity(i, 1) += half_delta_time * acceleration(i, 1);

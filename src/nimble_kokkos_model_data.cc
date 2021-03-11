@@ -440,7 +440,7 @@ nimble::Viewify<1> ModelData::GetScalarNodeData(const std::string& label)
   }
   auto field_view = GetHostScalarNodeData(field_id);
   auto field_size = static_cast<int>(field_view.extent(0));
-  auto field_stride = static_cast<int>(field_view.extent(0));
+  auto field_stride = static_cast<int>(field_view.stride_0());
   return {field_view.data(), {field_size}, {field_stride}};
 }
 
@@ -929,23 +929,6 @@ void ModelData::ScatterVectorNodeData(int field_id,
       }
     }
   });
-}
-
-void ModelData::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
-{
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
-  auto field_id = GetFieldId("reference_coordinate");
-  nimble_kokkos::HostVectorNodeView reference_coordinate_h = GetHostVectorNodeData(field_id);
-  nimble_kokkos::DeviceVectorNodeView reference_coordinate_d = GetDeviceVectorNodeData(field_id);
-  int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  for (int i=0 ; i<num_nodes ; i++) {
-    reference_coordinate_h(i, 0) = ref_coord_x[i];
-    reference_coordinate_h(i, 1) = ref_coord_y[i];
-    reference_coordinate_h(i, 2) = ref_coord_z[i];
-  }
-  Kokkos::deep_copy(reference_coordinate_d, reference_coordinate_h);
 }
 
 #ifndef KOKKOS_ENABLE_QTHREADS
