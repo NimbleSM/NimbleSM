@@ -50,6 +50,7 @@
 
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
+#include "nimble_model_data_base.h"
 #include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_UQ
