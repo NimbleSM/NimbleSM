@@ -43,6 +43,7 @@
 
 #include <stdexcept>
 
+#include "nimble_block_material_interface_base.h"
 #include "nimble_data_manager.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_material_factory.h"
@@ -82,13 +83,13 @@ int ModelData::AllocateNodeData(nimble::Length length,
   FieldBase * d_field = device_node_data_.back().get();
 
   if (d_field->type() == FieldType::DeviceScalarNode) {
-    Field< FieldType::DeviceScalarNode > * field = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field );
+    auto field = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field );
     Field< FieldType::DeviceScalarNode >::View d_view = field->data();
     auto h_view = Kokkos::create_mirror_view( d_view );
     host_node_data_.emplace_back( new Field< FieldType::HostScalarNode >( h_view ) );
   }
   else if (d_field->type() == FieldType::DeviceVectorNode) {
-    Field< FieldType::DeviceVectorNode > * field = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field );
+    auto field = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field );
     Field< FieldType::DeviceVectorNode >::View d_view = field->data();
     auto h_view = Kokkos::create_mirror_view( d_view );
     host_node_data_.emplace_back( new Field< FieldType::HostVectorNode >( h_view ) );
@@ -118,10 +119,10 @@ int ModelData::AllocateElementData(int block_id,
 
   if (block_id_to_element_data_index_.find(block_id) == block_id_to_element_data_index_.end()) {
     block_id_to_element_data_index_[block_id] = host_element_data_.size();
-    host_element_data_.push_back(std::vector< Data >());
-    device_element_data_.push_back(std::vector< Data >());
-    field_id_to_host_element_data_index_.push_back(std::map<int, int>());
-    field_id_to_device_element_data_index_.push_back(std::map<int, int>());
+    host_element_data_.emplace_back();
+    device_element_data_.emplace_back();
+    field_id_to_host_element_data_index_.emplace_back();
+    field_id_to_device_element_data_index_.emplace_back();
   }
   int block_index = block_id_to_element_data_index_.at(block_id);
 
@@ -143,19 +144,19 @@ int ModelData::AllocateElementData(int block_id,
   FieldBase * d_field = device_element_data_.at(block_index).back().get();
 
   if (d_field->type() == FieldType::DeviceScalarElem) {
-    Field< FieldType::DeviceScalarElem > * field = dynamic_cast< Field< FieldType::DeviceScalarElem> * >( d_field );
+    auto field = dynamic_cast< Field< FieldType::DeviceScalarElem> * >( d_field );
     Field< FieldType::DeviceScalarElem >::View d_view = field->data();
     auto h_view = Kokkos::create_mirror_view( d_view );
     host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostScalarElem >( h_view ) );
   }
   else if (d_field->type() == FieldType::DeviceSymTensorElem) {
-    Field< FieldType::DeviceSymTensorElem > * field = dynamic_cast< Field< FieldType::DeviceSymTensorElem> * >( d_field );
+    auto field = dynamic_cast< Field< FieldType::DeviceSymTensorElem> * >( d_field );
     Field< FieldType::DeviceSymTensorElem >::View d_view = field->data();
     auto h_view = Kokkos::create_mirror_view( d_view );
     host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorElem >( h_view ) );
   }
   else if (d_field->type() == FieldType::DeviceFullTensorElem) {
-    Field< FieldType::DeviceFullTensorElem > * field = dynamic_cast< Field< FieldType::DeviceFullTensorElem> * >( d_field );
+    auto field = dynamic_cast< Field< FieldType::DeviceFullTensorElem> * >( d_field );
     Field< FieldType::DeviceFullTensorElem >::View d_view = field->data();
     auto h_view = Kokkos::create_mirror_view( d_view );
     host_element_data_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorElem >( h_view ) );
@@ -175,9 +176,8 @@ int ModelData::AllocateIntegrationPointData(int block_id,
                                             int num_objects,
                                             std::vector<double> initial_value) {
   bool set_initial_value = false;
-  if (initial_value.size() > 0) {
+  if (!initial_value.empty())
     set_initial_value = true;
-  }
 
   int field_id;
   auto it = field_label_to_field_id_map_.find(label);
@@ -191,12 +191,12 @@ int ModelData::AllocateIntegrationPointData(int block_id,
 
   if (block_id_to_integration_point_data_index_.find(block_id) == block_id_to_integration_point_data_index_.end()) {
     block_id_to_integration_point_data_index_[block_id] = host_integration_point_data_step_n_.size();
-    host_integration_point_data_step_n_.push_back(std::vector< Data >());
-    host_integration_point_data_step_np1_.push_back(std::vector< Data >());
-    device_integration_point_data_step_n_.push_back(std::vector< Data >());
-    device_integration_point_data_step_np1_.push_back(std::vector< Data >());
-    field_id_to_host_integration_point_data_index_.push_back(std::map<int, int>());
-    field_id_to_device_integration_point_data_index_.push_back(std::map<int, int>());
+    host_integration_point_data_step_n_.emplace_back();
+    host_integration_point_data_step_np1_.emplace_back();
+    device_integration_point_data_step_n_.emplace_back();
+    device_integration_point_data_step_np1_.emplace_back();
+    field_id_to_host_integration_point_data_index_.emplace_back();
+    field_id_to_device_integration_point_data_index_.emplace_back();
   }
   int block_index = block_id_to_integration_point_data_index_.at(block_id);
 
@@ -226,12 +226,12 @@ int ModelData::AllocateIntegrationPointData(int block_id,
   FieldBase * d_field_step_np1 = device_integration_point_data_step_np1_.at(block_index).back().get();
 
   if (d_field_step_n->type() == FieldType::DeviceScalarNode) {
-    Field< FieldType::DeviceScalarNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_n );
+    auto field_step_n = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_n );
     Field< FieldType::DeviceScalarNode >::View d_view_step_n = field_step_n->data();
     auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
     host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_n ) );
 
-    Field< FieldType::DeviceScalarNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_np1 );
+    auto field_step_np1 = dynamic_cast< Field< FieldType::DeviceScalarNode> * >( d_field_step_np1 );
     Field< FieldType::DeviceScalarNode >::View d_view_step_np1 = field_step_np1->data();
     auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
     host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostScalarNode >( h_view_step_np1 ) );
@@ -247,12 +247,12 @@ int ModelData::AllocateIntegrationPointData(int block_id,
     }
   }
   else if (d_field_step_n->type() == FieldType::DeviceVectorNode) {
-    Field< FieldType::DeviceVectorNode > * field_step_n = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_n );
+    auto field_step_n = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_n );
     Field< FieldType::DeviceVectorNode >::View d_view_step_n = field_step_n->data();
     auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
     host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_n ) );
 
-    Field< FieldType::DeviceVectorNode > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_np1 );
+    auto field_step_np1 = dynamic_cast< Field< FieldType::DeviceVectorNode> * >( d_field_step_np1 );
     Field< FieldType::DeviceVectorNode >::View d_view_step_np1 = field_step_np1->data();
     auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
     host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostVectorNode >( h_view_step_np1 ) );
@@ -271,12 +271,12 @@ int ModelData::AllocateIntegrationPointData(int block_id,
     }
   }
   else if (d_field_step_n->type() == FieldType::DeviceSymTensorIntPt) {
-    Field< FieldType::DeviceSymTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_n );
+    auto field_step_n = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_n );
     Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_n = field_step_n->data();
     auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
     host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_n ) );
 
-    Field< FieldType::DeviceSymTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_np1 );
+    auto field_step_np1 = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt> * >( d_field_step_np1 );
     Field< FieldType::DeviceSymTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
     auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
     host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostSymTensorIntPt >( h_view_step_np1 ) );
@@ -298,12 +298,12 @@ int ModelData::AllocateIntegrationPointData(int block_id,
     }
   }
   else if (d_field_step_n->type() == FieldType::DeviceFullTensorIntPt) {
-    Field< FieldType::DeviceFullTensorIntPt > * field_step_n = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_n );
+    auto field_step_n = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_n );
     Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_n = field_step_n->data();
     auto h_view_step_n = Kokkos::create_mirror_view( d_view_step_n );
     host_integration_point_data_step_n_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_n ) );
 
-    Field< FieldType::DeviceFullTensorIntPt > * field_step_np1 = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_np1 );
+    auto field_step_np1 = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt> * >( d_field_step_np1 );
     Field< FieldType::DeviceFullTensorIntPt >::View d_view_step_np1 = field_step_np1->data();
     auto h_view_step_np1 = Kokkos::create_mirror_view( d_view_step_np1 );
     host_integration_point_data_step_np1_.at(block_index).emplace_back( new Field< FieldType::HostFullTensorIntPt >( h_view_step_np1 ) );
@@ -397,6 +397,8 @@ void ModelData::InitializeBlocks(
   // Initialize gathered containers when using explicit scheme
   if (parser_.TimeIntegrationScheme() == "explicit")
     InitializeGatheredVectors(mesh_);
+
+  InitializeBlockData(data_manager);
 
 }
 
@@ -568,6 +570,161 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
 }
 
 
+void ModelData::ComputeInternalForce(nimble::DataManager &data_manager,
+                                     double time_previous, double time_current,
+                                     bool is_output_step,
+                                     const nimble::Viewify<2> &displacement,
+                                     nimble::Viewify<2> &force)
+{
+  //
+  // This version does not use the Viewify objects displacement and force
+  // It may need to be updated for quasi-static simulations
+  //
+
+  const auto &mesh = data_manager.GetMesh();
+  const auto &field_ids = data_manager.GetFieldIDs();
+
+  auto block_material_interface_factory = data_manager.GetBlockMaterialInterfaceFactory();
+
+  nimble_kokkos::DeviceVectorNodeView internal_force_h = GetHostVectorNodeData(field_ids.internal_force);
+  nimble_kokkos::DeviceVectorNodeView internal_force_d = GetDeviceVectorNodeData(field_ids.internal_force);
+  Kokkos::deep_copy(internal_force_d, (double)(0.0));
+
+  // Sync data
+  Kokkos::deep_copy(displacement_d_, displacement_h_);
+  Kokkos::deep_copy(velocity_d_, velocity_h_);
+
+  // Compute element-level kinematics
+  constexpr int mpi_vector_dim = 3;
+
+  int block_index = 0;
+  for (auto &block_it : blocks_) {
+    //
+    const int block_id = block_it.first;
+    const int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    const int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
+
+    nimble_kokkos::Block& block = block_it.second;
+    nimble::Element* element_d = block.GetDeviceElement();
+
+    auto elem_conn_d = block.GetDeviceElementConnectivityView();
+    auto gathered_reference_coordinate_block_d = gathered_reference_coordinate_d.at(block_index);
+    auto gathered_displacement_block_d = gathered_displacement_d.at(block_index);
+    auto gathered_internal_force_block_d = gathered_internal_force_d.at(block_index);
+
+    GatherVectorNodeData(field_ids.reference_coordinates, num_elem_in_block,
+                         num_nodes_per_elem,
+                         elem_conn_d, gathered_reference_coordinate_block_d);
+
+    GatherVectorNodeData(field_ids.displacement,
+                         num_elem_in_block, num_nodes_per_elem,
+                         elem_conn_d, gathered_displacement_block_d);
+
+    auto deformation_gradient_step_np1_d = GetDeviceFullTensorIntegrationPointData(block_id,
+                                           field_ids.deformation_gradient, nimble::STEP_NP1);
+
+    //
+    // COMPUTE DEFORMATION GRADIENTS
+    //
+    Kokkos::parallel_for("Deformation Gradient", num_elem_in_block, KOKKOS_LAMBDA (const int i_elem) {
+      nimble_kokkos::DeviceVectorNodeGatheredSubView element_reference_coordinate_d = Kokkos::subview(gathered_reference_coordinate_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+      nimble_kokkos::DeviceVectorNodeGatheredSubView element_displacement_d = Kokkos::subview(gathered_displacement_block_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+      nimble_kokkos::DeviceFullTensorIntPtSubView element_deformation_gradient_step_np1_d = Kokkos::subview(deformation_gradient_step_np1_d, i_elem, Kokkos::ALL(), Kokkos::ALL());
+      element_d->ComputeDeformationGradients(element_reference_coordinate_d,
+                                             element_displacement_d,
+                                             element_deformation_gradient_step_np1_d);
+    });
+    block_index += 1;
+  }
+
+  if (block_material_interface_factory) {
+    auto block_material_interface = block_material_interface_factory->create(time_previous, time_current, field_ids, block_data_, this);
+    block_material_interface->ComputeStress();
+  }
+
+  //
+  // Stress divergence
+  //
+  block_index = 0;
+  for (auto &block_it : blocks_) {
+    const int block_id = block_it.first;
+    const int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    const int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
+
+    nimble_kokkos::Block &block = block_it.second;
+    nimble::Element *element_d = block.GetDeviceElement();
+
+    nimble_kokkos::DeviceElementConnectivityView elem_conn_d =
+        block.GetDeviceElementConnectivityView();
+    nimble_kokkos::DeviceVectorNodeGatheredView
+        gathered_reference_coordinate_block_d =
+            gathered_reference_coordinate_d.at(block_index);
+    nimble_kokkos::DeviceVectorNodeGatheredView gathered_displacement_block_d =
+        gathered_displacement_d.at(block_index);
+    nimble_kokkos::DeviceVectorNodeGatheredView
+        gathered_internal_force_block_d =
+            gathered_internal_force_d.at(block_index);
+
+    nimble_kokkos::DeviceSymTensorIntPtView stress_step_np1_d =
+        GetDeviceSymTensorIntegrationPointData(block_id, field_ids.stress,
+                                               nimble::STEP_NP1);
+
+    // COMPUTE NODAL FORCES
+    Kokkos::parallel_for(
+        "Force", num_elem_in_block, KOKKOS_LAMBDA(const int i_elem) {
+          nimble_kokkos::DeviceVectorNodeGatheredSubView
+              element_reference_coordinate_d =
+                  Kokkos::subview(gathered_reference_coordinate_block_d, i_elem,
+                                  Kokkos::ALL, Kokkos::ALL);
+          nimble_kokkos::DeviceVectorNodeGatheredSubView
+              element_displacement_d =
+                  Kokkos::subview(gathered_displacement_block_d, i_elem,
+                                  Kokkos::ALL, Kokkos::ALL);
+          nimble_kokkos::DeviceSymTensorIntPtSubView element_stress_step_np1_d =
+              Kokkos::subview(stress_step_np1_d, i_elem, Kokkos::ALL,
+                              Kokkos::ALL);
+          nimble_kokkos::DeviceVectorNodeGatheredSubView
+              element_internal_force_d =
+                  Kokkos::subview(gathered_internal_force_block_d, i_elem,
+                                  Kokkos::ALL, Kokkos::ALL);
+          element_d->ComputeNodalForces(
+              element_reference_coordinate_d, element_displacement_d,
+              element_stress_step_np1_d, element_internal_force_d);
+        });
+
+    ScatterVectorNodeData(field_ids.internal_force, num_elem_in_block,
+                          num_nodes_per_elem, elem_conn_d,
+                          gathered_internal_force_block_d);
+
+    block_index += 1;
+  } // loop over blocks
+
+  Kokkos::deep_copy(internal_force_h, internal_force_d);
+
+  auto myVectorCommunicator = data_manager.GetVectorCommunicator();
+  myVectorCommunicator->VectorReduction(mpi_vector_dim, internal_force_h);
+
+}
+
+
+void ModelData::InitializeBlockData(nimble::DataManager &data_manager)
+{
+  //
+  // Build up block data for stress computation
+  //
+  const auto& mesh = data_manager.GetMesh();
+  for (auto &&block_it : blocks_)
+  {
+    int block_id = block_it.first;
+    nimble_kokkos::Block &block = block_it.second;
+    nimble::Material *material_d = block.GetDeviceMaterialModel();
+    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    int num_integration_points_per_element = block.GetHostElement()->NumIntegrationPointsPerElement();
+    block_data_.emplace_back(&block, material_d, block_id, num_elem_in_block, num_integration_points_per_element);
+  }
+}
+
+
 void ModelData::InitializeExodusOutput(nimble::DataManager &data_manager)
 {
   const auto& mesh_ = data_manager.GetMesh();
@@ -590,8 +747,8 @@ void ModelData::InitializeExodusOutput(nimble::DataManager &data_manager)
   displacement_h_ = GetHostVectorNodeData(field_ids.displacement);
   displacement_d_ = GetDeviceVectorNodeData(field_ids.displacement);
 
-  displacement_h_ = GetHostVectorNodeData(field_ids.displacement);
-  displacement_d_ = GetDeviceVectorNodeData(field_ids.displacement);
+  velocity_h_ = GetHostVectorNodeData(field_ids.velocity);
+  velocity_d_ = GetDeviceVectorNodeData(field_ids.velocity);
 
 }
 
@@ -709,14 +866,14 @@ std::vector<std::string> ModelData::GetFullTensorIntegrationPointDataLabels(int 
 HostScalarNodeView ModelData::GetHostScalarNodeData(int field_id) {
   int index = field_id_to_host_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = host_node_data_.at(index).get();
-  Field< FieldType::HostScalarNode >* derived_field_ptr = static_cast< Field< FieldType::HostScalarNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostScalarNode >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
 HostVectorNodeView ModelData::GetHostVectorNodeData(int field_id) {
   int index = field_id_to_host_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = host_node_data_.at(index).get();
-  Field< FieldType::HostVectorNode >* derived_field_ptr = dynamic_cast< Field< FieldType::HostVectorNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostVectorNode >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -724,9 +881,9 @@ HostScalarElemView ModelData::GetHostScalarElementData(int block_id,
                                                        int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_host_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = host_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::HostScalarElem >* derived_field_ptr = dynamic_cast< Field< FieldType::HostScalarElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostScalarElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -735,14 +892,14 @@ HostSymTensorIntPtView ModelData::GetHostSymTensorIntegrationPointData(int block
                                                                        nimble::Step step) {
   int block_index = block_id_to_integration_point_data_index_.at(block_id);
   int data_index = field_id_to_host_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   if (step == nimble::STEP_N) {
     base_field_ptr = host_integration_point_data_step_n_.at(block_index).at(data_index).get();
   }
   else if (step == nimble::STEP_NP1) {
     base_field_ptr = host_integration_point_data_step_np1_.at(block_index).at(data_index).get();
   }
-  Field< FieldType::HostSymTensorIntPt >* derived_field_ptr = dynamic_cast< Field< FieldType::HostSymTensorIntPt >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostSymTensorIntPt >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -751,14 +908,14 @@ HostFullTensorIntPtView ModelData::GetHostFullTensorIntegrationPointData(int blo
                                                                          nimble::Step step) {
   int block_index = block_id_to_integration_point_data_index_.at(block_id);
   int data_index = field_id_to_host_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   if (step == nimble::STEP_N) {
     base_field_ptr = host_integration_point_data_step_n_.at(block_index).at(data_index).get();
   }
   else if (step == nimble::STEP_NP1) {
     base_field_ptr = host_integration_point_data_step_np1_.at(block_index).at(data_index).get();
   }
-  Field< FieldType::HostFullTensorIntPt >* derived_field_ptr = static_cast< Field< FieldType::HostFullTensorIntPt >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostFullTensorIntPt >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -766,9 +923,9 @@ HostSymTensorElemView ModelData::GetHostSymTensorElementData(int block_id,
                                                              int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_host_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = host_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::HostSymTensorElem >* derived_field_ptr = static_cast< Field< FieldType::HostSymTensorElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostSymTensorElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -776,23 +933,23 @@ HostFullTensorElemView ModelData::GetHostFullTensorElementData(int block_id,
                                                                int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_host_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = host_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::HostFullTensorElem >* derived_field_ptr = static_cast< Field< FieldType::HostFullTensorElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::HostFullTensorElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
 DeviceScalarNodeView ModelData::GetDeviceScalarNodeData(int field_id) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
 DeviceVectorNodeView ModelData::GetDeviceVectorNodeData(int field_id) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceVectorNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -801,14 +958,14 @@ DeviceSymTensorIntPtView ModelData::GetDeviceSymTensorIntegrationPointData(int b
                                                                            nimble::Step step) {
   int block_index = block_id_to_integration_point_data_index_.at(block_id);
   int data_index = field_id_to_device_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   if (step == nimble::STEP_N) {
     base_field_ptr = device_integration_point_data_step_n_.at(block_index).at(data_index).get();
   }
   else if (step == nimble::STEP_NP1) {
     base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
   }
-  Field< FieldType::DeviceSymTensorIntPt >* derived_field_ptr = static_cast< Field< FieldType::DeviceSymTensorIntPt >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceSymTensorIntPt >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -817,14 +974,14 @@ DeviceFullTensorIntPtView ModelData::GetDeviceFullTensorIntegrationPointData(int
                                                                              nimble::Step step) {
   int block_index = block_id_to_integration_point_data_index_.at(block_id);
   int data_index = field_id_to_device_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   if (step == nimble::STEP_N) {
     base_field_ptr = device_integration_point_data_step_n_.at(block_index).at(data_index).get();
   }
   else if (step == nimble::STEP_NP1) {
     base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
   }
-  Field< FieldType::DeviceFullTensorIntPt >* derived_field_ptr = static_cast< Field< FieldType::DeviceFullTensorIntPt >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceFullTensorIntPt >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -832,9 +989,9 @@ DeviceScalarElemView ModelData::GetDeviceScalarElementData(int block_id,
                                                            int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = device_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::DeviceScalarElem >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceScalarElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -842,9 +999,9 @@ DeviceSymTensorElemView ModelData::GetDeviceSymTensorElementData(int block_id,
                                                                  int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = device_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::DeviceSymTensorElem >* derived_field_ptr = static_cast< Field< FieldType::DeviceSymTensorElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceSymTensorElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
@@ -852,20 +1009,20 @@ DeviceFullTensorElemView ModelData::GetDeviceFullTensorElementData(int block_id,
                                                                    int field_id) {
   int block_index = block_id_to_element_data_index_.at(block_id);
   int data_index = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr(0);
+  FieldBase* base_field_ptr = nullptr;
   base_field_ptr = device_element_data_.at(block_index).at(data_index).get();
-  Field< FieldType::DeviceFullTensorElem >* derived_field_ptr = static_cast< Field< FieldType::DeviceFullTensorElem >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceFullTensorElem >* >(base_field_ptr);
   return derived_field_ptr->data();
 }
 
 DeviceScalarNodeGatheredView ModelData::GatherScalarNodeData(int field_id,
                                                              int num_elements,
                                                              int num_nodes_per_element,
-                                                             DeviceElementConnectivityView elem_conn_d,
+                                                             const DeviceElementConnectivityView& elem_conn_d,
                                                              DeviceScalarNodeGatheredView gathered_view_d) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
   auto data = derived_field_ptr->data();
   Kokkos::parallel_for("GatherScalarNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
     for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
@@ -878,7 +1035,7 @@ DeviceScalarNodeGatheredView ModelData::GatherScalarNodeData(int field_id,
 DeviceVectorNodeGatheredView ModelData::GatherVectorNodeData(int field_id,
                                                              int num_elements,
                                                              int num_nodes_per_element,
-                                                             DeviceElementConnectivityView elem_conn_d,
+                                                             const DeviceElementConnectivityView& elem_conn_d,
                                                              DeviceVectorNodeGatheredView gathered_view_d) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase *base_field_ptr = device_node_data_.at(index).get();
@@ -899,11 +1056,11 @@ DeviceVectorNodeGatheredView ModelData::GatherVectorNodeData(int field_id,
 void ModelData::ScatterScalarNodeData(int field_id,
                                       int num_elements,
                                       int num_nodes_per_element,
-                                      DeviceElementConnectivityView elem_conn_d,
-                                      DeviceScalarNodeGatheredView gathered_view_d) {
+                                      const DeviceElementConnectivityView& elem_conn_d,
+                                      const DeviceScalarNodeGatheredView& gathered_view_d) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
   Field< FieldType::DeviceScalarNode >::AtomicView data = derived_field_ptr->data();
   Kokkos::parallel_for("ScatterScalarNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
     for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
@@ -915,11 +1072,11 @@ void ModelData::ScatterScalarNodeData(int field_id,
 void ModelData::ScatterVectorNodeData(int field_id,
                                       int num_elements,
                                       int num_nodes_per_element,
-                                      DeviceElementConnectivityView elem_conn_d,
-                                      DeviceVectorNodeGatheredView gathered_view_d) {
+                                      const DeviceElementConnectivityView& elem_conn_d,
+                                      const DeviceVectorNodeGatheredView& gathered_view_d) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceVectorNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceVectorNode >* >(base_field_ptr);
   Field< FieldType::DeviceVectorNode >::AtomicView data = derived_field_ptr->data();
   Kokkos::parallel_for("ScatterVectorNodeData", num_elements, KOKKOS_LAMBDA (const int i_elem) {
     for (int i_node=0 ; i_node < num_nodes_per_element ; i_node++) {
@@ -935,11 +1092,11 @@ void ModelData::ScatterVectorNodeData(int field_id,
 void ModelData::ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                             int num_elements,
                                                             int num_nodes_per_element,
-                                                            DeviceElementConnectivityView elem_conn_d,
-                                                            DeviceScalarNodeGatheredView gathered_view_d) {
+                                                            const DeviceElementConnectivityView& elem_conn_d,
+                                                            const DeviceScalarNodeGatheredView& gathered_view_d) {
   int index = field_id_to_device_node_data_index_.at(field_id);
   FieldBase* base_field_ptr = device_node_data_.at(index).get();
-  Field< FieldType::DeviceScalarNode >* derived_field_ptr = static_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
+  auto derived_field_ptr = dynamic_cast< Field< FieldType::DeviceScalarNode >* >(base_field_ptr);
   auto data = derived_field_ptr->data();
   auto scatter_view = Kokkos::Experimental::create_scatter_view(data); // DJL it is a terrible idea to allocate this here
   scatter_view.reset();

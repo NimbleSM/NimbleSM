@@ -47,11 +47,14 @@
 #include <memory>
 #include <vector>
 
-#include "nimble_model_data_base.h"
 #include "nimble_block_material_interface_base.h"
 
-
 namespace nimble {
+
+class BlockMaterialInterfaceBase;
+class ModelDataBase;
+
+struct FieldIds;
 
 class BlockMaterialInterfaceFactoryBase {
 public:
@@ -67,6 +70,5 @@ public:
 };
 
 }
-
 
 #endif // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_FACTORY_BASE_H

@@ -48,6 +48,7 @@
 #include "nimble_kokkos_material_factory.h"
 #endif
 
+#include "nimble_block_material_interface_factory_base.h"
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_model_data_base.h"
@@ -122,19 +123,20 @@ void DataManager::Initialize()
   field_ids_.displacement = macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
   field_ids_.velocity = macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
   field_ids_.acceleration = macroscale_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
+
   field_ids_.internal_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+  field_ids_.external_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
 
   field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
 
-  if (!parser_.UseKokkos()) {
+  if (parser_.TimeIntegrationScheme() == "quasistatic") {
     //
-    // These variables are not used in the Kokkos-based simulations
+    // These variables are used in the "quasi-static" simulations
     //
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
-    field_ids_.external_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
   }
 
   macroscale_data_->SetReferenceCoordinates(mesh_);
@@ -156,6 +158,15 @@ void DataManager::Initialize()
     uq_model_->Initialize(mesh_, this);
   }
 #endif
+
+  //
+  // Initialization of RVE data
+  //
+  rve_macroscale_deformation_gradient_.resize(dim*dim, 0.0);
+  if (parser_.TimeIntegrationScheme() == "explicit") {
+    for (int i=0 ; i<dim ; i++)
+      rve_macroscale_deformation_gradient_[i] = 1.0;
+  }
 
 }
 
@@ -203,6 +214,21 @@ void DataManager::InitializeExodusOutput(const std::string &filename)
 void DataManager::WriteExodusOutput(double time_current)
 {
   macroscale_data_->WriteExodusOutput(*this, time_current);
+}
+
+
+void DataManager::SetBlockMaterialInterfaceFactory(
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase > &block_material_factory
+)
+{
+  block_material_factory_ = block_material_factory;
+}
+
+
+std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase >
+DataManager::GetBlockMaterialInterfaceFactory()
+{
+  return block_material_factory_;
 }
 
 

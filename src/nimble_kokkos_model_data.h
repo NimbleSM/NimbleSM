@@ -50,11 +50,11 @@
 #include <vector>
 #include <memory>
 
+#include "nimble_block_material_interface_base.h"
 #include "nimble_defs.h"
 #include "nimble_exodus_output_manager.h"
 #include "nimble_data_utils.h"
 #include "nimble_model_data_base.h"
-
 
 namespace nimble {
 
@@ -124,6 +124,21 @@ public:
   void WriteExodusOutput(nimble::DataManager &data_manager,
                          double time_current) override;
 
+  /// \brief Compute the internal force
+  ///
+  /// \param[in] data_manager
+  /// \param[in] time_previous
+  /// \param[in] time_current
+  /// \param[in] is_output_step
+  /// \param[in] displacement
+  /// \param[out] internal_force  Output for internal force
+  void ComputeInternalForce(nimble::DataManager &data_manager,
+                            double time_previous,
+                            double time_current,
+                            bool is_output_step,
+                            const nimble::Viewify<2> &displacement,
+                            nimble::Viewify<2> &force) override;
+
   //--- Specific routines
 
   int AllocateElementData(int block_id,
@@ -192,33 +207,33 @@ public:
   DeviceScalarNodeGatheredView GatherScalarNodeData(int field_id,
                                                     int num_elements,
                                                     int num_nodes_per_element,
-                                                    DeviceElementConnectivityView elem_conn_d,
+                                                    const DeviceElementConnectivityView& elem_conn_d,
                                                     DeviceScalarNodeGatheredView gathered_view_d);
 
   DeviceVectorNodeGatheredView GatherVectorNodeData(int field_id,
                                                     int num_elements,
                                                     int num_nodes_per_element,
-                                                    DeviceElementConnectivityView elem_conn_d,
+                                                    const DeviceElementConnectivityView& elem_conn_d,
                                                     DeviceVectorNodeGatheredView gathered_view_d);
 
   void ScatterScalarNodeData(int field_id,
                              int num_elements,
                              int num_nodes_per_element,
-                             DeviceElementConnectivityView elem_conn_d,
-                             DeviceScalarNodeGatheredView gathered_view_d);
+                             const DeviceElementConnectivityView& elem_conn_d,
+                             const DeviceScalarNodeGatheredView& gathered_view_d);
 
   void ScatterVectorNodeData(int field_id,
                              int num_elements,
                              int num_nodes_per_element,
-                             DeviceElementConnectivityView elem_conn_d,
-                             DeviceVectorNodeGatheredView gathered_view_d);
+                             const DeviceElementConnectivityView& elem_conn_d,
+                             const DeviceVectorNodeGatheredView& gathered_view_d);
 
 #ifndef KOKKOS_ENABLE_QTHREADS
   void ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
                                                    int num_elements,
                                                    int num_nodes_per_element,
-                                                   DeviceElementConnectivityView elem_conn_d,
-                                                   DeviceScalarNodeGatheredView gathered_view_d);
+                                                   const DeviceElementConnectivityView& elem_conn_d,
+                                                   const DeviceScalarNodeGatheredView& gathered_view_d);
 #endif
 
   std::map<int, nimble_kokkos::Block>& GetBlocks() { return blocks_; }
@@ -243,6 +258,11 @@ public:
 protected:
 
   void InitializeGatheredVectors(const nimble::GenesisMesh &mesh_);
+
+  /// \brief Initialize block data for material information
+  ///
+  /// \param data_manager
+  void InitializeBlockData(nimble::DataManager &data_manager);
 
 protected:
 
@@ -286,6 +306,9 @@ protected:
 
   nimble_kokkos::HostVectorNodeView velocity_h_;
   nimble_kokkos::DeviceVectorNodeView velocity_d_;
+
+  //--- Block data for materials
+  std::vector< nimble::BlockData > block_data_;
 
 };
 
