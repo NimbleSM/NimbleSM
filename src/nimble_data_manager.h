@@ -47,6 +47,7 @@
 #include "nimble_defs.h"
 
 #include "nimble_block.h"
+#include "nimble_block_material_interface_factory_base.h"
 #include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
 #include "nimble_linear_solver.h"
@@ -189,12 +190,28 @@ public:
   { return uq_model_; }
 #endif
 
-  ////////// Temporary
+  /// \brief Return reference to RVE-macroscale deformation gradient
+  ///
+  /// \return Reference
+  std::vector<double>& GetRVEDeformationGradient()
+  { return rve_macroscale_deformation_gradient_; }
+
   void WriteExodusOutput(double time_current);
 
   std::shared_ptr< nimble::ExodusOutput > GetExodusOutput()
   { return exodus_output_; }
-  /////////////////////
+
+  /// \brief Set BlockMaterialInterfaceFactoryBase object and initialize
+  ///        block data information.
+  ///
+  void SetBlockMaterialInterfaceFactory(
+      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase > &block_material_factory
+  );
+
+  /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
+  ///
+  /// \return Shared pointer
+  std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > GetBlockMaterialInterfaceFactory();
 
 protected:
 
@@ -207,7 +224,9 @@ protected:
   const nimble::GenesisMesh &mesh_;
   const nimble::GenesisMesh &rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
+
   std::map<std::pair<int,int>, RVEData> rve_data_;
+  std::vector<double> rve_macroscale_deformation_gradient_;
 
 #ifdef NIMBLE_HAVE_UQ
   std::shared_ptr< nimble::UqModel > uq_model_;
@@ -217,6 +236,8 @@ protected:
 
   std::shared_ptr< nimble::VectorCommunicator > vector_communicator_;
   std::shared_ptr< nimble::ExodusOutput > exodus_output_;
+
+  std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > block_material_factory_;
 
  };
 

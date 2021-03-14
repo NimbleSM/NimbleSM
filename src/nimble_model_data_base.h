@@ -140,6 +140,34 @@ public:
                                  double time_current)
   {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
 
+  /// \brief Compute the external force
+  ///
+  /// \param data_manager Reference to the DataManager object
+  /// \param time_previous
+  /// \param time_current
+  /// \param is_output_step
+  ///
+  /// \note This routine is a placeholder.
+  virtual void ComputeExternalForce(nimble::DataManager &data_manager,
+                                    double time_previous,
+                                    double time_current,
+                                    bool is_output_step) {};
+
+  /// \brief Compute the internal force
+  ///
+  /// \param[in] data_manager
+  /// \param[in] time_previous
+  /// \param[in] time_current
+  /// \param[in] is_output_step
+  /// \param[in] displacement
+  /// \param[out] internal_force  Output for internal force
+  virtual void ComputeInternalForce(nimble::DataManager &data_manager,
+                                    double time_previous,
+                                    double time_current,
+                                    bool is_output_step,
+                                    const nimble::Viewify<2> &displacement,
+                                    nimble::Viewify<2> &force) {};
+
   //--- Common interface routines
 
   /// \brief Get the spatial dimension
@@ -183,6 +211,12 @@ public:
     return derived_output_element_data_labels_;
   }
 
+  /// \brief Set the use of displacement fluctuations instead of displacement.
+  ///
+  void SetUseDisplacementFluctuations() {
+    use_displacement_fluctuations_ = true;
+  }
+
 protected:
 
   //! Problem dimension, either 2 or 3.
@@ -202,6 +236,9 @@ protected:
 
   //! Output labels for derived element data that will be written to disk.
   std::map<int, std::vector<std::string> > derived_output_element_data_labels_;
+
+  //! Flag to use displacement fluctuations
+  bool use_displacement_fluctuations_ = false;
 
 };
 

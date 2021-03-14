@@ -125,6 +125,32 @@ public:
   void WriteExodusOutput(nimble::DataManager &data_manager,
                          double time_current) override;
 
+  /// \brief Compute the external force
+  ///
+  /// \param data_manager Reference to the DataManager
+  /// \param time_previous
+  /// \param time_current
+  /// \param is_output_step
+  void ComputeExternalForce(nimble::DataManager &data_manager,
+                            double time_previous,
+                            double time_current,
+                            bool is_output_step) override;
+
+  /// \brief Compute the internal force
+  ///
+  /// \param[in] data_manager
+  /// \param[in] time_previous
+  /// \param[in] time_current
+  /// \param[in] is_output_step
+  /// \param[in] displacement
+  /// \param[out] internal_force  Output for internal force
+  void ComputeInternalForce(nimble::DataManager &data_manager,
+                            double time_previous,
+                            double time_current,
+                            bool is_output_step,
+                            const nimble::Viewify<2> &displacement,
+                            nimble::Viewify<2> &force) override;
+
   //--- Specific routines
 
 #ifdef NIMBLE_HAVE_DARMA
@@ -173,6 +199,8 @@ protected:
                             int component,
                             double* const component_data);
 
+  double* GetNodeData(const std::string& label);
+
 protected:
 
   //! Block ids
@@ -210,12 +238,6 @@ protected:
 
   //! Information for Exodus output about element data
   std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
-
-  //! Pointer for reference coordinates into the Exodus output
-  double *output_reference_coor_ = nullptr;
-
-  //! Pointer for displacements into the Exodus output
-  double *output_displacement_ = nullptr;
 
 };
 

@@ -102,8 +102,7 @@ int ExplicitTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
+    std::shared_ptr<nimble::ContactInterface> contact_interface
 );
 
 int QuasistaticTimeIntegrator(
@@ -118,12 +117,9 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   nimble::BoundaryConditionManager & bc,
                                   int linear_system_num_unknowns,
                                   std::vector<int> & linear_system_global_node_ids,
-                                  double time_previous,
-                                  double time_current,
-                                  double const * reference_coordinate,
-                                  double const * velocity,
-                                  double const * trial_displacement,
-                                  double* internal_force,
+                                  double time_previous, double time_current,
+                                  const nimble::Viewify<2> &displacement,
+                                  nimble::Viewify<2> &internal_force,
                                   double* residual_vector,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step);
@@ -282,6 +278,7 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
 
   nimble::DataManager data_manager(parser, mesh, rve_mesh);
+  data_manager.SetBlockMaterialInterfaceFactory(block_material);
 
   auto macroscale_data = data_manager.GetMacroScaleData();
   macroscale_data->InitializeBlocks(data_manager, material_factory_base);
@@ -305,7 +302,7 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   int status = 0;
   if (time_integration_scheme == "explicit") {
     status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
-                                             contact_interface, block_material);
+                                             contact_interface);
   }
   else if (time_integration_scheme == "quasistatic") {
     status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager,
@@ -348,8 +345,7 @@ int ExplicitTimeIntegrator(
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
     nimble::BoundaryConditionManager &bc,
-    std::shared_ptr<nimble::ContactInterface> contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material
+    std::shared_ptr<nimble::ContactInterface> contact_interface
 )
 {
 
@@ -358,6 +354,7 @@ int ExplicitTimeIntegrator(
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
   const int my_rank = parser.GetRankID();
   const int num_ranks = parser.GetNumRanks();
+  const long num_unknowns = num_nodes * mesh.GetDim();
 
 #ifdef NIMBLE_HAVE_BVH
   nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
@@ -423,13 +420,18 @@ int ExplicitTimeIntegrator(
 
   int status = 0;
 
-  // Set up the global vectors
-  unsigned int num_unknowns = num_nodes * mesh.GetDim();
-
+  //
+  // Extract view for global field vectors
+  //
   auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
   auto displacement = model_data.GetVectorNodeData("displacement");
   auto velocity = model_data.GetVectorNodeData("velocity");
   auto acceleration = model_data.GetVectorNodeData("acceleration");
+
+  //
+  // "View" objects for storing the internal and external forces
+  // These forces will be filled and updated inside ModelData member routines.
+  //
   auto internal_force = model_data.GetVectorNodeData("internal_force");
   auto external_force = model_data.GetVectorNodeData("external_force");
 
@@ -450,8 +452,6 @@ int ExplicitTimeIntegrator(
     }
   }
 #endif
-
-  std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
 
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
@@ -511,9 +511,8 @@ int ExplicitTimeIntegrator(
   nimble::TimeKeeper total_step_time;
   nimble::TimeKeeper total_contact_time;
   nimble::TimeKeeper total_dynamics_time;
+  double total_exodus_write_time = 0.0, total_vector_reduction_time = 0.0;
 
-  double total_exodus_write_time = 0.0,
-      total_vector_reduction_time = 0.0;
   for (int step=0 ; step<num_load_steps ; step++) {
     total_step_time.Start();
 
@@ -558,9 +557,6 @@ int ExplicitTimeIntegrator(
 #endif
     );
 
-    // Evaluate external body forces
-    external_force.zero();
-
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
     for (int i=0 ; i < num_nodes; ++i) {
       displacement(i, 0) += delta_time * velocity(i, 0);
@@ -570,70 +566,21 @@ int ExplicitTimeIntegrator(
 
 #ifdef NIMBLE_HAVE_UQ
     // advance approximate trajectories
-   uq_model.UpdateDisplacement(delta_time);
-   uq_model.Prep();
+    uq_model.UpdateDisplacement(delta_time);
+    uq_model.Prep();
 #endif
 
+    //
+    // Evaluate external body forces
+    //
+    model_data.ComputeExternalForce(data_manager, time_previous, time_current,
+                                    is_output_step);
+
+    //
     // Evaluate the internal force
-    internal_force.zero();
-
-    for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-      int block_id = block_it->first;
-      int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-      int const * elem_conn = mesh.GetConnectivity(block_id);
-      std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
-      nimble::Block& block = block_it->second;
-      std::vector<double> const & elem_data_n = model_data.GetElementDataOld(block_id);
-      std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
-#ifdef NIMBLE_HAVE_UQ
-      if(uq_model.Initialized()) {
-         int num_exact_samples = uq_model.GetNumExactSamples();
-         for(int ntraj=0; ntraj <= num_exact_samples; ntraj++){
-           //0th traj is the nominal, subsequent ones are off_nominal sample trajectories
-           bool is_off_nominal = (ntraj > 0);
-           double * disp_ptr = (is_off_nominal) ? uq_model.Displacements()[ntraj-1]  : displacement.data();
-           double * vel_ptr =  (is_off_nominal) ? uq_model.Velocities()[ntraj-1] : velocity.data();
-           double * internal_force_ptr = (is_off_nominal) ? uq_model.Forces()[ntraj-1] : internal_force.data();
-           std::vector<double> const & params_this_sample = uq_model.GetParameters(ntraj-1);
-           block.ComputeInternalForce(reference_coordinate,
-                                      disp_ptr,
-                                      vel_ptr,
-                                      rve_macroscale_deformation_gradient.data(),
-                                      internal_force_ptr,
-                                      time_previous,
-                                      time_current,
-                                      num_elem_in_block,
-                                      elem_conn,
-                                      elem_global_ids.data(),
-                                      elem_data_labels.at(block_id),
-                                      elem_data_n,
-                                      elem_data_np1,
-                                      data_manager,
-                                      is_output_step,
-                                      is_off_nominal,
-                                      params_this_sample
-                                     );
-         }
-      }
-#else
-      block.ComputeInternalForce(reference_coordinate.data(),
-                                 displacement.data(),
-                                 velocity.data(),
-                                 rve_macroscale_deformation_gradient.data(),
-                                 internal_force.data(),
-                                 time_previous,
-                                 time_current,
-                                 num_elem_in_block,
-                                 elem_conn,
-                                 elem_global_ids.data(),
-                                 elem_data_labels.at(block_id),
-                                 elem_data_n,
-                                 elem_data_np1,
-                                 data_manager,
-                                 is_output_step
-      );
-#endif
-    }
+    //
+    model_data.ComputeInternalForce(data_manager, time_previous, time_current,
+                                    is_output_step, displacement, internal_force);
 
     total_dynamics_time.Stop();
 
@@ -653,29 +600,6 @@ int ExplicitTimeIntegrator(
     }
 
     total_dynamics_time.Start();
-
-    {
-      nimble::quanta::stopwatch vector_reduction_timer;
-      vector_reduction_timer.reset();
-      // DJL
-      // Perform a vector reduction on internal force.  This is a vector nodal
-      // quantity.
-      const int vector_dimension = 3;
-      myVectorCommunicator->VectorReduction(vector_dimension, internal_force.data());
-      total_vector_reduction_time += vector_reduction_timer.age();
-#ifdef NIMBLE_HAVE_UQ
-      if (uq_model.Initialized()) {
-        for (int ntraj = 0; ntraj < uq_model.GetNumExactSamples(); ntraj++) {
-          double *internal_force_ptr = uq_model.Forces()[ntraj];
-          myVectorCommunicator->VectorReduction(vector_dimension, internal_force_ptr);
-        }
-        // Now apply closure to estimate approximate sample forces from the
-        // exact samples
-        uq_model.ApplyClosure(
-            internal_force); // Only pass the nominal sample internal force
-      }
-#endif
-    }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
     if (contact_enabled) {
@@ -865,32 +789,28 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
   nimble::ModelData &model_data = details::to_ModelData(data_manager.GetMacroScaleData());
 
-  int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
-  int displacement_field_id = model_data.GetFieldId("displacement");
-  int trial_displacement_field_id = model_data.GetFieldId("trial_displacement");
-  int displacement_fluctuation_field_id = model_data.GetFieldId("displacement_fluctuation");
-  int velocity_field_id =  model_data.GetFieldId("velocity");
-  int internal_force_field_id =  model_data.GetFieldId("internal_force");
-  int trial_internal_force_field_id =  model_data.GetFieldId("trial_internal_force");
-  int external_force_field_id =  model_data.GetFieldId("external_force");
-
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();
-  double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
-  double* physical_displacement = model_data.GetNodeData(displacement_field_id);
-  double* trial_displacement = model_data.GetNodeData(trial_displacement_field_id);
-  double* displacement_fluctuation = model_data.GetNodeData(displacement_fluctuation_field_id);
-  double* velocity = model_data.GetNodeData(velocity_field_id);
-  double* internal_force = model_data.GetNodeData(internal_force_field_id);
-  double* trial_internal_force = model_data.GetNodeData(trial_internal_force_field_id);
-  double* external_force = model_data.GetNodeData(external_force_field_id);
+
+  auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
+  auto physical_displacement = model_data.GetVectorNodeData("displacement");
+  auto displacement_fluctuation = model_data.GetVectorNodeData("displacement_fluctuation");
+  auto trial_displacement = model_data.GetVectorNodeData("trial_displacement");
+
+  auto velocity = model_data.GetVectorNodeData("velocity");
+
+  auto internal_force = model_data.GetVectorNodeData("internal_force");
+  auto trial_internal_force = model_data.GetVectorNodeData("trial_internal_force");
 
   std::vector<double> residual_vector(linear_system_num_unknowns, 0.0);
   std::vector<double> trial_residual_vector(linear_system_num_unknowns, 0.0);
   std::vector<double> linear_solver_solution(linear_system_num_unknowns, 0.0);
-  double* displacement = physical_displacement;
+
+  nimble::Viewify<2> displacement = physical_displacement;
   if (bc.IsPeriodicRVEProblem()) {
+    std::cout << " periodic RVE problem ... displacement is set to displacement_fluctuation \n";
     displacement = displacement_fluctuation;
+    model_data.SetUseDisplacementFluctuations();
   }
 
   nimble::CRSMatrixContainer tangent_stiffness;
@@ -909,10 +829,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 //  }
 #endif
 
-  std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
-  std::map<int, std::vector<std::string> > const & elem_data_labels_for_output = model_data.GetElementDataLabelsForOutput();
-  std::map<int, std::vector<std::string> > const & derived_elem_data_labels = model_data.GetDerivedElementDataLabelsForOutput();
-
   double time_current(0.0), time_previous(0.0), delta_time(0.0);
   double final_time = parser.FinalTime();
   int num_load_steps = parser.NumLoadSteps();
@@ -920,17 +836,16 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
 #ifdef NIMBLE_HAVE_UQ
   if (parser.HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
-  std::vector<details::Viewify> bc_offnom_velocity_views(0);
+  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views(0);
 #endif
 
-  bc.ApplyKinematicBC(0.0, 0.0, details::Viewify(reference_coordinate,3),
-                      details::Viewify(displacement,3), details::Viewify(velocity,3)
+  bc.ApplyKinematicBC(0.0, 0.0, reference_coordinate,
+                      displacement, velocity
 #ifdef NIMBLE_HAVE_UQ
       , bc_offnom_velocity_views
 #endif
   );
 
-  std::vector<double> rve_macroscale_deformation_gradient(dim*dim, 0.0);
   std::vector<double> identity(dim*dim, 0.0);
   for (int i=0 ; i<dim ; i++) {
     identity[i] = 1.0;
@@ -941,40 +856,14 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   }
 
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
-  auto exodus_output = *( data_manager.GetExodusOutput() );
 
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data;
-  for (auto& block_it : blocks) {
-    int block_id = block_it.first;
-    nimble::Block& block = block_it.second;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int const * elem_conn = mesh.GetConnectivity(block_id);
-    std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-    derived_elem_data[block_id] = std::vector< std::vector<double> >();
-    block.ComputeDerivedElementData(reference_coordinate,
-                                    displacement,
-                                    num_elem_in_block,
-                                    elem_conn,
-                                    elem_data_labels.at(block_id).size(),
-                                    elem_data_np1,
-                                    derived_elem_data_labels.at(block_id).size(),
-                                    derived_elem_data.at(block_id));
-  }
-  std::vector< std::vector<double> > node_data_for_output;
-  model_data.GetNodeDataForOutput(node_data_for_output);
-  std::map<int, std::vector< std::vector<double> > > elem_data_for_output;
-  model_data.GetElementDataForOutput(elem_data_for_output);
-  exodus_output.WriteStep(time_current,
-                          global_data,
-                          node_data_for_output,
-                          elem_data_labels_for_output,
-                          elem_data_for_output,
-                          derived_elem_data_labels,
-                          derived_elem_data);
+  model_data.WriteExodusOutput(data_manager, time_current);
 
   if (my_rank == 0) {
     std::cout << "Beginning quasistatic time integration:" << std::endl;
   }
+
+  auto &rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
 
   for (int step=0 ; step<num_load_steps ; step++) {
 
@@ -989,8 +878,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       }
     }
 
-    bc.ApplyKinematicBC(time_current, time_previous, details::Viewify(reference_coordinate,3),
-                        details::Viewify(displacement,3), details::Viewify(velocity,3)
+    bc.ApplyKinematicBC(time_current, time_previous,
+                        reference_coordinate, displacement, velocity
 #ifdef NIMBLE_HAVE_UQ
         , bc_offnom_velocity_views
 #endif
@@ -1007,8 +896,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                                  linear_system_global_node_ids,
                                                  time_previous,
                                                  time_current,
-                                                 reference_coordinate,
-                                                 velocity,
                                                  displacement,
                                                  internal_force,
                                                  residual_vector.data(),
@@ -1036,8 +923,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
         int const * elem_conn = mesh.GetConnectivity(block_id);
         nimble::Block& block = block_it.second;
         block.ComputeTangentStiffnessMatrix(linear_system_num_unknowns,
-                                            reference_coordinate,
-                                            displacement,
+                                            reference_coordinate.data(),
+                                            displacement.data(),
                                             num_elem_in_block,
                                             elem_conn,
                                             linear_system_global_node_ids.data(),
@@ -1075,12 +962,12 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
         std::vector<int> const & node_ids = map_from_linear_system[n];
         for (auto const & node_id : node_ids) {
           for (int dof=0 ; dof<dim ; dof++) {
-            int local_index = node_id * dim + dof;
             int ls_index = n * dim + dof;
             if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
               throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
             }
-            trial_displacement[local_index] = displacement[local_index] - linear_solver_solution[ls_index];
+            trial_displacement(node_id, dof) = displacement(node_id, dof)
+                                               - linear_solver_solution[ls_index];
           }
         }
       }
@@ -1091,8 +978,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                                          linear_system_global_node_ids,
                                                          time_previous,
                                                          time_current,
-                                                         reference_coordinate,
-                                                         velocity,
                                                          trial_displacement,
                                                          trial_internal_force,
                                                          trial_residual_vector.data(),
@@ -1102,7 +987,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       //
       // secant line search
       //
-
       double sr = nimble::InnerProduct(linear_solver_solution, residual_vector);
       double s_trial_r = nimble::InnerProduct(linear_solver_solution, trial_residual_vector);
       double alpha = -1.0 * sr / (s_trial_r - sr);
@@ -1112,12 +996,11 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
         std::vector<int> const & node_ids = map_from_linear_system[n];
         for (auto const & node_id : node_ids) {
           for (int dof=0 ; dof<dim ; dof++) {
-            int local_index = node_id * dim + dof;
             int ls_index = n * dim + dof;
             if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
               throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
             }
-            displacement[local_index] -= alpha*linear_solver_solution[ls_index];
+            displacement(node_id, dof) -= alpha*linear_solver_solution[ls_index];
           }
         }
       }
@@ -1128,8 +1011,6 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                                             linear_system_global_node_ids,
                                             time_previous,
                                             time_current,
-                                            reference_coordinate,
-                                            velocity,
                                             displacement,
                                             internal_force,
                                             residual_vector.data(),
@@ -1139,10 +1020,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       // if the alpha = 1.0 result was better, use alpha = 1.0
       if (trial_residual < residual) {
         residual = trial_residual;
-        for (int i=0 ; i<num_unknowns ; i++) {
-          displacement[i] = trial_displacement[i];
-          internal_force[i] = trial_internal_force[i];
-        }
+        displacement.copy(trial_displacement);
+        internal_force.copy(trial_internal_force);
         for (int i=0 ; i<linear_system_num_unknowns ; i++) {
           residual_vector[i] = trial_residual_vector[i];
         }
@@ -1156,21 +1035,18 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
           std::vector<int> const & node_ids = map_from_linear_system[n];
           for (auto const & node_id : node_ids) {
             std::vector<double> const & F = rve_macroscale_deformation_gradient;
-            int i_x = node_id * dim;
-            int i_y = node_id * dim + 1;
-            int i_z = node_id * dim + 2;
-            physical_displacement[i_x] = displacement[i_x]
-                                         + (F[K_F_XX] - identity[K_F_XX]) * (reference_coordinate[i_x] - rve_center.at(0))
-                                         + (F[K_F_XY] - identity[K_F_XY]) * (reference_coordinate[i_y] - rve_center.at(1))
-                                         + (F[K_F_XZ] - identity[K_F_XZ]) * (reference_coordinate[i_z] - rve_center.at(2));
-            physical_displacement[i_y] = displacement[i_y]
-                                         + (F[K_F_YX] - identity[K_F_YX]) * (reference_coordinate[i_x] - rve_center.at(0))
-                                         + (F[K_F_YY] - identity[K_F_YY]) * (reference_coordinate[i_y] - rve_center.at(1))
-                                         + (F[K_F_YZ] - identity[K_F_YZ]) * (reference_coordinate[i_z] - rve_center.at(2));
-            physical_displacement[i_z] = displacement[i_z]
-                                         + (F[K_F_ZX] - identity[K_F_ZX]) * (reference_coordinate[i_x] - rve_center.at(0))
-                                         + (F[K_F_ZY] - identity[K_F_ZY]) * (reference_coordinate[i_y] - rve_center.at(1))
-                                         + (F[K_F_ZZ] - identity[K_F_ZZ]) * (reference_coordinate[i_z] - rve_center.at(2));
+            physical_displacement(node_id, 0) = displacement(node_id, 0)
+                                         + (F[K_F_XX] - identity[K_F_XX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                                         + (F[K_F_XY] - identity[K_F_XY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                                         + (F[K_F_XZ] - identity[K_F_XZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
+            physical_displacement(node_id, 1) = displacement(node_id, 1)
+                                         + (F[K_F_YX] - identity[K_F_YX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                                         + (F[K_F_YY] - identity[K_F_YY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                                         + (F[K_F_YZ] - identity[K_F_YZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
+            physical_displacement(node_id, 2) = displacement(node_id, 2)
+                                         + (F[K_F_ZX] - identity[K_F_ZX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                                         + (F[K_F_ZY] - identity[K_F_ZY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                                         + (F[K_F_ZZ] - identity[K_F_ZZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
           }
         }
       }
@@ -1180,6 +1056,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       if (my_rank == 0) {
         std::cout << "  iteration " << iteration << ": residual = " << residual << ", linear cg iterations = " << num_cg_iterations << std::endl;
       }
+
     } // while (residual > convergence_tolerance ... )
 
     if (iteration == max_nonlinear_iterations) {
@@ -1198,36 +1075,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       return status;
     }
     else {
-      if (is_output_step) {
-
-        for (auto& block_it : blocks) {
-          int block_id = block_it.first;
-          nimble::Block& block = block_it.second;
-          int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-          int const * elem_conn = mesh.GetConnectivity(block_id);
-          std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-          block.ComputeDerivedElementData(reference_coordinate,
-                                          displacement,
-                                          num_elem_in_block,
-                                          elem_conn,
-                                          elem_data_labels.at(block_id).size(),
-                                          elem_data_np1,
-                                          derived_elem_data_labels.at(block_id).size(),
-                                          derived_elem_data.at(block_id));
-        }
-
-        // Write output
-        model_data.GetNodeDataForOutput(node_data_for_output);
-        model_data.GetElementDataForOutput(elem_data_for_output);
-        exodus_output.WriteStep(time_current,
-                                global_data,
-                                node_data_for_output,
-                                elem_data_labels_for_output,
-                                elem_data_for_output,
-                                derived_elem_data_labels,
-                                derived_elem_data);
-      }
-
+      if (is_output_step)
+        model_data.WriteExodusOutput(data_manager, time_current);
     }
 
     // swap states
@@ -1249,25 +1098,16 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
                                   nimble::BoundaryConditionManager & bc,
                                   int linear_system_num_unknowns,
                                   std::vector<int> & linear_system_global_node_ids,
-                                  double time_previous,
-                                  double time_current,
-                                  double const * reference_coordinate,
-                                  double const * velocity,
-                                  double const * displacement,
-                                  double* internal_force,
+                                  double time_previous, double time_current,
+                                  const nimble::Viewify<2> &displacement,
+                                  nimble::Viewify<2> &internal_force,
                                   double* residual_vector,
                                   double const * rve_macroscale_deformation_gradient,
                                   bool is_output_step) {
 
-  ///// Temporary Solution
-  nimble::ModelData &macroscale_data = details::to_ModelData(data_manager.GetMacroScaleData());
-  /////
-
-  std::map<int, nimble::Block>& blocks = macroscale_data.GetBlocks();
-  std::map<int, std::vector<std::string> > const & elem_data_labels = macroscale_data.GetElementDataLabels();
-  int dim = mesh.GetDim();
-  int num_nodes = static_cast<int>(mesh.GetNumNodes());
-  int num_unknowns = num_nodes * mesh.GetDim();
+  const int dim = mesh.GetDim();
+  const int num_nodes = static_cast<int>(mesh.GetNumNodes());
+  const int num_unknowns = num_nodes * mesh.GetDim();
 
 #ifdef NIMBLE_HAVE_UQ
   // HACK
@@ -1275,68 +1115,22 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
   std::vector<double> uq_params(0);
 #endif
 
-  for (int i=0 ; i<num_unknowns ; ++i) {
-    internal_force[i] = 0.0;
-  }
-  for (auto& block_it : blocks) {
-    int block_id = block_it.first;
-    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int const * elem_conn = mesh.GetConnectivity(block_id);
-    std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
-    nimble::Block& block = block_it.second;
-    std::vector<double> const & elem_data_n = macroscale_data.GetElementDataOld(block_id);
-    std::vector<double> & elem_data_np1 = macroscale_data.GetElementDataNew(block_id);
-    block.ComputeInternalForce(reference_coordinate,
-                               displacement,
-                               velocity,
-                               rve_macroscale_deformation_gradient,
-                               internal_force,
-                               time_previous,
-                               time_current,
-                               num_elem_in_block,
-                               elem_conn,
-                               elem_global_ids.data(),
-                               elem_data_labels.at(block_id),
-                               elem_data_n,
-                               elem_data_np1,
-                               data_manager,
-                               is_output_step
-#ifdef NIMBLE_HAVE_UQ
-        ,false,
-                               uq_params
-#endif
-    );
-  }
-  //
-  // UH Check whether we should do a reduction
-  //
-//  int vector_dimension = 3;
-//  mpi_container.VectorReduction(vector_dimension, internal_force);
-//#ifdef NIMBLE_HAVE_UQ
-// What to do?
-//  if(uq_model.Initialized()) {
-//       for(int ntraj=0; ntraj < uq_model.GetNumExactSamples(); ntraj++){
-//         double * internal_force_ptr = uq_model.Forces()[ntraj];
-//         mpi_container.VectorReduction(vector_dimension, internal_force_ptr);
-//       }
-//       //Now apply closure to estimate approximate sample forces from the exact samples
-//       uq_model.ApplyClosure(internal_force);//Only pass the nominal sample internal force
-//    }
-//#endif
-  //
+  auto model_data = data_manager.GetMacroScaleData();
 
-  for (int i=0 ; i<linear_system_num_unknowns ; i++) {
+  model_data->ComputeInternalForce(data_manager, time_previous, time_current,
+                                   is_output_step, displacement, internal_force);
+
+  for (int i=0 ; i<linear_system_num_unknowns ; i++)
     residual_vector[i] = 0.0;
-  }
+
   for (int n=0 ; n<num_nodes ; n++) {
     int ls_id = linear_system_global_node_ids[n];
     for (int dof=0 ; dof<dim ; dof++) {
-      int local_index = n * dim + dof;
       int ls_index = ls_id * dim + dof;
       if (ls_index < 0 || ls_index > linear_system_num_unknowns - 1) {
         throw std::logic_error("\nError:  Invalid index into residual vector in QuasistaticTimeIntegrator().\n");
       }
-      residual_vector[ls_index] += -1.0 * internal_force[local_index];
+      residual_vector[ls_index] += -1.0 * internal_force(n, dof);
     }
   }
   bc.ModifyRHSForKinematicBC(linear_system_global_node_ids.data(), residual_vector);
