@@ -110,6 +110,12 @@ public:
       data_[ii] = 0.0;
   }
 
+  void copy(const Viewify<N> &ref) {
+    int mySize = stride_[0] * len_[0];
+    for (int ii = 0; ii < mySize; ++ii)
+      data_[ii] = ref.data_[ii];
+  }
+
   double* data() const { return data_; }
 
 protected:

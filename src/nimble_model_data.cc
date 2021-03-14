@@ -82,8 +82,7 @@ int ModelData::AllocateNodeData(Length length,
 }
 
 double* ModelData::GetNodeData(int field_id) {
-  double* data_ptr = &node_data_.at(field_id)[0];
-  return data_ptr;
+  return node_data_.at(field_id).data();
 }
 
 void ModelData::GetNodeDataForOutput(std::vector< std::vector<double> >& single_component_arrays) {
@@ -482,9 +481,11 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
     }
   }
 
+  //
   // Perform a vector reduction on lumped mass.  This is a scalar nodal quantity.
+  //
   auto vector_comm = data_manager.GetVectorCommunicator();
-  int scalar_dimension = 1;
+  constexpr int scalar_dimension = 1;
   vector_comm->VectorReduction(scalar_dimension, lumped_mass);
 }
 
@@ -523,13 +524,6 @@ void ModelData::InitializeExodusOutput(nimble::DataManager &data_manager)
     int block_id = block_it.first;
     derived_elem_data_[block_id] = std::vector<std::vector<double>>();
   }
-
-  int reference_coordinate_field_id = GetFieldId("reference_coordinate");
-  int displacement_field_id = GetFieldId("displacement");
-
-  output_reference_coor_ = GetNodeData(reference_coordinate_field_id);
-  output_displacement_ = GetNodeData(displacement_field_id);
-
 }
 
 void ModelData::WriteExodusOutput(
@@ -542,11 +536,11 @@ void ModelData::WriteExodusOutput(
 
   std::vector<double> global_data;
 
-  int reference_coordinate_field_id = GetFieldId("reference_coordinate");
-  int displacement_field_id = GetFieldId("displacement");
+  auto reference_coord_ = GetNodeData("reference_coordinate");
 
-  output_reference_coor_ = GetNodeData(reference_coordinate_field_id);
-  output_displacement_ = GetNodeData(displacement_field_id);
+  auto displacement = GetNodeData("displacement");
+  if (this->use_displacement_fluctuations_)
+    displacement = GetNodeData("displacement_fluctuation");
 
   for (auto &block_it : blocks_) {
     int block_id = block_it.first;
@@ -554,8 +548,8 @@ void ModelData::WriteExodusOutput(
     int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
     int const * elem_conn = mesh_.GetConnectivity(block_id);
     const auto &elem_data_np1 = GetElementDataNew(block_id);
-    block.ComputeDerivedElementData(output_reference_coor_,
-                                    output_displacement_,
+    block.ComputeDerivedElementData(reference_coord_,
+                                    displacement,
                                     num_elem_in_block,
                                     elem_conn,
                                     element_component_labels_.at(block_id).size(),
@@ -577,5 +571,79 @@ void ModelData::WriteExodusOutput(
 
 }
 
+
+double* ModelData::GetNodeData(const std::string& label) {
+  const auto field_id = GetFieldId(label);
+  if (field_id < 0) {
+    std::string code = " Field " + label + " Not Allocated ";
+    throw std::runtime_error(code);
+  }
+  return node_data_.at(field_id).data();
+}
+
+
+void ModelData::ComputeExternalForce(
+    nimble::DataManager &data_manager,
+    double time_previous,
+    double time_current,
+    bool is_output_step
+) {
+  auto internal_force = GetVectorNodeData("external_force");
+  internal_force.zero();
+}
+
+
+void ModelData::ComputeInternalForce(
+    nimble::DataManager &data_manager,
+    double time_previous,
+    double time_current,
+    bool is_output_step,
+    const nimble::Viewify<2> &displacement,
+    nimble::Viewify<2> &force
+)
+{
+  const auto& mesh = data_manager.GetMesh();
+
+  force.zero();
+
+  auto reference_coord = GetNodeData("reference_coordinate");
+  auto velocity = GetNodeData("velocity");
+
+  auto &rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
+
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    int const * elem_conn = mesh.GetConnectivity(block_id);
+    std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
+    nimble::Block& block = block_it.second;
+    std::vector<double> const & elem_data_n = GetElementDataOld(block_id);
+    std::vector<double> & elem_data_np1 = GetElementDataNew(block_id);
+    block.ComputeInternalForce(reference_coord,
+                               displacement.data(),
+                               velocity,
+                               rve_macroscale_deformation_gradient.data(),
+                               force.data(),
+                               time_previous,
+                               time_current,
+                               num_elem_in_block,
+                               elem_conn,
+                               elem_global_ids.data(),
+                               element_component_labels_.at(block_id),
+                               elem_data_n,
+                               elem_data_np1,
+                               data_manager,
+                               is_output_step
+    );
+  }
+
+  // DJL
+  // Perform a vector reduction on internal force.  This is a vector nodal
+  // quantity.
+  auto vector_comm = data_manager.GetVectorCommunicator();
+  constexpr int vector_dimension = 3;
+  vector_comm->VectorReduction(vector_dimension, force.data());
+
+}
 
 } // namespace nimble

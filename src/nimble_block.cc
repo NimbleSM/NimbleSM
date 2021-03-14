@@ -278,16 +278,16 @@ namespace nimble {
     DetermineDataOffsets(elem_data_labels, derived_elem_data_labels);
   }
 
-  void Block::ComputeInternalForce(const double * const reference_coordinates,
-                                   const double * const displacement,
-                                   const double * const velocity,
-                                   const double * const rve_macroscale_deformation_gradient,
-                                   double * const internal_force,
+  void Block::ComputeInternalForce(const double *reference_coordinates,
+                                   const double *displacement,
+                                   const double *velocity,
+                                   const double *rve_macroscale_deformation_gradient,
+                                   double *internal_force,
                                    double time_previous,
                                    double time_current,
                                    int num_elem,
-                                   const int * const elem_conn,
-                                   const int * const elem_global_ids,
+                                   const int *elem_conn,
+                                   const int *elem_global_ids,
                                    std::vector<std::string> const & elem_data_labels,
                                    std::vector<double> const & elem_data_n,
                                    std::vector<double> & elem_data_np1,
@@ -316,8 +316,8 @@ namespace nimble {
     double cauchy_stress_np1[sym_tensor_size*num_int_pt_per_elem];
     double force[vector_size*num_node_per_elem];
 
-    double* state_data_n(0);
-    double* state_data_np1(0);
+    double* state_data_n = nullptr;
+    double* state_data_np1 = nullptr;
     std::vector<double> state_data_n_vec;
     std::vector<double> state_data_np1_vec;
     int num_state_data = material_->NumStateVariables();
