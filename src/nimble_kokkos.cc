@@ -204,33 +204,6 @@ void NimbleKokkosInitializeAndGetInput(int argc, char **argv, nimble::Parser &pa
 }
 
 
-int NimbleKokkosFinalize(const nimble::Parser &parser) {
-
-#ifdef NIMBLE_HAVE_VT
-  while ( !::vt::curRT->isTerminated() )
-      ::vt::runScheduler();
-#endif
-
-#ifdef NIMBLE_HAVE_KOKKOS
-  Kokkos::finalize();
-#endif
-
-#ifdef NIMBLE_HAVE_TRILINOS
-  if (!parser.UseTpetra()) {
-#ifdef NIMBLE_HAVE_MPI
-    MPI_Finalize();
-#endif
-  }
-#else
-  #ifdef NIMBLE_HAVE_MPI
-    MPI_Finalize();
-  #endif
-#endif
-
-  return 0;
-
-}
-
 void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
                       std::shared_ptr<nimble::ContactInterface> contact_interface,
                       const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
@@ -310,6 +283,34 @@ void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_facto
 }
 
 
+int NimbleKokkosFinalize(const nimble::Parser &parser) {
+
+#ifdef NIMBLE_HAVE_VT
+  while ( !::vt::curRT->isTerminated() )
+      ::vt::runScheduler();
+#endif
+
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::finalize();
+#endif
+
+#ifdef NIMBLE_HAVE_TRILINOS
+  if (!parser.UseTpetra()) {
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Finalize();
+#endif
+  }
+#else
+  #ifdef NIMBLE_HAVE_MPI
+    MPI_Finalize();
+  #endif
+#endif
+
+  return 0;
+
+}
+
+
 namespace details_kokkos {
 
 int ExplicitTimeIntegrator(const nimble::Parser & parser,
@@ -379,22 +380,22 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
   if (contact_enabled) {
-    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    std::vector<std::string> contact_primary_block_names, contact_secondary_block_names;
     double penalty_parameter;
     nimble::ParseContactCommand(parser.ContactString(),
-                                contact_master_block_names,
-                                contact_slave_block_names,
+                                contact_primary_block_names,
+                                contact_secondary_block_names,
                                 penalty_parameter);
-    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
-                                         contact_master_block_ids);
-    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
-                                         contact_slave_block_ids);
+    std::vector<int> contact_primary_block_ids, contact_secondary_block_ids;
+    mesh.BlockNamesToOnProcessorBlockIds(contact_primary_block_names,
+                                         contact_primary_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_secondary_block_names,
+                                         contact_secondary_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     contact_manager.CreateContactEntities(mesh,
                                           *myVectorCommunicator,
-                                          contact_master_block_ids,
-                                          contact_slave_block_ids);
+                                          contact_primary_block_ids,
+                                          contact_secondary_block_ids);
     if (contact_visualization) {
 #ifdef NIMBLE_HAVE_ARBORX
       std::string tag = "arborx";
@@ -464,11 +465,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     half_delta_time = 0.5*delta_time;
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
-    for (int i=0 ; i<num_nodes ; ++i) {
-      velocity(i,0) += half_delta_time * acceleration(i,0);
-      velocity(i,1) += half_delta_time * acceleration(i,1);
-      velocity(i,2) += half_delta_time * acceleration(i,2);
-    }
+    velocity += half_delta_time * acceleration;
     total_update_avu_time += watch_internal.pop_region_and_report_time();
 
     // Apply kinematic boundary conditions
@@ -478,11 +475,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
     watch_internal.push_region("Central difference");
-    for (int i=0 ; i<num_nodes ; ++i) {
-      displacement(i,0) += delta_time * velocity(i,0);
-      displacement(i,1) += delta_time * velocity(i,1);
-      displacement(i,2) += delta_time * velocity(i,2);
-    }
+    displacement += delta_time * velocity;
 
     // Copy the current displacement and velocity value to device memory
 
@@ -544,11 +537,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
-    for (int i=0 ; i<num_nodes ; ++i) {
-      velocity(i,0) += half_delta_time * acceleration(i,0);
-      velocity(i,1) += half_delta_time * acceleration(i,1);
-      velocity(i,2) += half_delta_time * acceleration(i,2);
-    }
+    velocity += half_delta_time * acceleration;
     total_update_avu_time += watch_internal.pop_region_and_report_time();
 
     if (is_output_step) {
