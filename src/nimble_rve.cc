@@ -51,39 +51,9 @@
 #include "nimble_mesh_utils.h"
 #include "nimble_model_data.h"
 #include "nimble_rve.h"
+#include "nimble_view.h"
 #include "nimble_utils.h"
 
-
-/////////////////////////////
-//
-// Temporary position while refactoring
-//
-class Viewify {
-
-public:
-
-  Viewify() : data_(nullptr), dim_(0)
-  {} // for NIMBLE_HAVE_UQ?
-
-  Viewify(double * const data, int dim)
-      : data_(data), dim_(dim) {}
-
-  NIMBLE_INLINE_FUNCTION
-  double& operator()(int i, int j) {
-    return data_[i*dim_ + j];
-  }
-
-  NIMBLE_INLINE_FUNCTION
-  const double& operator()(int i, int j) const {
-    return data_[i*dim_ + j];
-  }
-
-private:
-
-  double* const data_;
-  int dim_;
-};
-/////////////////////////////
 
 namespace nimble {
 
@@ -190,10 +160,8 @@ namespace nimble {
     global_data_.resize(num_global_data_);
 
     // Node data
-    int reference_coordinate_field_id = model_data.AllocateNodeData(VECTOR, "reference_coordinate", rve_mesh_.GetNumNodes());
     int displacement_field_id = model_data.AllocateNodeData(VECTOR, "displacement", rve_mesh_.GetNumNodes());
     int displacement_fluctuation_field_id = model_data.AllocateNodeData(VECTOR, "displacement_fluctuation", rve_mesh_.GetNumNodes());
-    int velocity_field_id = model_data.AllocateNodeData(VECTOR, "velocity", rve_mesh_.GetNumNodes());
     int internal_force_field_id = model_data.AllocateNodeData(VECTOR, "internal_force", rve_mesh_.GetNumNodes());
 
     // Blocks
@@ -236,28 +204,24 @@ namespace nimble {
 
      // Set up the global vectors
     unsigned int num_unknowns = num_nodes * rve_mesh_.GetDim();
-    double* reference_coordinate = model_data.GetNodeData(reference_coordinate_field_id);
     double* physical_displacement = model_data.GetNodeData(displacement_field_id);
     double* displacement_fluctuation = model_data.GetNodeData(displacement_fluctuation_field_id);
-    double* velocity = model_data.GetNodeData(velocity_field_id);
 
-    const double * const ref_coord_x = rve_mesh_.GetCoordinatesX();
-    const double * const ref_coord_y = rve_mesh_.GetCoordinatesY();
-    const double * const ref_coord_z = rve_mesh_.GetCoordinatesZ();
+    auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
+    auto velocity = model_data.GetVectorNodeData("velocity");
+    velocity.zero();
+
+    model_data.SetReferenceCoordinates(rve_mesh_);
+
     for (int i=0 ; i<num_nodes ; i++) {
-      reference_coordinate[3*i]   = ref_coord_x[i];
-      reference_coordinate[3*i+1] = ref_coord_y[i];
-      reference_coordinate[3*i+2] = ref_coord_z[i];
       physical_displacement[3*i]   = 0.0;
       physical_displacement[3*i+1] = 0.0;
       physical_displacement[3*i+2] = 0.0;
       displacement_fluctuation[3*i]   = 0.0;
       displacement_fluctuation[3*i+1] = 0.0;
       displacement_fluctuation[3*i+2] = 0.0;
-      velocity[3*i]   = 0.0;
-      velocity[3*i+1] = 0.0;
-      velocity[3*i+2] = 0.0;
     }
+
     std::vector<double> center = rve_mesh_.BoundingBoxCenter();
     origin_x_ = center[0];
     origin_y_ = center[1];
@@ -312,7 +276,7 @@ namespace nimble {
       int num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
       int const * elem_conn = rve_mesh_.GetConnectivity(block_id);
       std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-      block.ComputeDerivedElementData(reference_coordinate,
+      block.ComputeDerivedElementData(reference_coordinate.data(),
                                       displacement,
                                       num_elem_in_block,
                                       elem_conn,
@@ -389,16 +353,14 @@ namespace nimble {
       bool write_rve_exodus_output = rve_data.write_exodus_output_;
       ExodusOutput& rve_exodus_output = rve_data.exodus_output_;
 
-      int reference_coordinate_field_id = model_data.GetFieldId("reference_coordinate");
       int displacement_field_id = model_data.GetFieldId("displacement");
       int displacement_fluctuation_field_id = model_data.GetFieldId("displacement_fluctuation");
-      int velocity_field_id = model_data.GetFieldId("velocity");
       int internal_force_field_id = model_data.GetFieldId("internal_force");
-      double* coord = model_data.GetNodeData(reference_coordinate_field_id);
+
       double* physical_displacement = model_data.GetNodeData(displacement_field_id);
       double* displacement_fluctuation = model_data.GetNodeData(displacement_fluctuation_field_id);
-      double* velocity = model_data.GetNodeData(velocity_field_id);
       double* internal_force = model_data.GetNodeData(internal_force_field_id);
+
       int linear_system_num_nodes = static_cast<int>(map_from_linear_system_.size());
       int linear_system_num_unknowns = linear_system_num_nodes * dim;
       double* displacement = physical_displacement;
@@ -406,8 +368,11 @@ namespace nimble {
         displacement = displacement_fluctuation;
       }
 
+      auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
+      auto velocity = model_data.GetVectorNodeData("velocity");
+
 #ifdef NIMBLE_HAVE_UQ
-      std::vector<::Viewify> bc_offnom_velocity_views(0);
+      std::vector< nimble::Viewify<2> > bc_offnom_velocity_views(0);
 #endif
 
       std::map<int, std::vector<std::string> > const & elem_data_labels = model_data.GetElementDataLabels();
@@ -425,12 +390,15 @@ namespace nimble {
         // Impose the deformation gradient on the entire RVE (too stiff, but a decent first step toward multiscale)
         int i_x, i_y, i_z;
         for (int i_node = 0 ; i_node < num_nodes ; ++i_node) {
+          const double x_i = reference_coordinate(i_node, 0);
+          const double y_i = reference_coordinate(i_node, 1);
+          const double z_i = reference_coordinate(i_node, 2);
           i_x = i_node*dim;
           i_y = i_node*dim + 1;
           i_z = i_node*dim + 2;
-          displacement[i_x] = (def_grad[K_F_XX] - 1.0)*(coord[i_x] - origin_x_) +         def_grad[K_F_XY]*(coord[i_y] - origin_y_) +         def_grad[K_F_XZ]*(coord[i_z] - origin_z_);
-          displacement[i_y] =         def_grad[K_F_YX]*(coord[i_x] - origin_x_) + (def_grad[K_F_YY] - 1.0)*(coord[i_y] - origin_y_) +         def_grad[K_F_YZ]*(coord[i_z] - origin_z_);
-          displacement[i_z] =         def_grad[K_F_ZX]*(coord[i_x] - origin_x_) +         def_grad[K_F_ZY]*(coord[i_y] - origin_y_) + (def_grad[K_F_ZZ] - 1.0)*(coord[i_z] - origin_z_);
+          displacement[i_x] = (def_grad[K_F_XX] - 1.0)*(x_i - origin_x_) +         def_grad[K_F_XY]*(y_i - origin_y_) +         def_grad[K_F_XZ]*(z_i - origin_z_);
+          displacement[i_y] =         def_grad[K_F_YX]*(x_i - origin_x_) + (def_grad[K_F_YY] - 1.0)*(y_i - origin_y_) +         def_grad[K_F_YZ]*(z_i - origin_z_);
+          displacement[i_z] =         def_grad[K_F_ZX]*(x_i - origin_x_) +         def_grad[K_F_ZY]*(y_i - origin_y_) + (def_grad[K_F_ZZ] - 1.0)*(z_i - origin_z_);
           internal_force[i_x] = 0.0;
           internal_force[i_y] = 0.0;
           internal_force[i_z] = 0.0;
@@ -448,9 +416,9 @@ namespace nimble {
           bool compute_stress_only = true;
 #ifdef NIMBLE_HAVE_UQ
           std::vector<double> params_this_sample(0);
-          block.ComputeInternalForce(coord,
+          block.ComputeInternalForce(reference_coordinate.data(),
                                      displacement,
-                                     velocity,
+                                     velocity.data(),
                                      identity.data(),
                                      internal_force,
                                      time_previous,
@@ -467,9 +435,9 @@ namespace nimble {
                                      params_this_sample
                                     );
 #else
-          block.ComputeInternalForce(coord,
+          block.ComputeInternalForce(reference_coordinate.data(),
                                      displacement,
-                                     velocity,
+                                     velocity.data(),
                                      identity.data(),
                                      internal_force,
                                      time_previous,
@@ -495,7 +463,11 @@ namespace nimble {
 
         std::vector<double> rve_center = rve_mesh_.BoundingBoxCenter();
 
-        bc_.ApplyKinematicBC(time_current, time_previous, ::Viewify(coord,3), ::Viewify(displacement,3), ::Viewify(velocity,3)
+        nimble::Viewify<2> disp(displacement, {rve_mesh_.GetNumNodes(), 3},
+                                {3, 1});
+
+        bc_.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
+                             disp, velocity,
 #ifdef NIMBLE_HAVE_UQ
                            , bc_offnom_velocity_views
 #endif
@@ -516,9 +488,9 @@ namespace nimble {
           std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
           std::vector<double> params_this_sample(0);
-          block.ComputeInternalForce(coord,
+          block.ComputeInternalForce(reference_coordinate.data(),
                                      displacement,
-                                     velocity,
+                                     velocity.data(),
                                      identity.data(),
                                      internal_force,
                                      time_previous,
@@ -536,9 +508,9 @@ namespace nimble {
                                     );
 
 #else
-          block.ComputeInternalForce(coord,
+          block.ComputeInternalForce(reference_coordinate.data(),
                                      displacement,
-                                     velocity,
+                                     velocity.data(),
                                      def_grad,
                                      internal_force,
                                      time_previous,
@@ -608,7 +580,7 @@ namespace nimble {
             int const * elem_conn = rve_mesh_.GetConnectivity(block_id);
             nimble::Block& block = block_it.second;
             block.ComputeTangentStiffnessMatrix(linear_system_num_unknowns,
-                                                coord,
+                                                reference_coordinate.data(),
                                                 displacement,
                                                 num_elem_in_block,
                                                 elem_conn,
@@ -658,17 +630,17 @@ namespace nimble {
                 int i_z = node_id * dim + 2;
                 // todo:  this is currently hard-coded to 3D
                 physical_displacement[i_x] = displacement[i_x]
-                  + (def_grad[K_F_XX] - identity[K_F_XX]) * (coord[i_x] - rve_center.at(0))
-                  + (def_grad[K_F_XY] - identity[K_F_XY]) * (coord[i_y] - rve_center.at(1))
-                  + (def_grad[K_F_XZ] - identity[K_F_XZ]) * (coord[i_z] - rve_center.at(2));
+                  + (def_grad[K_F_XX] - identity[K_F_XX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                  + (def_grad[K_F_XY] - identity[K_F_XY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                  + (def_grad[K_F_XZ] - identity[K_F_XZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
                 physical_displacement[i_y] = displacement[i_y]
-                  + (def_grad[K_F_YX] - identity[K_F_YX]) * (coord[i_x] - rve_center.at(0))
-                  + (def_grad[K_F_YY] - identity[K_F_YY]) * (coord[i_y] - rve_center.at(1))
-                  + (def_grad[K_F_YZ] - identity[K_F_YZ]) * (coord[i_z] - rve_center.at(2));
+                  + (def_grad[K_F_YX] - identity[K_F_YX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                  + (def_grad[K_F_YY] - identity[K_F_YY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                  + (def_grad[K_F_YZ] - identity[K_F_YZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
                 physical_displacement[i_z] = displacement[i_z]
-                  + (def_grad[K_F_ZX] - identity[K_F_ZX]) * (coord[i_x] - rve_center.at(0))
-                  + (def_grad[K_F_ZY] - identity[K_F_ZY]) * (coord[i_y] - rve_center.at(1))
-                  + (def_grad[K_F_ZZ] - identity[K_F_ZZ]) * (coord[i_z] - rve_center.at(2));
+                  + (def_grad[K_F_ZX] - identity[K_F_ZX]) * (reference_coordinate(node_id, 0) - rve_center.at(0))
+                  + (def_grad[K_F_ZY] - identity[K_F_ZY]) * (reference_coordinate(node_id, 1) - rve_center.at(1))
+                  + (def_grad[K_F_ZZ] - identity[K_F_ZZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
               }
             }
           }
@@ -687,9 +659,9 @@ namespace nimble {
             std::vector<double> & elem_data_np1 = model_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
           std::vector<double> params_this_sample(0);
-          block.ComputeInternalForce(coord,
+          block.ComputeInternalForce(reference_coordinate.data(),
                                      displacement,
-                                     velocity,
+                                     velocity.data(),
                                      identity.data(),
                                      internal_force,
                                      time_previous,
@@ -707,9 +679,9 @@ namespace nimble {
                                     );
 
 #else
-            block.ComputeInternalForce(coord,
+            block.ComputeInternalForce(reference_coordinate.data(),
                                        displacement,
-                                       velocity,
+                                       velocity.data(),
                                        def_grad,
                                        internal_force,
                                        time_previous,
@@ -772,7 +744,7 @@ namespace nimble {
             int num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
             int const * elem_conn = rve_mesh_.GetConnectivity(block_id);
             std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-            block.ComputeDerivedElementData(coord,
+            block.ComputeDerivedElementData(reference_coordinate.data(),
                                             displacement,
                                             num_elem_in_block,
                                             elem_conn,
@@ -805,7 +777,7 @@ namespace nimble {
         int num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
         int const * elem_conn = rve_mesh_.GetConnectivity(block_id);
         std::vector<double> const & elem_data_np1 = model_data.GetElementDataNew(block_id);
-        block.ComputeDerivedElementData(coord,
+        block.ComputeDerivedElementData(reference_coordinate.data(),
                                         displacement,
                                         num_elem_in_block,
                                         elem_conn,

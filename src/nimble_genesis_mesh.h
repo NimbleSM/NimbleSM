@@ -61,7 +61,7 @@ namespace nimble {
 
     GenesisMesh() : file_name_("undefined"), dim_(-1) {}
 
-    ~GenesisMesh() {}
+    ~GenesisMesh() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
     template<typename ArchiveType>
@@ -160,12 +160,12 @@ namespace nimble {
 
     std::vector<double> BoundingBoxCenter() const ;
 
-    void AppendPeriodicPair(int local_master_node_id,
-                            int local_slave_node_id,
-                            const int * const global_node_ids,
-                            std::map<int, int>& global_node_id_slave_to_master) const ;
+    void AppendPeriodicPair(int local_primary_node_id,
+                            int local_secondary_node_id,
+                            const int *global_node_ids,
+                            std::map<int, int>& global_node_id_secondary_to_primary) const ;
 
-    void CreatePeriodicRVELinearSystemMap(const int * const global_node_ids,
+    void CreatePeriodicRVELinearSystemMap(const int *global_node_ids,
                                           std::vector<int>& linear_system_node_ids,
                                           std::map<int, std::vector<int>>& map_from_linear_system,
                                           int& corner_node_id) const ;

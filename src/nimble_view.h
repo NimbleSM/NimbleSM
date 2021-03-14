@@ -60,6 +60,12 @@ enum class FieldEnum : int
 
 namespace nimble {
 
+namespace details {
+
+template< std::size_t N>
+class AXPYResult;
+
+}
 
 template< std::size_t N = 2>
 class Viewify {
@@ -118,6 +124,12 @@ public:
 
   double* data() const { return data_; }
 
+  Viewify<N>& operator+=(const details::AXPYResult<N> &rhs);
+
+  const std::array<int, N> size() const { return len_; }
+
+  const std::array<int, N> stride() const { return stride_; }
+
 protected:
 
   double* data_;
@@ -126,6 +138,74 @@ protected:
 
 };
 
+//----------------------------------
+
+namespace details {
+
+template <std::size_t N> struct AXPYResult {
+
+  AXPYResult(const nimble::Viewify<N> A, double alpha) : A_(A), alpha_(alpha) {}
+
+  /// \brief Compute "dest = (destCoef) * dest + rhsCoef * alpha_ * A_"
+  ///
+  /// \param[in] destCoef Scalar
+  /// \param[in] rhsCoef Scalar
+  /// \param[out] dest Viewify "vector" storing the result
+  ///
+  /// \note The routine does not check whether A_ and dest have the same length
+  /// and the same stride.
+  void assignTo(double destCoef, double rhsCoef,
+                nimble::Viewify<N> &dest) const;
+
+  const nimble::Viewify<N> A_;
+  double alpha_;
+};
+
+template <std::size_t N>
+void AXPYResult<N>::assignTo(double destCoef, double rhsCoef,
+                             nimble::Viewify<N> &dest) const {
+  const double prod = alpha_ * rhsCoef;
+
+  auto len = dest.size();
+  auto stride = dest.stride();
+  const long isize = len[0] * stride[0];
+
+  double *data = dest.data();
+  double *rhs_data = A_.data();
+
+  if (destCoef == 1.0) {
+    for (long ii = 0; ii < isize; ++ii)
+      data[ii] += prod * rhs_data[ii];
+  }
+  else if (destCoef == 0.0) {
+    for (long ii = 0; ii < isize; ++ii)
+      data[ii] = prod * rhs_data[ii];
+  }
+  else {
+    for (long ii = 0; ii < isize; ++ii)
+      data[ii] = destCoef * data[ii] + prod * rhs_data[ii];
+  }
+}
+
+}
+
+//----------------------------------
+
+template< std::size_t N>
+Viewify<N>& Viewify<N>::operator+=(const details::AXPYResult<N> &rhs)
+{
+  rhs.assignTo(1.0, 1.0, *this);
+  return *this;
+}
+
+template < std::size_t N >
+details::AXPYResult<N>
+operator*(double alpha, const nimble::Viewify<N> &A)
+{
+  return {A, alpha};
+}
+
+//----------------------------------
 
 template <FieldEnum FieldT>
   class View {

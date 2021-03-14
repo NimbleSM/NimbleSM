@@ -543,14 +543,14 @@ namespace nimble {
     return center;
   }
 
-  void GenesisMesh::AppendPeriodicPair(int local_master_node_id,
-                                       int local_slave_node_id,
+  void GenesisMesh::AppendPeriodicPair(int local_primary_node_id,
+                                       int local_secondary_node_id,
                                        const int * const global_node_ids,
-                                       std::map<int, int>& global_node_id_slave_to_master) const {
+                                       std::map<int, int>& global_node_id_secondary_to_primary) const {
 
-    int global_master_node_id = global_node_ids[ local_master_node_id ];
-    int global_slave_node_id = global_node_ids[ local_slave_node_id ];
-    global_node_id_slave_to_master[global_slave_node_id] = global_master_node_id;
+    int global_primary_node_id = global_node_ids[ local_primary_node_id ];
+    int global_secondary_node_id = global_node_ids[ local_secondary_node_id ];
+    global_node_id_secondary_to_primary[global_secondary_node_id] = global_primary_node_id;
   }
 
   void GenesisMesh::CreatePeriodicRVELinearSystemMap(const int * const global_node_ids,
@@ -560,14 +560,14 @@ namespace nimble {
 
     // THIS WORKS ONLY IN SERIAL
 
-    std::map<int, int> global_node_id_slave_to_master;
+    std::map<int, int> global_node_id_secondary_to_primary;
     unsigned int num_nodes = GetNumNodes();
     double tol = 1.0e-12;
 
     double x_min, x_max, y_min, y_max, z_min, z_max;
     BoundingBox(x_min, x_max, y_min, y_max, z_min, z_max);
 
-    std::vector<int> corner_master;
+    std::vector<int> corner_primary;
     std::vector<int> corner;
     std::vector<int> edge_x_min_y_min;
     std::vector<int> edge_x_max_y_min;
@@ -601,7 +601,7 @@ namespace nimble {
       if (!is_x_min && !is_x_max && !is_y_min && !is_y_max && !is_z_min && !is_z_max)
         continue;
       else if (is_x_min && is_y_min && is_z_min)
-        corner_master.push_back(n);
+        corner_primary.push_back(n);
       else if ( (is_x_min || is_x_max) && (is_y_min || is_y_max) && (is_z_min || is_z_max) )
         corner.push_back(n);
       else if (is_x_min && is_y_min)
@@ -643,7 +643,7 @@ namespace nimble {
     }
 
     bool mesh_is_periodic = true;
-    if (corner_master.size() != 1)
+    if (corner_primary.size() != 1)
       mesh_is_periodic = false;
     if (corner.size() != 7)
       mesh_is_periodic = false;
@@ -680,19 +680,19 @@ namespace nimble {
     if (!mesh_is_periodic)
       throw std::logic_error("Mesh is not periodic!\n");
 
-    for (auto const & slave : corner) {
-      AppendPeriodicPair(corner_master[0], slave, global_node_ids, global_node_id_slave_to_master);
+    for (auto const & secondary : corner) {
+      AppendPeriodicPair(corner_primary[0], secondary, global_node_ids, global_node_id_secondary_to_primary);
     }
 
-    // declare nodes on edge_x_min_y_min to be master nodes
+    // declare nodes on edge_x_min_y_min to be primary nodes
     // there should be three periodic matches for edge nodes
 
     // edge_x_max_y_min
-    for (auto const & slave : edge_x_max_y_min) {
+    for (auto const & secondary : edge_x_max_y_min) {
       bool found = false;
-      for (auto const & master : edge_x_min_y_min) {
-        if (std::fabs(node_z_[master] - node_z_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_y_min) {
+        if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -701,11 +701,11 @@ namespace nimble {
     }
 
     // edge_x_min_y_max
-    for (auto const & slave : edge_x_min_y_max) {
+    for (auto const & secondary : edge_x_min_y_max) {
       bool found = false;
-      for (auto const & master : edge_x_min_y_min) {
-        if (std::fabs(node_z_[master] - node_z_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_y_min) {
+        if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -714,11 +714,11 @@ namespace nimble {
     }
 
     // edge_x_max_y_max
-    for (auto const & slave : edge_x_max_y_max) {
+    for (auto const & secondary : edge_x_max_y_max) {
       bool found = false;
-      for (auto const & master : edge_x_min_y_min) {
-        if (std::fabs(node_z_[master] - node_z_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_y_min) {
+        if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -726,15 +726,15 @@ namespace nimble {
         throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
     }
 
-    // declare nodes on edge_x_min_z_min to be master nodes
+    // declare nodes on edge_x_min_z_min to be primary nodes
     // there should be three periodic matches for edge nodes
 
     // edge_x_max_z_min
-    for (auto const & slave : edge_x_max_z_min) {
+    for (auto const & secondary : edge_x_max_z_min) {
       bool found = false;
-      for (auto const & master : edge_x_min_z_min) {
-        if (std::fabs(node_y_[master] - node_y_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_z_min) {
+        if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -743,11 +743,11 @@ namespace nimble {
     }
 
     // edge_x_min_z_max
-    for (auto const & slave : edge_x_min_z_max) {
+    for (auto const & secondary : edge_x_min_z_max) {
       bool found = false;
-      for (auto const & master : edge_x_min_z_min) {
-        if (std::fabs(node_y_[master] - node_y_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_z_min) {
+        if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -756,11 +756,11 @@ namespace nimble {
     }
 
     // edge_x_max_z_max
-    for (auto const & slave : edge_x_max_z_max) {
+    for (auto const & secondary : edge_x_max_z_max) {
       bool found = false;
-      for (auto const & master : edge_x_min_z_min) {
-        if (std::fabs(node_y_[master] - node_y_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_x_min_z_min) {
+        if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -768,15 +768,15 @@ namespace nimble {
         throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
     }
 
-    // declare nodes on edge_y_min_z_min to be master nodes
+    // declare nodes on edge_y_min_z_min to be primary nodes
     // there should be three periodic matches for edge nodes
 
     // edge_y_max_z_min
-    for (auto const & slave : edge_y_max_z_min) {
+    for (auto const & secondary : edge_y_max_z_min) {
       bool found = false;
-      for (auto const & master : edge_y_min_z_min) {
-        if (std::fabs(node_x_[master] - node_x_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_y_min_z_min) {
+        if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -785,11 +785,11 @@ namespace nimble {
     }
 
     // edge_y_min_z_max
-    for (auto const & slave : edge_y_min_z_max) {
+    for (auto const & secondary : edge_y_min_z_max) {
       bool found = false;
-      for (auto const & master : edge_y_min_z_min) {
-        if (std::fabs(node_x_[master] - node_x_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_y_min_z_min) {
+        if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -798,11 +798,11 @@ namespace nimble {
     }
 
     // edge_y_max_z_max
-    for (auto const & slave : edge_y_max_z_max) {
+    for (auto const & secondary : edge_y_max_z_max) {
       bool found = false;
-      for (auto const & master : edge_y_min_z_min) {
-        if (std::fabs(node_x_[master] - node_x_[slave]) < tol) {
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : edge_y_min_z_min) {
+        if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -812,11 +812,11 @@ namespace nimble {
 
     // find pairs for the surface nodes that are not on corners or edges
 
-    for (auto const & slave : surface_x_max) {
+    for (auto const & secondary : surface_x_max) {
       bool found = false;
-      for (auto const & master : surface_x_min) {
-        if ( (std::fabs(node_y_[master] - node_y_[slave]) < tol) && (std::fabs(node_z_[master] - node_z_[slave]) < tol) ){
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : surface_x_min) {
+        if ( (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) && (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) ){
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -824,11 +824,11 @@ namespace nimble {
         throw std::logic_error("Mesh is not periodic!  Failed to match surface node.\n");
     }
 
-    for (auto const & slave : surface_y_max) {
+    for (auto const & secondary : surface_y_max) {
       bool found = false;
-      for (auto const & master : surface_y_min) {
-        if ( (std::fabs(node_x_[master] - node_x_[slave]) < tol) && (std::fabs(node_z_[master] - node_z_[slave]) < tol) ){
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : surface_y_min) {
+        if ( (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) && (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) ){
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -836,11 +836,11 @@ namespace nimble {
         throw std::logic_error("Mesh is not periodic!  Failed to match surface node.\n");
     }
 
-    for (auto const & slave : surface_z_max) {
+    for (auto const & secondary : surface_z_max) {
       bool found = false;
-      for (auto const & master : surface_z_min) {
-        if ( (std::fabs(node_x_[master] - node_x_[slave]) < tol) && (std::fabs(node_y_[master] - node_y_[slave]) < tol) ){
-          AppendPeriodicPair(master, slave, global_node_ids, global_node_id_slave_to_master);
+      for (auto const & primary : surface_z_min) {
+        if ( (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) && (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) ){
+          AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
           found = true;
         }
       }
@@ -852,8 +852,8 @@ namespace nimble {
     std::map<int, int> global_id_to_linear_system_id;
     for (int n=0 ; n<num_nodes ; n++) {
       int global_node_id = global_node_ids[n];
-      if (global_node_id_slave_to_master.find(global_node_id) == global_node_id_slave_to_master.end()) {
-        // the node is not a slave, it belongs in the linear system
+      if (global_node_id_secondary_to_primary.find(global_node_id) == global_node_id_secondary_to_primary.end()) {
+        // the node is not a secondary, it belongs in the linear system
         global_id_to_linear_system_id[global_node_id] = linear_system_length;
         linear_system_length += 1;
       }
@@ -861,12 +861,12 @@ namespace nimble {
 
     for (int n=0 ; n<num_nodes ; n++) {
       int global_node_id = global_node_ids[n];
-      if (global_node_id_slave_to_master.find(global_node_id) == global_node_id_slave_to_master.end()) {
+      if (global_node_id_secondary_to_primary.find(global_node_id) == global_node_id_secondary_to_primary.end()) {
         int linear_system_id = global_id_to_linear_system_id[global_node_id];
         linear_system_node_ids.push_back(linear_system_id);
       }
       else {
-        int linear_system_id = global_id_to_linear_system_id[ global_node_id_slave_to_master[global_node_id] ];
+        int linear_system_id = global_id_to_linear_system_id[ global_node_id_secondary_to_primary[global_node_id] ];
         linear_system_node_ids.push_back(linear_system_id);
       }
     }
@@ -879,11 +879,11 @@ namespace nimble {
       map_from_linear_system[linear_system_node_id].push_back(n);
     }
 
-    if (map_from_linear_system.size() + global_node_id_slave_to_master.size() != num_nodes) {
+    if (map_from_linear_system.size() + global_node_id_secondary_to_primary.size() != num_nodes) {
       throw std::logic_error("Error in CreatePeriodicRVELinearSystemMap().\n");
     }
 
-    corner_node_id = corner_master[0];
+    corner_node_id = corner_primary[0];
   }
 
   void GenesisMesh::Print(bool verbose, int my_rank) const {
