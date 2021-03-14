@@ -463,11 +463,11 @@ namespace nimble {
 
         std::vector<double> rve_center = rve_mesh_.BoundingBoxCenter();
 
-        nimble::Viewify<2> disp(displacement, {rve_mesh_.GetNumNodes(), 3},
-                                {3, 1});
+        auto nnodes = static_cast<int>(rve_mesh_.GetNumNodes());
+        nimble::Viewify<2> disp(displacement, {nnodes, 3},{3, 1});
 
         bc_.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
-                             disp, velocity,
+                             disp, velocity
 #ifdef NIMBLE_HAVE_UQ
                            , bc_offnom_velocity_views
 #endif
