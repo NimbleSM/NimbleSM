@@ -124,6 +124,20 @@ void ModelData::ApplyKinematicConditions(DataManager &data_manager,
                        bc_offnom_velocity_views_);
 }
 
+void ModelData::UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                                      double dt)
+{
+  uq_model_->UpdateVelocity(dt);
+}
+
+void ModelData::UpdateWithNewDisplacement(nimble::DataManager &data_manager,
+                                          double dt)
+{
+  // advance approximate trajectories
+  uq_model_->UpdateDisplacement(dt);
+  uq_model_->Prep();
+}
+
 }
 
 #endif
