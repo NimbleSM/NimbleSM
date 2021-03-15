@@ -180,6 +180,28 @@ public:
                                         double time_current,
                                         double time_previous);
 
+  /// \brief Update model with new velocity
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine is usually empty.
+  ///       The UQ model data is one case using this routine.
+  virtual void UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                                     double dt)
+  {}
+
+  /// \brief Update model with new displacement
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine is usually empty.
+  ///       The UQ model data is one case using this routine.
+  virtual void UpdateWithNewDisplacement(nimble::DataManager &data_manager,
+                                         double dt)
+  {}
+
   //--- Common interface routines
 
   /// \brief Get the spatial dimension

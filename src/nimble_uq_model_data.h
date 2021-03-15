@@ -84,6 +84,26 @@ public:
                                 double time_current,
                                 double time_previous) override;
 
+  /// \brief Update model with new velocity
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine is usually empty.
+  ///       The UQ model data is one case using this routine.
+  void UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                             double dt) override;
+
+  /// \brief Update model with new displacement
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine is usually empty.
+  ///       The UQ model data is one case using this routine.
+  void UpdateWithNewDisplacement(nimble::DataManager &data_manager,
+                                 double dt) override;
+
 protected:
 
   std::shared_ptr< nimble::UqModel > uq_model_;

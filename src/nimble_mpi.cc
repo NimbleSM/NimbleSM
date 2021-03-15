@@ -66,10 +66,6 @@
 #include "contact/parallel/bvh_contact_manager.h"
 #endif
 
-#ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
-#endif
-
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
 #endif
@@ -518,10 +514,7 @@ int ExplicitTimeIntegrator(
       velocity(i, 2) += half_delta_time * acceleration(i, 2);
     }
 
-#ifdef NIMBLE_HAVE_UQ
-    // 1st half step: update velocities for approximate trajectories
-    uq_model.UpdateVelocity(half_delta_time);
-#endif
+    model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
 
     model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
@@ -532,11 +525,7 @@ int ExplicitTimeIntegrator(
       displacement(i, 2) += delta_time * velocity(i, 2);
     }
 
-#ifdef NIMBLE_HAVE_UQ
-    // advance approximate trajectories
-    uq_model.UpdateDisplacement(delta_time);
-    uq_model.Prep();
-#endif
+    model_data.UpdateWithNewDisplacement(data_manager, delta_time);
 
     //
     // Evaluate external body forces
@@ -603,10 +592,8 @@ int ExplicitTimeIntegrator(
       velocity(i, 2) += half_delta_time * acceleration(i, 2);
     }
 
-#ifdef NIMBLE_HAVE_UQ
-    // 2nd half step: update velocities for approximate trajectories
-    uq_model.UpdateVelocity(half_delta_time);
-#endif
+    model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
+
     total_dynamics_time.Stop();
 
     if (is_output_step) {
@@ -663,7 +650,7 @@ class Viewify {
 public:
 
   Viewify() : data_(nullptr), dim_(0)
-  {} // for NIMBLE_HAVE_UQ?
+  {}
 
   Viewify(double * const data, int dim)
       : data_(data), dim_(dim) {}
@@ -783,7 +770,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   int output_frequency = parser.OutputFrequency();
 
 #ifdef NIMBLE_HAVE_UQ
-  if (parser.HasUq())
+  if (parser.UseUQ())
     throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
 #endif
 
