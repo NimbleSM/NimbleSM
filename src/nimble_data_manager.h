@@ -64,13 +64,10 @@
 
 namespace nimble {
 
+class BoundaryConditionManager;
 class GenesisMesh;
 class ModelDataBase;
 class VectorCommunicator;
-
-#ifdef NIMBLE_HAVE_UQ
-class UqModel;
-#endif
 
 struct RVEData {
   nimble::ModelData model_data_;
@@ -105,12 +102,7 @@ public:
               const nimble::GenesisMesh &rve_mesh);
 
   /// \brief Destructor
-  virtual ~DataManager()
-  {
-#ifdef NIMBLE_HAVE_UQ
-    uq_model_->Finalize();
-#endif
-  }
+  ~DataManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
   template<typename ArchiveType>
@@ -138,7 +130,7 @@ public:
   /// \brief Initialize the data for Exodus output
   ///
   /// \param filename File name for the output files
-  void InitializeExodusOutput(const std::string &filename);
+  void InitializeOutput(const std::string &filename);
 
   /// \brief Return constant reference to parser information
   ///
@@ -182,21 +174,16 @@ public:
   std::shared_ptr< nimble::VectorCommunicator > GetVectorCommunicator()
   { return vector_communicator_; }
 
-#ifdef NIMBLE_HAVE_UQ
-  /// \brief Return pointer to the UQ model
-  ///
-  /// \return Pointer to UQ model
-  std::shared_ptr< nimble::UqModel > GetUqModel()
-  { return uq_model_; }
-#endif
-
   /// \brief Return reference to RVE-macroscale deformation gradient
   ///
   /// \return Reference
   std::vector<double>& GetRVEDeformationGradient()
   { return rve_macroscale_deformation_gradient_; }
 
-  void WriteExodusOutput(double time_current);
+  /// \brief Write output of simulations
+  ///
+  /// \param[in] time_current Time value
+  void WriteOutput(double time_current);
 
   std::shared_ptr< nimble::ExodusOutput > GetExodusOutput()
   { return exodus_output_; }
@@ -213,6 +200,13 @@ public:
   /// \return Shared pointer
   std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > GetBlockMaterialInterfaceFactory();
 
+  /// \brief Return shared pointer to BoundaryConditionManager object
+  ///
+  /// \return Shared pointer
+  std::shared_ptr< nimble::BoundaryConditionManager > GetBoundaryConditionManager() {
+    return boundary_condition_;
+  }
+
 protected:
 
   /// \brief Initialize data for simulation
@@ -228,16 +222,14 @@ protected:
   std::map<std::pair<int,int>, RVEData> rve_data_;
   std::vector<double> rve_macroscale_deformation_gradient_;
 
-#ifdef NIMBLE_HAVE_UQ
-  std::shared_ptr< nimble::UqModel > uq_model_;
-#endif
-
   nimble::FieldIds field_ids_;
 
   std::shared_ptr< nimble::VectorCommunicator > vector_communicator_;
   std::shared_ptr< nimble::ExodusOutput > exodus_output_;
 
   std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > block_material_factory_;
+
+  std::shared_ptr< nimble::BoundaryConditionManager > boundary_condition_;
 
  };
 

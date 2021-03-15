@@ -41,13 +41,14 @@
 //@HEADER
 */
 
-#include "nimble_kokkos.h"
-#include "nimble.quanta.stopwatch.h"
-#include "nimble_boundary_condition_manager.h"
+#include "nimble_defs.h"
+#include "nimble_contact_interface.h"
 #include "nimble_contact_manager.h"
 #include "nimble_data_manager.h"
+
+#include "nimble_kokkos.h"
+#include "nimble.quanta.stopwatch.h"
 #include "nimble_kokkos_block.h"
-#include "nimble_kokkos_defs.h"
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_profiling.h"
@@ -59,8 +60,7 @@
 #include "nimble_version.h"
 #include "nimble_view.h"
 #include <cassert>
-#include <nimble_contact_interface.h>
-#include <nimble_kokkos_block_material_interface_factory.h>
+#include "nimble_kokkos_block_material_interface_factory.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
 #ifdef NIMBLE_HAVE_MPI
@@ -79,7 +79,6 @@ namespace details_kokkos {
 int ExplicitTimeIntegrator(const nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
-                           nimble::BoundaryConditionManager & boundary_condition_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface
 );
 
@@ -292,26 +291,16 @@ void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_facto
   macroscale_data->InitializeBlocks(data_manager, material_factory);
 
   //
-  // Initialize the initial- and boundary-condition manager
-  //
-  std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
-  std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
-  std::string const & time_integration_scheme = parser.TimeIntegrationScheme();
-  nimble::BoundaryConditionManager boundary_condition_manager;
-  boundary_condition_manager.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
-
-  //
   // Initialize the output file
   //
 
-  data_manager.InitializeExodusOutput(output_exodus_name);
+  data_manager.InitializeOutput(output_exodus_name);
 
   watch_simulation.pop_region_and_report_time();
 
+  const auto &time_integration_scheme = parser.TimeIntegrationScheme();
   if (time_integration_scheme == "explicit") {
     details_kokkos::ExplicitTimeIntegrator(parser, mesh, data_manager,
-                                           boundary_condition_manager,
                                            contact_interface);
   }
   else {
@@ -326,7 +315,6 @@ namespace details_kokkos {
 int ExplicitTimeIntegrator(const nimble::Parser & parser,
                            nimble::GenesisMesh & mesh,
                            nimble::DataManager & data_manager,
-                           nimble::BoundaryConditionManager & boundary_condition_manager,
                            std::shared_ptr<nimble::ContactInterface> contact_interface
 )
 {
@@ -428,16 +416,15 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   const int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
 
-  boundary_condition_manager.ApplyInitialConditions(reference_coordinate, velocity);
-  boundary_condition_manager.ApplyKinematicBC(time_current, time_previous,
-                                              reference_coordinate, displacement,
-                                              velocity);
+  model_data.ApplyInitialConditions(data_manager);
+  model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
+
   watch_simulation.pop_region_and_report_time();
 
   // Output to Exodus file
   watch_simulation.push_region("Output");
 
-  data_manager.WriteExodusOutput(time_current);
+  data_manager.WriteOutput(time_current);
 
   if (contact_visualization) {
     contact_manager.ContactVisualizationWriteStep(time_current);
@@ -486,9 +473,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
 
     // Apply kinematic boundary conditions
     watch_internal.push_region("BC enforcement");
-    boundary_condition_manager.ApplyKinematicBC(time_current, time_previous,
-                                                reference_coordinate,
-                                                displacement, velocity);
+    model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
     watch_internal.pop_region_and_report_time();
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
@@ -569,11 +554,8 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     if (is_output_step) {
       //
       watch_internal.push_region("Output");
-      boundary_condition_manager.ApplyKinematicBC(time_current, time_previous,
-                                                  reference_coordinate,
-                                                  displacement, velocity);
-      //
-      data_manager.WriteExodusOutput(time_current);
+      model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
+      data_manager.WriteOutput(time_current);
       //
       if (contact_visualization) {
         contact_manager.ContactVisualizationWriteStep(time_current);

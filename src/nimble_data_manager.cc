@@ -49,14 +49,11 @@
 #endif
 
 #include "nimble_block_material_interface_factory_base.h"
+#include "nimble_boundary_condition_manager.h"
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_model_data_base.h"
 #include "nimble_vector_communicator.h"
-
-#ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
-#endif
 
 #include <algorithm>
 #include <stdexcept>
@@ -69,7 +66,8 @@ DataManager::DataManager(const nimble::Parser &parser,
                          const nimble::GenesisMesh &rve_mesh)
     : parser_(parser), mesh_(mesh), rve_mesh_(rve_mesh),
       macroscale_data_(), rve_data_(), field_ids_(),
-      vector_communicator_(nullptr)
+      vector_communicator_(nullptr),
+      boundary_condition_(new nimble::BoundaryConditionManager())
 {
   Initialize();
 }
@@ -103,7 +101,14 @@ void DataManager::Initialize()
   vector_communicator_->Initialize(global_node_ids);
 
   //--- Create ModelData
-  if (parser_.UseKokkos()) {
+  if (parser_.UseUQ()) {
+#ifdef NIMBLE_HAVE_UQ
+    macroscale_data_ = std::make_shared< nimble_uq::ModelData >();
+#else
+    throw std::runtime_error(" Wrong environment !\n");
+#endif
+  }
+  else if (parser_.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
     macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();
 #else
@@ -116,7 +121,21 @@ void DataManager::Initialize()
 
   macroscale_data_->SetDimension(dim);
 
-  if (parser_.TimeIntegrationScheme() == "explicit")
+  //
+  // Initialize the boundary condition manager
+  //
+
+  std::map<int, std::string> const & node_set_names = mesh_.GetNodeSetNames();
+  std::map<int, std::vector<int> > const & node_sets = mesh_.GetNodeSets();
+  std::vector<std::string> const & bc_strings = parser_.GetBoundaryConditionStrings();
+  std::string time_integration_scheme = parser_.TimeIntegrationScheme();
+  boundary_condition_->Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+
+  //
+  // Initialize vectors for storing fields
+  //
+
+  if (time_integration_scheme == "explicit")
     field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
 
   field_ids_.reference_coordinates = macroscale_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
@@ -129,7 +148,7 @@ void DataManager::Initialize()
 
   field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
 
-  if (parser_.TimeIntegrationScheme() == "quasistatic") {
+  if (time_integration_scheme == "quasistatic") {
     //
     // These variables are used in the "quasi-static" simulations
     //
@@ -140,24 +159,6 @@ void DataManager::Initialize()
   }
 
   macroscale_data_->SetReferenceCoordinates(mesh_);
-
-#ifdef NIMBLE_HAVE_UQ
-  // configure & allocate
-  if (parser_.HasUq())
-  {
-    uq_model_ = std::shared_ptr< nimble::UqModel >(new nimble::UqModel(dim,num_nodes,num_blocks));
-    uq_model_->ParseConfiguration(parser->UqModelString());
-    std::map<std::string, std::string> lines = parser_.UqParamsStrings();
-    for(std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++){
-      std::string material_key = it->first;
-      int block_id = parser_.GetBlockIdFromMaterial( material_key );
-      std::string uq_params_this_material = it->second;
-      uq_model_->ParseBlockInput( uq_params_this_material, block_id, blocks[block_id] );
-    }
-    // initialize
-    uq_model_->Initialize(mesh_, this);
-  }
-#endif
 
   //
   // Initialization of RVE data
@@ -191,7 +192,7 @@ RVEData& DataManager::GetRVEData(int global_element_id,
 }
 
 
-void DataManager::InitializeExodusOutput(const std::string &filename)
+void DataManager::InitializeOutput(const std::string &filename)
 {
   std::vector<std::string> global_data_labels;
 
@@ -211,7 +212,7 @@ void DataManager::InitializeExodusOutput(const std::string &filename)
 }
 
 
-void DataManager::WriteExodusOutput(double time_current)
+void DataManager::WriteOutput(double time_current)
 {
   macroscale_data_->WriteExodusOutput(*this, time_current);
 }
