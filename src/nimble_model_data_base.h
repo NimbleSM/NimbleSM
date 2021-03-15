@@ -136,6 +136,10 @@ public:
   virtual void InitializeExodusOutput(nimble::DataManager &data_manager)
   {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
 
+  /// \brief Write output of simulation in Exodus format
+  ///
+  /// \param[in] data_manager Reference to data manager
+  /// \param[in] time_current Time value
   virtual void WriteExodusOutput(nimble::DataManager &data_manager,
                                  double time_current)
   {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
@@ -167,6 +171,14 @@ public:
                                     bool is_output_step,
                                     const nimble::Viewify<2> &displacement,
                                     nimble::Viewify<2> &force) {};
+
+  /// \brief Apply initial conditions
+  virtual void ApplyInitialConditions(nimble::DataManager &data_manager);
+
+  /// \brief Apply kinematic conditions
+  virtual void ApplyKinematicConditions(nimble::DataManager &data_manager,
+                                        double time_current,
+                                        double time_previous);
 
   //--- Common interface routines
 
