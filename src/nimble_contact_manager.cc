@@ -542,7 +542,7 @@ namespace nimble {
       model_coord_[3*i_node+2] = coord_[3*i_node+2] = coord_z[node_ids_[i_node]];
     }
 
-    // Store nodes in slave faces
+    // Store nodes in secondary faces
     // Create a list of nodes and their characteristic lengths
     const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
     std::vector<int> secondary_node_ids;

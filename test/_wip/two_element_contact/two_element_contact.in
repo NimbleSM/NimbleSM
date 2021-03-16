@@ -8,4 +8,4 @@ material parameters:              material_1 lame_elastic density 7.8e3 bulk_mod
 macroscale block:                 block_1 material_1
 macroscale block:                 block_2 material_1
 boundary condition:               initial_velocity nodelist_2 x 20.0
-contact:                          master_blocks block_1 slave_blocks block_2 penalty_parameter 1.0e12
+contact:                          primary_blocks block_1 secondary_blocks block_2 penalty_parameter 1.0e12
