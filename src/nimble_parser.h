@@ -240,6 +240,16 @@ namespace nimble {
       env_set_ = true;
     }
 
+    /// \brief Set that UQ is used for the simulation
+    ///
+    /// \note The function will throw an exception when an environment
+    /// has been set previously
+    void SetToUseUQ() {
+      if (env_set_)
+        throw std::runtime_error(" Conflicting Environment Variable ");
+      use_uq_ = true;
+      env_set_ = true;
+    }
 
     /// \brief Set that VT is used for the simulation
     ///
@@ -258,6 +268,10 @@ namespace nimble {
     /// \brief Indicate whether Tpetra is used for the simulation
     bool UseTpetra() const
     { return use_tpetra_; }
+
+    /// \brief Indicate whether UQ is used for the simulation
+    bool UseUQ() const
+    { return use_uq_; }
 
     /// \brief Indicate whether VT is used
     bool UseVT() const
@@ -362,6 +376,9 @@ namespace nimble {
 
     /// \brief Boolean setting the usage of Tpetra
     bool use_tpetra_ = false;
+
+    /// \brief Boolean setting the usage of Tpetra
+    bool use_uq_ = false;
 
     /// \brief Rank ID when running with MPI
     int my_rank_ = 0;

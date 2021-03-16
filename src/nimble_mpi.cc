@@ -66,10 +66,6 @@
 #include "contact/parallel/bvh_contact_manager.h"
 #endif
 
-#ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
-#endif
-
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
 #endif
@@ -101,15 +97,13 @@ int ExplicitTimeIntegrator(
     const nimble::Parser &parser,
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &bc,
     std::shared_ptr<nimble::ContactInterface> contact_interface
 );
 
 int QuasistaticTimeIntegrator(
     const nimble::Parser &parser,
     nimble::GenesisMesh &mesh,
-    nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &bc
+    nimble::DataManager &data_manager
 );
 
 double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
@@ -149,6 +143,15 @@ int parseCommandLine(int argc, char **argv, nimble::Parser &parser)
       parser.SetToUseTpetra();
 #else
       std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
+#endif
+      continue;
+    }
+    //
+    if (my_arg == "--use_uq") {
+#ifdef NIMBLE_HAVE_UQ
+      parser.SetToUseUQ();
+#else
+      std::cerr << "\n Flag '--use_uq' ignored \n\n";
 #endif
       continue;
     }
@@ -299,29 +302,19 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   macroscale_data->InitializeBlocks(data_manager, material_factory_base);
 
   //
-  // Initialize the initial- and boundary-condition manager
-  //
-  std::map<int, std::string> const & node_set_names = mesh.GetNodeSetNames();
-  std::map<int, std::vector<int> > const & node_sets = mesh.GetNodeSets();
-  std::vector<std::string> const & bc_strings = parser.GetBoundaryConditionStrings();
-  std::string time_integration_scheme = parser.TimeIntegrationScheme();
-  nimble::BoundaryConditionManager bc;
-  bc.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
-
-  //
   // Initialize the output file
   //
 
-  data_manager.InitializeExodusOutput(output_exodus_name);
+  data_manager.InitializeOutput(output_exodus_name);
 
   int status = 0;
+  const auto time_integration_scheme = parser.TimeIntegrationScheme();
   if (time_integration_scheme == "explicit") {
-    status = details::ExplicitTimeIntegrator(parser, mesh, data_manager, bc,
+    status = details::ExplicitTimeIntegrator(parser, mesh, data_manager,
                                              contact_interface);
   }
   else if (time_integration_scheme == "quasistatic") {
-    status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager,
-                                                bc);
+    status = details::QuasistaticTimeIntegrator(parser, mesh, data_manager);
   }
 
   return status;
@@ -360,7 +353,6 @@ int ExplicitTimeIntegrator(
     const nimble::Parser &parser,
     nimble::GenesisMesh &mesh,
     nimble::DataManager &data_manager,
-    nimble::BoundaryConditionManager &bc,
     std::shared_ptr<nimble::ContactInterface> contact_interface
 )
 {
@@ -455,20 +447,6 @@ int ExplicitTimeIntegrator(
   if (contact_enabled)
     contact_force = model_data.GetVectorNodeData("contact_force");
 
-#ifdef NIMBLE_HAVE_UQ
-  auto uq_model = *( data_manager.GetUqModel() );
-  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views(0);
-  if(uq_model.Initialized()) {
-    uq_model.Setup();
-/// FOR CALL TO BCS ===================
-    int num_samples = uq_model.GetNumSamples();
-    for(int nuq=0; nuq<num_samples; nuq++){
-       double * v = uq_model.Velocities()[nuq];
-       bc_offnom_velocity_views.push_back( nimble::Viewify<2>(v, {0, 3}, {3, 1}) );
-    }
-  }
-#endif
-
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
 
@@ -483,18 +461,9 @@ int ExplicitTimeIntegrator(
   int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
 
-  bc.ApplyInitialConditions(reference_coordinate, velocity
-#ifdef NIMBLE_HAVE_UQ
-      ,bc_offnom_velocity_views
-#endif
-  );
+  model_data.ApplyInitialConditions(data_manager);
 
-  // Allow prescribed velocities to trump initial velocities
-  bc.ApplyKinematicBC(0.0, 0.0, reference_coordinate, displacement, velocity
-#ifdef NIMBLE_HAVE_UQ
-      , bc_offnom_velocity_views
-#endif
-  );
+  model_data.ApplyKinematicConditions(data_manager, 0.0, 0.0);
 
   // For explicit dynamics, the macroscale model is never treated as an RVE
   // so rve_macroscale_deformation_gradient will always be the identity matrix
@@ -503,7 +472,7 @@ int ExplicitTimeIntegrator(
     rve_macroscale_deformation_gradient[i] = 1.0;
   }
 
-  data_manager.WriteExodusOutput(time_current);
+  data_manager.WriteOutput(time_current);
 
   if (contact_visualization) {
     contact_manager.ContactVisualizationWriteStep(time_current);
@@ -557,26 +526,14 @@ int ExplicitTimeIntegrator(
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
     velocity += half_delta_time * acceleration;
 
-#ifdef NIMBLE_HAVE_UQ
-    // 1st half step: update velocities for approximate trajectories
-    uq_model.UpdateVelocity(half_delta_time);
-#endif
+    model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
 
-    bc.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
-                        displacement, velocity
-#ifdef NIMBLE_HAVE_UQ
-        , bc_offnom_velocity_views
-#endif
-    );
+    model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
     displacement += delta_time * velocity;
 
-#ifdef NIMBLE_HAVE_UQ
-    // advance approximate trajectories
-    uq_model.UpdateDisplacement(delta_time);
-    uq_model.Prep();
-#endif
+    model_data.UpdateWithNewDisplacement(data_manager, delta_time);
 
     //
     // Evaluate external body forces
@@ -639,47 +596,24 @@ int ExplicitTimeIntegrator(
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
     velocity += half_delta_time * acceleration;
 
-#ifdef NIMBLE_HAVE_UQ
-    // 2nd half step: update velocities for approximate trajectories
-    uq_model.UpdateVelocity(half_delta_time);
-#endif
+    model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
+
     total_dynamics_time.Stop();
 
     if (is_output_step) {
       nimble::quanta::stopwatch exodus_write_timer;
       exodus_write_timer.reset();
 
-      bc.ApplyKinematicBC(time_current, time_previous, reference_coordinate,
-                          displacement, velocity
-#ifdef NIMBLE_HAVE_UQ
-          , bc_offnom_velocity_views
-#endif
-      );
+      model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
-      data_manager.WriteExodusOutput(time_current);
+      data_manager.WriteOutput(time_current);
 
       if (contact_visualization) {
         contact_manager.ContactVisualizationWriteStep(time_current);
       }
       total_exodus_write_time += exodus_write_timer.age();
-    }
 
-#ifdef NIMBLE_HAVE_UQ
-    if(uq_model.Initialized()) {
-      if (is_output_step) {
-        for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
-          int block_id = block_it->first;
-          int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-          int const * elem_conn = mesh.GetConnectivity(block_id);
-          nimble::Block& block = block_it->second;
-
-          uq_model.PerformAnalyses(reference_coordinate, num_elem_in_block,
-                                   elem_conn, block_id, block);
-        }
-        uq_model.Write(step);
-      }
-    }
-#endif
+    } // if (is_output_step)
 
     model_data.UpdateStates(data_manager);
     total_step_time.Stop();
@@ -712,8 +646,7 @@ int ExplicitTimeIntegrator(
 
 int QuasistaticTimeIntegrator(const nimble::Parser &parser,
                               nimble::GenesisMesh & mesh,
-                              nimble::DataManager & data_manager,
-                              nimble::BoundaryConditionManager & bc
+                              nimble::DataManager & data_manager
 )
 {
 
@@ -731,6 +664,8 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
   int num_blocks = static_cast<int>(mesh.GetNumBlocks());
   const int *global_node_ids = mesh.GetNodeGlobalIds();
+
+  auto &bc = *( data_manager.GetBoundaryConditionManager() );
 
   // Store various mappings from global to local node ids
   // Things get a bit tricky for periodic boundary conditions,
@@ -806,16 +741,11 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   int output_frequency = parser.OutputFrequency();
 
 #ifdef NIMBLE_HAVE_UQ
-  if (parser.HasUq()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
-  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views(0);
+  if (parser.UseUQ())
+    throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
 #endif
 
-  bc.ApplyKinematicBC(0.0, 0.0, reference_coordinate,
-                      displacement, velocity
-#ifdef NIMBLE_HAVE_UQ
-      , bc_offnom_velocity_views
-#endif
-  );
+  model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
   std::vector<double> identity(dim*dim, 0.0);
   for (int i=0 ; i<dim ; i++) {
@@ -828,7 +758,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
   std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
 
-  model_data.WriteExodusOutput(data_manager, time_current);
+  data_manager.WriteOutput(time_current);
 
   if (my_rank == 0) {
     std::cout << "Beginning quasistatic time integration:" << std::endl;
@@ -849,12 +779,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
       }
     }
 
-    bc.ApplyKinematicBC(time_current, time_previous,
-                        reference_coordinate, displacement, velocity
-#ifdef NIMBLE_HAVE_UQ
-        , bc_offnom_velocity_views
-#endif
-    );
+    model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
     bc.GetRVEMacroscaleDeformationGradient(time_current, rve_macroscale_deformation_gradient.data());
 
@@ -1047,7 +972,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
     }
     else {
       if (is_output_step)
-        model_data.WriteExodusOutput(data_manager, time_current);
+        data_manager.WriteOutput(time_current);
     }
 
     // swap states
@@ -1079,12 +1004,6 @@ double ComputeQuasistaticResidual(nimble::GenesisMesh & mesh,
   const int dim = mesh.GetDim();
   const int num_nodes = static_cast<int>(mesh.GetNumNodes());
   const int num_unknowns = num_nodes * mesh.GetDim();
-
-#ifdef NIMBLE_HAVE_UQ
-  // HACK
-  nimble::UqModel uq_model(dim,num_nodes);
-  std::vector<double> uq_params(0);
-#endif
 
   auto model_data = data_manager.GetMacroScaleData();
 

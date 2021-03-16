@@ -41,6 +41,8 @@
 //@HEADER
 */
 
+#include "nimble_boundary_condition_manager.h"
+#include "nimble_data_manager.h"
 #include "nimble_model_data_base.h"
 
 namespace nimble {
@@ -77,6 +79,30 @@ void ModelDataBase::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
   else {
     throw std::runtime_error(" -- Inappropriate Spatial Dimension");
   }
+}
+
+void ModelDataBase::ApplyInitialConditions(nimble::DataManager &data_manager) {
+  auto bc = data_manager.GetBoundaryConditionManager();
+  auto reference_coordinate = GetVectorNodeData("reference_coordinate");
+  auto velocity = GetVectorNodeData("velocity");
+  bc->ApplyInitialConditions(reference_coordinate, velocity);
+}
+
+void ModelDataBase::ApplyKinematicConditions(nimble::DataManager &data_manager,
+                                             double time_current,
+                                             double time_previous) {
+  auto bc = data_manager.GetBoundaryConditionManager();
+  auto reference_coordinate = GetVectorNodeData("reference_coordinate");
+  auto velocity = GetVectorNodeData("velocity");
+
+  nimble::Viewify<2> displacement;
+  if (use_displacement_fluctuations_)
+    displacement = GetVectorNodeData("displacement_fluctuation");
+  else
+    displacement = GetVectorNodeData("displacement");
+
+  bc->ApplyKinematicBC(time_current, time_previous,
+                       reference_coordinate, displacement, velocity);
 }
 
 }
