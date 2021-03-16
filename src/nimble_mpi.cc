@@ -42,6 +42,8 @@
 */
 
 #include "nimble_version.h"
+#include "nimble_mpi.h"
+
 #include "nimble_parser.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_boundary_condition_manager.h"
@@ -56,8 +58,6 @@
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_model_data_utils.h"
-
-#include "nimble_mpi.h"
 #include "nimble_vector_communicator.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_timing_utils.h"
@@ -280,6 +280,21 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   nimble::DataManager data_manager(parser, mesh, rve_mesh);
   data_manager.SetBlockMaterialInterfaceFactory(block_material);
 
+  if (my_rank == 0) {
+    std::cout << "\n";
+    if (num_ranks == 1) {
+      std::cout << " Number of Nodes = " << num_nodes << "\n";
+      std::cout << " Number of Elements = " << mesh.GetNumElements() << "\n";
+    }
+    std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks() << "\n";
+    std::cout << "\n";
+    std::cout << " Number of Ranks         = " << num_ranks << "\n";
+#ifdef _OPENMP
+    std::cout << " Number of Threads       = " << omp_get_max_threads() << "\n";
+#endif
+    std::cout << "\n";
+  }
+
   auto macroscale_data = data_manager.GetMacroScaleData();
   macroscale_data->InitializeBlocks(data_manager, material_factory_base);
 
@@ -311,6 +326,7 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
 
   return status;
 }
+
 
 void NimbleFinalize(const nimble::Parser &parser) {
 
@@ -394,21 +410,21 @@ int ExplicitTimeIntegrator(
   auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
   if (contact_enabled) {
-    std::vector<std::string> contact_master_block_names, contact_slave_block_names;
+    std::vector<std::string> contact_primary_block_names, contact_secondary_block_names;
     double penalty_parameter;
     nimble::ParseContactCommand(parser.ContactString(),
-                                contact_master_block_names,
-                                contact_slave_block_names,
+                                contact_primary_block_names,
+                                contact_secondary_block_names,
                                 penalty_parameter);
-    std::vector<int> contact_master_block_ids, contact_slave_block_ids;
-    mesh.BlockNamesToOnProcessorBlockIds(contact_master_block_names,
-                                         contact_master_block_ids);
-    mesh.BlockNamesToOnProcessorBlockIds(contact_slave_block_names,
-                                         contact_slave_block_ids);
+    std::vector<int> contact_primary_block_ids, contact_secondary_block_ids;
+    mesh.BlockNamesToOnProcessorBlockIds(contact_primary_block_names,
+                                         contact_primary_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_secondary_block_names,
+                                         contact_secondary_block_ids);
     contact_manager.SetPenaltyParameter(penalty_parameter);
     contact_manager.CreateContactEntities(mesh, *myVectorCommunicator,
-                                          contact_master_block_ids,
-                                          contact_slave_block_ids);
+                                          contact_primary_block_ids,
+                                          contact_secondary_block_ids);
     if (contact_visualization) {
       std::string tag = parser.GetOutputTag();
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
@@ -539,11 +555,7 @@ int ExplicitTimeIntegrator(
     half_delta_time = 0.5*delta_time;
 
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
-    for (int i = 0; i < num_nodes; ++i) {
-      velocity(i, 0) += half_delta_time * acceleration(i, 0);
-      velocity(i, 1) += half_delta_time * acceleration(i, 1);
-      velocity(i, 2) += half_delta_time * acceleration(i, 2);
-    }
+    velocity += half_delta_time * acceleration;
 
 #ifdef NIMBLE_HAVE_UQ
     // 1st half step: update velocities for approximate trajectories
@@ -558,11 +570,7 @@ int ExplicitTimeIntegrator(
     );
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
-    for (int i=0 ; i < num_nodes; ++i) {
-      displacement(i, 0) += delta_time * velocity(i, 0);
-      displacement(i, 1) += delta_time * velocity(i, 1);
-      displacement(i, 2) += delta_time * velocity(i, 2);
-    }
+    displacement += delta_time * velocity;
 
 #ifdef NIMBLE_HAVE_UQ
     // advance approximate trajectories
@@ -629,11 +637,7 @@ int ExplicitTimeIntegrator(
     }
 
     // V^{n+1}   = V^{n+1/2} + (dt/2)*A^{n+1}
-    for (int i = 0; i < num_nodes; ++i) {
-      velocity(i, 0) += half_delta_time * acceleration(i, 0);
-      velocity(i, 1) += half_delta_time * acceleration(i, 1);
-      velocity(i, 2) += half_delta_time * acceleration(i, 2);
-    }
+    velocity += half_delta_time * acceleration;
 
 #ifdef NIMBLE_HAVE_UQ
     // 2nd half step: update velocities for approximate trajectories
@@ -704,39 +708,6 @@ int ExplicitTimeIntegrator(
   }
   return status;
 }
-
-
-/////////////////////////////
-//
-// Temporary position while refactoring
-// This class is used in the quasi-static integration
-//
-class Viewify {
-
-public:
-
-  Viewify() : data_(nullptr), dim_(0)
-  {} // for NIMBLE_HAVE_UQ?
-
-  Viewify(double * const data, int dim)
-      : data_(data), dim_(dim) {}
-
-  NIMBLE_INLINE_FUNCTION
-  double& operator()(int i, int j) {
-    return data_[i*dim_ + j];
-  }
-
-  NIMBLE_INLINE_FUNCTION
-  const double& operator()(int i, int j) const {
-    return data_[i*dim_ + j];
-  }
-
-private:
-
-  double* const data_;
-  int dim_;
-};
-/////////////////////////////
 
 
 int QuasistaticTimeIntegrator(const nimble::Parser &parser,
