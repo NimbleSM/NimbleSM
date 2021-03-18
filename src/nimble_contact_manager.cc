@@ -305,9 +305,9 @@ void ContactManager::CreateContactEntities(
         coord_z[node_ids_[i_node]];
   }
 
-  // Store nodes in slave faces
+  // Store nodes in secondary faces
   // Create a list of nodes and their characteristic lengths
-  const int *genesis_node_global_ids = mesh.GetNodeGlobalIds();
+  const int* genesis_node_global_ids = mesh.GetNodeGlobalIds();
   std::vector<int> secondary_node_ids;
   std::vector<int> secondary_node_entity_ids;
   std::map<int, double> secondary_node_char_lens;
@@ -316,19 +316,15 @@ void ContactManager::CreateContactEntities(
     int num_nodes_in_face = static_cast<int>(face.size());
     // determine a characteristic length based on max edge length
     double max_edge_length = std::numeric_limits<double>::lowest();
-    for (int i = 0; i < num_nodes_in_face; ++i) {
+    for (int i=0 ; i<num_nodes_in_face ; ++i) {
       int node_id_1 = face[i];
       int node_id_2 = face[0];
-      if (i + 1 < num_nodes_in_face) {
-        node_id_2 = face[i + 1];
+      if (i+1 < num_nodes_in_face) {
+        node_id_2 = face[i+1];
       }
-      double edge_length =
-          sqrt((coord_[3 * node_id_2] - coord_[3 * node_id_1]) *
-               (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
-               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
-               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
-               (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]) *
-               (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]));
+      double edge_length = sqrt( (coord_[3*node_id_2  ] - coord_[3*node_id_1  ])*(coord_[3*node_id_2  ] - coord_[3*node_id_1  ]) +
+                                (coord_[3*node_id_2+1] - coord_[3*node_id_1+1])*(coord_[3*node_id_2+1] - coord_[3*node_id_1+1]) +
+                                (coord_[3*node_id_2+2] - coord_[3*node_id_1+2])*(coord_[3*node_id_2+2] - coord_[3*node_id_1+2]) );
       if (edge_length > max_edge_length) {
         max_edge_length = edge_length;
       }
