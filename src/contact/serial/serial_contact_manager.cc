@@ -42,6 +42,7 @@
 */
 
 #include "serial_contact_manager.h"
+#include "nimble_data_manager.h"
 
 namespace nimble {
   SerialContactManager::SerialContactManager(std::shared_ptr<ContactInterface> interface,

@@ -44,7 +44,9 @@
 #if defined(NIMBLE_HAVE_ARBORX) && defined(NIMBLE_HAVE_MPI)
 
 #include "arborx_parallel_contact_manager.h"
+
 #include "nimble_defs.h"
+#include "nimble_data_manager.h"
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>

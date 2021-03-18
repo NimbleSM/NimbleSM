@@ -53,6 +53,8 @@
 
 namespace nimble {
 
+class DataManager;
+
 class ArborXParallelContactManager : public ParallelContactManager {
 public:
   ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface,

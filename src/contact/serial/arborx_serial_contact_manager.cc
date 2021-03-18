@@ -132,7 +132,7 @@ using arborx_bvh = ArborX::BVH<memory_space>;
 ArborXSerialContactManager::ArborXSerialContactManager(
     std::shared_ptr<ContactInterface> interface,
     nimble::DataManager &data_manager)
-    : SerialContactManager{interface, nimble::DataManager &data_manager} {
+    : SerialContactManager{interface, data_manager} {
   /// TODO Ask NM & RJ whether this is needed at constructor time
   Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
   Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);

@@ -42,6 +42,7 @@
 */
 
 #include "parallel_contact_manager.h"
+#include "nimble_data_manager.h"
 
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>

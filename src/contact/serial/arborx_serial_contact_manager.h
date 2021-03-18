@@ -58,6 +58,8 @@ class ModelData;
 
 namespace nimble {
 
+class DataManager;
+
 class ArborXSerialContactManager : public SerialContactManager {
 public:
   ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface,
