@@ -33,6 +33,10 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
         command.append(executable_name)
         if "NimbleSM_Tpetra" in executable_name: 
           command.append("--use_tpetra")
+        if "NimbleSM_Kokkos" in executable_name: 
+          command.append("--use_kokkos")
+        if "NimbleSM_ArborX" in executable_name: 
+          command.append("--use_kokkos")
     if "NimbleSM_Qthreads" in executable_name:
         if qthreads_num_shepherds:
             command.append("-num_shepherds")

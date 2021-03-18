@@ -50,9 +50,7 @@
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
-#include "nimble_linear_solver.h"
 #include "nimble_model_data.h"
-#include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_DARMA
   #include "darma.h"
@@ -67,6 +65,7 @@ namespace nimble {
 class BoundaryConditionManager;
 class GenesisMesh;
 class ModelDataBase;
+class Parser;
 class VectorCommunicator;
 
 struct RVEData {

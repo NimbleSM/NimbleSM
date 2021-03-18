@@ -53,22 +53,27 @@
 
 namespace nimble {
 
-  class ArborXParallelContactManager: public ParallelContactManager
-  {
-  public:
+class ArborXParallelContactManager : public ParallelContactManager {
+public:
+  ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface,
+                               nimble::DataManager &data_manager);
+  ArborXParallelContactManager(const ArborXParallelContactManager &) = delete;
+  ArborXParallelContactManager(ArborXParallelContactManager &&) noexcept =
+      default;
 
-    explicit ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface);
-    ArborXParallelContactManager(const ArborXParallelContactManager &) = delete;
-    ArborXParallelContactManager(ArborXParallelContactManager &&) noexcept = default;
+  ArborXParallelContactManager &
+  operator=(ArborXParallelContactManager &&) noexcept = default;
 
-    ArborXParallelContactManager & operator=( ArborXParallelContactManager &&) noexcept = default;
+  ~ArborXParallelContactManager() override = default;
 
-    ~ArborXParallelContactManager() override = default;
+  void ComputeParallelContactForce(int step, bool debug_output,
+                                   nimble::Viewify<2> contact_force) override;
 
-    void ComputeParallelContactForce(int step, bool debug_output) override;
+protected:
+  nimble_kokkos::ModelData *model_data = nullptr;
+};
 
-  };
-}
+} // namespace nimble
 
 #endif // defined(NIMBLE_HAVE_ARBORX) && defined(NIMBLE_HAVE_MPI)
 

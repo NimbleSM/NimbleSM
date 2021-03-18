@@ -43,10 +43,10 @@
 
 #include <stdexcept>
 
-#include "nimble_block_material_interface_base.h"
 #include "nimble_data_manager.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_material_factory.h"
+#include "nimble_parser.h"
 #include "nimble_vector_communicator.h"
 
 #include <Kokkos_ScatterView.hpp>
@@ -590,10 +590,6 @@ void ModelData::ComputeInternalForce(nimble::DataManager &data_manager,
   nimble_kokkos::DeviceVectorNodeView internal_force_d = GetDeviceVectorNodeData(field_ids.internal_force);
   Kokkos::deep_copy(internal_force_d, (double)(0.0));
 
-  // Sync data
-  Kokkos::deep_copy(displacement_d_, displacement_h_);
-  Kokkos::deep_copy(velocity_d_, velocity_h_);
-
   // Compute element-level kinematics
   constexpr int mpi_vector_dim = 3;
 
@@ -1109,6 +1105,18 @@ void ModelData::ScatterScalarNodeDataUsingKokkosScatterView(int field_id,
   Kokkos::Experimental::contribute(data, scatter_view);
 }
 #endif
+
+
+void ModelData::UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                                      double dt) {
+  Kokkos::deep_copy(velocity_d_, velocity_h_);
+}
+
+
+void ModelData::UpdateWithNewDisplacement(nimble::DataManager &data_manager,
+                                      double dt) {
+  Kokkos::deep_copy(displacement_d_, displacement_h_);
+}
 
 
 } // namespace nimble

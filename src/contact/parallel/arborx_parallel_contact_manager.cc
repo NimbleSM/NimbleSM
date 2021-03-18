@@ -233,11 +233,28 @@ using kokkos_device =
  * @param interface Contact Interface
  */
 ArborXParallelContactManager::ArborXParallelContactManager(
-    std::shared_ptr<ContactInterface> interface)
-    : ParallelContactManager(interface) {}
+    std::shared_ptr<ContactInterface> interface,
+    nimble::DataManager &data_manager)
+    : ParallelContactManager(data_manager, interface) {}
 
 void ArborXParallelContactManager::ComputeParallelContactForce(
-    int step, bool debug_output) {
+     int step, bool debug_output,
+    nimble::Viewify<2> contact_force)
+{
+
+  if (model_data == nullptr) {
+    auto model_ptr = this->data_manager_.GetMacroScaleData().get();
+    model_data = dynamic_cast< nimble_kokkos::ModelData* >(model_ptr);
+  }
+
+  auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
+
+  auto field_ids = this->data_manager_.GetFieldIDs();
+  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
+  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  Kokkos::deep_copy(contact_force_d, (double)(0.0));
+
+  this->ApplyDisplacements(displacement_d);
 
   //--- Set vector to store force
   this->startTimer("Contact:ResetData");
@@ -279,21 +296,22 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
   nimble_kokkos::DeviceScalarNodeView force = force_d_;
   auto numNodes = contact_nodes_d_.extent(0);
-  Kokkos::parallel_for("Update Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
-    auto &myNode = contact_nodes(i_node);
-    for (int j = offset(i_node); j < offset(i_node + 1); ++j) {
-      auto tmpOutput = results(j);
-      if (!tmpOutput.has_force_)
-        continue;
-      //
-      myNode.set_contact_status(true);
-      myNode.force_1_x_ = tmpOutput.force_node_[0];
-      myNode.force_1_y_ = tmpOutput.force_node_[1];
-      myNode.force_1_z_ = tmpOutput.force_node_[2];
-      //
-      myNode.ScatterForceToContactManagerForceVector(force);
-    }
-  });
+  Kokkos::parallel_for(
+      "Update Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
+        auto &myNode = contact_nodes(i_node);
+        for (int j = offset(i_node); j < offset(i_node + 1); ++j) {
+          auto tmpOutput = results(j);
+          if (!tmpOutput.has_force_)
+            continue;
+          //
+          myNode.set_contact_status(true);
+          myNode.force_1_x_ = tmpOutput.force_node_[0];
+          myNode.force_1_y_ = tmpOutput.force_node_[1];
+          myNode.force_1_z_ = tmpOutput.force_node_[2];
+          //
+          myNode.ScatterForceToContactManagerForceVector(force);
+        }
+      });
   //
   for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
     auto &myFace = contact_faces_d_(iface);
@@ -301,8 +319,16 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
       myFace.ScatterForceToContactManagerForceVector(force_d_);
   }
   this->stopTimer("Contact::EnforceInteraction");
-}
+
+  this->GetForces(contact_force_d);
+  Kokkos::deep_copy(contact_force_h, contact_force_d);
+
+  // Perform a reduction to obtain correct values on MPI boundaries
+  auto myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
+  myVectorCommunicator->VectorReduction(mpi_vector_dim, contact_force_h);
 
 }
+
+} // namespace nimble
 
 #endif

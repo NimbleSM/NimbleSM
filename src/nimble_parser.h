@@ -377,7 +377,7 @@ namespace nimble {
     /// \brief Boolean setting the usage of Tpetra
     bool use_tpetra_ = false;
 
-    /// \brief Boolean setting the usage of Tpetra
+    /// \brief Boolean setting the usage of UQ
     bool use_uq_ = false;
 
     /// \brief Rank ID when running with MPI
