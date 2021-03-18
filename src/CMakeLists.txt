@@ -18,7 +18,6 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
@@ -44,7 +43,6 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_material_factory_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block_material_interface_factory_base.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.h
@@ -63,8 +61,7 @@ if(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_defs.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.h)
+    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h)
 endif()
 
 if(NIMBLE_HAVE_MPI)
@@ -120,22 +117,24 @@ IF(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.cc)
+  )
 
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos.h)
+  )
 
   IF (NIMBLE_HAVE_ARBORX)
     message("Executable = NimbleSM_ArborX")
-    add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
+    #add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
+    add_executable(NimbleSM_ArborX nimble_mpi_main.cc)
     target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX)
   ELSE()
     message("Executable = NimbleSM_Kokkos")
-    add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
+    #add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
+    add_executable(NimbleSM_Kokkos nimble_mpi_main.cc)
     if (NIMBLE_HAVE_TRILINOS)
       target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
     ELSE()

@@ -52,14 +52,12 @@
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos_model_data.h"
 #include "nimble_kokkos_profiling.h"
-#include "nimble_model_data_utils.h"
 #include "nimble_parser.h"
 #include "nimble_timer.h"
 #include "nimble_timing_utils.h"
 #include "nimble_utils.h"
 #include "nimble_version.h"
 #include "nimble_view.h"
-#include <cassert>
 #include "nimble_kokkos_block_material_interface_factory.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
@@ -69,7 +67,7 @@
     #include "contact/serial/arborx_serial_contact_manager.h"
 #endif
 
-
+#include <cassert>
 #include <iostream>
 
 namespace nimble {
@@ -291,7 +289,8 @@ int NimbleKokkosFinalize(const nimble::Parser &parser) {
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  Kokkos::finalize();
+  if (parser.UseKokkos())
+    Kokkos::finalize();
 #endif
 
 #ifdef NIMBLE_HAVE_TRILINOS
@@ -324,11 +323,11 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
 
   auto num_nodes = static_cast<int>(mesh.GetNumNodes());
 
-  /// Temporary Solution while refactoring
-  auto &field_ids = data_manager.GetFieldIDs();
-  nimble_kokkos::ModelData &model_data = ::nimble_kokkos::details_kokkos::to_ModelData(data_manager.GetMacroScaleData());
-  auto &blocks = model_data.GetBlocks();
-  /////////////////
+  auto *model_data_ptr = dynamic_cast<nimble_kokkos::ModelData*>(data_manager.GetMacroScaleData().get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  nimble_kokkos::ModelData &model_data = *model_data_ptr;
 
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Lumped mass gather and compute");
@@ -341,16 +340,6 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   auto acceleration = model_data.GetVectorNodeData("acceleration");
   acceleration.zero();
 
-  //////////////////
-  /// The next variables are used for the contact force evaluation.
-  /// It will be refactored.
-  nimble_kokkos::DeviceVectorNodeView displacement_d = model_data.GetDeviceVectorNodeData(field_ids.displacement);
-  //
-  nimble_kokkos::HostVectorNodeView contact_force_h = model_data.GetHostVectorNodeData(field_ids.contact_force);
-  nimble_kokkos::DeviceVectorNodeView contact_force_d = model_data.GetDeviceVectorNodeData(field_ids.contact_force);
-  Kokkos::deep_copy(contact_force_h, (double)(0.0));
-  //////////////////
-
   model_data.ComputeLumpedMass(data_manager);
 
   auto lumped_mass = model_data.GetScalarNodeData("lumped_mass");
@@ -361,24 +350,20 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   auto internal_force = model_data.GetVectorNodeData("internal_force");
   internal_force.zero();
 
+  auto contact_force = model_data.GetVectorNodeData("contact_force");
+  contact_force.zero();
+
   double critical_time_step = model_data.GetCriticalTimeStep();
 
   watch_simulation.push_region("Contact setup");
 
-#ifdef NIMBLE_HAVE_ARBORX
-  #ifdef NIMBLE_HAVE_MPI
-    nimble::ArborXParallelContactManager contact_manager(contact_interface);
-  #else
-    nimble::ArborXSerialContactManager contact_manager(contact_interface);
-  #endif // NIMBLE_HAVE_MPI
-#else
-  nimble::ContactManager contact_manager(contact_interface);
-#endif // NIMBLE_HAVE_ARBORX
+  auto contact_manager = nimble::GetContactManager(contact_interface, data_manager);
 
   auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
-  bool contact_enabled = parser.HasContact();
-  bool contact_visualization = parser.ContactVisualization();
+  const bool contact_enabled = parser.HasContact();
+  const bool contact_visualization = parser.ContactVisualization();
+
   if (contact_enabled) {
     std::vector<std::string> contact_primary_block_names, contact_secondary_block_names;
     double penalty_parameter;
@@ -391,8 +376,8 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
                                          contact_primary_block_ids);
     mesh.BlockNamesToOnProcessorBlockIds(contact_secondary_block_names,
                                          contact_secondary_block_ids);
-    contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh,
+    contact_manager->SetPenaltyParameter(penalty_parameter);
+    contact_manager->CreateContactEntities(mesh,
                                           *myVectorCommunicator,
                                           contact_primary_block_ids,
                                           contact_secondary_block_ids);
@@ -403,7 +388,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
       std::string tag = "kokkos";
 #endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
-      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
+      contact_manager->InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
 
@@ -428,7 +413,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
   data_manager.WriteOutput(time_current);
 
   if (contact_visualization) {
-    contact_manager.ContactVisualizationWriteStep(time_current);
+    contact_manager->ContactVisualizationWriteStep(time_current);
   }
 
   watch_simulation.pop_region_and_report_time();
@@ -492,28 +477,16 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     //
     if (contact_enabled) {
       watch_internal_details.push_region("Contact");
-      //
-      Kokkos::deep_copy(contact_force_d, (double)(0.0));
-      contact_manager.ApplyDisplacements(displacement_d);
-      contact_manager.ComputeContactForce(step+1, is_output_step);
-      //
-      contact_manager.GetForces(contact_force_d);
-      Kokkos::deep_copy(contact_force_h, contact_force_d);
+      contact_manager->ComputeContactForce(step+1, is_output_step,
+                                           contact_force);
       total_contact_time += watch_internal_details.pop_region_and_report_time();
-      // Perform a reduction to obtain correct values on MPI boundaries
-      {
-        watch_internal_details.push_region("MPI reduction");
-        myVectorCommunicator->VectorReduction(mpi_vector_dim, contact_force_h);
-        total_vector_reduction_time +=
-            watch_internal_details.pop_region_and_report_time();
-      }
       //
-      auto tmpNum = contact_manager.numActiveContactFaces();
+      auto tmpNum = contact_manager->numActiveContactFaces();
       if (tmpNum)
         contactInfo.insert(std::make_pair(step, tmpNum));
       //
 //      if (contact_visualization && is_output_step)
-//        contact_manager.ContactVisualizationWriteStep(time_current);
+//        contact_manager->ContactVisualizationWriteStep(time_current);
     }
 
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
@@ -521,11 +494,11 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
     if (contact_enabled) {
       for (int i = 0; i < num_nodes; ++i) {
         acceleration(i, 0) = (1.0 / lumped_mass(i)) *
-                               (internal_force(i, 0) + contact_force_h(i, 0));
+                               (internal_force(i, 0) + contact_force(i, 0));
         acceleration(i, 1) = (1.0 / lumped_mass(i)) *
-                               (internal_force(i, 1) + contact_force_h(i, 1));
+                               (internal_force(i, 1) + contact_force(i, 1));
         acceleration(i, 2) = (1.0 / lumped_mass(i)) *
-                               (internal_force(i, 2) + contact_force_h(i, 2));
+                               (internal_force(i, 2) + contact_force(i, 2));
       }
     }
     else {
@@ -547,7 +520,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
       data_manager.WriteOutput(time_current);
       //
       if (contact_visualization) {
-        contact_manager.ContactVisualizationWriteStep(time_current);
+        contact_manager->ContactVisualizationWriteStep(time_current);
       }
 
       total_exodus_write_time += watch_internal.pop_region_and_report_time();
@@ -597,7 +570,7 @@ int ExplicitTimeIntegrator(const nimble::Parser & parser,
       std::cout << " --- Contact = " << total_contact_time << "\n";
 //      std::cout << " --- >>> Apply displ. = " << total_contact_applyd << "\n";
 //      std::cout << " --- >>> Search / Project / Enforce = " << total_arborx_time << "\n";
-      auto list_timers = contact_manager.getTimers();
+      auto list_timers = contact_manager->getTimers();
       for (const auto& st_pair : list_timers)
         std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
       std::cout << " --- >>> Get Forces = " << total_contact_getf << "\n";

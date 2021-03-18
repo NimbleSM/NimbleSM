@@ -139,6 +139,26 @@ public:
                             const nimble::Viewify<2> &displacement,
                             nimble::Viewify<2> &force) override;
 
+  /// \brief Update model with new velocity
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine wll synchronize the host and device velocities.
+  ///
+  void UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                             double dt) override;
+
+  /// \brief Update model with new displacement
+  ///
+  /// \param[in] data_manager Reference to the data manager
+  /// \param[in] dt Current time step
+  ///
+  /// \note This routine wll synchronize the host and device displacements.
+  ///
+  void UpdateWithNewDisplacement(nimble::DataManager &data_manager,
+                                 double dt) override;
+
   //--- Specific routines
 
   int AllocateElementData(int block_id,

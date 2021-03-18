@@ -48,13 +48,13 @@
 #include <memory>
 
 #include "nimble_defs.h"
-#include "nimble_parser.h"
-#include "nimble_material_factory_base.h"
+
 
 namespace nimble {
 
 class BlockMaterialInterfaceFactoryBase;
 class ContactInterface;
+class Parser;
 
 }
 
