@@ -278,6 +278,7 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
         tag = "arborx";
 #endif
   std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
+std::cout << " output_exodus_name " << output_exodus_name << " tag " << tag << "\n";
 
   int dim = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
@@ -423,6 +424,7 @@ int ExplicitTimeIntegrator(
         tag = "arborx";
 #endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
+      std::cout << " contact_visualization_exodus_file_name " << contact_visualization_exodus_file_name << " tag " << tag << "\n";
       contact_manager->InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
