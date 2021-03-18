@@ -143,19 +143,19 @@ ENDIF()
 
 list(APPEND lstTests_ArborX_A
 #        brick_with_fiber_periodic
-        brick_with_fibers
+#        brick_with_fibers
         contact_entity_creation
 #       cylinder_with_hole
-        notched_plate_native_hypoelastic
-        notched_plate_native_neohookean
+#        notched_plate_native_hypoelastic
+#        notched_plate_native_neohookean
 #        plate_with_hole_rve
 #        quasistatic_tension
-        rigid_body_motion
-        simple_deformation_modes
+#        rigid_body_motion
+#        simple_deformation_modes
 #        single_elem_complex_displacement
         sphere_plate_contact
 #        tiny_fe_squared
-        wave_in_bar
+#        wave_in_bar
         )
 
 # "B" test list for tests that can only work in Serial
@@ -168,7 +168,7 @@ list(APPEND lstTestsCLI_ArborX_B_Suffixes
         )
 
 list(APPEND lstTests_ArborX_B
-        single_elem_complex_displacement
+#        single_elem_complex_displacement
         cubes_contact
         )
 
