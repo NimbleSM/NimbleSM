@@ -47,9 +47,16 @@
 
 #include "nimble_defs.h"
 #include "nimble_data_manager.h"
+#include "nimble_vector_communicator.h"
+
+#ifdef NNIMBLE_HAVE_KOKKOS
+#include "nimble_kokkos_model_data.h"
+#endif
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
+
+#include <mpi.h>
 
 #include <iostream>
 #include <random>
@@ -326,8 +333,9 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
   Kokkos::deep_copy(contact_force_h, contact_force_d);
 
   // Perform a reduction to obtain correct values on MPI boundaries
+  constexpr int vector_dim = 3;
   auto myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
-  myVectorCommunicator->VectorReduction(mpi_vector_dim, contact_force_h);
+  myVectorCommunicator->VectorReduction(vector_dim, contact_force_h);
 
 }
 
