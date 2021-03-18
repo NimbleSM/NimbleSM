@@ -49,6 +49,10 @@
 #include "nimble_contact_manager.h"
 
 namespace nimble {
+
+class DataManager;
+class ContactInterface;
+
   class ParallelContactManager : public ContactManager {
   public:
 
