@@ -44,6 +44,7 @@
 #include "nimble_data_manager.h"
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
+#include "nimble_parser.h"
 #include "nimble_vector_communicator.h"
 #include "nimble_view.h"
 

@@ -126,9 +126,9 @@ public:
 
   Viewify<N>& operator+=(const details::AXPYResult<N> &rhs);
 
-  const std::array<int, N> size() const { return len_; }
+  std::array<int, N> size() const { return len_; }
 
-  const std::array<int, N> stride() const { return stride_; }
+  std::array<int, N> stride() const { return stride_; }
 
 protected:
 

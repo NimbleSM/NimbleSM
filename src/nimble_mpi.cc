@@ -57,7 +57,6 @@
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
-#include "nimble_model_data_utils.h"
 #include "nimble_vector_communicator.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_timing_utils.h"
@@ -238,6 +237,10 @@ void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser) 
   if (parser.UseVT() == true) {
     MPI_Comm vt_comm = MPI_COMM_WORLD;
     ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm );
+    //
+    // Check whether we need the next line
+    //
+    //bvh::vt::context vt_ctx{argc, argv, &comm_mpi};
   }
 #endif
 
@@ -257,11 +260,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   const int my_rank = parser.GetRankID();
   const int num_ranks = parser.GetNumRanks();
 
-#ifdef NIMBLE_HAVE_BVH
-  auto comm_mpi = MPI_COMM_WORLD;
-  //bvh::vt::context vt_ctx{ argc, argv, &comm_mpi };
-#endif
-
   // Read the mesh
   nimble::GenesisMesh mesh;
   nimble::GenesisMesh rve_mesh;
@@ -275,6 +273,10 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   }
 
   std::string tag = parser.GetOutputTag();
+#ifdef NIMBLE_HAVE_ARBORX
+  if ((parser.UseKokkos()) && (parser.HasContact()))
+        tag = "arborx";
+#endif
   std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
 
   int dim = mesh.GetDim();
@@ -329,7 +331,8 @@ void NimbleFinalize(const nimble::Parser &parser) {
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  Kokkos::finalize();
+  if (parser.UseKokkos())
+    Kokkos::finalize();
 #endif
 
 #ifdef NIMBLE_HAVE_TRILINOS
@@ -364,11 +367,7 @@ int ExplicitTimeIntegrator(
   const int num_ranks = parser.GetNumRanks();
   const long num_unknowns = num_nodes * mesh.GetDim();
 
-#ifdef NIMBLE_HAVE_BVH
-  nimble::BvhContactManager contact_manager(contact_interface, parser.ContactDicing());
-#else
-  nimble::ContactManager contact_manager(contact_interface);
-#endif
+  auto contact_manager = nimble::GetContactManager(contact_interface, data_manager);
 
   bool contact_enabled = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();
@@ -413,18 +412,22 @@ int ExplicitTimeIntegrator(
                                          contact_primary_block_ids);
     mesh.BlockNamesToOnProcessorBlockIds(contact_secondary_block_names,
                                          contact_secondary_block_ids);
-    contact_manager.SetPenaltyParameter(penalty_parameter);
-    contact_manager.CreateContactEntities(mesh, *myVectorCommunicator,
+    contact_manager->SetPenaltyParameter(penalty_parameter);
+    contact_manager->CreateContactEntities(mesh, *myVectorCommunicator,
                                           contact_primary_block_ids,
                                           contact_secondary_block_ids);
     if (contact_visualization) {
       std::string tag = parser.GetOutputTag();
+#ifdef NIMBLE_HAVE_ARBORX
+      if ((parser.UseKokkos()) && (parser.HasContact()))
+        tag = "arborx";
+#endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
-      contact_manager.InitializeContactVisualization(contact_visualization_exodus_file_name);
+      contact_manager->InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
 
-  nimble::ModelData &model_data = to_ModelData(data_manager.GetMacroScaleData());
+  auto &model_data = *( data_manager.GetMacroScaleData() );
 
   int status = 0;
 
@@ -446,9 +449,6 @@ int ExplicitTimeIntegrator(
   nimble::Viewify<2> contact_force;
   if (contact_enabled)
     contact_force = model_data.GetVectorNodeData("contact_force");
-
-  std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
-  std::map<int, nimble::Block>::iterator block_it;
 
   model_data.ComputeLumpedMass(data_manager);
 
@@ -475,7 +475,7 @@ int ExplicitTimeIntegrator(
   data_manager.WriteOutput(time_current);
 
   if (contact_visualization) {
-    contact_manager.ContactVisualizationWriteStep(time_current);
+    contact_manager->ContactVisualizationWriteStep(time_current);
   }
 
   double user_specified_time_step = final_time/num_load_steps;
@@ -552,15 +552,9 @@ int ExplicitTimeIntegrator(
     // Evaluate the contact force
     if (contact_enabled) {
       total_contact_time.Start();
-      contact_manager.ApplyDisplacements(displacement.data());
-#ifdef NIMBLE_HAVE_BVH
-      contact_manager.ComputeParallelContactForce(step + 1, is_output_step);
-#else
-      contact_manager.ComputeContactForce(step+1, contact_visualization && is_output_step);
-#endif
-      contact_manager.GetForces(contact_force.data());
-      const int vector_dimension = 3;
-      myVectorCommunicator->VectorReduction(vector_dimension, contact_force.data());
+      contact_manager->ComputeContactForce(step+1,
+                                          contact_visualization && is_output_step,
+                                          contact_force);
       total_contact_time.Stop();
     }
 
@@ -609,7 +603,7 @@ int ExplicitTimeIntegrator(
       data_manager.WriteOutput(time_current);
 
       if (contact_visualization) {
-        contact_manager.ContactVisualizationWriteStep(time_current);
+        contact_manager->ContactVisualizationWriteStep(time_current);
       }
       total_exodus_write_time += exodus_write_timer.age();
 
@@ -625,9 +619,11 @@ int ExplicitTimeIntegrator(
     std::cout << "Total step time: " << total_step_time.GetElapsedTime() << '\n';
     std::cout << "Total contact time: " << total_contact_time.GetElapsedTime() << '\n';
     std::cout << "Total dynamics time: " << total_dynamics_time.GetElapsedTime() << '\n';
-    std::cout << "Total search time: " << contact_manager.total_search_time.GetElapsedTime() << '\n';
-    std::cout << "Total enforcement time: " << contact_manager.total_enforcement_time.GetElapsedTime() << '\n';
-    std::cout << "Total num contacts: " << contact_manager.total_num_contacts << '\n';
+    if ((contact_enabled) && (contact_manager)) {
+      auto list_timers = contact_manager->getTimers();
+      for (const auto& st_pair : list_timers)
+        std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
+    }
   }
   if (my_rank == 0 && parser.WriteTimingDataFile()) {
     nimble::TimingInfo timing_writer{
@@ -693,7 +689,11 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 
   std::vector<double> global_data;
 
-  nimble::ModelData &model_data = details::to_ModelData(data_manager.GetMacroScaleData());
+  auto *model_data_ptr = dynamic_cast<nimble::ModelData*>(data_manager.GetMacroScaleData().get());
+  if (model_data_ptr == nullptr) {
+    throw std::runtime_error(" Incompatible Model Data \n");
+  }
+  nimble::ModelData &model_data = *model_data_ptr;
 
   // Set up the global vectors
   unsigned int num_unknowns = num_nodes * mesh.GetDim();

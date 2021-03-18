@@ -49,22 +49,30 @@
 #include "nimble_contact_manager.h"
 
 namespace nimble {
+
+class DataManager;
+class ContactInterface;
+
   class ParallelContactManager : public ContactManager {
   public:
 
-    ParallelContactManager(std::shared_ptr<ContactInterface> interface);
+    ParallelContactManager(std::shared_ptr<ContactInterface> interface,
+                           nimble::DataManager &data_manager);
 
-    void ComputeContactForce(int step, bool debug_output) override {
-      ComputeParallelContactForce(step, debug_output);
+    void ComputeContactForce(int step, bool debug_output,
+                             nimble::Viewify<2> contact_force) override
+    {
+      ComputeParallelContactForce(step, debug_output,
+                                  contact_force);
     }
 
-    virtual void ComputeParallelContactForce(int step, bool debug_output) = 0;
+    virtual void ComputeParallelContactForce(int step, bool debug_output,
+                                             nimble::Viewify<2> contact_force) = 0;
 
     int Rank() const noexcept { return m_rank; }
     int NumRanks() const noexcept { return m_num_ranks; }
 
   protected:
-
     int m_rank = 0;
     int m_num_ranks = 1;
   };
