@@ -244,7 +244,7 @@ using kokkos_device =
 ArborXParallelContactManager::ArborXParallelContactManager(
     std::shared_ptr<ContactInterface> interface,
     nimble::DataManager &data_manager)
-    : ParallelContactManager(data_manager, interface) {}
+    : ParallelContactManager(interface, data_manager) {}
 
 void ArborXParallelContactManager::ComputeParallelContactForce(
      int step, bool debug_output,

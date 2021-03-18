@@ -51,6 +51,12 @@
 
 #include "parallel_contact_manager.h"
 
+namespace nimble_kokkos {
+
+class ModelData;
+
+}
+
 namespace nimble {
 
 class DataManager;
