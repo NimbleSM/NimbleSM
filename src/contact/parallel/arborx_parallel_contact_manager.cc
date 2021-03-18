@@ -249,9 +249,9 @@ void ArborXParallelContactManager::ComputeParallelContactForce(
     model_data = dynamic_cast< nimble_kokkos::ModelData* >(model_ptr);
   }
 
+  auto field_ids = this->data_manager_.GetFieldIDs();
   auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
 
-  auto field_ids = this->data_manager_.GetFieldIDs();
   auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
   auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
   Kokkos::deep_copy(contact_force_d, (double)(0.0));
