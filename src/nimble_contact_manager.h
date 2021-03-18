@@ -217,6 +217,50 @@ public:
   /// \return Reference to map of strings to time value
   const std::unordered_map<std::string, double> &getTimers();
 
+  //
+  // Static functions
+  //
+
+  static void SkinBlocks(GenesisMesh const &mesh,
+                         std::vector<int> const &block_ids,
+                         int entity_id_offset,
+                         std::vector<std::vector<int>> &skin_faces,
+                         std::vector<int> &entity_ids);
+
+  static void RemoveInternalSkinFaces(GenesisMesh const &mesh,
+                                      std::vector<std::vector<int>> &faces,
+                                      std::vector<int> &entity_ids);
+
+  // DEPRECATED
+  /// \brief Compute the projection of a point onto a triangular face
+  ///
+  /// \param[in] node Node to project
+  /// \param[in] tri Face to project onto
+  /// \param[out] projection_type Result of projection (FACE: success,
+  ///             UNKNOWN: point projects outside the face)
+  /// \param[out] closest_point Projection
+  /// \param[out] gap Normal distance when the point projects onto the face
+  /// \param[out] normal Unit normal vector outside of face
+  /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+  static void SimpleClosestPointProjectionSingle(
+      const ContactEntity &node, const ContactEntity &tri,
+      PROJECTION_TYPE *projection_type, ContactEntity::vertex *closest_point,
+      double &gap, double *normal, double tolerance = 1.e-8);
+
+  /// \brief Compute the projection of a point onto a triangular face
+  ///
+  /// \param[in] node Node to project
+  /// \param[in] tri Face to project onto
+  /// \param[out] in True if node is inside the facet
+  /// \param[out] gap Normal distance when the point projects onto the face
+  /// \param[out] normal Unit normal vector outside of face
+  /// \param[out] barycentric_coordinates Projection of node on facet
+  /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
+  static void Projection(const ContactEntity &node, const ContactEntity &tri,
+                         bool &in, double &gap, double *normal,
+                         double *barycentric_coordinates,
+                         double tolerance = 1.e-8);
+
 protected:
 
   //
@@ -229,16 +273,6 @@ protected:
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
   void WriteVisualizationData(double t);
-
-  static void SkinBlocks(GenesisMesh const &mesh,
-                         std::vector<int> const &block_ids,
-                         int entity_id_offset,
-                         std::vector<std::vector<int>> &skin_faces,
-                         std::vector<int> &entity_ids);
-
-  static void RemoveInternalSkinFaces(GenesisMesh const &mesh,
-                                      std::vector<std::vector<int>> &faces,
-                                      std::vector<int> &entity_ids);
 
   template <typename ArgT>
   void CreateContactNodesAndFaces(
@@ -291,36 +325,6 @@ protected:
                                     double tolerance);
 
   double GetPenaltyForceParam() const noexcept { return enforcement.penalty; }
-
-  // DEPRECATED
-  /// \brief Compute the projection of a point onto a triangular face
-  ///
-  /// \param[in] node Node to project
-  /// \param[in] tri Face to project onto
-  /// \param[out] projection_type Result of projection (FACE: success,
-  ///             UNKNOWN: point projects outside the face)
-  /// \param[out] closest_point Projection
-  /// \param[out] gap Normal distance when the point projects onto the face
-  /// \param[out] normal Unit normal vector outside of face
-  /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
-  static void SimpleClosestPointProjectionSingle(
-      const ContactEntity &node, const ContactEntity &tri,
-      PROJECTION_TYPE *projection_type, ContactEntity::vertex *closest_point,
-      double &gap, double *normal, double tolerance = 1.e-8);
-
-  /// \brief Compute the projection of a point onto a triangular face
-  ///
-  /// \param[in] node Node to project
-  /// \param[in] tri Face to project onto
-  /// \param[out] in True if node is inside the facet
-  /// \param[out] gap Normal distance when the point projects onto the face
-  /// \param[out] normal Unit normal vector outside of face
-  /// \param[out] barycentric_coordinates Projection of node on facet
-  /// \param[in] tolerance Tolerance to fit into the face (defaut value = 1e-08)
-  static void Projection(const ContactEntity &node, const ContactEntity &tri,
-                         bool &in, double &gap, double *normal,
-                         double *barycentric_coordinates,
-                         double tolerance = 1.e-8);
 
   /// \brief Returns a read-only reference to contact face entity
   ///
