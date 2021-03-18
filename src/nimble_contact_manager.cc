@@ -60,14 +60,14 @@
 #endif
 
 #ifdef NIMBLE_HAVE_ARBORX
-#include "arborx_serial_contact_manager.h"
+#include "contact/serial/arborx_serial_contact_manager.h"
 #ifdef NIMBLE_HAVE_MPI
-#include "arborx_parallel_contact_manager.h"
+#include "contact/parallel/arborx_parallel_contact_manager.h"
 #endif
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
-#include "bvh_contact_manager.h"
+#include "contact/parallel/bvh_contact_manager.h"
 //
 #include <bvh/kdop.hpp>
 #include <bvh/patch.hpp>
