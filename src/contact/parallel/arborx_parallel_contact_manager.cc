@@ -47,9 +47,10 @@
 
 #include "nimble_defs.h"
 #include "nimble_data_manager.h"
+#include "nimble_model_data_base.h"
 #include "nimble_vector_communicator.h"
 
-#ifdef NNIMBLE_HAVE_KOKKOS
+#ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_model_data.h"
 #endif
 

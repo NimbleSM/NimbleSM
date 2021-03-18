@@ -45,11 +45,15 @@
 
 #include "arborx_serial_contact_manager.h"
 
+#include "nimble_defs.h"
 #include "nimble_data_manager.h"
+#include "nimble_model_data_base.h"
 #include "nimble_vector_communicator.h"
 #include "nimble_timer.h"
 
+#ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_model_data.h"
+#endif
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
