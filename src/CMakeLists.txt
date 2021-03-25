@@ -29,6 +29,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_data_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_mesh_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_profiling_timer.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block_base.h
@@ -128,12 +129,10 @@ IF(NIMBLE_HAVE_KOKKOS)
 
   IF (NIMBLE_HAVE_ARBORX)
     message("Executable = NimbleSM_ArborX")
-    #add_executable(NimbleSM_ArborX nimble_kokkos_main.cc)
     add_executable(NimbleSM_ArborX nimble_mpi_main.cc)
     target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX)
   ELSE()
     message("Executable = NimbleSM_Kokkos")
-    #add_executable(NimbleSM_Kokkos nimble_kokkos_main.cc)
     add_executable(NimbleSM_Kokkos nimble_mpi_main.cc)
     if (NIMBLE_HAVE_TRILINOS)
       target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
