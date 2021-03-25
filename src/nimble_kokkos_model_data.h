@@ -52,8 +52,8 @@
 
 #include "nimble_block_material_interface_base.h"
 #include "nimble_defs.h"
-#include "nimble_exodus_output_manager.h"
 #include "nimble_data_utils.h"
+#include "nimble_kokkos_block.h"
 #include "nimble_model_data_base.h"
 
 namespace nimble {
@@ -65,14 +65,16 @@ class DataManager;
 
 namespace nimble_kokkos {
 
+class ExodusOutputManager;
+
 class ModelData : public nimble::ModelDataBase
 {
 
 public:
 
-  ModelData() = default;
+  ModelData();
 
-  ~ModelData() override = default;
+  ~ModelData() override;
 
   //--- Common interface from nimble::ModelDataBase
 
@@ -256,25 +258,6 @@ public:
                                                    const DeviceScalarNodeGatheredView& gathered_view_d);
 #endif
 
-  std::map<int, nimble_kokkos::Block>& GetBlocks() { return blocks_; }
-
-  ////// Temporary Functions
-  nimble_kokkos::ExodusOutputManager& GetExodusOutputManager()
-  { return exodus_output_manager_; }
-
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredRefCoord()
-  { return gathered_reference_coordinate_d; }
-
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredDisp()
-  { return gathered_displacement_d; }
-
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredInternalForce()
-  { return gathered_internal_force_d; }
-
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>& GetGatheredContactForce()
-  { return gathered_contact_force_d; }
-  ///////////////////////////
-
 protected:
 
   void InitializeGatheredVectors(const nimble::GenesisMesh &mesh_);
@@ -312,7 +295,7 @@ protected:
   std::vector< std::map<int, int> > field_id_to_host_integration_point_data_index_;
   std::vector< std::map<int, int> > field_id_to_device_integration_point_data_index_;
 
-  nimble_kokkos::ExodusOutputManager exodus_output_manager_;
+  std::unique_ptr< nimble_kokkos::ExodusOutputManager > exodus_output_manager_;
 
   //--- Work arrays
   std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d;
