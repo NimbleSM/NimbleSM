@@ -453,13 +453,22 @@ int ExplicitTimeIntegrator(
   model_data.ComputeLumpedMass(data_manager);
 
   double critical_time_step = model_data.GetCriticalTimeStep();
-  const auto lumped_mass = model_data.GetScalarNodeData("lumped_mass");
+  auto const lumped_mass = model_data.GetScalarNodeData("lumped_mass");
 
-  double time_current(0.0), time_previous(0.0);
+  double initial_time = parser.InitialTime();
   double final_time = parser.FinalTime();
-  double delta_time, half_delta_time;
+  double time_current{initial_time};
+  double time_previous{initial_time};
+  double delta_time{0.0};
+  double half_delta_time{0.0};
   int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
+  double user_specified_time_step = (final_time - initial_time) / num_load_steps;
+
+  if (my_rank == 0 && final_time < initial_time) {
+    std::cerr << "**** ERROR: Final time: " << final_time << " is less than initial time: " << initial_time << "\n";
+    exit(1);
+  }
 
   model_data.ApplyInitialConditions(data_manager);
 
@@ -477,8 +486,6 @@ int ExplicitTimeIntegrator(
   if (contact_visualization) {
     contact_manager->ContactVisualizationWriteStep(time_current);
   }
-
-  double user_specified_time_step = final_time/num_load_steps;
 
   if (my_rank == 0) {
     std::cout << "\nUser specified time step:              " << user_specified_time_step << std::endl;
@@ -519,7 +526,7 @@ int ExplicitTimeIntegrator(
     total_dynamics_time.Start();
 
     time_previous = time_current;
-    time_current += final_time/num_load_steps;
+    time_current += user_specified_time_step;
     delta_time = time_current - time_previous;
     half_delta_time = 0.5*delta_time;
 
@@ -735,10 +742,19 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
 //  }
 #endif
 
-  double time_current(0.0), time_previous(0.0), delta_time(0.0);
+  double initial_time = parser.InitialTime();
   double final_time = parser.FinalTime();
+  double time_current{initial_time};
+  double time_previous{initial_time};
+  double delta_time{0.0};
   int num_load_steps = parser.NumLoadSteps();
   int output_frequency = parser.OutputFrequency();
+  double user_specified_time_step = (final_time - initial_time) / num_load_steps;
+
+  if (my_rank == 0 && final_time < initial_time) {
+    std::cerr << "**** ERROR: Final time: " << final_time << " is less than initial time: " << initial_time << "\n";
+    exit(1);
+  }
 
 #ifdef NIMBLE_HAVE_UQ
   if (parser.UseUQ())
@@ -769,7 +785,7 @@ int QuasistaticTimeIntegrator(const nimble::Parser &parser,
   for (int step=0 ; step<num_load_steps ; step++) {
 
     time_previous = time_current;
-    time_current += final_time/num_load_steps;
+    time_current += user_specified_time_step;
     delta_time = time_current - time_previous;
 
     bool is_output_step = false;

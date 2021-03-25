@@ -109,7 +109,7 @@ namespace nimble {
       ar | exodus_file_name_ | use_two_level_mesh_decomposition_;
       ar | write_timing_data_file_ | time_integration_scheme_;
       ar | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_;
-      ar | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
+      ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
       ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
       ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
       ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
@@ -143,6 +143,8 @@ namespace nimble {
     double NonlinearSolverRelativeTolerance() const { return nonlinear_solver_relative_tolerance_; }
 
     int NonlinearSolverMaxIterations() const { return nonlinear_solver_max_iterations_; }
+
+    double InitialTime() const { return initial_time_; }
 
     double FinalTime() const { return final_time_; }
 
@@ -335,7 +337,8 @@ namespace nimble {
     double nonlinear_solver_relative_tolerance_;
     int nonlinear_solver_max_iterations_;
     std::string time_integration_scheme_;
-    double final_time_;
+    double initial_time_{0.0};
+    double final_time_{0.0};
     int num_load_steps_;
     int output_frequency_;
     std::string contact_string_;
