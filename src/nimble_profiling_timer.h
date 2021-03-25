@@ -60,7 +60,7 @@ class ProfilingTimer {
 public:
   inline ProfilingTimer() {
 #ifndef NIMBLE_HAVE_KOKKOS
-    n_timer_ = std::make_unique<nimble::Timer>();
+    n_timer_ = std::unique_ptr<nimble::Timer>( new nimble::Timer() );
 #endif
   }
 
