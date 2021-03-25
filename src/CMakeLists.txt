@@ -118,7 +118,6 @@ IF(NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.cc
@@ -127,7 +126,6 @@ IF(NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output_manager.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
   )
 
