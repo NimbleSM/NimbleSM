@@ -60,10 +60,7 @@
 #include "nimble_vector_communicator.h"
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_timing_utils.h"
-
-#ifdef NIMBLE_HAVE_BVH
-#include "contact/parallel/bvh_contact_manager.h"
-#endif
+#include "nimble_profiling_timer.h"
 
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
@@ -399,6 +396,7 @@ int ExplicitTimeIntegrator(
 #endif
 
   auto myVectorCommunicator = data_manager.GetVectorCommunicator();
+  nimble::ProfilingTimer watch_simulation;
 
   if (contact_enabled) {
     std::vector<std::string> contact_primary_block_names, contact_secondary_block_names;
@@ -470,9 +468,10 @@ int ExplicitTimeIntegrator(
     exit(1);
   }
 
+  watch_simulation.push_region("BC enforcement");
   model_data.ApplyInitialConditions(data_manager);
-
   model_data.ApplyKinematicConditions(data_manager, 0.0, 0.0);
+  watch_simulation.pop_region_and_report_time();
 
   // For explicit dynamics, the macroscale model is never treated as an RVE
   // so rve_macroscale_deformation_gradient will always be the identity matrix
@@ -496,17 +495,19 @@ int ExplicitTimeIntegrator(
     std::cout << "Explicit time integration:\n    0% complete" << std::endl;
   }
 
-  // Timing occurs for this portion of the code
-  nimble::quanta::stopwatch main_simulation_timer;
-  main_simulation_timer.reset();
+  //
+  // Timing records
+  //
 
-  nimble::TimeKeeper total_step_time;
-  nimble::TimeKeeper total_contact_time;
-  nimble::TimeKeeper total_dynamics_time;
-  double total_exodus_write_time = 0.0, total_vector_reduction_time = 0.0;
+  double total_vector_reduction_time = 0.0;
+  double total_dynamics_time = 0.0, total_exodus_write_time = 0.0;
+  double total_force_time = 0.0, total_contact_time = 0.0;
+  watch_simulation.push_region("Time stepping loop");
+
+  nimble::ProfilingTimer watch_internal;
+  std::map<int, std::size_t> contactInfo;
 
   for (int step=0 ; step<num_load_steps ; step++) {
-    total_step_time.Start();
 
     if (my_rank == 0) {
       if (10*(step+1) % num_load_steps == 0 && step != num_load_steps - 1) {
@@ -523,28 +524,37 @@ int ExplicitTimeIntegrator(
       }
     }
 
-    total_dynamics_time.Start();
-
     time_previous = time_current;
     time_current += user_specified_time_step;
     delta_time = time_current - time_previous;
     half_delta_time = 0.5*delta_time;
 
+    watch_internal.push_region("Time Integration Scheme");
     // V^{n+1/2} = V^{n} + (dt/2) * A^{n}
     velocity += half_delta_time * acceleration;
 
     model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
+    total_dynamics_time += watch_internal.pop_region_and_report_time();
 
+    watch_internal.push_region("BC enforcement");
     model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
+    watch_internal.pop_region_and_report_time();
 
+    watch_internal.push_region("Time Integration Scheme");
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
     displacement += delta_time * velocity;
 
     model_data.UpdateWithNewDisplacement(data_manager, delta_time);
+    total_dynamics_time += watch_internal.pop_region_and_report_time();
+
+    watch_internal.push_region("BC enforcement");
+    model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
+    watch_internal.pop_region_and_report_time();
 
     //
     // Evaluate external body forces
     //
+    watch_internal.push_region("Force calculation");
     model_data.ComputeExternalForce(data_manager, time_previous, time_current,
                                     is_output_step);
 
@@ -553,21 +563,22 @@ int ExplicitTimeIntegrator(
     //
     model_data.ComputeInternalForce(data_manager, time_previous, time_current,
                                     is_output_step, displacement, internal_force);
-
-    total_dynamics_time.Stop();
+    total_force_time += watch_internal.pop_region_and_report_time();
 
     // Evaluate the contact force
     if (contact_enabled) {
-      total_contact_time.Start();
+      watch_internal.push_region("Contact");
       contact_manager->ComputeContactForce(step+1,
                                           contact_visualization && is_output_step,
                                           contact_force);
-      total_contact_time.Stop();
+      total_contact_time += watch_internal.pop_region_and_report_time();
+      auto tmpNum = contact_manager->numActiveContactFaces();
+      if (tmpNum)
+        contactInfo.insert(std::make_pair(step, tmpNum));
     }
 
-    total_dynamics_time.Start();
-
     // fill acceleration vector A^{n+1} = M^{-1} ( F^{n} + b^{n} )
+    watch_internal.push_region("Time Integration Scheme");
     if (contact_enabled) {
       for (int i = 0; i < num_nodes; ++i) {
         const double oneOverM = 1.0 / lumped_mass(i);
@@ -599,50 +610,70 @@ int ExplicitTimeIntegrator(
 
     model_data.UpdateWithNewVelocity(data_manager, half_delta_time);
 
-    total_dynamics_time.Stop();
+    total_dynamics_time += watch_internal.pop_region_and_report_time();
 
     if (is_output_step) {
-      nimble::quanta::stopwatch exodus_write_timer;
-      exodus_write_timer.reset();
-
+      watch_internal.push_region("Output");
+      //
       model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
-
+      //
       data_manager.WriteOutput(time_current);
-
+      //
       if (contact_visualization) {
         contact_manager->ContactVisualizationWriteStep(time_current);
       }
-      total_exodus_write_time += exodus_write_timer.age();
-
+      total_exodus_write_time += watch_internal.pop_region_and_report_time();
     } // if (is_output_step)
 
     model_data.UpdateStates(data_manager);
-    total_step_time.Stop();
+  }
+  double total_simulation_time = watch_simulation.pop_region_and_report_time();
+
+  for (int irank = 0; irank < num_ranks; ++irank) {
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    if ((my_rank == irank) && (!contactInfo.empty())) {
+      std::cout << " Rank " << irank << " has " << contactInfo.size()
+                << " contact entries "
+                << "(out of " << num_load_steps << " time steps)."<< std::endl;
+      std::cout.flush();
+    }
+#ifdef NIMBLE_HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
   }
 
-  double total_simulation_time = main_simulation_timer.age();
-  if (my_rank == 0) {
-    std::cout << "======== Timing data: ========\n";
-    std::cout << "Total step time: " << total_step_time.GetElapsedTime() << '\n';
-    std::cout << "Total contact time: " << total_contact_time.GetElapsedTime() << '\n';
-    std::cout << "Total dynamics time: " << total_dynamics_time.GetElapsedTime() << '\n';
-    if ((contact_enabled) && (contact_manager)) {
-      auto list_timers = contact_manager->getTimers();
-      for (const auto& st_pair : list_timers)
-        std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
-    }
-  }
   if (my_rank == 0 && parser.WriteTimingDataFile()) {
     nimble::TimingInfo timing_writer{
         num_ranks,
         nimble::quanta::stopwatch::get_microsecond_timestamp(),
         total_simulation_time,
-        0.0, 0.0,
+        total_force_time, total_contact_time,
         total_exodus_write_time,
         total_vector_reduction_time
     };
     timing_writer.BinaryWrite();
   }
+
+  if (my_rank == 0) {
+    std::cout << "======== Timing data: ========\n";
+    std::cout << "Total step time = " << total_simulation_time << '\n';
+    std::cout << " --- Update A, V, U: " << total_dynamics_time << '\n';
+    std::cout << " --- Force: " << total_force_time << "\n";
+    if ((contact_enabled) && (contact_manager)) {
+      std::cout << " --- Contact time: " << total_contact_time << '\n';
+      auto list_timers = contact_manager->getTimers();
+      for (const auto& st_pair : list_timers)
+        std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
+    }
+    if (num_ranks > 1)
+      std::cout << " --- Vector Reduction = " << total_vector_reduction_time << "\n";
+    //
+    std::cout << " --- Exodus Write = " << total_exodus_write_time << "\n";
+    //
+  }
+
   return status;
 }
 
