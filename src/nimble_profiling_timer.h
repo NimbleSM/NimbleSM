@@ -41,94 +41,62 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_TIMER_H
-#define NIMBLE_TIMER_H
+#ifndef NIMBLESM_NIMBLE_PROFILING_TIMER_H
+#define NIMBLESM_NIMBLE_PROFILING_TIMER_H
 
-#include <chrono>
-#include <map>
+#include <memory>
+#include <stack>
 #include <string>
+
+#include "nimble_timer.h"
+
+#ifdef NIMBLE_HAVE_KOKKOS
+#include "Kokkos_Timer.hpp"
+#endif
 
 namespace nimble {
 
-  class TimeKeeper {
-
-  public:
-
-    TimeKeeper() : total_time_(0.0) {}
-
-#ifdef NIMBLE_HAVE_VT
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | total_time_;
-    }
+class ProfilingTimer {
+public:
+  inline ProfilingTimer() {
+#ifndef NIMBLE_HAVE_KOKKOS
+    n_timer_ = std::unique_ptr<nimble::Timer>( new nimble::Timer() );
 #endif
+  }
 
-    inline void Start() {
-      start_time_ = std::chrono::high_resolution_clock::now();
-    }
+  ~ProfilingTimer() = default;
 
-    inline void Stop() {
-      using std::chrono::duration;
-      using std::chrono::duration_cast;
-      end_time_ = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time_increment(0.0);
-      if (end_time_ > start_time_) {
-        time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-      }
-      total_time_ += time_increment.count();
-    }
-
-    inline double GetElapsedTime() const {
-      return total_time_;
-    }
-
-  private:
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
-    double total_time_;
-  };
-
-  class Timer {
-
-  public:
-
-    Timer()= default;
-
-    ~Timer()= default;
-
-#ifdef NIMBLE_HAVE_VT
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | timers_;
-    }
+  inline void push_region(const std::string &profiling_region_name) {
+    current_region_.push(profiling_region_name);
+#ifdef NIMBLE_HAVE_KOKKOS
+    Kokkos::Profiling::pushRegion("NimbleSM: " + profiling_region_name);
+    k_timer_.reset();
+#else
+    n_timer_->Start(profiling_region_name);
 #endif
+  }
 
-    inline void Start(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Start();
-    }
+  inline double pop_region_and_report_time() {
+    double t = 0.0;
+#ifdef NIMBLE_HAVE_KOKKOS
+    t = k_timer_.seconds();
+    Kokkos::Profiling::popRegion();
+#else
+    t = n_timer_->StopReport(current_region_.top());
+#endif
+    current_region_.pop();
+    return t;
+  }
 
-    inline void Stop(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Stop();
-    }
+private:
+  std::stack<std::string> current_region_;
 
-    inline double StopReport(const std::string& name) {
-      double t = 0.0;
-      TimeKeeper& time_keeper = timers_[name];
-      t -= time_keeper.GetElapsedTime();
-      time_keeper.Stop();
-      t += time_keeper.GetElapsedTime();
-      return t;
-    }
+  std::unique_ptr<nimble::Timer> n_timer_ = nullptr;
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::Timer k_timer_;
+#endif
+};
 
-  inline double ElapsedTime(const std::string& name) const {
-      return timers_.at(name).GetElapsedTime();
-    }
+}
 
-    std::map<std::string, TimeKeeper> timers_;
-  };
-} // namespace nimble
-
-#endif // NIMBLE_TIMER_H
+#endif // NIMBLESM_NIMBLE_PROFILING_TIMER_H
