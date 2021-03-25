@@ -192,7 +192,8 @@ Parser::Parser()
     time_integration_scheme_("explicit"),
     nonlinear_solver_relative_tolerance_(1.0e-6),
     nonlinear_solver_max_iterations_(200),
-    final_time_(1.0),
+    initial_time_(0.0),
+    final_time_(0.0),
     num_load_steps_(0),
     output_frequency_(1),
     visualize_contact_entities_(false),
@@ -297,6 +298,9 @@ void Parser::ParseKeyValue(const std::string &key, const std::string &value) {
   }
   else if (key == "nonlinear solver maximum iterations") {
     nonlinear_solver_max_iterations_ = std::atoi(value.c_str());
+  }
+  else if (key == "initial time") {
+    initial_time_ = std::atof(value.c_str());
   }
   else if (key == "final time") {
     final_time_ = std::atof(value.c_str());
