@@ -121,8 +121,68 @@ ModelData::ApplyKinematicConditions(DataManager& data_manager, double time_curre
       time_current, time_previous, reference_coordinate, displacement, velocity, bc_offnom_velocity_views_);
 }
 
+
 void
-ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
+ModelData::ComputeInternalForce(
+    nimble::DataManager &data_manager,
+    double time_previous,
+    double time_current,
+    bool is_output_step,
+    const nimble::Viewify<2> &displacement,
+    nimble::Viewify<2> &force
+)
+{
+  const auto& mesh = data_manager.GetMesh();
+
+  force.zero();
+
+  auto reference_coord = GetNodeData("reference_coordinate");
+  auto velocity = GetNodeData("velocity");
+
+  auto &rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
+
+  for (auto &block_it : blocks_) {
+    int block_id = block_it.first;
+    int num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    int const * elem_conn = mesh.GetConnectivity(block_id);
+    std::vector<int> const & elem_global_ids = mesh.GetElementGlobalIdsInBlock(block_id);
+    nimble::Block& block = block_it.second;
+    std::vector<double> const & elem_data_n = GetElementDataOld(block_id);
+    std::vector<double> & elem_data_np1 = GetElementDataNew(block_id);
+    bool is_off_nominal = False; // HACK
+    std::vector<double> uq_params_this_sample; // HACK
+    block.ComputeInternalForce(reference_coord,
+                               displacement.data(),
+                               velocity,
+                               rve_macroscale_deformation_gradient.data(),
+                               force.data(),
+                               time_previous,
+                               time_current,
+                               num_elem_in_block,
+                               elem_conn,
+                               elem_global_ids.data(),
+                               element_component_labels_.at(block_id),
+                               elem_data_n,
+                               elem_data_np1,
+                               data_manager,
+                               is_output_step,
+                               is_off_nominal, // UQ
+                               uq_params_this_sample, // UQ
+                               compute_stress_only
+    );
+  }
+
+  // Perform a vector reduction on internal force.  This is a vector nodal
+  // quantity.
+  auto vector_comm = data_manager.GetVectorCommunicator();
+  constexpr int vector_dimension = 3;
+  vector_comm->VectorReduction(vector_dimension, force.data());
+  
+}
+
+void 
+ModelData::UpdateWithNewVelocity(nimble::DataManager &data_manager,
+                                 double dt)
 {
   uq_model_->UpdateVelocity(dt);
 }
