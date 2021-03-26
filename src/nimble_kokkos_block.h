@@ -108,11 +108,6 @@ public:
   DeviceElementConnectivityView& GetDeviceElementConnectivityView()
   { return elem_conn_d; }
 
-  double ComputeCriticalTimeStep(const double * node_reference_coordinates,
-                                 const double * node_displacements,
-                                 int num_elem,
-                                 const int * elem_conn) const;
-
   template <typename MatT>
   void ComputeTangentStiffnessMatrix(int num_global_unknowns,
                                      const double * reference_coordinates,

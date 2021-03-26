@@ -131,11 +131,6 @@ namespace nimble {
                                  const int * const elem_conn,
                                  double* lumped_mass) const ;
 
-    double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
-                                   const double * const node_displacements,
-                                   int num_elem,
-                                   const int * const elem_conn) const;
-
     void InitializeElementData(int num_elem_in_block,
                                std::vector<int> const & elem_global_ids_in_block,
                                std::vector<int> const & rve_output_global_elem_ids,

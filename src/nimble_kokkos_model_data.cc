@@ -1005,6 +1005,11 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
   auto lumped_mass_d = GetDeviceScalarNodeData(field_ids_.lumped_mass);
   Kokkos::deep_copy(lumped_mass_d, (double)(0.0));
 
+  auto reference_coordinate = GetVectorNodeData("reference_coordinate");
+  auto displacement = GetVectorNodeData("displacement");
+
+  critical_time_step_ = std::numeric_limits<double>::max();
+
   block_index = 0;
   for (auto &block_it : blocks_) {
     int block_id = block_it.first;
@@ -1045,7 +1050,16 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
                           num_nodes_per_elem, elem_conn_d,
                           gathered_lumped_mass_block_d);
 
+    double block_critical_time_step = block.ComputeCriticalTimeStep(reference_coordinate,
+                                                                    displacement,
+                                                                    num_elem_in_block,
+                                                                    elem_conn);
+    if (block_critical_time_step < critical_time_step_) {
+      critical_time_step_ = block_critical_time_step;
+    }
+
     block_index += 1;
+
   }
   Kokkos::deep_copy(lumped_mass_h, lumped_mass_d);
 

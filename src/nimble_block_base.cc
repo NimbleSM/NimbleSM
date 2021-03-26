@@ -41,64 +41,47 @@
 //@HEADER
 */
 
-#ifndef NIMBLE_BLOCK_BASE_H
-#define NIMBLE_BLOCK_BASE_H
-
-#include <memory>
-
-#include "nimble_genesis_mesh.h"
-#include "nimble_material.h"
-#include "nimble_view.h"
+#include "nimble_block_base.h"
+#include "nimble_element.h"
 
 namespace nimble {
 
-class Element;
-
-class BlockBase {
-
-public:
-
-  BlockBase() = default;
-
-  virtual ~BlockBase() = default;
-
-  virtual void InstantiateElement() = 0;
-
-  double GetDensity() const {
-    return material_->GetDensity();
-  }
-
-  double GetBulkModulus() const {
-    return material_->GetBulkModulus();
-  }
-
-  double GetShearModulus() const {
-    return material_->GetShearModulus();
-  }
-
-  std::shared_ptr<Material> GetMaterialPointer() const { return material_; }
-
-  std::shared_ptr<Element> GetElementPointer() const { return element_; }
-
-  virtual double ComputeCriticalTimeStep(const nimble::Viewify<2> &node_reference_coordinates,
-                                         const nimble::Viewify<2> &node_displacements,
+double BlockBase::ComputeCriticalTimeStep(const nimble::Viewify<2> &node_reference_coordinates,
+                                          const nimble::Viewify<2> &node_displacements,
                                          int num_elem,
-                                         const int * elem_conn) const;
+                                         const int * const elem_conn) const
+{
+  int dim = element_->Dim();
+  int num_node_per_elem = element_->NumNodesPerElement();
+  double sound_speed = std::sqrt( GetBulkModulus() / GetDensity() );
+  double critical_time_step = std::numeric_limits<double>::max();
 
-protected:
+  int vector_size = 0;
+  if (dim == 2) {
+    vector_size = 2;
+  }
+  else if (dim == 3) {
+    vector_size = 3;
+  }
+  double node_coord[vector_size*num_node_per_elem];
 
-  std::string macro_material_parameters_ = "none";
-  std::map<int, std::string> rve_material_parameters_;
-  std::string rve_boundary_condition_strategy_ = "none";
-  std::vector<int> rve_output_global_elem_ids_;
-  // todo: can we avoid carrying the rve_mesh around?
-  GenesisMesh rve_mesh_;
+  for (int elem=0 ; elem<num_elem ; elem++) {
 
-  std::shared_ptr<Element> element_ = nullptr;
-  std::shared_ptr<Material> material_ = nullptr;
+    for (int node=0 ; node<num_node_per_elem ; node++) {
+      int node_id = elem_conn[elem*num_node_per_elem + node];
+      for (int i=0 ; i<vector_size ; i++) {
+        node_coord[node*vector_size + i] = node_reference_coordinates(node_id, i) + node_displacements(node_id, i);
+      }
+    }
 
-};
+    double elem_critical_time_step = element_->ComputeCharacteristicLength(node_coord) / sound_speed;
+    if (elem_critical_time_step < critical_time_step) {
+      critical_time_step = elem_critical_time_step;
+    }
+  }
+
+  return critical_time_step;
+
+}
 
 } // namespace nimble
-
-#endif // NIMBLE_BLOCK_BASE_H
