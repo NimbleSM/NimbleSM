@@ -53,6 +53,7 @@
 namespace nimble_uq {
 
 class UqModel;
+class DataManager;
 
 class ModelData : public nimble::ModelData
 {
@@ -69,6 +70,21 @@ class ModelData : public nimble::ModelData
   InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
       override;
 
+  /// \brief Compute the internal force
+  ///
+  /// \param[in] data_manager
+  /// \param[in] time_previous
+  /// \param[in] time_current
+  /// \param[in] is_output_step
+  /// \param[in] displacement
+  /// \param[out] internal_force  Output for internal force
+  void ComputeInternalForce(nimble::DataManager &data_manager,
+                            double time_previous,
+                            double time_current,
+                            bool is_output_step,
+                            const nimble::Viewify<2> &displacement,
+                            nimble::Viewify<2> &force) override;
+
   /// \brief Write output of simulation in Exodus format
   ///
   /// \param[in] data_manager Reference to data manager
@@ -81,8 +97,9 @@ class ModelData : public nimble::ModelData
   ApplyInitialConditions(nimble::DataManager& data_manager) override;
 
   /// \brief Apply kinematic conditions
-  void
-  ApplyKinematicConditions(DataManager& data_manager, double time_current, double time_previous) override;
+  void ApplyKinematicConditions(nimble::DataManager &data_manager,
+                                double time_current,
+                                double time_previous) override;
 
   /// \brief Update model with new velocity
   ///

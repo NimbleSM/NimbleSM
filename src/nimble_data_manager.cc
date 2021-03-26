@@ -43,6 +43,11 @@
 
 #include "nimble_data_manager.h"
 
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq.h"
+#include "nimble_uq_model_data.h"
+#endif
+
 #ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos_model_data.h"
