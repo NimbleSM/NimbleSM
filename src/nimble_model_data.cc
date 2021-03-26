@@ -451,17 +451,15 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
   const auto& parser_ = data_manager.GetParser();
 
   auto lumped_mass_field_id = GetFieldId("lumped_mass");
-  auto reference_coordinate_field_id = GetFieldId("reference_coordinate");
-  auto displacement_field_id = GetFieldId("displacement");
 
   auto lumped_mass = GetNodeData(lumped_mass_field_id);
-  auto reference_coordinate = GetNodeData(reference_coordinate_field_id);
-  auto displacement = GetNodeData(displacement_field_id);
+  auto reference_coordinate = GetVectorNodeData("reference_coordinate");
+  auto displacement = GetVectorNodeData("displacement");
 
   //
   // Computed the lumped mass matrix (diagonal matrix) and the critical time step
   //
-  double critical_time_step = std::numeric_limits<double>::max();
+  critical_time_step_ = std::numeric_limits<double>::max();
   std::map<int, nimble::Block>& blocks = GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
   for (block_it=blocks.begin(); block_it!=blocks.end() ; block_it++) {
@@ -469,7 +467,7 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
     int num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
     int const * elem_conn = mesh_.GetConnectivity(block_id);
     nimble::Block& block = block_it->second;
-    block.ComputeLumpedMassMatrix(reference_coordinate,
+    block.ComputeLumpedMassMatrix(reference_coordinate.data(),
                                   num_elem_in_block,
                                   elem_conn,
                                   lumped_mass);
@@ -477,8 +475,8 @@ void ModelData::ComputeLumpedMass(nimble::DataManager &data_manager)
                                                                     displacement,
                                                                     num_elem_in_block,
                                                                     elem_conn);
-    if (block_critical_time_step < critical_time_step) {
-      critical_time_step = block_critical_time_step;
+    if (block_critical_time_step < critical_time_step_) {
+      critical_time_step_ = block_critical_time_step;
     }
   }
 
