@@ -7,6 +7,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_timing_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_tpetra_utils.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_block.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_block_base.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_element.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_exodus_output.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_boundary_condition.cc
