@@ -48,94 +48,120 @@
 #include <vector>
 
 #include "nimble_block_base.h"
-
 #include "nimble_element.h"
 #include "nimble_kokkos_defs.h"
 
 #ifdef NIMBLE_HAVE_DARMA
 #include "darma.h"
 #else
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 #endif
 
-namespace nimble { struct NGPLAMEData; }
+namespace nimble {
+struct NGPLAMEData;
+}
 
-namespace nimble_kokkos { class MaterialFactory; }
+namespace nimble_kokkos {
+class MaterialFactory;
+}
 
 namespace nimble_kokkos {
 
-class Block : public nimble::BlockBase {
+class Block : public nimble::BlockBase
+{
+ public:
+  Block()
+      : BlockBase(),
+        elem_conn_d("element_connectivity_d", 0),
+        element_device_(nullptr),
+        material_device_(nullptr)
+  {
+  }
 
-public:
-
-  Block() : BlockBase(),
-            elem_conn_d("element_connectivity_d", 0),
-            element_device_(nullptr), material_device_(nullptr)
-  {}
-
-  ~Block() override {
+  ~Block() override
+  {
     /* Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) { */
     /*     element_device_->~Element(); */
     /*   }); */
-    if (element_device_ != nullptr) {
-      Kokkos::kokkos_free(element_device_);
-    }
-    if (material_device_ != nullptr) {
-      Kokkos::kokkos_free(material_device_);
-    }
+    if (element_device_ != nullptr) { Kokkos::kokkos_free(element_device_); }
+    if (material_device_ != nullptr) { Kokkos::kokkos_free(material_device_); }
   }
 
-  void Initialize(std::string const & macro_material_parameters,
-                  int num_elements, MaterialFactory& factory);
+  void
+  Initialize(
+      std::string const& macro_material_parameters,
+      int                num_elements,
+      MaterialFactory&   factory);
 
-  void InstantiateMaterialModel(int num_material_points,
-                                MaterialFactory& factory);
+  void
+  InstantiateMaterialModel(int num_material_points, MaterialFactory& factory);
 
-  void InstantiateElement() override;
+  void
+  InstantiateElement() override;
 
-  std::shared_ptr<nimble::Element> GetHostElement() { return element_; }
+  std::shared_ptr<nimble::Element>
+  GetHostElement()
+  {
+    return element_;
+  }
 
-  nimble::Element* GetDeviceElement() { return element_device_; }
+  nimble::Element*
+  GetDeviceElement()
+  {
+    return element_device_;
+  }
 
-  std::shared_ptr<nimble::Material> GetHostMaterialModel()
-  { return material_; }
+  std::shared_ptr<nimble::Material>
+  GetHostMaterialModel()
+  {
+    return material_;
+  }
 
-  nimble::Material* GetDeviceMaterialModel()
-  { return material_device_; }
+  nimble::Material*
+  GetDeviceMaterialModel()
+  {
+    return material_device_;
+  }
 
-  DeviceElementConnectivityView& GetDeviceElementConnectivityView()
-  { return elem_conn_d; }
+  DeviceElementConnectivityView&
+  GetDeviceElementConnectivityView()
+  {
+    return elem_conn_d;
+  }
 
   template <typename MatT>
-  void ComputeTangentStiffnessMatrix(int num_global_unknowns,
-                                     const double * reference_coordinates,
-                                     const double * displacement,
-                                     int num_elem,
-                                     const int * elem_conn,
-                                     const int * global_node_ids,
-                                     MatT & tangent_stiffness) const ;
+  void
+  ComputeTangentStiffnessMatrix(
+      int           num_global_unknowns,
+      const double* reference_coordinates,
+      const double* displacement,
+      int           num_elem,
+      const int*    elem_conn,
+      const int*    global_node_ids,
+      MatT&         tangent_stiffness) const;
 
-  std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData()
-  { return ngp_lame_data_; }
+  std::shared_ptr<nimble::NGPLAMEData>
+  GetNGPLAMEData()
+  {
+    return ngp_lame_data_;
+  }
 
-private:
-
+ private:
   /// \brief Element connectivity
   DeviceElementConnectivityView elem_conn_d;
 
   /// \brief
-  nimble::Element *element_device_;
+  nimble::Element* element_device_;
 
   /// \brief
-  nimble::Material *material_device_;
+  nimble::Material* material_device_;
 
   /// \brief
   std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
-
 };
 
-} // namespace nimble
+}  // namespace nimble_kokkos
 
-#endif // NIMBLE_BLOCK_H
+#endif  // NIMBLE_BLOCK_H

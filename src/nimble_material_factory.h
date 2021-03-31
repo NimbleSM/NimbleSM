@@ -46,21 +46,19 @@
 
 #include "nimble_material_factory_base.h"
 
-
 namespace nimble {
 
-class MaterialFactory : public nimble::MaterialFactoryBase {
-public:
-
+class MaterialFactory : public nimble::MaterialFactoryBase
+{
+ public:
   explicit MaterialFactory();
   ~MaterialFactory() override = default;
 
-protected:
-
-  void create() override;
-
+ protected:
+  void
+  create() override;
 };
 
-}
+}  // namespace nimble
 
 #endif /* SRC_NIMBLE_MATERIAL_FACTORY_H_ */

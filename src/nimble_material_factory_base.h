@@ -52,64 +52,82 @@
 namespace nimble {
 class Material;
 class MaterialParameters;
-}
+}  // namespace nimble
 
 namespace nimble {
 
-class MaterialFactoryBase {
-private:
-  static inline void find_or_insert_string_in_vector(const std::string &str, std::vector<std::string> &vec) {
+class MaterialFactoryBase
+{
+ private:
+  static inline void
+  find_or_insert_string_in_vector(
+      const std::string&        str,
+      std::vector<std::string>& vec)
+  {
     if (std::find(vec.begin(), vec.end(), str) == vec.end()) {
       vec.push_back(str);
     }
   }
 
-public:
+ public:
   MaterialFactoryBase();
   virtual ~MaterialFactoryBase() = default;
 
-  inline void add_valid_double_parameter_name(const char *name) {
-    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
+  inline void
+  add_valid_double_parameter_name(const char* name)
+  {
+    find_or_insert_string_in_vector(
+        std::string(name), valid_double_parameter_names);
   }
 
-  inline void add_valid_string_parameter_name(const char *name) {
-    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
+  inline void
+  add_valid_string_parameter_name(const char* name)
+  {
+    find_or_insert_string_in_vector(
+        std::string(name), valid_string_parameter_names);
   }
 
-  virtual std::shared_ptr<nimble::Material> get_material() const
-  { return material; }
+  virtual std::shared_ptr<nimble::Material>
+  get_material() const
+  {
+    return material;
+  }
 
-  virtual void parse_and_create(const std::string& mat_params,
-                                int num_points)
+  virtual void
+  parse_and_create(const std::string& mat_params, int num_points)
   {
     material_params = ParseMaterialParametersString(mat_params, num_points);
     create();
   }
 
-  virtual void parse_and_create(const std::string& mat_params)
-  { parse_and_create(mat_params, 0); }
+  virtual void
+  parse_and_create(const std::string& mat_params)
+  {
+    parse_and_create(mat_params, 0);
+  }
 
-protected:
+ protected:
+  virtual void
+  create() = 0;
 
-  virtual void create() = 0;
-
-protected:
-
-  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const std::string& material_parameters,
-                                                                            int num_material_points = 0) const;
+ protected:
+  std::shared_ptr<nimble::MaterialParameters>
+  ParseMaterialParametersString(
+      const std::string& material_parameters,
+      int                num_material_points = 0) const;
 
   //
   //--- Protected Variables
   //
 
-  std::shared_ptr< nimble::Material > material = nullptr;
+  std::shared_ptr<nimble::Material>                 material = nullptr;
   std::shared_ptr<const nimble::MaterialParameters> material_params;
 
-private:
+ private:
   std::vector<std::string> valid_double_parameter_names;
   std::vector<std::string> valid_string_parameter_names;
 };
 
-}
+}  // namespace nimble
 
 #endif /* SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_ */

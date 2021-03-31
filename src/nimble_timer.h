@@ -50,85 +50,100 @@
 
 namespace nimble {
 
-  class TimeKeeper {
-
-  public:
-
-    TimeKeeper() : total_time_(0.0) {}
-
-#ifdef NIMBLE_HAVE_VT
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | total_time_;
-    }
-#endif
-
-    inline void Start() {
-      start_time_ = std::chrono::high_resolution_clock::now();
-    }
-
-    inline void Stop() {
-      using std::chrono::duration;
-      using std::chrono::duration_cast;
-      end_time_ = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time_increment(0.0);
-      if (end_time_ > start_time_) {
-        time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-      }
-      total_time_ += time_increment.count();
-    }
-
-    inline double GetElapsedTime() const {
-      return total_time_;
-    }
-
-  private:
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
-    double total_time_;
-  };
-
-  class Timer {
-
-  public:
-
-    Timer()= default;
-
-    ~Timer()= default;
+class TimeKeeper
+{
+ public:
+  TimeKeeper() : total_time_(0.0) {}
 
 #ifdef NIMBLE_HAVE_VT
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | timers_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | total_time_;
+  }
 #endif
 
-    inline void Start(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Start();
+  inline void
+  Start()
+  {
+    start_time_ = std::chrono::high_resolution_clock::now();
+  }
+
+  inline void
+  Stop()
+  {
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
+    end_time_ = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_increment(0.0);
+    if (end_time_ > start_time_) {
+      time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
     }
+    total_time_ += time_increment.count();
+  }
 
-    inline void Stop(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Stop();
-    }
+  inline double
+  GetElapsedTime() const
+  {
+    return total_time_;
+  }
 
-    inline double StopReport(const std::string& name) {
-      double t = 0.0;
-      TimeKeeper& time_keeper = timers_[name];
-      t -= time_keeper.GetElapsedTime();
-      time_keeper.Stop();
-      t += time_keeper.GetElapsedTime();
-      return t;
-    }
+ private:
+  std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+  std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
+  double                                                      total_time_;
+};
 
-  inline double ElapsedTime(const std::string& name) const {
-      return timers_.at(name).GetElapsedTime();
-    }
+class Timer
+{
+ public:
+  Timer() = default;
 
-    std::map<std::string, TimeKeeper> timers_;
-  };
-} // namespace nimble
+  ~Timer() = default;
 
-#endif // NIMBLE_TIMER_H
+#ifdef NIMBLE_HAVE_VT
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | timers_;
+  }
+#endif
+
+  inline void
+  Start(const std::string& name)
+  {
+    TimeKeeper& time_keeper = timers_[name];
+    time_keeper.Start();
+  }
+
+  inline void
+  Stop(const std::string& name)
+  {
+    TimeKeeper& time_keeper = timers_[name];
+    time_keeper.Stop();
+  }
+
+  inline double
+  StopReport(const std::string& name)
+  {
+    double      t           = 0.0;
+    TimeKeeper& time_keeper = timers_[name];
+    t -= time_keeper.GetElapsedTime();
+    time_keeper.Stop();
+    t += time_keeper.GetElapsedTime();
+    return t;
+  }
+
+  inline double
+  ElapsedTime(const std::string& name) const
+  {
+    return timers_.at(name).GetElapsedTime();
+  }
+
+  std::map<std::string, TimeKeeper> timers_;
+};
+}  // namespace nimble
+
+#endif  // NIMBLE_TIMER_H

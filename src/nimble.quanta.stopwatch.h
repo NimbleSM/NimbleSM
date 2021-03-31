@@ -46,50 +46,68 @@
 
 #include <chrono>
 
-namespace nimble
-{
-namespace quanta
-{
+namespace nimble {
+namespace quanta {
 struct stopwatch
 {
   typedef decltype(std::chrono::high_resolution_clock::now()) time;
-  typedef std::chrono::duration<double, std::ratio<1, 1>> seconds;
-  typedef std::chrono::duration<double, std::milli> milliseconds;
-  typedef std::chrono::duration<double, std::micro> microseconds;
-  typedef decltype((time{} - time{}).count()) nanoseconds;
-  typedef decltype((time{} - time{})) duration;
+  typedef std::chrono::duration<double, std::ratio<1, 1>>     seconds;
+  typedef std::chrono::duration<double, std::milli>           milliseconds;
+  typedef std::chrono::duration<double, std::micro>           microseconds;
+  typedef decltype((time{} - time{}).count())                 nanoseconds;
+  typedef decltype((time{} - time{}))                         duration;
   time _start = std::chrono::high_resolution_clock::now();
-  nanoseconds age_nano() { return (std::chrono::high_resolution_clock::now() - _start).count(); }
-  double age_micro()
+  nanoseconds
+  age_nano()
   {
-    return microseconds(std::chrono::high_resolution_clock::now() - _start).count();
+    return (std::chrono::high_resolution_clock::now() - _start).count();
   }
-  double age_milli()
+  double
+  age_micro()
   {
-    return milliseconds(std::chrono::high_resolution_clock::now() - _start).count();
+    return microseconds(std::chrono::high_resolution_clock::now() - _start)
+        .count();
   }
-  double age() { return seconds(std::chrono::high_resolution_clock::now() - _start).count(); }
-  void reset() { _start = std::chrono::high_resolution_clock::now(); }
-  template<class Function, class... Args>
-  static double timefunction(Function&& f, Args&&... inputs)
+  double
+  age_milli()
+  {
+    return milliseconds(std::chrono::high_resolution_clock::now() - _start)
+        .count();
+  }
+  double
+  age()
+  {
+    return seconds(std::chrono::high_resolution_clock::now() - _start).count();
+  }
+  void
+  reset()
+  {
+    _start = std::chrono::high_resolution_clock::now();
+  }
+  template <class Function, class... Args>
+  static double
+  timefunction(Function&& f, Args&&... inputs)
   {
     stopwatch s;
     s.reset();
     f(std::forward<Args>(inputs)...);
     return s.age();
   }
-  static std::string get_nanosecond_timestamp()
+  static std::string
+  get_nanosecond_timestamp()
   {
-    auto epoch_duration      = std::chrono::high_resolution_clock::now().time_since_epoch();
-    auto duration_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
-    auto nanoseconds =
-        (std::chrono::duration_cast<std::chrono::nanoseconds>(epoch_duration - duration_in_seconds)
-             .count());
-    std::time_t t = duration_in_seconds.count();
-    char buffer[100]{};
-    size_t end;
-    if ((end = std::strftime(buffer, 100, "%Y.%m.%e.%H.%M.%S.", std::localtime(&t))))
-    {
+    auto epoch_duration =
+        std::chrono::high_resolution_clock::now().time_since_epoch();
+    auto duration_in_seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
+    auto nanoseconds = (std::chrono::duration_cast<std::chrono::nanoseconds>(
+                            epoch_duration - duration_in_seconds)
+                            .count());
+    std::time_t t    = duration_in_seconds.count();
+    char        buffer[100]{};
+    size_t      end;
+    if ((end = std::strftime(
+             buffer, 100, "%Y.%m.%e.%H.%M.%S.", std::localtime(&t)))) {
       buffer[end]     = '0' + (nanoseconds / 100000000 % 10);
       buffer[end + 1] = '0' + (nanoseconds / 10000000 % 10);
       buffer[end + 2] = '0' + (nanoseconds / 1000000 % 10);
@@ -103,18 +121,21 @@ struct stopwatch
     }
     return buffer;
   }
-  static std::string get_microsecond_timestamp()
+  static std::string
+  get_microsecond_timestamp()
   {
-    auto epoch_duration      = std::chrono::high_resolution_clock::now().time_since_epoch();
-    auto duration_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
-    auto microseconds =
-        (std::chrono::duration_cast<std::chrono::microseconds>(epoch_duration - duration_in_seconds)
-             .count());
-    std::time_t t = duration_in_seconds.count();
-    char buffer[100]{};
-    size_t end;
-    if ((end = std::strftime(buffer, 100, "%Y.%m.%d.%H.%M.%S.", std::localtime(&t))))
-    {
+    auto epoch_duration =
+        std::chrono::high_resolution_clock::now().time_since_epoch();
+    auto duration_in_seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
+    auto microseconds = (std::chrono::duration_cast<std::chrono::microseconds>(
+                             epoch_duration - duration_in_seconds)
+                             .count());
+    std::time_t t     = duration_in_seconds.count();
+    char        buffer[100]{};
+    size_t      end;
+    if ((end = std::strftime(
+             buffer, 100, "%Y.%m.%d.%H.%M.%S.", std::localtime(&t)))) {
       buffer[end]     = '0' + (microseconds / 100000 % 10);
       buffer[end + 1] = '0' + (microseconds / 10000 % 10);
       buffer[end + 2] = '0' + (microseconds / 1000 % 10);
@@ -125,30 +146,34 @@ struct stopwatch
     }
     return buffer;
   }
-  static std::string get_millisecond_timestamp()
+  static std::string
+  get_millisecond_timestamp()
   {
-    auto epoch_duration      = std::chrono::high_resolution_clock::now().time_since_epoch();
-    auto duration_in_seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
-    auto milliseconds =
-        (std::chrono::duration_cast<std::chrono::milliseconds>(epoch_duration - duration_in_seconds)
-             .count());
-    std::time_t t = duration_in_seconds.count();
-    char buffer[100]{};
-    size_t end;
-    if ((end = std::strftime(buffer, 100, "%Y.%m.%e.%H.%M.%S.", std::localtime(&t))))
-    {
-      size_t milliseconds = (std::chrono::duration_cast<std::chrono::milliseconds>(
-                                 std::chrono::high_resolution_clock::now().time_since_epoch())
-                                 .count());
-      buffer[end]         = '0' + (milliseconds / 100 % 10);
-      buffer[end + 1]     = '0' + (milliseconds / 10 % 10);
-      buffer[end + 2]     = '0' + (milliseconds % 10);
-      buffer[end + 3]     = '\0';
+    auto epoch_duration =
+        std::chrono::high_resolution_clock::now().time_since_epoch();
+    auto duration_in_seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(epoch_duration);
+    auto milliseconds = (std::chrono::duration_cast<std::chrono::milliseconds>(
+                             epoch_duration - duration_in_seconds)
+                             .count());
+    std::time_t t     = duration_in_seconds.count();
+    char        buffer[100]{};
+    size_t      end;
+    if ((end = std::strftime(
+             buffer, 100, "%Y.%m.%e.%H.%M.%S.", std::localtime(&t)))) {
+      size_t milliseconds =
+          (std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::high_resolution_clock::now().time_since_epoch())
+               .count());
+      buffer[end]     = '0' + (milliseconds / 100 % 10);
+      buffer[end + 1] = '0' + (milliseconds / 10 % 10);
+      buffer[end + 2] = '0' + (milliseconds % 10);
+      buffer[end + 3] = '\0';
     }
     return buffer;
   }
 };
-}   // namespace quanta
-}   // namespace nimble
+}  // namespace quanta
+}  // namespace nimble
 
-#endif // NIMBLE_LIGHTWEIGHT_STOPWATCH_H
+#endif  // NIMBLE_LIGHTWEIGHT_STOPWATCH_H

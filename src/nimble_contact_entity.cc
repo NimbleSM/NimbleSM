@@ -46,8 +46,9 @@
 
 namespace nimble {
 
-void ContactEntity::ExportGeometryInto(ContactEntity &xerox) const {
-
+void
+ContactEntity::ExportGeometryInto(ContactEntity& xerox) const
+{
   xerox.entity_type_ = entity_type_;
 
   xerox.num_nodes_ = num_nodes_;
@@ -69,88 +70,78 @@ void ContactEntity::ExportGeometryInto(ContactEntity &xerox) const {
   xerox.bounding_box_y_max_ = bounding_box_y_max_;
   xerox.bounding_box_z_min_ = bounding_box_z_min_;
   xerox.bounding_box_z_max_ = bounding_box_z_max_;
-
 }
 
-void ContactEntity::SetBoundingBox() {
+void
+ContactEntity::SetBoundingBox()
+{
+  centroid_[0]        = coord_1_x_;
+  centroid_[1]        = coord_1_y_;
+  centroid_[2]        = coord_1_z_;
+  bounding_box_x_min_ = coord_1_x_;
+  bounding_box_x_max_ = coord_1_x_;
+  bounding_box_y_min_ = coord_1_y_;
+  bounding_box_y_max_ = coord_1_y_;
+  bounding_box_z_min_ = coord_1_z_;
+  bounding_box_z_max_ = coord_1_z_;
 
-    centroid_[0] = coord_1_x_;
-    centroid_[1] = coord_1_y_;
-    centroid_[2] = coord_1_z_;
-    bounding_box_x_min_ = coord_1_x_;
-    bounding_box_x_max_ = coord_1_x_;
-    bounding_box_y_min_ = coord_1_y_;
-    bounding_box_y_max_ = coord_1_y_;
-    bounding_box_z_min_ = coord_1_z_;
-    bounding_box_z_max_ = coord_1_z_;
+  // todo, try ternary operator here
+  if (entity_type_ == TRIANGLE) {
+    centroid_[0] += coord_2_x_;
+    centroid_[1] += coord_2_y_;
+    centroid_[2] += coord_2_z_;
+    if (coord_2_x_ < bounding_box_x_min_) bounding_box_x_min_ = coord_2_x_;
+    if (coord_2_x_ > bounding_box_x_max_) bounding_box_x_max_ = coord_2_x_;
+    if (coord_2_y_ < bounding_box_y_min_) bounding_box_y_min_ = coord_2_y_;
+    if (coord_2_y_ > bounding_box_y_max_) bounding_box_y_max_ = coord_2_y_;
+    if (coord_2_z_ < bounding_box_z_min_) bounding_box_z_min_ = coord_2_z_;
+    if (coord_2_z_ > bounding_box_z_max_) bounding_box_z_max_ = coord_2_z_;
+    centroid_[0] += coord_3_x_;
+    centroid_[1] += coord_3_y_;
+    centroid_[2] += coord_3_z_;
+    if (coord_3_x_ < bounding_box_x_min_) bounding_box_x_min_ = coord_3_x_;
+    if (coord_3_x_ > bounding_box_x_max_) bounding_box_x_max_ = coord_3_x_;
+    if (coord_3_y_ < bounding_box_y_min_) bounding_box_y_min_ = coord_3_y_;
+    if (coord_3_y_ > bounding_box_y_max_) bounding_box_y_max_ = coord_3_y_;
+    if (coord_3_z_ < bounding_box_z_min_) bounding_box_z_min_ = coord_3_z_;
+    if (coord_3_z_ > bounding_box_z_max_) bounding_box_z_max_ = coord_3_z_;
+  }
 
-    // todo, try ternary operator here
-    if (entity_type_ == TRIANGLE) {
-      centroid_[0] += coord_2_x_;
-      centroid_[1] += coord_2_y_;
-      centroid_[2] += coord_2_z_;
-      if (coord_2_x_ < bounding_box_x_min_)
-        bounding_box_x_min_ = coord_2_x_;
-      if (coord_2_x_ > bounding_box_x_max_)
-        bounding_box_x_max_ = coord_2_x_;
-      if (coord_2_y_ < bounding_box_y_min_)
-        bounding_box_y_min_ = coord_2_y_;
-      if (coord_2_y_ > bounding_box_y_max_)
-        bounding_box_y_max_ = coord_2_y_;
-      if (coord_2_z_ < bounding_box_z_min_)
-        bounding_box_z_min_ = coord_2_z_;
-      if (coord_2_z_ > bounding_box_z_max_)
-        bounding_box_z_max_ = coord_2_z_;
-      centroid_[0] += coord_3_x_;
-      centroid_[1] += coord_3_y_;
-      centroid_[2] += coord_3_z_;
-      if (coord_3_x_ < bounding_box_x_min_)
-        bounding_box_x_min_ = coord_3_x_;
-      if (coord_3_x_ > bounding_box_x_max_)
-        bounding_box_x_max_ = coord_3_x_;
-      if (coord_3_y_ < bounding_box_y_min_)
-        bounding_box_y_min_ = coord_3_y_;
-      if (coord_3_y_ > bounding_box_y_max_)
-        bounding_box_y_max_ = coord_3_y_;
-      if (coord_3_z_ < bounding_box_z_min_)
-        bounding_box_z_min_ = coord_3_z_;
-      if (coord_3_z_ > bounding_box_z_max_)
-        bounding_box_z_max_ = coord_3_z_;
-    }
+  centroid_[0] /= num_nodes_;
+  centroid_[1] /= num_nodes_;
+  centroid_[2] /= num_nodes_;
 
-    centroid_[0] /= num_nodes_;
-    centroid_[1] /= num_nodes_;
-    centroid_[2] /= num_nodes_;
+  double inflation_length = inflation_factor * char_len_;
 
-    double inflation_length = inflation_factor * char_len_;
-
-    bounding_box_x_min_ -= inflation_length;
-    bounding_box_x_max_ += inflation_length;
-    bounding_box_y_min_ -= inflation_length;
-    bounding_box_y_max_ += inflation_length;
-    bounding_box_z_min_ -= inflation_length;
-    bounding_box_z_max_ += inflation_length;
-
+  bounding_box_x_min_ -= inflation_length;
+  bounding_box_x_max_ += inflation_length;
+  bounding_box_y_min_ -= inflation_length;
+  bounding_box_y_max_ += inflation_length;
+  bounding_box_z_min_ -= inflation_length;
+  bounding_box_z_max_ += inflation_length;
 }
 
 #ifdef NIMBLE_HAVE_BVH
-  // Free functions for accessing entity info for bvh
-  bvh::dop_26<double> get_entity_kdop( const ContactEntity &_entity )
-  {
-    return _entity.Kdop();
-  }
+// Free functions for accessing entity info for bvh
+bvh::dop_26<double>
+get_entity_kdop(const ContactEntity& _entity)
+{
+  return _entity.Kdop();
+}
 
-  std::size_t get_entity_global_id( const ContactEntity &_entity )
-  {
-    return static_cast< std::size_t >( _entity.contact_entity_global_id() );
-  }
+std::size_t
+get_entity_global_id(const ContactEntity& _entity)
+{
+  return static_cast<std::size_t>(_entity.contact_entity_global_id());
+}
 
-  bvh::m::vec3d get_entity_centroid( const ContactEntity &_entity )
-  {
-    const auto centroid = _entity.centroid();
+bvh::m::vec3d
+get_entity_centroid(const ContactEntity& _entity)
+{
+  const auto centroid = _entity.centroid();
 
-    return bvh::m::vec3d{ centroid[0], centroid[1], centroid[2] };
-  }
+  return bvh::m::vec3d{centroid[0], centroid[1], centroid[2]};
+}
 #endif
 
-}
+}  // namespace nimble

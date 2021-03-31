@@ -56,19 +56,21 @@ class ModelDataBase;
 
 struct FieldIds;
 
-class BlockMaterialInterfaceFactoryBase {
-public:
-
-  BlockMaterialInterfaceFactoryBase() = default;
+class BlockMaterialInterfaceFactoryBase
+{
+ public:
+  BlockMaterialInterfaceFactoryBase()          = default;
   virtual ~BlockMaterialInterfaceFactoryBase() = default;
 
-  virtual std::shared_ptr<nimble::BlockMaterialInterfaceBase> create(double time_n, double time_np1,
-                                                         const nimble::FieldIds &field_ids,
-                                                         const std::vector<nimble::BlockData> &blocks,
-                                                         nimble::ModelDataBase *model_data_ptr) const = 0;
-
+  virtual std::shared_ptr<nimble::BlockMaterialInterfaceBase>
+  create(
+      double                                time_n,
+      double                                time_np1,
+      const nimble::FieldIds&               field_ids,
+      const std::vector<nimble::BlockData>& blocks,
+      nimble::ModelDataBase*                model_data_ptr) const = 0;
 };
 
-}
+}  // namespace nimble
 
-#endif // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_FACTORY_BASE_H
+#endif  // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_FACTORY_BASE_H

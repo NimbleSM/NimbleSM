@@ -45,9 +45,9 @@
 #define NIMBLE_LINEAR_SOLVER_H
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <vector>
+#include <vector>
 #endif
 
 #ifdef NIMBLE_HAVE_MPI
@@ -56,208 +56,233 @@
 
 namespace nimble {
 
-  class MatrixContainer {
-
-  public:
+class MatrixContainer
+{
+ public:
   MatrixContainer() : num_rows_(0) {}
 
-    ~MatrixContainer() {}
+  ~MatrixContainer() {}
 
-    void AllocateNonzeros(std::vector<int> const & i_index,
-                          std::vector<int> const & j_index) {
-      num_rows_ = 0;
-      for (auto const & entry : i_index) {
-        if (entry > num_rows_) {
-          num_rows_ = entry;
-        }
-      }
-      num_rows_ += 1;
-      data_.resize(num_rows_ * num_rows_, 0.0);
+  void
+  AllocateNonzeros(
+      std::vector<int> const& i_index,
+      std::vector<int> const& j_index)
+  {
+    num_rows_ = 0;
+    for (auto const& entry : i_index) {
+      if (entry > num_rows_) { num_rows_ = entry; }
     }
+    num_rows_ += 1;
+    data_.resize(num_rows_ * num_rows_, 0.0);
+  }
 
-    void SetAllValues(double value) {
-      for (unsigned int i=0 ; i<data_.size() ; i++) {
-        data_[i] = value;
-      }
+  void
+  SetAllValues(double value)
+  {
+    for (unsigned int i = 0; i < data_.size(); i++) { data_[i] = value; }
+  }
+
+  void
+  SetRowValues(int row, double value)
+  {
+    for (int i = 0; i < num_rows_; ++i) { data_[num_rows_ * row + i] = value; }
+  }
+
+  void
+  SetColumnValues(int col, double value)
+  {
+    for (int i = 0; i < num_rows_; ++i) { data_[num_rows_ * i + col] = value; }
+  }
+
+  unsigned int
+  NumNonzeros() const
+  {
+    return data_.size();
+  }
+
+  inline double
+  operator()(int i, int j) const
+  {
+    return data_[num_rows_ * i + j];
+  }
+
+  inline double&
+  operator()(int i, int j)
+  {
+    return data_[num_rows_ * i + j];
+  }
+
+ private:
+  int                 num_rows_;
+  std::vector<double> data_;
+};
+
+class CRSMatrixContainer
+{
+ public:
+  CRSMatrixContainer() : num_rows_(0) {}
+
+  ~CRSMatrixContainer() = default;
+
+  void
+  AllocateNonzeros(
+      std::vector<int> const& i_index,
+      std::vector<int> const& j_index);
+
+  void
+  AllocateDiagonalMatrix(int num_rows)
+  {
+    if (num_rows_ == num_rows) { return; }
+    num_rows_ = num_rows;
+    data_.resize(num_rows_);
+    i_index_.resize(num_rows_);
+    j_index_.resize(num_rows_);
+    row_first_index_.resize(num_rows_);
+    for (int i = 0; i < num_rows_; i++) {
+      data_[i]            = 0.0;
+      i_index_[i]         = i;
+      j_index_[i]         = i;
+      row_first_index_[i] = i;
     }
+  }
 
-    void SetRowValues(int row, double value) {
-      for (int i=0 ; i<num_rows_ ; ++i) {
-        data_[num_rows_ * row + i] = value;
-      }
-    }
+  void
+  SetAllValues(double value)
+  {
+    for (double& d_data : data_) d_data = value;
+  }
 
-    void SetColumnValues(int col, double value) {
-      for (int i=0 ; i<num_rows_ ; ++i) {
-        data_[num_rows_ * i + col] = value;
-      }
-    }
+  void
+  SetRowValues(int row, double value);
 
-    unsigned int NumNonzeros() const { return data_.size(); }
+  void
+  SetColumnValues(int col, double value);
 
-    inline
-    double operator()(int i, int j) const {
-      return data_[num_rows_ * i + j];
-    }
+  int
+  NumRows() const
+  {
+    return num_rows_;
+  }
 
-    inline
-    double& operator()(int i, int j) {
-      return data_[num_rows_ * i + j];
-    }
+  unsigned int
+  NumNonzeros() const
+  {
+    return data_.size();
+  }
 
-  private:
+  void
+  MatVec(const double* vec, double* result) const;
 
-    int num_rows_;
-    std::vector<double> data_;
-  };
+  void
+  DiagonalMatrixMatVec(const double* vec, double* result) const;
 
-  class CRSMatrixContainer {
+  inline double
+  operator()(int i_index, int j_index) const
+  {
+    return data_[FindIndex(i_index, j_index)];
+  }
 
-  public:
-    CRSMatrixContainer() : num_rows_(0) {}
-
-    ~CRSMatrixContainer() = default;
-
-    void AllocateNonzeros(std::vector<int> const & i_index,
-                          std::vector<int> const & j_index);
-
-    void AllocateDiagonalMatrix(int num_rows) {
-      if (num_rows_ == num_rows) {
-        return;
-      }
-      num_rows_ = num_rows;
-      data_.resize(num_rows_);
-      i_index_.resize(num_rows_);
-      j_index_.resize(num_rows_);
-      row_first_index_.resize(num_rows_);
-      for (int i=0 ; i<num_rows_ ; i++) {
-        data_[i] = 0.0;
-        i_index_[i] = i;
-        j_index_[i] = i;
-        row_first_index_[i] = i;
-      }
-    }
-
-    void SetAllValues(double value) {
-      for (double &d_data : data_)
-        d_data = value;
-    }
-
-    void SetRowValues(int row, double value);
-
-    void SetColumnValues(int col, double value);
-
-    int NumRows() const { return num_rows_; }
-
-    unsigned int NumNonzeros() const { return data_.size(); }
-
-    void MatVec(const double * vec,
-                double *result) const ;
-
-    void DiagonalMatrixMatVec(const double *vec,
-                              double *result) const ;
-
-    inline
-    double operator()(int i_index, int j_index) const {
-      return data_[FindIndex(i_index, j_index)];
-    }
-
-    inline
-    double& operator()(int i_index, int j_index) {
-      return data_[FindIndex(i_index, j_index)];
-    }
+  inline double&
+  operator()(int i_index, int j_index)
+  {
+    return data_[FindIndex(i_index, j_index)];
+  }
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | num_rows_ | data_ | i_index_ | j_index_ | row_first_index_;
-    }
-#endif
-
-  private:
-
-    int FindIndex(int i_index, int j_index) const;
-
-    int num_rows_;
-    std::vector<double> data_;
-    std::vector<int> i_index_;
-    std::vector<int> j_index_;
-    std::vector<int> row_first_index_;
-
-    /// \brief Generate a diagonal preconditioner from a sparse matrix
-    ///
-    /// \param A Input sparse matrix
-    /// \param M Diagonal preconditioner (mathematically M = (diag(A))^{-1})
-    friend void PopulateDiagonalPreconditioner(const CRSMatrixContainer &A,
-                                               CRSMatrixContainer & M);
-  };
-
-  inline
-  double InnerProduct(unsigned int num_entries,
-                      const double *vec_1,
-                      const double *vec_2) {
-    double result(0.0);
-    for (unsigned int i=0 ; i<num_entries ; i++) {
-      result += vec_1[i] * vec_2[i];
-    }
-#ifdef NIMBLE_HAVE_MPI
-    double restmp = result;
-    MPI_Allreduce(&restmp, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    return result;
-  }
-
-
-  inline
-  double InnerProduct(const std::vector<double> &vec_1,
-                      const std::vector<double> &vec_2)
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
   {
-    return InnerProduct(vec_1.size(), &vec_1[0], &vec_2[0]);
+    ar | num_rows_ | data_ | i_index_ | j_index_ | row_first_index_;
+  }
+#endif
+
+ private:
+  int
+  FindIndex(int i_index, int j_index) const;
+
+  int                 num_rows_;
+  std::vector<double> data_;
+  std::vector<int>    i_index_;
+  std::vector<int>    j_index_;
+  std::vector<int>    row_first_index_;
+
+  /// \brief Generate a diagonal preconditioner from a sparse matrix
+  ///
+  /// \param A Input sparse matrix
+  /// \param M Diagonal preconditioner (mathematically M = (diag(A))^{-1})
+  friend void
+  PopulateDiagonalPreconditioner(
+      const CRSMatrixContainer& A,
+      CRSMatrixContainer&       M);
+};
+
+inline double
+InnerProduct(unsigned int num_entries, const double* vec_1, const double* vec_2)
+{
+  double result(0.0);
+  for (unsigned int i = 0; i < num_entries; i++) {
+    result += vec_1[i] * vec_2[i];
+  }
+#ifdef NIMBLE_HAVE_MPI
+  double restmp = result;
+  MPI_Allreduce(&restmp, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  return result;
+}
+
+inline double
+InnerProduct(const std::vector<double>& vec_1, const std::vector<double>& vec_2)
+{
+  return InnerProduct(vec_1.size(), &vec_1[0], &vec_2[0]);
+}
+
+void
+LU_Decompose(int num_entries, MatrixContainer& mat, int* index);
+
+void
+LU_Solve(int num_entries, MatrixContainer& mat, double* vec, int* index);
+
+void
+LU_SolveSystem(
+    int              num_entries,
+    MatrixContainer& mat,
+    double*          vec,
+    int*             scratch);
+
+struct CGScratchSpace
+{
+  CGScratchSpace() : len_(0) {}
+
+  void
+  Resize(int len)
+  {
+    if (len != len_) {
+      len_ = len;
+      d.resize(len_);
+      r.resize(len_);
+      s.resize(len_);
+      q.resize(len_);
+      M.AllocateDiagonalMatrix(len_);
+    }
   }
 
-  void LU_Decompose(int num_entries,
-                    MatrixContainer& mat,
-                    int* index);
+  int                 len_;
+  std::vector<double> d;
+  std::vector<double> r;
+  std::vector<double> s;
+  std::vector<double> q;
+  CRSMatrixContainer  M;
+};
 
-  void LU_Solve(int num_entries,
-                MatrixContainer& mat,
-                double* vec,
-                int* index);
+bool
+CG_SolveSystem(
+    nimble::CRSMatrixContainer& A,
+    const double*               b,
+    CGScratchSpace&             cg_scratch,
+    double*                     x,
+    int&                        num_iterations);
 
-  void LU_SolveSystem(int num_entries,
-                      MatrixContainer& mat,
-                      double* vec,
-                      int* scratch);
-
-  struct CGScratchSpace {
-
-    CGScratchSpace() : len_(0) {}
-
-    void Resize(int len) {
-      if (len != len_) {
-        len_ = len;
-        d.resize(len_);
-        r.resize(len_);
-        s.resize(len_);
-        q.resize(len_);
-        M.AllocateDiagonalMatrix(len_);
-      }
-    }
-
-    int len_;
-    std::vector<double> d;
-    std::vector<double> r;
-    std::vector<double> s;
-    std::vector<double> q;
-    CRSMatrixContainer M;
-  };
-
-  bool CG_SolveSystem(nimble::CRSMatrixContainer& A,
-                      const double * b,
-                      CGScratchSpace& cg_scratch,
-                      double *x,
-                      int& num_iterations);
-
-}
+}  // namespace nimble
 
 #endif

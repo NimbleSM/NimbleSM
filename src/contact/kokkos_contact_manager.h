@@ -47,12 +47,10 @@
 #include "../nimble_contact_manager.h"
 
 namespace nimble {
-  class KokkosContactManager : public ContactManager
-  {
-  public:
-
-
-  };
-}
+class KokkosContactManager : public ContactManager
+{
+ public:
+};
+}  // namespace nimble
 
 #endif  // NIMBLE_KOKKOS_CONTACT_MANAGER_H

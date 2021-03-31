@@ -45,175 +45,300 @@
 #define NIMBLE_GENESIS_MESH_H
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <map>
-  #include <vector>
+#include <map>
+#include <vector>
 #endif
 
 #include <string>
 
 namespace nimble {
 
-  class GenesisMesh {
+class GenesisMesh
+{
+ public:
+  GenesisMesh() : file_name_("undefined"), dim_(-1) {}
 
-  public:
-
-    GenesisMesh() : file_name_("undefined"), dim_(-1) {}
-
-    ~GenesisMesh() = default;
+  ~GenesisMesh() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | file_name_ | dim_ | node_global_id_ | node_x_ | node_y_ | node_z_ | elem_global_id_ | block_ids_ | block_names_ | block_elem_global_ids_ | block_num_nodes_per_elem_ | block_elem_connectivity_ | node_set_ids_ | node_set_names_ | node_sets_ | distribution_factors_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | file_name_ | dim_ | node_global_id_ | node_x_ | node_y_ | node_z_ |
+        elem_global_id_ | block_ids_ | block_names_ | block_elem_global_ids_ |
+        block_num_nodes_per_elem_ | block_elem_connectivity_ | node_set_ids_ |
+        node_set_names_ | node_sets_ | distribution_factors_;
+  }
 #endif
 
-    bool IsValid() const {
-      if (file_name_ == "none") {
-        return false;
-      }
-      return true;
+  bool
+  IsValid() const
+  {
+    if (file_name_ == "none") { return false; }
+    return true;
+  }
+
+  std::string
+  FileName() const
+  {
+    return file_name_;
+  }
+
+  unsigned int
+  GetNumNodes() const
+  {
+    return node_x_.size();
+  }
+
+  const int*
+  GetNodeGlobalIds() const
+  {
+    return &node_global_id_[0];
+  }
+  std::size_t
+  GetNumNodeGlobalIds() const
+  {
+    return node_global_id_.size();
+  }
+
+  int
+  GetMaxNodeGlobalId() const
+  {
+    int max_id = -1;
+    for (auto id : node_global_id_) {
+      if (id > max_id) { max_id = id; }
     }
+    return max_id;
+  }
 
-    std::string FileName() const { return file_name_; }
+  unsigned int
+  GetNumElements() const
+  {
+    return elem_global_id_.size();
+  }
 
-    unsigned int GetNumNodes() const { return node_x_.size(); }
+  const int*
+  GetElementGlobalIds() const
+  {
+    return &elem_global_id_[0];
+  }
 
-    const int * GetNodeGlobalIds() const { return &node_global_id_[0]; }
-    std::size_t GetNumNodeGlobalIds() const { return node_global_id_.size(); }
+  std::vector<int> const&
+  GetElementGlobalIdsInBlock(int block_id) const
+  {
+    return block_elem_global_ids_.at(block_id);
+  }
 
-    int GetMaxNodeGlobalId() const {
-      int max_id = -1;
-      for (auto id : node_global_id_) {
-        if (id > max_id) {
-          max_id = id;
-        }
-      }
-      return max_id;
-    }
+  unsigned int
+  GetNumBlocks() const
+  {
+    return block_ids_.size();
+  }
 
-    unsigned int GetNumElements() const { return elem_global_id_.size(); }
+  unsigned int
+  GetNumGlobalBlocks() const
+  {
+    return all_block_ids_.size();
+  }
 
-    const int * GetElementGlobalIds() const { return &elem_global_id_[0]; }
+  bool
+  HasBlock(std::string const& block_name) const;
 
-    std::vector<int> const & GetElementGlobalIdsInBlock(int block_id) const { return block_elem_global_ids_.at(block_id); }
+  std::vector<int>
+  GetBlockIds() const
+  {
+    return block_ids_;
+  }
 
-    unsigned int GetNumBlocks() const { return block_ids_.size(); }
+  std::vector<int>
+  GetAllBlockIds() const
+  {
+    return all_block_ids_;
+  }
 
-    unsigned int GetNumGlobalBlocks() const { return all_block_ids_.size(); }
+  int
+  GetNumElementsInBlock(int block_id) const;
 
-    bool HasBlock(std::string const & block_name) const;
+  std::map<int, int>
+  GetNumElementsInBlock() const;
 
-    std::vector<int> GetBlockIds() const { return block_ids_; }
+  int
+  GetNumNodesPerElement(int block_id) const
+  {
+    return block_num_nodes_per_elem_.at(block_id);
+  }
 
-    std::vector<int> GetAllBlockIds() const { return all_block_ids_; }
+  std::map<int, int>
+  GetNumNodesPerElement() const
+  {
+    return block_num_nodes_per_elem_;
+  }
 
-    int GetNumElementsInBlock(int block_id) const;
+  std::string
+  GetElementType(int block_id) const;
 
-    std::map<int, int> GetNumElementsInBlock() const;
+  std::string
+  GetBlockName(int block_id) const
+  {
+    return all_block_names_.at(block_id);
+  }
 
-    int GetNumNodesPerElement(int block_id) const {
-      return block_num_nodes_per_elem_.at(block_id);
-    }
+  int
+  GetBlockId(std::string const& block_name) const;
 
-    std::map<int, int> GetNumNodesPerElement() const { return block_num_nodes_per_elem_; }
+  void
+  BlockNamesToOnProcessorBlockIds(
+      std::vector<std::string> const& block_names,
+      std::vector<int>&               block_ids);
 
-    std::string GetElementType(int block_id) const;
+  int
+  GetDim() const
+  {
+    return dim_;
+  }
 
-    std::string GetBlockName(int block_id) const { return all_block_names_.at(block_id); }
+  const double*
+  GetCoordinatesX() const
+  {
+    return &node_x_[0];
+  }
 
-    int GetBlockId(std::string const & block_name) const;
+  const double*
+  GetCoordinatesY() const
+  {
+    return &node_y_[0];
+  }
 
-    void BlockNamesToOnProcessorBlockIds(std::vector<std::string> const & block_names,
-                                         std::vector<int> & block_ids);
+  const double*
+  GetCoordinatesZ() const
+  {
+    return &node_z_[0];
+  }
 
-    int GetDim() const { return dim_; }
+  const int*
+  GetConnectivity(int block_id) const
+  {
+    return &block_elem_connectivity_.at(block_id)[0];
+  }
 
-    const double * GetCoordinatesX() const { return &node_x_[0]; }
+  std::map<int, std::vector<int>>&
+  GetConnectivity()
+  {
+    return block_elem_connectivity_;
+  }
 
-    const double * GetCoordinatesY() const { return &node_y_[0]; }
+  int
+  GetNumNodeSets() const
+  {
+    return static_cast<int>(node_set_ids_.size());
+  }
 
-    const double * GetCoordinatesZ() const { return &node_z_[0]; }
+  std::vector<int>
+  GetNodeSetIds() const
+  {
+    return node_set_ids_;
+  }
 
-    const int * GetConnectivity(int block_id) const { return &block_elem_connectivity_.at(block_id)[0]; }
+  std::map<int, std::string>
+  GetNodeSetNames() const
+  {
+    return node_set_names_;
+  }
 
-    std::map<int, std::vector<int> > & GetConnectivity() { return block_elem_connectivity_; }
+  std::map<int, std::vector<int>>
+  GetNodeSets() const
+  {
+    return node_sets_;
+  }
 
-    int GetNumNodeSets() const { return static_cast<int>(node_set_ids_.size()); }
+  std::map<int, std::vector<double>>
+  GetDistributionFactors() const
+  {
+    return distribution_factors_;
+  }
 
-    std::vector<int> GetNodeSetIds() const { return node_set_ids_; }
+  void
+  BoundingBox(
+      double& x_min,
+      double& x_max,
+      double& y_min,
+      double& y_max,
+      double& z_min,
+      double& z_max) const;
 
-    std::map<int, std::string> GetNodeSetNames() const { return node_set_names_; }
+  std::vector<double>
+  BoundingBoxCenter() const;
 
-    std::map<int, std::vector<int> > GetNodeSets() const { return node_sets_; }
+  void
+  AppendPeriodicPair(
+      int                 local_primary_node_id,
+      int                 local_secondary_node_id,
+      const int*          global_node_ids,
+      std::map<int, int>& global_node_id_secondary_to_primary) const;
 
-    std::map<int, std::vector<double> > GetDistributionFactors() const { return distribution_factors_; }
+  void
+  CreatePeriodicRVELinearSystemMap(
+      const int*                       global_node_ids,
+      std::vector<int>&                linear_system_node_ids,
+      std::map<int, std::vector<int>>& map_from_linear_system,
+      int&                             corner_node_id) const;
 
-    void BoundingBox(double& x_min,
-                     double& x_max,
-                     double& y_min,
-                     double& y_max,
-                     double& z_min,
-                     double& z_max) const ;
+  void
+  Print(bool verbose = false, int my_rank = 0) const;
 
-    std::vector<double> BoundingBoxCenter() const ;
+  void
+  ReadFile(std::string file_name);
 
-    void AppendPeriodicPair(int local_primary_node_id,
-                            int local_secondary_node_id,
-                            const int *global_node_ids,
-                            std::map<int, int>& global_node_id_secondary_to_primary) const ;
+  void
+  ReadTextFile(std::string file_name);
 
-    void CreatePeriodicRVELinearSystemMap(const int *global_node_ids,
-                                          std::vector<int>& linear_system_node_ids,
-                                          std::map<int, std::vector<int>>& map_from_linear_system,
-                                          int& corner_node_id) const ;
+  //! Create a genesis mesh object using existing data (intended for contact
+  //! visualization).
+  void
+  Initialize(
+      std::string const&                     file_name,
+      std::vector<int> const&                node_global_id,
+      std::vector<double> const&             node_x,
+      std::vector<double> const&             node_y,
+      std::vector<double> const&             node_z,
+      std::vector<int> const&                elem_global_id,
+      std::vector<int> const&                block_ids,
+      std::map<int, std::string> const&      block_names,
+      std::map<int, std::vector<int>> const& block_elem_global_ids,
+      std::map<int, int> const&              block_num_nodes_per_elem,
+      std::map<int, std::vector<int>> const& block_elem_connectivity);
 
-    void Print(bool verbose = false, int my_rank = 0) const ;
+ protected:
+  void
+  ReportExodusError(
+      int         error_code,
+      const char* method_name,
+      const char* exodus_method_name) const;
 
-    void ReadFile(std::string file_name);
+  std::string file_name_;
+  int         dim_;
 
-    void ReadTextFile(std::string file_name);
+  std::vector<int>                   node_global_id_;
+  std::vector<double>                node_x_;
+  std::vector<double>                node_y_;
+  std::vector<double>                node_z_;
+  std::vector<int>                   elem_global_id_;
+  std::vector<int>                   all_block_ids_;
+  std::vector<int>                   block_ids_;
+  std::map<int, std::string>         all_block_names_;
+  std::map<int, std::string>         block_names_;
+  std::map<int, std::vector<int>>    block_elem_global_ids_;
+  std::map<int, int>                 block_num_nodes_per_elem_;
+  std::map<int, std::vector<int>>    block_elem_connectivity_;
+  std::vector<int>                   node_set_ids_;
+  std::map<int, std::string>         node_set_names_;
+  std::map<int, std::vector<int>>    node_sets_;
+  std::map<int, std::vector<double>> distribution_factors_;
+};
 
-    //! Create a genesis mesh object using existing data (intended for contact visualization).
-    void Initialize(std::string const & file_name,
-                    std::vector<int> const & node_global_id,
-                    std::vector<double> const & node_x,
-                    std::vector<double> const & node_y,
-                    std::vector<double> const & node_z,
-                    std::vector<int> const & elem_global_id,
-                    std::vector<int> const & block_ids,
-                    std::map<int, std::string> const & block_names,
-                    std::map<int, std::vector<int> > const & block_elem_global_ids,
-                    std::map<int, int> const & block_num_nodes_per_elem,
-                    std::map<int, std::vector<int> > const & block_elem_connectivity);
+}  // namespace nimble
 
-  protected:
-
-    void ReportExodusError(int error_code, const char *method_name, const char *exodus_method_name) const;
-
-    std::string file_name_;
-    int dim_;
-
-    std::vector<int> node_global_id_;
-    std::vector<double> node_x_;
-    std::vector<double> node_y_;
-    std::vector<double> node_z_;
-    std::vector<int> elem_global_id_;
-    std::vector<int> all_block_ids_;
-    std::vector<int> block_ids_;
-    std::map<int, std::string> all_block_names_;
-    std::map<int, std::string> block_names_;
-    std::map<int, std::vector<int> > block_elem_global_ids_;
-    std::map<int, int> block_num_nodes_per_elem_;
-    std::map<int, std::vector<int> > block_elem_connectivity_;
-    std::vector<int> node_set_ids_;
-    std::map<int, std::string> node_set_names_;
-    std::map<int, std::vector<int> > node_sets_;
-    std::map<int, std::vector<double> > distribution_factors_;
-  };
-
-} // namespace nimble
-
-#endif // NIMBLE_INPUT_EXODUS_H
+#endif  // NIMBLE_INPUT_EXODUS_H

@@ -44,6 +44,10 @@
 #ifndef NIMBLE_MODEL_DATA_BASE_H
 #define NIMBLE_MODEL_DATA_BASE_H
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
 #include "nimble_exodus_output.h"
@@ -51,35 +55,30 @@
 #include "nimble_linear_solver.h"
 #include "nimble_view.h"
 
-#include <vector>
-#include <string>
-#include <map>
-
 namespace nimble {
 
 class DataManager;
 
-struct FieldIds {
+struct FieldIds
+{
   int deformation_gradient = -1;
-  int stress = -1;
-  int unrotated_stress = -1;
+  int stress               = -1;
+  int unrotated_stress     = -1;
 
   int reference_coordinates = -1;
-  int displacement = -1;
-  int velocity = -1;
-  int acceleration = -1;
+  int displacement          = -1;
+  int velocity              = -1;
+  int acceleration          = -1;
 
-  int lumped_mass = -1;
+  int lumped_mass    = -1;
   int internal_force = -1;
-  int contact_force = -1;
+  int contact_force  = -1;
   int external_force = -1;
 };
 
-
-class ModelDataBase {
-
-public:
-
+class ModelDataBase
+{
+ public:
   /// \brief Constructor
   ModelDataBase() = default;
 
@@ -94,55 +93,66 @@ public:
   /// \param label
   /// \param num_objects
   /// \return Field ID for the data allocated
-  virtual int AllocateNodeData(Length length,
-                               std::string label,
-                               int num_objects) = 0;
+  virtual int
+  AllocateNodeData(Length length, std::string label, int num_objects) = 0;
 
   /// \brief Returns the field ID for a specific label
   ///
   /// \param field_label Label for a stored quantity
   /// \return Field ID to identify the data storage
-  virtual int GetFieldId(const std::string& field_label) const = 0;
+  virtual int
+  GetFieldId(const std::string& field_label) const = 0;
 
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
-  virtual void InitializeBlocks(nimble::DataManager &data_manager,
-                                const std::shared_ptr<MaterialFactoryType> &material_factory_base) = 0;
+  virtual void
+  InitializeBlocks(
+      nimble::DataManager&                        data_manager,
+      const std::shared_ptr<MaterialFactoryType>& material_factory_base) = 0;
 
   /// \brief Copy time state (n+1) into time state (n)
   ///
   /// \param data_manager Reference to the data manager
-  virtual void UpdateStates(const nimble::DataManager &data_manager) = 0;
+  virtual void
+  UpdateStates(const nimble::DataManager& data_manager) = 0;
 
   /// \brief Get view of scalar quantity defined on nodes
   ///
   /// \param field_id
   /// \return Viewify<1> object for scalar quantity
-  virtual nimble::Viewify<1> GetScalarNodeData(const std::string& label) = 0;
+  virtual nimble::Viewify<1>
+  GetScalarNodeData(const std::string& label) = 0;
 
   /// \brief Get view of vector quantity defined on nodes
   ///
   /// \param field_id
   /// \return Viewify<2> object for vector quantity
-  virtual nimble::Viewify<2> GetVectorNodeData(const std::string& label) = 0;
+  virtual nimble::Viewify<2>
+  GetVectorNodeData(const std::string& label) = 0;
 
   /// \brief Compute the lumped mass
   ///
   /// \param data_manager Reference to the data manager
-  virtual void ComputeLumpedMass(nimble::DataManager &data_manager) = 0;
+  virtual void
+  ComputeLumpedMass(nimble::DataManager& data_manager) = 0;
 
-  virtual void InitializeExodusOutput(nimble::DataManager &data_manager)
-  {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
+  virtual void
+  InitializeExodusOutput(nimble::DataManager& data_manager)
+  {
+    throw std::runtime_error(" Exodus Output Not Implemented \n");
+  }
 
   /// \brief Write output of simulation in Exodus format
   ///
   /// \param[in] data_manager Reference to data manager
   /// \param[in] time_current Time value
-  virtual void WriteExodusOutput(nimble::DataManager &data_manager,
-                                 double time_current)
-  {  throw std::runtime_error(" Exodus Output Not Implemented \n");  }
+  virtual void
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
+  {
+    throw std::runtime_error(" Exodus Output Not Implemented \n");
+  }
 
   /// \brief Compute the external force
   ///
@@ -152,10 +162,12 @@ public:
   /// \param is_output_step
   ///
   /// \note This routine is a placeholder.
-  virtual void ComputeExternalForce(nimble::DataManager &data_manager,
-                                    double time_previous,
-                                    double time_current,
-                                    bool is_output_step) {};
+  virtual void
+  ComputeExternalForce(
+      nimble::DataManager& data_manager,
+      double               time_previous,
+      double               time_current,
+      bool                 is_output_step){};
 
   /// \brief Compute the internal force
   ///
@@ -165,20 +177,25 @@ public:
   /// \param[in] is_output_step
   /// \param[in] displacement
   /// \param[out] internal_force  Output for internal force
-  virtual void ComputeInternalForce(nimble::DataManager &data_manager,
-                                    double time_previous,
-                                    double time_current,
-                                    bool is_output_step,
-                                    const nimble::Viewify<2> &displacement,
-                                    nimble::Viewify<2> &force) {};
+  virtual void
+  ComputeInternalForce(
+      nimble::DataManager&      data_manager,
+      double                    time_previous,
+      double                    time_current,
+      bool                      is_output_step,
+      const nimble::Viewify<2>& displacement,
+      nimble::Viewify<2>&       force){};
 
   /// \brief Apply initial conditions
-  virtual void ApplyInitialConditions(nimble::DataManager &data_manager);
+  virtual void
+  ApplyInitialConditions(nimble::DataManager& data_manager);
 
   /// \brief Apply kinematic conditions
-  virtual void ApplyKinematicConditions(nimble::DataManager &data_manager,
-                                        double time_current,
-                                        double time_previous);
+  virtual void
+  ApplyKinematicConditions(
+      nimble::DataManager& data_manager,
+      double               time_current,
+      double               time_previous);
 
   /// \brief Update model with new velocity
   ///
@@ -187,9 +204,10 @@ public:
   ///
   /// \note This routine is usually empty.
   ///       The UQ model data is one case using this routine.
-  virtual void UpdateWithNewVelocity(nimble::DataManager &data_manager,
-                                     double dt)
-  {}
+  virtual void
+  UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
+  {
+  }
 
   /// \brief Update model with new displacement
   ///
@@ -198,61 +216,85 @@ public:
   ///
   /// \note This routine is usually empty.
   ///       The UQ model data is one case using this routine.
-  virtual void UpdateWithNewDisplacement(nimble::DataManager &data_manager,
-                                         double dt)
-  {}
+  virtual void
+  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
+  {
+  }
 
   //--- Common interface routines
 
   /// \brief Get the spatial dimension
   ///
   /// \return Spatial dimension
-  int GetDimension() const {return dim_; }
+  int
+  GetDimension() const
+  {
+    return dim_;
+  }
 
   /// \brief Set the critical time step
   ///
   /// \param time_step Critical time step to use.
-  void SetCriticalTimeStep(double time_step) { critical_time_step_ = time_step; }
+  void
+  SetCriticalTimeStep(double time_step)
+  {
+    critical_time_step_ = time_step;
+  }
 
   /// \brief Set spatial dimension
   ///
   /// \param dim Spatial dimension
-  void SetDimension(int dim);
+  void
+  SetDimension(int dim);
 
   /// \brief Set reference coordinates
   ///
   /// \param mesh Mesh
-  void SetReferenceCoordinates(const nimble::GenesisMesh &mesh);
+  void
+  SetReferenceCoordinates(const nimble::GenesisMesh& mesh);
 
   /// \brief Get the critical time step
   ///
   /// \return Time step
-  double GetCriticalTimeStep() const { return critical_time_step_; }
+  double
+  GetCriticalTimeStep() const
+  {
+    return critical_time_step_;
+  }
 
-  const std::vector<std::string> & GetNodeDataLabelsForOutput() const {
+  const std::vector<std::string>&
+  GetNodeDataLabelsForOutput() const
+  {
     return output_node_component_labels_;
   }
 
-  const std::map<int, std::vector<std::string> > & GetElementDataLabels() const {
+  const std::map<int, std::vector<std::string>>&
+  GetElementDataLabels() const
+  {
     return element_component_labels_;
   }
 
-  const std::map<int, std::vector<std::string> > & GetElementDataLabelsForOutput() const {
+  const std::map<int, std::vector<std::string>>&
+  GetElementDataLabelsForOutput() const
+  {
     return output_element_component_labels_;
   }
 
-  const std::map<int, std::vector<std::string> > & GetDerivedElementDataLabelsForOutput() const {
+  const std::map<int, std::vector<std::string>>&
+  GetDerivedElementDataLabelsForOutput() const
+  {
     return derived_output_element_data_labels_;
   }
 
   /// \brief Set the use of displacement fluctuations instead of displacement.
   ///
-  void SetUseDisplacementFluctuations() {
+  void
+  SetUseDisplacementFluctuations()
+  {
     use_displacement_fluctuations_ = true;
   }
 
-protected:
-
+ protected:
   //! Problem dimension, either 2 or 3.
   int dim_ = 3;
 
@@ -262,20 +304,20 @@ protected:
   //! Output labels for node data that will be written to disk
   std::vector<std::string> output_node_component_labels_;
 
-  //! Map key is the block_id, vector contains component-wise label for each scalar entry in the data array.
+  //! Map key is the block_id, vector contains component-wise label for each
+  //! scalar entry in the data array.
   std::map<int, std::vector<std::string>> element_component_labels_;
 
   //! Output labels for element data that will be written to disk.
-  std::map<int, std::vector<std::string> > output_element_component_labels_;
+  std::map<int, std::vector<std::string>> output_element_component_labels_;
 
   //! Output labels for derived element data that will be written to disk.
-  std::map<int, std::vector<std::string> > derived_output_element_data_labels_;
+  std::map<int, std::vector<std::string>> derived_output_element_data_labels_;
 
   //! Flag to use displacement fluctuations
   bool use_displacement_fluctuations_ = false;
-
 };
 
-} // namespace nimble
+}  // namespace nimble
 
 #endif

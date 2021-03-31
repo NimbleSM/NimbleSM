@@ -54,51 +54,65 @@ namespace nimble {
 
 class Element;
 
-class BlockBase {
-
-public:
-
+class BlockBase
+{
+ public:
   BlockBase() = default;
 
   virtual ~BlockBase() = default;
 
-  virtual void InstantiateElement() = 0;
+  virtual void
+  InstantiateElement() = 0;
 
-  double GetDensity() const {
+  double
+  GetDensity() const
+  {
     return material_->GetDensity();
   }
 
-  double GetBulkModulus() const {
+  double
+  GetBulkModulus() const
+  {
     return material_->GetBulkModulus();
   }
 
-  double GetShearModulus() const {
+  double
+  GetShearModulus() const
+  {
     return material_->GetShearModulus();
   }
 
-  std::shared_ptr<Material> GetMaterialPointer() const { return material_; }
+  std::shared_ptr<Material>
+  GetMaterialPointer() const
+  {
+    return material_;
+  }
 
-  std::shared_ptr<Element> GetElementPointer() const { return element_; }
+  std::shared_ptr<Element>
+  GetElementPointer() const
+  {
+    return element_;
+  }
 
-  virtual double ComputeCriticalTimeStep(const nimble::Viewify<2> &node_reference_coordinates,
-                                         const nimble::Viewify<2> &node_displacements,
-                                         int num_elem,
-                                         const int * elem_conn) const;
+  virtual double
+  ComputeCriticalTimeStep(
+      const nimble::Viewify<2>& node_reference_coordinates,
+      const nimble::Viewify<2>& node_displacements,
+      int                       num_elem,
+      const int*                elem_conn) const;
 
-protected:
-
-  std::string macro_material_parameters_ = "none";
+ protected:
+  std::string                macro_material_parameters_ = "none";
   std::map<int, std::string> rve_material_parameters_;
-  std::string rve_boundary_condition_strategy_ = "none";
-  std::vector<int> rve_output_global_elem_ids_;
+  std::string                rve_boundary_condition_strategy_ = "none";
+  std::vector<int>           rve_output_global_elem_ids_;
   // todo: can we avoid carrying the rve_mesh around?
   GenesisMesh rve_mesh_;
 
-  std::shared_ptr<Element> element_ = nullptr;
+  std::shared_ptr<Element>  element_  = nullptr;
   std::shared_ptr<Material> material_ = nullptr;
-
 };
 
-} // namespace nimble
+}  // namespace nimble
 
-#endif // NIMBLE_BLOCK_BASE_H
+#endif  // NIMBLE_BLOCK_BASE_H

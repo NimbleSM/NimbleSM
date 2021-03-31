@@ -56,17 +56,21 @@
 
 namespace nimble {
 
-class ProfilingTimer {
-public:
-  inline ProfilingTimer() {
+class ProfilingTimer
+{
+ public:
+  inline ProfilingTimer()
+  {
 #ifndef NIMBLE_HAVE_KOKKOS
-    n_timer_ = std::unique_ptr<nimble::Timer>( new nimble::Timer() );
+    n_timer_ = std::unique_ptr<nimble::Timer>(new nimble::Timer());
 #endif
   }
 
   ~ProfilingTimer() = default;
 
-  inline void push_region(const std::string &profiling_region_name) {
+  inline void
+  push_region(const std::string& profiling_region_name)
+  {
     current_region_.push(profiling_region_name);
 #ifdef NIMBLE_HAVE_KOKKOS
     Kokkos::Profiling::pushRegion("NimbleSM: " + profiling_region_name);
@@ -76,7 +80,9 @@ public:
 #endif
   }
 
-  inline double pop_region_and_report_time() {
+  inline double
+  pop_region_and_report_time()
+  {
     double t = 0.0;
 #ifdef NIMBLE_HAVE_KOKKOS
     t = k_timer_.seconds();
@@ -88,7 +94,7 @@ public:
     return t;
   }
 
-private:
+ private:
   std::stack<std::string> current_region_;
 
   std::unique_ptr<nimble::Timer> n_timer_ = nullptr;
@@ -97,6 +103,6 @@ private:
 #endif
 };
 
-}
+}  // namespace nimble
 
-#endif // NIMBLESM_NIMBLE_PROFILING_TIMER_H
+#endif  // NIMBLESM_NIMBLE_PROFILING_TIMER_H

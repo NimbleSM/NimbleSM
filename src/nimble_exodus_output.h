@@ -47,88 +47,115 @@
 #include "nimble_genesis_mesh.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <vector>
-  #include <map>
+#include <map>
+#include <vector>
 #endif
 
 namespace nimble {
 
-  class ExodusOutput {
-
-  public:
-
-    ExodusOutput() : filename_("none"), CPU_word_size_(sizeof(double)), IO_word_size_(sizeof(double)),
-      dim_(0), num_nodes_(0), num_elements_(0), num_blocks_(0),
-      num_node_sets_(0), num_side_sets_(0), exodus_write_count_(0) {}
+class ExodusOutput
+{
+ public:
+  ExodusOutput()
+      : filename_("none"),
+        CPU_word_size_(sizeof(double)),
+        IO_word_size_(sizeof(double)),
+        dim_(0),
+        num_nodes_(0),
+        num_elements_(0),
+        num_blocks_(0),
+        num_node_sets_(0),
+        num_side_sets_(0),
+        exodus_write_count_(0)
+  {
+  }
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-			ar | filename_ | CPU_word_size_ | IO_word_size_ | dim_ | num_nodes_ | num_elements_ | num_blocks_ | block_ids_ | num_node_sets_ | num_side_sets_ | exodus_write_count_ | elem_data_index_;
-		}
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | filename_ | CPU_word_size_ | IO_word_size_ | dim_ | num_nodes_ |
+        num_elements_ | num_blocks_ | block_ids_ | num_node_sets_ |
+        num_side_sets_ | exodus_write_count_ | elem_data_index_;
+  }
 #endif
 
-    void Initialize(std::string const & filename,
-                    GenesisMesh const & genesis_mesh);
+  void
+  Initialize(std::string const& filename, GenesisMesh const& genesis_mesh);
 
-    virtual ~ExodusOutput() {}
+  virtual ~ExodusOutput() {}
 
-    std::string GetFileName() const { return filename_; }
+  std::string
+  GetFileName() const
+  {
+    return filename_;
+  }
 
-    void InitializeDatabase(GenesisMesh const & genesis_mesh,
-			    std::vector<std::string> const & global_data_names,
-			    std::vector<std::string> const & node_data_names,
-          std::map< int, std::vector<std::string> > const & elem_data_names,
-          std::map< int, std::vector<std::string> > const & derived_elem_data_names);
+  void
+  InitializeDatabase(
+      GenesisMesh const&                             genesis_mesh,
+      std::vector<std::string> const&                global_data_names,
+      std::vector<std::string> const&                node_data_names,
+      std::map<int, std::vector<std::string>> const& elem_data_names,
+      std::map<int, std::vector<std::string>> const& derived_elem_data_names);
 
-    void WriteStep(double time,
-		   std::vector<double> const & global_data,
-		   std::vector< std::vector<double> > const & node_data,
-       std::map< int, std::vector< std::string > > const & elem_data_names,
-       std::map< int, std::vector< std::vector<double> > > const & elem_data,
-       std::map< int, std::vector< std::string > > const & derived_elem_data_names,
-       std::map< int, std::vector< std::vector<double> > > const & derived_elem_data);
+  void
+  WriteStep(
+      double                                                 time,
+      std::vector<double> const&                             global_data,
+      std::vector<std::vector<double>> const&                node_data,
+      std::map<int, std::vector<std::string>> const&         elem_data_names,
+      std::map<int, std::vector<std::vector<double>>> const& elem_data,
+      std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+      std::map<int, std::vector<std::vector<double>>> const& derived_elem_data);
 
-    void InitializeDatabaseTextFile(GenesisMesh const & genesis_mesh,
-       std::vector<std::string> const & global_data_names,
-       std::vector<std::string> const & node_data_names,
-       std::map< int, std::vector<std::string> > const & elem_data_names,
-       std::map< int, std::vector<std::string> > const & derived_elem_data_names);
+  void
+  InitializeDatabaseTextFile(
+      GenesisMesh const&                             genesis_mesh,
+      std::vector<std::string> const&                global_data_names,
+      std::vector<std::string> const&                node_data_names,
+      std::map<int, std::vector<std::string>> const& elem_data_names,
+      std::map<int, std::vector<std::string>> const& derived_elem_data_names);
 
-    void WriteStepTextFile(double time,
-		   std::vector<double> const & global_data,
-		   std::vector< std::vector<double> > const & node_data,
-       std::map< int, std::vector< std::string > > const & elem_data_names,
-       std::map< int, std::vector< std::vector<double> > > const & elem_data,
-       std::map< int, std::vector< std::string > > const & derived_elem_data_names,
-       std::map< int, std::vector< std::vector<double> > > const & derived_elem_data);
+  void
+  WriteStepTextFile(
+      double                                                 time,
+      std::vector<double> const&                             global_data,
+      std::vector<std::vector<double>> const&                node_data,
+      std::map<int, std::vector<std::string>> const&         elem_data_names,
+      std::map<int, std::vector<std::vector<double>>> const& elem_data,
+      std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+      std::map<int, std::vector<std::vector<double>>> const& derived_elem_data);
 
-  protected:
+ protected:
+  void
+  ReportExodusError(
+      int         error_code,
+      const char* method_name,
+      const char* exodus_method_name);
 
-    void ReportExodusError(int error_code,
-			   const char *method_name,
-			   const char *exodus_method_name);
+  void
+  WriteQARecord(int exodus_file_id);
 
-    void WriteQARecord(int exodus_file_id);
+  std::string                filename_;
+  int                        CPU_word_size_;
+  int                        IO_word_size_;
+  int                        dim_;
+  int                        num_nodes_;
+  int                        num_elements_;
+  int                        num_blocks_;
+  int                        num_global_blocks_;
+  std::vector<int>           all_block_ids_;
+  std::vector<int>           block_ids_;
+  int                        num_node_sets_;
+  int                        num_side_sets_;
+  int                        exodus_write_count_;
+  std::map<std::string, int> elem_data_index_;
+};
 
-    std::string filename_;
-    int CPU_word_size_;
-    int IO_word_size_;
-    int dim_;
-    int num_nodes_;
-    int num_elements_;
-    int num_blocks_;
-    int num_global_blocks_;
-    std::vector<int> all_block_ids_;
-    std::vector<int> block_ids_;
-    int num_node_sets_;
-    int num_side_sets_;
-    int exodus_write_count_;
-    std::map<std::string, int> elem_data_index_;
-  };
+}  // namespace nimble
 
-} // namespace nimble
-
-#endif // NIMBLE_OUTPUT_EXODUS_H
+#endif  // NIMBLE_OUTPUT_EXODUS_H
