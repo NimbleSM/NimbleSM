@@ -41,13 +41,14 @@
 //@HEADER
 */
 
+#include "nimble_material_factory_base.h"
+
+#include <cassert>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
-#include <cassert>
 
 #include "nimble_material.h"
-#include "nimble_material_factory_base.h"
 #include "nimble_parser_util.h"
 
 namespace nimble {
@@ -58,39 +59,51 @@ MaterialFactoryBase::MaterialFactoryBase()
   ElasticMaterial::register_supported_material_parameters(*this);
 }
 
-std::shared_ptr<MaterialParameters> MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_parameters,
-                                                                                       int num_material_points) const {
-
+std::shared_ptr<MaterialParameters>
+MaterialFactoryBase::ParseMaterialParametersString(
+    const std::string& material_parameters,
+    int                num_material_points) const
+{
   auto tokens = nimble::tokenize_string(material_parameters);
 
-  // The first string is the material name, followed by the material properties (key-value pairs)
+  // The first string is the material name, followed by the material properties
+  // (key-value pairs)
 
   assert(tokens.size() > 1);
 
   const std::string material_name = tokens.front();
-  auto token = tokens.cbegin() + 1;
-  auto tokens_end = tokens.cend();
+  auto              token         = tokens.cbegin() + 1;
+  auto              tokens_end    = tokens.cend();
 
   std::map<std::string, std::string> material_string_parameters;
-  std::map<std::string, double> material_double_parameters;
+  std::map<std::string, double>      material_double_parameters;
   for (; token != tokens_end; token += 2) {
     auto&& key = *token;
-    auto&& val = *(token+1);
-    if (std::find(valid_double_parameter_names.begin(), valid_double_parameter_names.end(), key)
-        != valid_double_parameter_names.end()) {
+    auto&& val = *(token + 1);
+    if (std::find(
+            valid_double_parameter_names.begin(),
+            valid_double_parameter_names.end(),
+            key) != valid_double_parameter_names.end()) {
       double double_val = nimble::string_to_double(val);
       material_double_parameters.insert(std::make_pair(key, double_val));
-    } else if (std::find(valid_string_parameter_names.begin(), valid_string_parameter_names.end(),
-                         key) != valid_string_parameter_names.end()) {
+    } else if (
+        std::find(
+            valid_string_parameter_names.begin(),
+            valid_string_parameter_names.end(),
+            key) != valid_string_parameter_names.end()) {
       material_string_parameters.insert(std::make_pair(key, val));
     } else {
-      std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
+      std::string errMsg =
+          "Invalid material parameter encountered: '" + key + "'";
       throw std::runtime_error(errMsg);
     }
   }
 
-  return std::make_shared<MaterialParameters>(material_name, material_string_parameters, material_double_parameters,
-                                              num_material_points);
+  return std::make_shared<MaterialParameters>(
+      material_name,
+      material_string_parameters,
+      material_double_parameters,
+      num_material_points);
 }
 
-}
+}  // namespace nimble

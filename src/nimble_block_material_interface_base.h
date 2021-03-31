@@ -49,37 +49,40 @@ namespace nimble {
 class BlockBase;
 class Material;
 
-struct BlockData {
-  BlockData(nimble::BlockBase *block_, nimble::Material* material_d_, const int block_id_,
-            const int num_block_elems_, const int num_points_per_block_elem_)
-      :
-      block(block_),
-      material_device(material_d_),
-      id(block_id_),
-      num_elems(num_block_elems_),
-      num_points_per_elem(num_points_per_block_elem_) {
+struct BlockData
+{
+  BlockData(
+      nimble::BlockBase* block_,
+      nimble::Material*  material_d_,
+      const int          block_id_,
+      const int          num_block_elems_,
+      const int          num_points_per_block_elem_)
+      : block(block_),
+        material_device(material_d_),
+        id(block_id_),
+        num_elems(num_block_elems_),
+        num_points_per_elem(num_points_per_block_elem_)
+  {
   }
 
-  nimble::BlockBase *block = nullptr;
-  nimble::Material *material_device = nullptr;
-  int id = 0;
-  int num_elems = 0;
-  int num_points_per_elem = 0;
+  nimble::BlockBase* block               = nullptr;
+  nimble::Material*  material_device     = nullptr;
+  int                id                  = 0;
+  int                num_elems           = 0;
+  int                num_points_per_elem = 0;
 };
 
-class BlockMaterialInterfaceBase {
-
-public:
-
+class BlockMaterialInterfaceBase
+{
+ public:
   BlockMaterialInterfaceBase() = default;
 
   virtual ~BlockMaterialInterfaceBase() = default;
 
-  virtual void ComputeStress() const = 0;
-
+  virtual void
+  ComputeStress() const = 0;
 };
 
-}
+}  // namespace nimble
 
-
-#endif // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_BASE_H
+#endif  // SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_BASE_H

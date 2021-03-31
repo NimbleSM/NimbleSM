@@ -41,30 +41,32 @@
 //@HEADER
 */
 
+#include "nimble_material_factory.h"
+
+#include <cassert>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
-#include <cassert>
 
 #include "nimble_material.h"
-#include "nimble_material_factory.h"
 
 namespace nimble {
 
-MaterialFactory::MaterialFactory()
-    :
-    MaterialFactoryBase() {
-}
+MaterialFactory::MaterialFactory() : MaterialFactoryBase() {}
 
-void MaterialFactory::create() {
+void
+MaterialFactory::create()
+{
   auto name_string = material_params->GetMaterialName(false);
   if (name_string == "neohookean") {
     material = std::make_shared<NeohookeanMaterial>(*material_params);
   } else if (name_string == "elastic") {
     material = std::make_shared<ElasticMaterial>(*material_params);
   } else {
-    throw std::logic_error("\nError in Block::InstantiateMaterialModel(), invalid material model name.\n");
+    throw std::logic_error(
+        "\nError in Block::InstantiateMaterialModel(), invalid material model "
+        "name.\n");
   }
 }
 
-}
+}  // namespace nimble

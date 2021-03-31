@@ -41,59 +41,65 @@
 //@HEADER
 */
 
+#include "nimble_model_data_base.h"
+
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_data_manager.h"
-#include "nimble_model_data_base.h"
 
 namespace nimble {
 
-void ModelDataBase::SetDimension(int dim)
+void
+ModelDataBase::SetDimension(int dim)
 {
-  if(dim != 2 && dim != 3){
+  if (dim != 2 && dim != 3) {
     throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
   }
   dim_ = dim;
 }
 
-void ModelDataBase::SetReferenceCoordinates(const nimble::GenesisMesh &mesh)
+void
+ModelDataBase::SetReferenceCoordinates(const nimble::GenesisMesh& mesh)
 {
-  const double * const ref_coord_x = mesh.GetCoordinatesX();
-  const double * const ref_coord_y = mesh.GetCoordinatesY();
-  const double * const ref_coord_z = mesh.GetCoordinatesZ();
+  const double* const ref_coord_x = mesh.GetCoordinatesX();
+  const double* const ref_coord_y = mesh.GetCoordinatesY();
+  const double* const ref_coord_z = mesh.GetCoordinatesZ();
   //
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
-  int num_nodes = static_cast<int>(mesh.GetNumNodes());
+  int  num_nodes            = static_cast<int>(mesh.GetNumNodes());
   if (dim_ == 2) {
-    for (int i=0 ; i<num_nodes ; i++) {
+    for (int i = 0; i < num_nodes; i++) {
       reference_coordinate(i, 0) = ref_coord_x[i];
       reference_coordinate(i, 1) = ref_coord_y[i];
     }
-  }
-  else if (dim_ == 3) {
-    for (int i=0 ; i<num_nodes ; i++) {
+  } else if (dim_ == 3) {
+    for (int i = 0; i < num_nodes; i++) {
       reference_coordinate(i, 0) = ref_coord_x[i];
       reference_coordinate(i, 1) = ref_coord_y[i];
       reference_coordinate(i, 2) = ref_coord_z[i];
     }
-  }
-  else {
+  } else {
     throw std::runtime_error(" -- Inappropriate Spatial Dimension");
   }
 }
 
-void ModelDataBase::ApplyInitialConditions(nimble::DataManager &data_manager) {
-  auto bc = data_manager.GetBoundaryConditionManager();
+void
+ModelDataBase::ApplyInitialConditions(nimble::DataManager& data_manager)
+{
+  auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
-  auto velocity = GetVectorNodeData("velocity");
+  auto velocity             = GetVectorNodeData("velocity");
   bc->ApplyInitialConditions(reference_coordinate, velocity);
 }
 
-void ModelDataBase::ApplyKinematicConditions(nimble::DataManager &data_manager,
-                                             double time_current,
-                                             double time_previous) {
-  auto bc = data_manager.GetBoundaryConditionManager();
+void
+ModelDataBase::ApplyKinematicConditions(
+    nimble::DataManager& data_manager,
+    double               time_current,
+    double               time_previous)
+{
+  auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
-  auto velocity = GetVectorNodeData("velocity");
+  auto velocity             = GetVectorNodeData("velocity");
 
   nimble::Viewify<2> displacement;
   if (use_displacement_fluctuations_)
@@ -101,8 +107,12 @@ void ModelDataBase::ApplyKinematicConditions(nimble::DataManager &data_manager,
   else
     displacement = GetVectorNodeData("displacement");
 
-  bc->ApplyKinematicBC(time_current, time_previous,
-                       reference_coordinate, displacement, velocity);
+  bc->ApplyKinematicBC(
+      time_current,
+      time_previous,
+      reference_coordinate,
+      displacement,
+      velocity);
 }
 
-}
+}  // namespace nimble

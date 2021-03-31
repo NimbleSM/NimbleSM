@@ -42,6 +42,7 @@
 */
 
 #include "parallel_contact_manager.h"
+
 #include "nimble_data_manager.h"
 
 #ifdef NIMBLE_HAVE_MPI
@@ -49,12 +50,14 @@
 #endif
 
 namespace nimble {
-  ParallelContactManager::ParallelContactManager(std::shared_ptr<ContactInterface> interface,
-                                                 nimble::DataManager &data_manager)
-    : ContactManager{interface, data_manager} {
+ParallelContactManager::ParallelContactManager(
+    std::shared_ptr<ContactInterface> interface,
+    nimble::DataManager&              data_manager)
+    : ContactManager{interface, data_manager}
+{
 #ifdef NIMBLE_HAVE_MPI
-    MPI_Comm_rank( MPI_COMM_WORLD, &m_rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &m_num_ranks );
+  MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &m_num_ranks);
 #endif
-  }
 }
+}  // namespace nimble

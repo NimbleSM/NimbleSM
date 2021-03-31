@@ -55,36 +55,46 @@ struct NGPLAMEData;
 
 namespace nimble_kokkos {
 
-class MaterialFactory : public nimble::MaterialFactoryBase {
-
-public:
+class MaterialFactory : public nimble::MaterialFactoryBase
+{
+ public:
   explicit MaterialFactory();
   ~MaterialFactory() override = default;
 
   //--- Specific routines to Kokkos-based environment
 
-  inline std::shared_ptr<nimble::Material> get_material_host() const { return material; }
+  inline std::shared_ptr<nimble::Material>
+  get_material_host() const
+  {
+    return material;
+  }
 
-  inline nimble::Material* get_material_device() const { return material_device; }
+  inline nimble::Material*
+  get_material_device() const
+  {
+    return material_device;
+  }
 
-  inline std::shared_ptr<nimble::NGPLAMEData> get_ngp_lame_data() const { return ngp_lame_data; }
+  inline std::shared_ptr<nimble::NGPLAMEData>
+  get_ngp_lame_data() const
+  {
+    return ngp_lame_data;
+  }
 
-protected:
+ protected:
+  void
+  create() override;
 
-  void create() override;
-
-protected:
-
+ protected:
   ///
   /// \note The variable material is used as 'material_host'
   /// (i.e. a variable defined on the host memory space).
   ///
 
-  nimble::Material* material_device;
+  nimble::Material*                    material_device;
   std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data;
-
 };
 
-}
+}  // namespace nimble_kokkos
 
 #endif /* SRC_NIMBLE_KOKKOS_MATERIAL_FACTORY_H_ */

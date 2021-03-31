@@ -45,11 +45,11 @@
 
 #include "arborx_serial_contact_manager.h"
 
-#include "nimble_defs.h"
 #include "nimble_data_manager.h"
+#include "nimble_defs.h"
 #include "nimble_model_data_base.h"
-#include "nimble_vector_communicator.h"
 #include "nimble_timer.h"
+#include "nimble_vector_communicator.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_model_data.h"
@@ -57,18 +57,18 @@
 
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
-
 #include <iostream>
 #include <random>
 #include <vector>
 
 namespace ArborX {
 template <>
-struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView,
-                    PrimitivesTag> {
+struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
+{
   // size returns the number of elements in the View
   static std::size_t
-  size(nimble_kokkos::DeviceContactEntityArrayView const &v) {
+  size(nimble_kokkos::DeviceContactEntityArrayView const& v)
+  {
     return v.size();
   }
 
@@ -78,12 +78,13 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView,
   /// \param i
   /// \return ArborX::Box
   KOKKOS_FUNCTION static ArborX::Box
-  get(nimble_kokkos::DeviceContactEntityArrayView const &v, std::size_t i) {
-    nimble::ContactEntity &e = v(i);
-    ArborX::Point point1(e.bounding_box_x_min_, e.bounding_box_y_min_,
-                         e.bounding_box_z_min_);
-    ArborX::Point point2(e.bounding_box_x_max_, e.bounding_box_y_max_,
-                         e.bounding_box_z_max_);
+  get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
+  {
+    nimble::ContactEntity& e = v(i);
+    ArborX::Point          point1(
+        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point point2(
+        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
     ArborX::Box box(point1, point2);
 
     return box;
@@ -92,20 +93,22 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView,
 };
 
 template <>
-struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView,
-                    PredicatesTag> {
+struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
+{
   static std::size_t
-  size(nimble_kokkos::DeviceContactEntityArrayView const &v) {
+  size(nimble_kokkos::DeviceContactEntityArrayView const& v)
+  {
     return v.size();
   }
 
   KOKKOS_FUNCTION static auto
-  get(nimble_kokkos::DeviceContactEntityArrayView const &v, std::size_t i) {
-    nimble::ContactEntity &e = v(i);
-    ArborX::Point point1(e.bounding_box_x_min_, e.bounding_box_y_min_,
-                         e.bounding_box_z_min_);
-    ArborX::Point point2(e.bounding_box_x_max_, e.bounding_box_y_max_,
-                         e.bounding_box_z_max_);
+  get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
+  {
+    nimble::ContactEntity& e = v(i);
+    ArborX::Point          point1(
+        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point point2(
+        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
     ArborX::Box box(point1, point2);
 
     //
@@ -121,12 +124,12 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView,
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
 };
-} // namespace ArborX
+}  // namespace ArborX
 
 namespace nimble {
 
 using memory_space = nimble_kokkos::kokkos_device_memory_space;
-using arborx_bvh = ArborX::BVH<memory_space>;
+using arborx_bvh   = ArborX::BVH<memory_space>;
 
 /*!
  * Contact Manager specific to ArborX library
@@ -135,23 +138,25 @@ using arborx_bvh = ArborX::BVH<memory_space>;
  */
 ArborXSerialContactManager::ArborXSerialContactManager(
     std::shared_ptr<ContactInterface> interface,
-    nimble::DataManager &data_manager)
-    : SerialContactManager{interface, data_manager} {
+    nimble::DataManager&              data_manager)
+    : SerialContactManager{interface, data_manager}
+{
   /// TODO Ask NM & RJ whether this is needed at constructor time
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+  Kokkos::View<int*, nimble_kokkos::kokkos_device> indices("indices", 0);
+  Kokkos::View<int*, nimble_kokkos::kokkos_device> offset("offset", 0);
   updateCollisionData(indices, offset);
 }
 
-void ArborXSerialContactManager::updateCollisionData(
-    Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
-    Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset) {
-
+void
+ArborXSerialContactManager::updateCollisionData(
+    Kokkos::View<int*, nimble_kokkos::kokkos_device>& indices,
+    Kokkos::View<int*, nimble_kokkos::kokkos_device>& offset)
+{
   //
   // primitives are faces
   //
-  arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
-                 contact_faces_d_};
+  arborx_bvh bvh{
+      nimble_kokkos::kokkos_device_execution_space{}, contact_faces_d_};
 
   //
   // indices : position of the primitives that satisfy the predicates.
@@ -172,14 +177,19 @@ void ArborXSerialContactManager::updateCollisionData(
 
   // Number of queries, n = size of contact_nodes_d
   // Size of offset = n + 1
-  bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
-            indices, offset);
+  bvh.query(
+      nimble_kokkos::kokkos_device_execution_space{},
+      contact_nodes_d_,
+      indices,
+      offset);
 }
 
-void ArborXSerialContactManager::ComputeSerialContactForce(
-    int step, bool debug_output,
-    nimble::Viewify<2> contact_force) {
-
+void
+ArborXSerialContactManager::ComputeSerialContactForce(
+    int                step,
+    bool               debug_output,
+    nimble::Viewify<2> contact_force)
+{
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
     throw std::logic_error(
@@ -188,14 +198,17 @@ void ArborXSerialContactManager::ComputeSerialContactForce(
 
   if (model_data == nullptr) {
     auto model_ptr = data_manager_.GetMacroScaleData().get();
-    model_data = dynamic_cast< nimble_kokkos::ModelData* >(model_ptr);
+    model_data     = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr);
   }
 
   auto field_ids = data_manager_.GetFieldIDs();
-  auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
+  auto displacement_d =
+      model_data->GetDeviceVectorNodeData(field_ids.displacement);
 
-  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
-  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  auto contact_force_h =
+      model_data->GetHostVectorNodeData(field_ids.contact_force);
+  auto contact_force_d =
+      model_data->GetDeviceVectorNodeData(field_ids.contact_force);
   Kokkos::deep_copy(contact_force_d, (double)(0.0));
 
   this->ApplyDisplacements(displacement_d);
@@ -207,8 +220,8 @@ void ArborXSerialContactManager::ComputeSerialContactForce(
   // 3) culling
   // 4) enforcement
 
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> indices("indices", 0);
-  Kokkos::View<int *, nimble_kokkos::kokkos_device> offset("offset", 0);
+  Kokkos::View<int*, nimble_kokkos::kokkos_device> indices("indices", 0);
+  Kokkos::View<int*, nimble_kokkos::kokkos_device> offset("offset", 0);
 
   //--- Update the geometric collision information
   this->startTimer("ArborX::Search");
@@ -229,23 +242,23 @@ void ArborXSerialContactManager::ComputeSerialContactForce(
   // The next loop does not track which node is in contact with which face
   // In theory, we could simply loop on the entries in indices.
   //
-  double gap = 0.0;
-  double normal[3] = {0., 0., 0.};
-  bool inside = false;
+  double gap                  = 0.0;
+  double normal[3]            = {0., 0., 0.};
+  bool   inside               = false;
   double facet_coordinates[3] = {0., 0., 0.};
   this->startTimer("Contact::EnforceInteraction");
   for (size_t inode = 0; inode < contact_nodes_d_.extent(0); ++inode) {
-    auto &myNode = contact_nodes_d_(inode);
+    auto& myNode = contact_nodes_d_(inode);
     for (int j = offset(inode); j < offset(inode + 1); ++j) {
-      auto &myFace = contact_faces_d_(indices(j));
+      auto& myFace = contact_faces_d_(indices(j));
       //--- Determine whether the node is projected inside the triangular face
-      ContactManager::Projection(myNode, myFace, inside, gap, &normal[0],
-                                 &facet_coordinates[0]);
+      ContactManager::Projection(
+          myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
       if (inside) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
-        EnforceNodeFaceInteraction(myNode, myFace, gap, normal,
-                                   facet_coordinates, force_d_);
+        EnforceNodeFaceInteraction(
+            myNode, myFace, gap, normal, facet_coordinates, force_d_);
       }
     }
   }
@@ -253,9 +266,8 @@ void ArborXSerialContactManager::ComputeSerialContactForce(
 
   this->GetForces(contact_force_d);
   Kokkos::deep_copy(contact_force_h, contact_force_d);
-
 }
 
-} // namespace nimble
+}  // namespace nimble
 
 #endif

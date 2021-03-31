@@ -47,16 +47,18 @@
 #include "nimble_genesis_mesh.h"
 
 #ifndef NIMBLE_HAVE_DARMA
-  #include <set>
+#include <set>
 #endif
 
 namespace nimble {
 
-  void DetermineTangentMatrixNonzeroStructure(GenesisMesh const & mesh,
-                                              std::vector<int> const & linear_system_node_ids,
-                                              std::vector<int> & i_index,
-                                              std::vector<int> & j_index);
+void
+DetermineTangentMatrixNonzeroStructure(
+    GenesisMesh const&      mesh,
+    std::vector<int> const& linear_system_node_ids,
+    std::vector<int>&       i_index,
+    std::vector<int>&       j_index);
 
-} // namespace nimble
+}  // namespace nimble
 
 #endif

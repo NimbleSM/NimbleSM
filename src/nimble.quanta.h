@@ -44,78 +44,83 @@
 #ifndef NIMBLE_QUANTA_H
 #define NIMBLE_QUANTA_H
 
-namespace nimble
-{
-namespace quanta
-{
-template<class T>
-T declval_exact() noexcept;
+namespace nimble {
+namespace quanta {
+template <class T>
+T
+declval_exact() noexcept;
 
-template<class T>
-typename std::remove_reference<T>::type& declref() noexcept;
+template <class T>
+typename std::remove_reference<T>::type&
+declref() noexcept;
 
 // Gets the literal type of a container when it's iterator is dereferenced
 // for example, 'iterated_t<std::vector<int>>' is of type 'int&', and
 // 'iterated_t<const std::vector<int>>' is of type 'const int&'
-template<class list_t>
+template <class list_t>
 using iterated_t = decltype(*std::begin(declref<list_t>()));
 
 // Gets the unmodified type of a container when it's iterator is defererenced
 // For example, 'elem_t<std::vector<int>>' is of type 'int'
-template<class list_t>
+template <class list_t>
 using elem_t = typename std::decay<iterated_t<list_t>>::type;
 
-template<class F, class... Args>
+template <class F, class... Args>
 using return_t = decltype(declref<F>()(declval_exact<Args>()...));
 
-template<class F, class... list_t>
+template <class F, class... list_t>
 using transformed_iterated_t = return_t<F, iterated_t<list_t>...>;
 
-template<class T>
-auto len(T&& obj) -> decltype(obj.size())
+template <class T>
+auto
+len(T&& obj) -> decltype(obj.size())
 {
   return obj.size();
 }
 
-template<class list_t>
+template <class list_t>
 struct indexer_t
 {
   list_t& list;
   constexpr indexer_t(list_t& list) : list(list) {}
   constexpr indexer_t(const indexer_t&) = default;
-  template<class int_t>
-  auto operator()(int_t&& index) const -> decltype(list[index])
+  template <class int_t>
+  auto
+  operator()(int_t&& index) const -> decltype(list[index])
   {
     return list[index];
   }
 };
 
-template<class T>
+template <class T>
 struct indexer_t<T*>
 {
   T* const ptr;
   constexpr indexer_t(T* const ptr) : ptr(ptr) {}
   indexer_t(const indexer_t&) = default;
-  template<class int_t>
-  T& operator()(int_t&& index) const
+  template <class int_t>
+  T&
+  operator()(int_t&& index) const
   {
     return ptr[index];
   }
 };
 
-template<class T>
-indexer_t<T> make_indexer(T& list)
+template <class T>
+indexer_t<T>
+make_indexer(T& list)
 {
   return indexer_t<T>(list);
 }
 
-template<class T>
-indexer_t<T*> make_indexer(T* ptr)
+template <class T>
+indexer_t<T*>
+make_indexer(T* ptr)
 {
   return indexer_t<T*>(ptr);
 }
 
-template<class int_t = int>
+template <class int_t = int>
 class invoke_counter_t
 {
   mutable int_t count;
@@ -125,29 +130,46 @@ class invoke_counter_t
   invoke_counter_t(int_t i) : count{i} {}
   invoke_counter_t(const invoke_counter_t&) = default;
   invoke_counter_t(invoke_counter_t&&)      = default;
-  invoke_counter_t& operator=(const invoke_counter_t&) = default;
-  invoke_counter_t& operator=(invoke_counter_t&&) = default;
-  void reset(const int_t& value = 0) { count = value; }
-  int_t& get_count() const { return count; }
-  auto operator()() const -> decltype(count++) { return count++; }
-  auto increment() const -> decltype(count++) { return count++; }
+  invoke_counter_t&
+  operator=(const invoke_counter_t&) = default;
+  invoke_counter_t&
+  operator=(invoke_counter_t&&) = default;
+  void
+  reset(const int_t& value = 0)
+  {
+    count = value;
+  }
+  int_t&
+  get_count() const
+  {
+    return count;
+  }
+  auto
+  operator()() const -> decltype(count++)
+  {
+    return count++;
+  }
+  auto
+  increment() const -> decltype(count++)
+  {
+    return count++;
+  }
 };
-template<class int_t>
-invoke_counter_t<int_t> make_counter(int_t initial = 0)
+template <class int_t>
+invoke_counter_t<int_t>
+make_counter(int_t initial = 0)
 {
   return invoke_counter_t<int_t>{initial};
 }
 
-template<class list_t, class F>
-void remap(list_t& list, F&& func)
+template <class list_t, class F>
+void
+remap(list_t& list, F&& func)
 {
-  for (auto& elem : list)
-  {
-    elem = func(elem);
-  }
+  for (auto& elem : list) { elem = func(elem); }
 }
 
-}   // namespace quanta
-}   // namespace nimble
+}  // namespace quanta
+}  // namespace nimble
 
-#endif // NIMBLE_QUANTA_H
+#endif  // NIMBLE_QUANTA_H

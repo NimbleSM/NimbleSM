@@ -54,10 +54,9 @@ namespace nimble_uq {
 
 class UqModel;
 
-class ModelData : public nimble::ModelData {
-
-public:
-
+class ModelData : public nimble::ModelData
+{
+ public:
   ModelData() = default;
 
   ~ModelData() override = default;
@@ -66,23 +65,30 @@ public:
   ///
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
-  void InitializeBlocks(nimble::DataManager &data_manager,
-                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+  void
+  InitializeBlocks(
+      nimble::DataManager&                        data_manager,
+      const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+      override;
 
   /// \brief Write output of simulation in Exodus format
   ///
   /// \param[in] data_manager Reference to data manager
   /// \param[in] time_current Time value
-  void WriteExodusOutput(nimble::DataManager &data_manager,
-                         double time_current) override;
+  void
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
+      override;
 
   /// \brief Apply initial conditions
-  void ApplyInitialConditions(nimble::DataManager &data_manager) override;
+  void
+  ApplyInitialConditions(nimble::DataManager& data_manager) override;
 
   /// \brief Apply kinematic conditions
-  void ApplyKinematicConditions(DataManager &data_manager,
-                                double time_current,
-                                double time_previous) override;
+  void
+  ApplyKinematicConditions(
+      DataManager& data_manager,
+      double       time_current,
+      double       time_previous) override;
 
   /// \brief Update model with new velocity
   ///
@@ -91,8 +97,8 @@ public:
   ///
   /// \note This routine is usually empty.
   ///       The UQ model data is one case using this routine.
-  void UpdateWithNewVelocity(nimble::DataManager &data_manager,
-                             double dt) override;
+  void
+  UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt) override;
 
   /// \brief Update model with new displacement
   ///
@@ -101,20 +107,18 @@ public:
   ///
   /// \note This routine is usually empty.
   ///       The UQ model data is one case using this routine.
-  void UpdateWithNewDisplacement(nimble::DataManager &data_manager,
-                                 double dt) override;
+  void
+  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
+      override;
 
-protected:
+ protected:
+  std::shared_ptr<nimble::UqModel> uq_model_;
 
-  std::shared_ptr< nimble::UqModel > uq_model_;
-
-  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views_;
-
+  std::vector<nimble::Viewify<2>> bc_offnom_velocity_views_;
 };
 
-}
+}  // namespace nimble_uq
 
 #endif
 
-#endif // NIMBLESM_NIMBLE_UQ_MODEL_DATA_H
-
+#endif  // NIMBLESM_NIMBLE_UQ_MODEL_DATA_H

@@ -48,7 +48,8 @@
 
 /* Notes on numbering convention:
  *
- * Minor version numbers are even for release versions and odd for development versions.
+ * Minor version numbers are even for release versions and odd for development
+ * versions.
  *
  * NOTE: When numbers are less than 10, they are padded with a 0.  For example,
  * development version 10.1 is designated 100100 and the release version
@@ -63,7 +64,11 @@
 #define NIMBLE_VERSION_STRING "1.1.0"
 
 namespace nimble {
-  inline std::string NimbleVersion() { return(NIMBLE_VERSION_STRING); }
+inline std::string
+NimbleVersion()
+{
+  return (NIMBLE_VERSION_STRING);
 }
+}  // namespace nimble
 
 #endif

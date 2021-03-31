@@ -49,50 +49,51 @@
 
 namespace nimble {
 
-TimingInfo::TimingInfo(int i, std::string basicString,
-                       double t_sim, double t_internal, double t_contact,
-                       double t_exodus, double t_reduce)
-    : num_ranks(i), time_stamp(std::move(basicString)),
+TimingInfo::TimingInfo(
+    int         i,
+    std::string basicString,
+    double      t_sim,
+    double      t_internal,
+    double      t_contact,
+    double      t_exodus,
+    double      t_reduce)
+    : num_ranks(i),
+      time_stamp(std::move(basicString)),
       total_simulation_time(t_sim),
       total_internal_force_time(t_internal),
       total_contact_time(t_contact),
       total_exodus_write_time(t_exodus),
       total_vector_reduction_time(t_reduce)
-    {}
+{
+}
 
-void TimingInfo::BinaryWrite() const {
-
+void
+TimingInfo::BinaryWrite() const
+{
   std::stringstream timinginfo;
-  timinginfo << num_ranks << "\t" << total_simulation_time
-             << "\t" << total_internal_force_time
-             << "\t" << total_contact_time
-             << "\t" << total_exodus_write_time
-             << "\t" << total_vector_reduction_time
+  timinginfo << num_ranks << "\t" << total_simulation_time << "\t"
+             << total_internal_force_time << "\t" << total_contact_time << "\t"
+             << total_exodus_write_time << "\t" << total_vector_reduction_time
              << "\n";
   std::string timingdatastr = timinginfo.str();
 
   std::stringstream filename_stream;
-  filename_stream << "nimble_timing_data_n" << num_ranks << "_"
-                  << time_stamp
+  filename_stream << "nimble_timing_data_n" << num_ranks << "_" << time_stamp
                   << ".log";
   std::string timingfilenamestr = filename_stream.str();
-  for (char &c : timingfilenamestr) {
-    if (c == ' ')
-      c = '-';
+  for (char& c : timingfilenamestr) {
+    if (c == ' ') c = '-';
   }
 
   std::fstream fs(timingfilenamestr, fs.binary | fs.trunc | fs.in | fs.out);
   if (!fs.is_open()) {
-    std::cerr << "Failed to open timing data file" 
-              << " (" << timingfilenamestr << ") "
-              << std::endl;
+    std::cerr << "Failed to open timing data file"
+              << " (" << timingfilenamestr << ") " << std::endl;
   } else {
     fs << timingdatastr;
     fs.flush();
     fs.close();
   }
-
 }
 
-} // namespace nimble
-
+}  // namespace nimble

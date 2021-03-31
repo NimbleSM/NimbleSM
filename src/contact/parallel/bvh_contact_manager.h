@@ -44,9 +44,10 @@
 #ifndef NIMBLE_BVH_CONTACT_MANAGER_H
 #define NIMBLE_BVH_CONTACT_MANAGER_H
 
-#include "parallel_contact_manager.h"
 #include <bvh/collision_world.hpp>
 #include <memory>
+
+#include "parallel_contact_manager.h"
 
 namespace nvh {
 
@@ -55,29 +56,37 @@ class collision_object;
 }
 
 namespace nimble {
-struct NarrowphaseResult {
+struct NarrowphaseResult
+{
   std::size_t local_index;
-  double gap;
-  double contact_force[3];
-  double bary[3];
-  bool node;
+  double      gap;
+  double      contact_force[3];
+  double      bary[3];
+  bool        node;
 };
 
-class BvhContactManager : public ParallelContactManager {
-public:
-  BvhContactManager(std::shared_ptr<ContactInterface> interface,
-                    nimble::DataManager &data_manager,
-                    std::size_t _overdecomposition);
-  BvhContactManager(const BvhContactManager &) = delete;
-  BvhContactManager(BvhContactManager &&);
+class BvhContactManager : public ParallelContactManager
+{
+ public:
+  BvhContactManager(
+      std::shared_ptr<ContactInterface> interface,
+      nimble::DataManager&              data_manager,
+      std::size_t                       _overdecomposition);
+  BvhContactManager(const BvhContactManager&) = delete;
+  BvhContactManager(BvhContactManager&&);
 
-  BvhContactManager &operator=(const BvhContactManager &) = delete;
-  BvhContactManager &operator=(BvhContactManager &&);
+  BvhContactManager&
+  operator=(const BvhContactManager&) = delete;
+  BvhContactManager&
+  operator=(BvhContactManager&&);
 
   ~BvhContactManager();
 
-  void ComputeParallelContactForce(int step, bool debug_output,
-                                   nimble::Viewify<2> contact_force) override;
+  void
+  ComputeParallelContactForce(
+      int                step,
+      bool               debug_output,
+      nimble::Viewify<2> contact_force) override;
 
 private:
 
@@ -89,6 +98,6 @@ private:
 
   std::vector<NarrowphaseResult> m_last_results;
 };
-} // namespace nimble
+}  // namespace nimble
 
-#endif // NIMBLESM_BVH_CONTACT_MANAGER_H
+#endif  // NIMBLESM_BVH_CONTACT_MANAGER_H

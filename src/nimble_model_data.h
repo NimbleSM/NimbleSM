@@ -52,9 +52,9 @@
 #ifdef NIMBLE_HAVE_DARMA
 #include "darma.h"
 #else
-#include <vector>
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 #endif
 
 namespace nimble {
@@ -62,10 +62,9 @@ namespace nimble {
 class DataManager;
 class VectorCommunicator;
 
-class ModelData : public ModelDataBase {
-
-public:
-
+class ModelData : public ModelDataBase
+{
+ public:
   ModelData() = default;
 
   ~ModelData() override = default;
@@ -78,27 +77,32 @@ public:
   /// \param label
   /// \param num_objects
   /// \return Field ID for the data allocated
-  int AllocateNodeData(Length length,
-                       std::string label,
-                       int num_objects) override;
+  int
+  AllocateNodeData(Length length, std::string label, int num_objects) override;
 
   /// \brief Returns the field ID for a specific label
   ///
   /// \param field_label Label for a stored quantity
   /// \return Field ID to identify the data storage
-  int GetFieldId(const std::string& label) const override;
+  int
+  GetFieldId(const std::string& label) const override;
 
   /// \brief Initialize the different blocks in the mesh
   ///
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
-  void InitializeBlocks(nimble::DataManager &data_manager,
-                        const std::shared_ptr<MaterialFactoryType> &material_factory_base) override;
+  void
+  InitializeBlocks(
+      nimble::DataManager&                        data_manager,
+      const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+      override;
 
   /// \brief Copy time state (n+1) into time state (n)
   ///
   /// \param data_manager Reference to the data manager
-  void UpdateStates(const nimble::DataManager &data_manager) override {
+  void
+  UpdateStates(const nimble::DataManager& data_manager) override
+  {
     element_data_n_.swap(element_data_np1_);
   }
 
@@ -106,20 +110,25 @@ public:
   ///
   /// \param field_id
   /// \return Viewify<1> object for scalar quantity
-  nimble::Viewify<1> GetScalarNodeData(const std::string& label) override;
+  nimble::Viewify<1>
+  GetScalarNodeData(const std::string& label) override;
 
   /// \brief Get view of vector quantity defined on nodes
   ///
   /// \param field_id
   /// \return Viewify<2> object for vector quantity
-  nimble::Viewify<2> GetVectorNodeData(const std::string& label) override;
+  nimble::Viewify<2>
+  GetVectorNodeData(const std::string& label) override;
 
-  void ComputeLumpedMass(nimble::DataManager &data_manager) override;
+  void
+  ComputeLumpedMass(nimble::DataManager& data_manager) override;
 
-  void InitializeExodusOutput(nimble::DataManager &data_manager) override;
+  void
+  InitializeExodusOutput(nimble::DataManager& data_manager) override;
 
-  void WriteExodusOutput(nimble::DataManager &data_manager,
-                         double time_current) override;
+  void
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
+      override;
 
   /// \brief Compute the external force
   ///
@@ -127,10 +136,12 @@ public:
   /// \param time_previous
   /// \param time_current
   /// \param is_output_step
-  void ComputeExternalForce(nimble::DataManager &data_manager,
-                            double time_previous,
-                            double time_current,
-                            bool is_output_step) override;
+  void
+  ComputeExternalForce(
+      nimble::DataManager& data_manager,
+      double               time_previous,
+      double               time_current,
+      bool                 is_output_step) override;
 
   /// \brief Compute the internal force
   ///
@@ -140,65 +151,107 @@ public:
   /// \param[in] is_output_step
   /// \param[in] displacement
   /// \param[out] internal_force  Output for internal force
-  void ComputeInternalForce(nimble::DataManager &data_manager,
-                            double time_previous,
-                            double time_current,
-                            bool is_output_step,
-                            const nimble::Viewify<2> &displacement,
-                            nimble::Viewify<2> &force) override;
+  void
+  ComputeInternalForce(
+      nimble::DataManager&      data_manager,
+      double                    time_previous,
+      double                    time_current,
+      bool                      is_output_step,
+      const nimble::Viewify<2>& displacement,
+      nimble::Viewify<2>&       force) override;
 
   //--- Specific routines
 
 #ifdef NIMBLE_HAVE_DARMA
-  template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | dim_ | critical_time_step_ | block_ids_ | blocks_ | data_fields_ | node_data_ | output_node_component_labels_ | element_data_fields_ | element_component_labels_ | element_data_n_ | element_data_np1_ | output_element_component_labels_ | derived_output_element_data_labels_ | globally_shared_nodes_ | global_node_id_to_local_node_id_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | dim_ | critical_time_step_ | block_ids_ | blocks_ | data_fields_ |
+        node_data_ | output_node_component_labels_ | element_data_fields_ |
+        element_component_labels_ | element_data_n_ | element_data_np1_ |
+        output_element_component_labels_ | derived_output_element_data_labels_ |
+        globally_shared_nodes_ | global_node_id_to_local_node_id_;
+  }
 #endif
 
-  Field GetField(int field_id);
+  Field
+  GetField(int field_id);
 
-  double* GetNodeData(int field_id);
+  double*
+  GetNodeData(int field_id);
 
-  void GetNodeDataForOutput(std::vector< std::vector<double> >& single_component_arrays);
+  void
+  GetNodeDataForOutput(
+      std::vector<std::vector<double>>& single_component_arrays);
 
-  void DeclareElementData(int block_id,
-                          std::vector< std::pair<std::string, Length> > const & data_labels_and_lengths);
+  void
+  DeclareElementData(
+      int block_id,
+      std::vector<std::pair<std::string, Length>> const&
+          data_labels_and_lengths);
 
-  void AllocateElementData(std::map<int, int> const & num_integration_points_in_each_block);
+  void
+  AllocateElementData(
+      std::map<int, int> const& num_integration_points_in_each_block);
 
-  std::vector<double> & GetElementDataOld(int block_id) {
+  std::vector<double>&
+  GetElementDataOld(int block_id)
+  {
     return element_data_n_.at(block_id);
   }
 
-  std::vector<double> & GetElementDataNew(int block_id) {
+  std::vector<double>&
+  GetElementDataNew(int block_id)
+  {
     return element_data_np1_.at(block_id);
   }
 
-  void GetElementDataForOutput(std::map<int, std::vector< std::vector<double> > >& single_component_arrays);
+  void
+  GetElementDataForOutput(
+      std::map<int, std::vector<std::vector<double>>>& single_component_arrays);
 
-  void SpecifyOutputFields(std::string output_field_string);
+  void
+  SpecifyOutputFields(std::string output_field_string);
 
-  std::map<int, Block>& GetBlocks() { return blocks_; }
+  std::map<int, Block>&
+  GetBlocks()
+  {
+    return blocks_;
+  }
 
-  std::map<int, Block> const & GetBlocks() const { return blocks_; }
+  std::map<int, Block> const&
+  GetBlocks() const
+  {
+    return blocks_;
+  }
 
-  std::vector<int>& GetGloballySharedNodes() { return globally_shared_nodes_; }
+  std::vector<int>&
+  GetGloballySharedNodes()
+  {
+    return globally_shared_nodes_;
+  }
 
-  std::map<int, int>& GetGlobalNodeIdToLocalNodeIdMap() { return global_node_id_to_local_node_id_; }
+  std::map<int, int>&
+  GetGlobalNodeIdToLocalNodeIdMap()
+  {
+    return global_node_id_to_local_node_id_;
+  }
 
-protected:
+ protected:
+  void
+  AssignFieldId(Field& field);
 
-  void AssignFieldId(Field& field);
+  void
+  GetNodeDataComponent(
+      int           field_id,
+      int           component,
+      double* const component_data);
 
-  void GetNodeDataComponent(int field_id,
-                            int component,
-                            double* const component_data);
+  double*
+  GetNodeData(const std::string& label);
 
-  double* GetNodeData(const std::string& label);
-
-protected:
-
+ protected:
   //! Block ids
   std::vector<int> block_ids_;
 
@@ -208,17 +261,21 @@ protected:
   //! Map key is the field_id, value is the corresponding Field.
   std::map<int, Field> data_fields_;
 
-  //! Map key is the field_id, vector contains the nested data array for the given nodal field.
+  //! Map key is the field_id, vector contains the nested data array for the
+  //! given nodal field.
   std::map<int, std::vector<double>> node_data_;
 
-  //! Map key is the block_id, the vector contains the field ids for the fields on that block.
+  //! Map key is the block_id, the vector contains the field ids for the fields
+  //! on that block.
   std::map<int, std::vector<int>> element_data_fields_;
 
-  //! Map key is the block_id, vector contains full data array for that block at step N.
-  std::map<int, std::vector<double> > element_data_n_;
+  //! Map key is the block_id, vector contains full data array for that block at
+  //! step N.
+  std::map<int, std::vector<double>> element_data_n_;
 
-  //! Map key is the block_id, vector contains full data array for that block at step N+1.
-  std::map<int, std::vector<double> > element_data_np1_;
+  //! Map key is the block_id, vector contains full data array for that block at
+  //! step N+1.
+  std::map<int, std::vector<double>> element_data_np1_;
 
   //! List of node ids that are shared across multiple ranks
   std::vector<int> globally_shared_nodes_;
@@ -227,17 +284,15 @@ protected:
   std::map<int, int> global_node_id_to_local_node_id_;
 
   //! Information for Exodus output about node data
-  std::vector< std::vector<double> > node_data_for_output_;
+  std::vector<std::vector<double>> node_data_for_output_;
 
   //! Information for Exodus output about element data
-  std::map<int, std::vector< std::vector<double> > > elem_data_for_output_;
+  std::map<int, std::vector<std::vector<double>>> elem_data_for_output_;
 
   //! Information for Exodus output about element data
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
-
+  std::map<int, std::vector<std::vector<double>>> derived_elem_data_;
 };
 
-} // namespace nimble
-
+}  // namespace nimble
 
 #endif
