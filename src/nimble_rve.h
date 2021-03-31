@@ -48,6 +48,7 @@
 #include "nimble_defs.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
+#include "nimble_material.h"
 
 #ifndef NIMBLE_HAVE_DARMA
 #include <map>
