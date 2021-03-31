@@ -52,98 +52,112 @@
 
 enum class FieldEnum : int
 {
-  Scalar = 1
-, Vector = 3
-, SymTensor = 6
-, FullTensor = 9
+  Scalar     = 1,
+  Vector     = 3,
+  SymTensor  = 6,
+  FullTensor = 9
 };
 
 namespace nimble {
 
 namespace details {
 
-template< std::size_t N>
+template <std::size_t N>
 class AXPYResult;
 
 }
 
-template< std::size_t N = 2>
-class Viewify {
-
-public:
-
+template <std::size_t N = 2>
+class Viewify
+{
+ public:
   Viewify() : data_(nullptr)
   {
     len_.fill(0);
     stride_.fill(0);
   }
 
-  Viewify(double * const data, std::array<int, N> len, std::array<int, N> stride)
+  Viewify(double* const data, std::array<int, N> len, std::array<int, N> stride)
       : data_(data), len_(len), stride_(stride)
-  {}
+  {
+  }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION
-  typename std::enable_if<(NN == 1), double>::type &operator()(int i)
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), double>::type&
+  operator()(int i)
   {
     return data_[i];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION
-  typename std::enable_if<(NN == 1), const double>::type operator()(int i) const
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), const double>::type
+  operator()(int i) const
   {
     return data_[i];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION
-  typename std::enable_if<(NN == 2), double>::type &operator()(int i, int j)
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), double>::type&
+  operator()(int i, int j)
   {
     return data_[i * stride_[0] + j * stride_[1]];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION
-  typename std::enable_if<(NN == 2), const double>::type operator()(int i, int j) const
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), const double>::type
+  operator()(int i, int j) const
   {
     return data_[i * stride_[0] + j * stride_[1]];
   }
 
-  void zero() {
+  void
+  zero()
+  {
     int mySize = stride_[0] * len_[0];
-    for (int ii = 0; ii < mySize; ++ii)
-      data_[ii] = 0.0;
+    for (int ii = 0; ii < mySize; ++ii) data_[ii] = 0.0;
   }
 
-  void copy(const Viewify<N> &ref) {
+  void
+  copy(const Viewify<N>& ref)
+  {
     int mySize = stride_[0] * len_[0];
-    for (int ii = 0; ii < mySize; ++ii)
-      data_[ii] = ref.data_[ii];
+    for (int ii = 0; ii < mySize; ++ii) data_[ii] = ref.data_[ii];
   }
 
-  double* data() const { return data_; }
+  double*
+  data() const
+  {
+    return data_;
+  }
 
-  Viewify<N>& operator+=(const details::AXPYResult<N> &rhs);
+  Viewify<N>&
+  operator+=(const details::AXPYResult<N>& rhs);
 
-  std::array<int, N> size() const { return len_; }
+  std::array<int, N>
+  size() const
+  {
+    return len_;
+  }
 
-  std::array<int, N> stride() const { return stride_; }
+  std::array<int, N>
+  stride() const
+  {
+    return stride_;
+  }
 
-protected:
-
-  double* data_;
+ protected:
+  double*            data_;
   std::array<int, N> len_;
   std::array<int, N> stride_;
-
 };
 
 //----------------------------------
 
 namespace details {
 
-template <std::size_t N> struct AXPYResult {
-
+template <std::size_t N>
+struct AXPYResult
+{
   AXPYResult(const nimble::Viewify<N> A, double alpha) : A_(A), alpha_(alpha) {}
 
   /// \brief Compute "dest = (destCoef) * dest + rhsCoef * alpha_ * A_"
@@ -154,53 +168,54 @@ template <std::size_t N> struct AXPYResult {
   ///
   /// \note The routine does not check whether A_ and dest have the same length
   /// and the same stride.
-  void assignTo(double destCoef, double rhsCoef,
-                nimble::Viewify<N> &dest) const;
+  void
+  assignTo(double destCoef, double rhsCoef, nimble::Viewify<N>& dest) const;
 
   const nimble::Viewify<N> A_;
-  double alpha_;
+  double                   alpha_;
 };
 
 template <std::size_t N>
-void AXPYResult<N>::assignTo(double destCoef, double rhsCoef,
-                             nimble::Viewify<N> &dest) const {
+void
+AXPYResult<N>::assignTo(
+    double              destCoef,
+    double              rhsCoef,
+    nimble::Viewify<N>& dest) const
+{
   const double prod = alpha_ * rhsCoef;
 
-  auto len = dest.size();
-  auto stride = dest.stride();
-  const long isize = len[0] * stride[0];
+  auto       len    = dest.size();
+  auto       stride = dest.stride();
+  const long isize  = len[0] * stride[0];
 
-  double *data = dest.data();
-  double *rhs_data = A_.data();
+  double* data     = dest.data();
+  double* rhs_data = A_.data();
 
   if (destCoef == 1.0) {
-    for (long ii = 0; ii < isize; ++ii)
-      data[ii] += prod * rhs_data[ii];
-  }
-  else if (destCoef == 0.0) {
-    for (long ii = 0; ii < isize; ++ii)
-      data[ii] = prod * rhs_data[ii];
-  }
-  else {
+    for (long ii = 0; ii < isize; ++ii) data[ii] += prod * rhs_data[ii];
+  } else if (destCoef == 0.0) {
+    for (long ii = 0; ii < isize; ++ii) data[ii] = prod * rhs_data[ii];
+  } else {
     for (long ii = 0; ii < isize; ++ii)
       data[ii] = destCoef * data[ii] + prod * rhs_data[ii];
   }
 }
 
-}
+}  // namespace details
 
 //----------------------------------
 
-template< std::size_t N>
-Viewify<N>& Viewify<N>::operator+=(const details::AXPYResult<N> &rhs)
+template <std::size_t N>
+Viewify<N>&
+Viewify<N>::operator+=(const details::AXPYResult<N>& rhs)
 {
   rhs.assignTo(1.0, 1.0, *this);
   return *this;
 }
 
-template < std::size_t N >
+template <std::size_t N>
 details::AXPYResult<N>
-operator*(double alpha, const nimble::Viewify<N> &A)
+operator*(double alpha, const nimble::Viewify<N>& A)
 {
   return {A, alpha};
 }
@@ -208,86 +223,96 @@ operator*(double alpha, const nimble::Viewify<N> &A)
 //----------------------------------
 
 template <FieldEnum FieldT>
-  class View {
+class View
+{
+ public:
+  explicit View(int num_entries) : num_entries_(num_entries)
+  {
+    data_ = std::shared_ptr<double>(
+        new double[num_entries_ * static_cast<int>(FieldT)],
+        [](double* p) { delete[] p; });
+    data_ptr_ = data_.get();
+  }
 
-  public:
+  ~View()               = default;
+  View(const View&)     = default;
+  View(View&&) noexcept = default;
+  View&
+  operator=(const View&) = default;
+  View&
+  operator=(View&&) noexcept = default;
 
-    explicit View(int num_entries) : num_entries_(num_entries) {
-      data_ = std::shared_ptr<double>(new double[num_entries_ * static_cast<int>(FieldT)], [](double* p){ delete[] p; });
-      data_ptr_ = data_.get();
+  double&
+  operator()(int i_entry) const
+  {
+    static_assert(
+        FieldT == FieldEnum::Scalar,
+        "Operator(int i_entry) called for non-scalar data.");
+    return data_ptr_[i_entry];
+  }
+
+  double&
+  operator()(int i_entry, int i_coord) const
+  {
+    static_assert(
+        FieldT != FieldEnum::Scalar,
+        "Operator(int i_entry, int i_coord) called for scalar data.");
+    return data_ptr_[i_entry * static_cast<int>(FieldT) + i_coord];
+  }
+
+  int
+  rank()
+  {
+    if (FieldT == FieldEnum::Scalar) { return 1; }
+    return 2;
+  }
+
+  int
+  extent(int dim)
+  {
+    if (dim == 0) {
+      return num_entries_;
+    } else if (dim == 1) {
+      return static_cast<int>(FieldT);
+    } else {
+      return 1;
     }
-
-    ~View() = default;
-    View(const View &) = default;
-    View(View &&)  noexcept = default;
-    View & operator=(const View &) = default;
-    View & operator=(View &&)  noexcept = default;
-
-    double & operator() (int i_entry) const {
-      static_assert(FieldT == FieldEnum::Scalar, "Operator(int i_entry) called for non-scalar data.");
-      return data_ptr_[i_entry];
-    }
-
-    double & operator() (int i_entry, int i_coord) const {
-      static_assert(FieldT != FieldEnum::Scalar, "Operator(int i_entry, int i_coord) called for scalar data.");
-      return data_ptr_[i_entry * static_cast<int>(FieldT) + i_coord];
-    }
-
-    int rank() {
-      if (FieldT == FieldEnum::Scalar) {
-        return 1;
-      }
-      return 2;
-    }
-
-    int extent(int dim) {
-      if (dim == 0) {
-        return num_entries_;
-      }
-      else if (dim == 1) {
-        return static_cast<int>(FieldT);
-      }
-      else {
-        return 1;
-      }
-    }
+  }
 
 #ifdef NIMBLE_HAVE_DARMA
-  void serialize(darma_runtime::serialization::SimplePackUnpackArchive& ar) {
-
+  void
+  serialize(darma_runtime::serialization::SimplePackUnpackArchive& ar)
+  {
     // The purpose for the serialize call can be determined with:
     // ar.is_sizing()
     // ar.is_packing()
     // ar.is_unpacking()
 
-    const int size = num_entries_ * static_cast<int>(FieldT);
+    const int           size = num_entries_ * static_cast<int>(FieldT);
     std::vector<double> data_vec(size);
 
     if (!ar.is_unpacking()) {
-      for (int i=0 ; i<size ; i++) {
-        data_vec[i] = data_ptr_[i];
-      }
+      for (int i = 0; i < size; i++) { data_vec[i] = data_ptr_[i]; }
     }
 
-    ar | num_entries_ | data_vec ;
+    ar | num_entries_ | data_vec;
 
     if (ar.is_unpacking()) {
-      data_ = std::shared_ptr<double>(new double[num_entries_ * static_cast<int>(FieldT)], [](double* p){ delete[] p; });
+      data_ = std::shared_ptr<double>(
+          new double[num_entries_ * static_cast<int>(FieldT)],
+          [](double* p) { delete[] p; });
       data_ptr_ = data_.get();
-      for (int i=0 ; i<size ; i++) {
-        data_ptr_[i] = data_vec[i];
-      }
+      for (int i = 0; i < size; i++) { data_ptr_[i] = data_vec[i]; }
     }
   }
 #endif
 
-  private:
+ private:
+  int                     num_entries_;
+  std::shared_ptr<double> data_;
+  double*                 data_ptr_;
+};
 
-    int num_entries_;
-    std::shared_ptr<double> data_;
-    double * data_ptr_;
-  };
-
-}
+}  // namespace nimble
 
 #endif

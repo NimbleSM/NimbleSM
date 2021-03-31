@@ -51,19 +51,22 @@
 
 namespace nimble_kokkos {
 
-class BlockMaterialInterfaceFactory : public nimble::BlockMaterialInterfaceFactoryBase
+class BlockMaterialInterfaceFactory
+    : public nimble::BlockMaterialInterfaceFactoryBase
 {
  public:
-
-  BlockMaterialInterfaceFactory() = default;
+  BlockMaterialInterfaceFactory()           = default;
   ~BlockMaterialInterfaceFactory() override = default;
 
-  std::shared_ptr<nimble::BlockMaterialInterfaceBase> create(double time_n, double time_np1,
-                                                 const nimble::FieldIds &field_ids,
-                                                 const std::vector<nimble::BlockData> &blocks,
-                                                 nimble::ModelDataBase *model_data_ptr) const override;
+  std::shared_ptr<nimble::BlockMaterialInterfaceBase>
+  create(
+      double                                time_n,
+      double                                time_np1,
+      const nimble::FieldIds&               field_ids,
+      const std::vector<nimble::BlockData>& blocks,
+      nimble::ModelDataBase*                model_data_ptr) const override;
 };
 
-}
+}  // namespace nimble_kokkos
 
 #endif /* SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_FACTORY_H_ */

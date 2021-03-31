@@ -44,11 +44,10 @@
 #ifndef NIMBLE_MAIN_H
 #define NIMBLE_MAIN_H
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include "nimble_defs.h"
-
 
 namespace nimble {
 
@@ -56,7 +55,7 @@ class BlockMaterialInterfaceFactoryBase;
 class ContactInterface;
 class Parser;
 
-}
+}  // namespace nimble
 
 namespace nimble {
 
@@ -67,17 +66,22 @@ namespace nimble {
 /// \param parser  Parsing variable
 ///
 /// \note The variable 'parser' should not be modified after calling
-///  this function.  
-///  
-void NimbleInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
+///  this function.
+///
+void
+NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser);
 
-int NimbleMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
-               std::shared_ptr<nimble::ContactInterface> contact_interface,
-               const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
-               const nimble::Parser &parser);
+int
+NimbleMain(
+    const std::shared_ptr<MaterialFactoryType>& material_factory,
+    std::shared_ptr<nimble::ContactInterface>   contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
+                          block_material,
+    const nimble::Parser& parser);
 
-void NimbleFinalize(const nimble::Parser &parser);
+void
+NimbleFinalize(const nimble::Parser& parser);
 
-}
+}  // namespace nimble
 
 #endif

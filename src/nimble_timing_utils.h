@@ -48,30 +48,35 @@
 
 namespace nimble {
 
-struct TimingInfo {
-
+struct TimingInfo
+{
   TimingInfo() = default;
-  TimingInfo(int i, std::string basicString,
-             double t_sim, double t_internal, double t_contact,
-             double t_exodus, double t_reduce);
+  TimingInfo(
+      int         i,
+      std::string basicString,
+      double      t_sim,
+      double      t_internal,
+      double      t_contact,
+      double      t_exodus,
+      double      t_reduce);
 
-  void BinaryWrite() const;
+  void
+  BinaryWrite() const;
 
   //
   //--- Variables
   //
 
-  int num_ranks = 1;
+  int         num_ranks = 1;
   std::string time_stamp;
 
-  double total_simulation_time = 0.0;
-  double total_internal_force_time = 0.0;
-  double total_contact_time = 0.0;
-  double total_exodus_write_time = 0.0;
+  double total_simulation_time       = 0.0;
+  double total_internal_force_time   = 0.0;
+  double total_contact_time          = 0.0;
+  double total_exodus_write_time     = 0.0;
   double total_vector_reduction_time = 0.0;
-
 };
 
-} // namespace nimble
+}  // namespace nimble
 
-#endif // NIMBLE_TIMING_UTILS_H
+#endif  // NIMBLE_TIMING_UTILS_H

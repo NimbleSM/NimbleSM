@@ -50,17 +50,19 @@
 #include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
-#include "nimble_kokkos_material_factory.h"
 #include "nimble_kokkos_block_material_interface_factory.h"
+#include "nimble_kokkos_material_factory.h"
 #endif
 
-int main(int argc, char *argv[]) {
-
+int
+main(int argc, char* argv[])
+{
   nimble::Parser myParser;
   //
-  // note: If the command line does not specify any parameter '--use-kokkos', '--use-tpetra', or '--use-vt',
-  // we could choose to specify one of them with either
-  // myParser.SetToUseKokkos() or myParser.SetToUseTpetra() or myParser.SetToUseVT()
+  // note: If the command line does not specify any parameter '--use-kokkos',
+  // '--use-tpetra', or '--use-vt', we could choose to specify one of them with
+  // either myParser.SetToUseKokkos() or myParser.SetToUseTpetra() or
+  // myParser.SetToUseVT()
   //
   nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
 
@@ -92,12 +94,11 @@ int main(int argc, char *argv[]) {
       contact_interface = std::shared_ptr<nimble::ContactInterface>(
           new nimble::ContactInterface);
 
-    status = nimble::NimbleMain(material_factory, contact_interface,
-                                block_material, myParser);
+    status = nimble::NimbleMain(
+        material_factory, contact_interface, block_material, myParser);
   }
 
   nimble::NimbleFinalize(myParser);
 
   return status;
 }
-

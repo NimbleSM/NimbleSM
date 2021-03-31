@@ -54,6 +54,7 @@
 
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
+
 #include "nimble.mpi.reduction.h"
 #endif
 
@@ -67,12 +68,11 @@ typedef Teuchos::RCP<const Teuchos::Comm<int>> comm_type;
 typedef int comm_type;
 #endif
 
-namespace nimble
+namespace nimble {
+
+class VectorCommunicator
 {
-
-class VectorCommunicator {
-
-  int dim_ = 3;
+  int          dim_       = 3;
   unsigned int num_nodes_ = 0;
 #ifdef NIMBLE_HAVE_TRILINOS
   comm_type comm_;
@@ -88,22 +88,24 @@ class VectorCommunicator {
   std::unique_ptr<nimble::TpetraContainer> TpetraReductionInfo = nullptr;
 #endif
 
-public:
-
+ public:
   VectorCommunicator() = default;
 
   VectorCommunicator(int d, unsigned int n, comm_type comm)
       : dim_(d), num_nodes_(n), comm_(comm)
-  { }
+  {
+  }
 
   ~VectorCommunicator() = default;
 
-  // The goal of this function is to set up all the bookkeeping so that the VectorReduction()
-  // function can be performed as quickly as possible
-  // We'll need, for example, a list of the nodes that are shared and the rank(s) that they're
-  // shared with Then, in VectorReduction, we'll send arrays of data to/from ranks that share nodes
-  // To start with, each rank has a list of its global nodes (this is passed in as global_node_ids)
-  void Initialize(std::vector<int> const& global_node_ids)
+  // The goal of this function is to set up all the bookkeeping so that the
+  // VectorReduction() function can be performed as quickly as possible We'll
+  // need, for example, a list of the nodes that are shared and the rank(s) that
+  // they're shared with Then, in VectorReduction, we'll send arrays of data
+  // to/from ranks that share nodes To start with, each rank has a list of its
+  // global nodes (this is passed in as global_node_ids)
+  void
+  Initialize(std::vector<int> const& global_node_ids)
   {
 #ifdef NIMBLE_HAVE_TRILINOS
     if (comm_) {
@@ -117,8 +119,9 @@ public:
     {
       MPI_Comm duplicate_of_world;
       MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
-      mpicontext context{duplicate_of_world};
-      reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
+      mpicontext                context{duplicate_of_world};
+      reduction::ReductionInfo* reduction_info =
+          reduction::GenerateReductionInfo(global_node_ids, context);
       MeshReductionInfo.reset(reduction_info);
     }
 #endif
@@ -128,8 +131,10 @@ public:
   ///
   /// \param node_local_ids
   /// \param min_rank_containing_node
-  void GetPartitionBoundaryNodeLocalIds(std::vector<int>& node_local_ids,
-                                        std::vector<int>& min_rank_containing_node)
+  void
+  GetPartitionBoundaryNodeLocalIds(
+      std::vector<int>& node_local_ids,
+      std::vector<int>& min_rank_containing_node)
   {
 #ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->GetAllIndices(node_local_ids, min_rank_containing_node);
@@ -142,11 +147,11 @@ public:
   ///
   /// \param data_dimension
   /// \param data
-  void VectorReduction(int data_dimension, double* data)
+  void
+  VectorReduction(int data_dimension, double* data)
   {
 #ifdef NIMBLE_HAVE_TRILINOS
-    if (TpetraReductionInfo)
-    {
+    if (TpetraReductionInfo) {
       TpetraReductionInfo->VectorReduction(data_dimension, data);
       return;
     }
@@ -162,16 +167,15 @@ public:
   /// \tparam Lookup
   /// \param data_dimension
   /// \param lookup
-  template<class Lookup>
-  void VectorReduction(int data_dimension, Lookup&& lookup)
+  template <class Lookup>
+  void
+  VectorReduction(int data_dimension, Lookup&& lookup)
   {
 #ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->PerformReduction(lookup, data_dimension);
 #endif
   }
-
 };
-}   // namespace nimble
+}  // namespace nimble
 
-
-#endif // NIMBLE_MPI_UTILS_H
+#endif  // NIMBLE_MPI_UTILS_H
