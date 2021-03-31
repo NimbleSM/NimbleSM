@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
 #ifdef NIMBLE_HAVE_VT
     MPI_Comm vt_comm = MPI_COMM_WORLD;
     auto vt_rt = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm );
+    vt::runInEpochCollective( [&](){
 #endif
     std::shared_ptr<nimble::ContactInterface> contact_interface(new nimble::ContactInterface);
     std::shared_ptr<nimble::MaterialFactory> material_factory(new nimble::MaterialFactory);
@@ -66,8 +67,9 @@ int main(int argc, char *argv[]) {
 
     status = nimble::NimbleMPIMain(material_factory, contact_interface, parser, init_data);
 #ifdef NIMBLE_HAVE_VT
-    while ( !vt_rt->isTerminated() )
-      ::vt::runScheduler();
+    } );
+
+    ::vt::finalize( std::move( vt_rt ) );
 #endif
   }
 
