@@ -78,11 +78,7 @@ class VectorCommunicator;
 namespace details {
 
 inline void
-getContactForce(
-    const double penalty,
-    const double gap,
-    const double normal[3],
-    double       contact_force[3])
+getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3])
 {
   const double scale = penalty * gap;
   for (int i = 0; i < 3; ++i) contact_force[i] = scale * normal[i];
@@ -128,9 +124,7 @@ class ContactManager
   } PROJECTION_TYPE;
 
   /// \brief Constructor
-  ContactManager(
-      std::shared_ptr<ContactInterface> interface,
-      nimble::DataManager&              data_manager);
+  ContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
 
   /// \brief Default destructor
   virtual ~ContactManager() = default;
@@ -176,8 +170,7 @@ class ContactManager
   ///
   /// \param contact_visualization_exodus_file_name Filename for output
   virtual void
-  InitializeContactVisualization(
-      std::string const& contact_visualization_exodus_file_name);
+  InitializeContactVisualization(std::string const& contact_visualization_exodus_file_name);
 
   /// \brief Write information about contact
   ///
@@ -192,10 +185,7 @@ class ContactManager
   /// \param debug_output
   /// \param contact_force
   virtual void
-  ComputeContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force);
+  ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force);
 
   /// \brief Returns the number of contact faces
   ///
@@ -261,10 +251,7 @@ class ContactManager
       std::vector<int>&              entity_ids);
 
   static void
-  RemoveInternalSkinFaces(
-      GenesisMesh const&             mesh,
-      std::vector<std::vector<int>>& faces,
-      std::vector<int>&              entity_ids);
+  RemoveInternalSkinFaces(GenesisMesh const& mesh, std::vector<std::vector<int>>& faces, std::vector<int>& entity_ids);
 
   // DEPRECATED
   /// \brief Compute the projection of a point onto a triangular face
@@ -331,13 +318,7 @@ class ContactManager
       ArgT&                                contact_faces) const;
 
   void
-  BoundingBox(
-      double& x_min,
-      double& x_max,
-      double& y_min,
-      double& y_max,
-      double& z_min,
-      double& z_max) const;
+  BoundingBox(double& x_min, double& x_max, double& y_min, double& y_max, double& z_min, double& z_max) const;
 
   double
   BoundingBoxAverageCharacteristicLengthOverAllRanks() const;
@@ -352,14 +333,11 @@ class ContactManager
   ComputeContactForce(int step, bool debug_output)
   {
     if (penalty_parameter_ <= 0.0) {
-      throw std::logic_error(
-          "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+      throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
     }
-    double background_grid_cell_size =
-        BoundingBoxAverageCharacteristicLengthOverAllRanks();
+    double background_grid_cell_size = BoundingBoxAverageCharacteristicLengthOverAllRanks();
 #ifdef NIMBLE_HAVE_KOKKOS
-    contact_interface->ComputeContact(
-        contact_nodes_d_, contact_faces_d_, force_d_);
+    contact_interface->ComputeContact(contact_nodes_d_, contact_faces_d_, force_d_);
 #endif
   }
 
@@ -372,9 +350,7 @@ class ContactManager
 #endif
 
   void
-  BruteForceBoxIntersectionSearch(
-      std::vector<ContactEntity> const& nodes,
-      std::vector<ContactEntity> const& triangles);
+  BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const& nodes, std::vector<ContactEntity> const& triangles);
 
   void
   ClosestPointProjection(
@@ -444,8 +420,7 @@ class ContactManager
       const double   facet_coordinates[3],
       VecType&       full_contact_force) const
   {
-    enforcement.EnforceContact<VecType>(
-        node, face, gap, direction, facet_coordinates, full_contact_force);
+    enforcement.EnforceContact<VecType>(node, face, gap, direction, facet_coordinates, full_contact_force);
   }
 
   NIMBLE_INLINE_FUNCTION
@@ -485,20 +460,15 @@ class ContactManager
   std::vector<ContactEntity> contact_faces_;
   std::vector<ContactEntity> contact_nodes_;
 
-  double contact_visualization_model_coord_bounding_box_[6] =
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  double               contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   nimble::GenesisMesh  genesis_mesh_for_contact_visualization_;
   nimble::ExodusOutput exodus_output_for_contact_visualization_;
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  nimble_kokkos::DeviceIntegerArrayView node_ids_d_ =
-      nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
-  nimble_kokkos::DeviceScalarNodeView model_coord_d_ =
-      nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
-  nimble_kokkos::DeviceScalarNodeView coord_d_ =
-      nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
-  nimble_kokkos::DeviceScalarNodeView force_d_ =
-      nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
+  nimble_kokkos::DeviceIntegerArrayView node_ids_d_  = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
+  nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView coord_d_       = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
+  nimble_kokkos::DeviceScalarNodeView force_d_       = nimble_kokkos::DeviceScalarNodeView("contact force_d", 1);
 
   nimble_kokkos::DeviceContactEntityArrayView contact_faces_d_ =
       nimble_kokkos::DeviceContactEntityArrayView("contact_faces_d", 1);
@@ -523,9 +493,7 @@ class ContactManager
 };
 
 std::shared_ptr<nimble::ContactManager>
-GetContactManager(
-    std::shared_ptr<ContactInterface> interface,
-    nimble::DataManager&              data_manager);
+GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
 
 }  // namespace nimble
 

@@ -117,9 +117,7 @@ class Block : public nimble::BlockBase
 #endif
 
   void
-  Initialize(
-      std::string const& macro_material_parameters,
-      MaterialFactory&   factory);
+  Initialize(std::string const& macro_material_parameters, MaterialFactory& factory);
 
   void
   Initialize(
@@ -136,8 +134,7 @@ class Block : public nimble::BlockBase
   InstantiateElement() override;
 
   void
-  GetDataLabelsAndLengths(
-      std::vector<std::pair<std::string, Length>>& data_labels_and_lengths);
+  GetDataLabelsAndLengths(std::vector<std::pair<std::string, Length>>& data_labels_and_lengths);
 
   void
   ComputeLumpedMassMatrix(

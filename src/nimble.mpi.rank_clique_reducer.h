@@ -81,11 +81,7 @@ struct ReductionClique_t
   http://mpitutorial.com/tutorials/introduction-to-groups-and-communicators/ for
   a reference
   */
-  ReductionClique_t(
-      const std::vector<int>& index_list,
-      int                     buffersize,
-      int                     comm_color,
-      const mpicontext&       context)
+  ReductionClique_t(const std::vector<int>& index_list, int buffersize, int comm_color, const mpicontext& context)
       : indices{new int[index_list.size()]},
         sendbuffer{new double[buffersize]},
         recvbuffer{new double[buffersize]},
@@ -97,13 +93,9 @@ struct ReductionClique_t
     std::copy_n(index_list.data(), index_list.size(), indices.get());
     // printf("rank %d: Splitting %d with comm color %d\n", context.get_rank(),
     // context.get_comm(), comm_color);
-    MPI_Comm_split(
-        context.get_comm(), comm_color, context.get_rank(), &clique_comm);
+    MPI_Comm_split(context.get_comm(), comm_color, context.get_rank(), &clique_comm);
   }
-  ReductionClique_t(
-      const std::vector<int>& index_list,
-      int                     buffersize,
-      MPI_Comm                clique_comm)
+  ReductionClique_t(const std::vector<int>& index_list, int buffersize, MPI_Comm clique_comm)
       : indices{new int[index_list.size()]},
         sendbuffer{new double[buffersize]},
         recvbuffer{new double[buffersize]},
@@ -186,9 +178,7 @@ struct ReductionClique_t
   void
   EnsureDataSafety(int field_size)
   {
-    if (!okayfieldsizeQ(field_size)) {
-      throw std::logic_error("Field size too big");
-    }
+    if (!okayfieldsizeQ(field_size)) { throw std::logic_error("Field size too big"); }
   }
   // Performs a blocking Allreduce
   template <int field_size, class Lookup>
@@ -197,13 +187,7 @@ struct ReductionClique_t
   {
     EnsureDataSafety(field_size);
     pack<field_size>(data);
-    MPI_Allreduce(
-        sendbuffer.get(),
-        recvbuffer.get(),
-        n_indices * field_size,
-        MPI_DOUBLE,
-        MPI_SUM,
-        clique_comm);
+    MPI_Allreduce(sendbuffer.get(), recvbuffer.get(), n_indices * field_size, MPI_DOUBLE, MPI_SUM, clique_comm);
     unpack<field_size>(data);
   }
   // Copies data to sendbuffer and starts an asynchronous allreduce operation.
@@ -286,14 +270,7 @@ struct ReductionClique_t
     int clique_comm_size;
     MPI_Comm_size(clique_comm, &clique_comm_size);
     std::vector<int> mpi_comm_world_ranks(clique_comm_size);
-    MPI_Allgather(
-        &my_mpi_comm_world_rank,
-        1,
-        MPI_INT,
-        mpi_comm_world_ranks.data(),
-        1,
-        MPI_INT,
-        clique_comm);
+    MPI_Allgather(&my_mpi_comm_world_rank, 1, MPI_INT, mpi_comm_world_ranks.data(), 1, MPI_INT, clique_comm);
     std::sort(mpi_comm_world_ranks.begin(), mpi_comm_world_ranks.end());
     return mpi_comm_world_ranks;
   }

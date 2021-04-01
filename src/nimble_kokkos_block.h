@@ -72,11 +72,7 @@ namespace nimble_kokkos {
 class Block : public nimble::BlockBase
 {
  public:
-  Block()
-      : BlockBase(),
-        elem_conn_d("element_connectivity_d", 0),
-        element_device_(nullptr),
-        material_device_(nullptr)
+  Block() : BlockBase(), elem_conn_d("element_connectivity_d", 0), element_device_(nullptr), material_device_(nullptr)
   {
   }
 
@@ -90,10 +86,7 @@ class Block : public nimble::BlockBase
   }
 
   void
-  Initialize(
-      std::string const& macro_material_parameters,
-      int                num_elements,
-      MaterialFactory&   factory);
+  Initialize(std::string const& macro_material_parameters, int num_elements, MaterialFactory& factory);
 
   void
   InstantiateMaterialModel(int num_material_points, MaterialFactory& factory);

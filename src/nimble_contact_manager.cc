@@ -101,11 +101,9 @@ ParseContactCommand(
   std::stringstream ss(command);
 
   ss >> contact_primary_key;
-  if ((contact_primary_key != "primary_blocks") &&
-      (contact_primary_key != "master_blocks")) {
+  if ((contact_primary_key != "primary_blocks") && (contact_primary_key != "master_blocks")) {
     std::stringstream error_ss;
-    error_ss << "\n**** Error processing contact command, unknown key: "
-             << contact_primary_key << std::endl;
+    error_ss << "\n**** Error processing contact command, unknown key: " << contact_primary_key << std::endl;
     throw std::logic_error(error_ss.str());
   }
 
@@ -147,20 +145,16 @@ ParseContactCommand(
 }
 
 std::shared_ptr<nimble::ContactManager>
-GetContactManager(
-    std::shared_ptr<ContactInterface> interface,
-    nimble::DataManager&              data_manager)
+GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager)
 {
   if (!data_manager.GetParser().HasContact()) return nullptr;
 
 #ifdef NIMBLE_HAVE_ARBORX
   if (data_manager.GetParser().UseKokkos()) {
 #ifdef NIMBLE_HAVE_MPI
-    return std::make_shared<nimble::ArborXParallelContactManager>(
-        interface, data_manager);
+    return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
 #else
-    return std::make_shared<nimble::ArborXSerialContactManager>(
-        interface, data_manager);
+    return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
 #endif
   }
 #endif
@@ -179,12 +173,8 @@ GetContactManager(
 // Interface functions
 //
 
-ContactManager::ContactManager(
-    std::shared_ptr<ContactInterface> interface,
-    nimble::DataManager&              data_manager)
-    : data_manager_(data_manager),
-      penalty_parameter_(0.0),
-      contact_interface(std::move(interface))
+ContactManager::ContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager)
+    : data_manager_(data_manager), penalty_parameter_(0.0), contact_interface(std::move(interface))
 {
 }
 
@@ -211,13 +201,7 @@ ContactManager::CreateContactEntities(
   int max_node_global_id = mesh.GetMaxNodeGlobalId();
 #ifdef NIMBLE_HAVE_MPI
   int global_max_node_global_id = max_node_global_id;
-  MPI_Allreduce(
-      &max_node_global_id,
-      &global_max_node_global_id,
-      1,
-      MPI_INT,
-      MPI_MAX,
-      MPI_COMM_WORLD);
+  MPI_Allreduce(&max_node_global_id, &global_max_node_global_id, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   max_node_global_id = global_max_node_global_id;
 #endif
 
@@ -226,35 +210,22 @@ ContactManager::CreateContactEntities(
   // the contact nodes will not use these entity ids, instead they will just use
   // the exodus id of the node as the entity id
   std::vector<std::vector<int>> primary_skin_faces, secondary_skin_faces;
-  std::vector<int> primary_skin_entity_ids, secondary_skin_entity_ids;
-  int              contact_entity_id_offset =
-      max_node_global_id;  // ensure that there are no duplicate entity ids
+  std::vector<int>              primary_skin_entity_ids, secondary_skin_entity_ids;
+  int contact_entity_id_offset = max_node_global_id;  // ensure that there are no duplicate entity ids
   // between nodes and faces
-  SkinBlocks(
-      mesh,
-      primary_block_ids,
-      contact_entity_id_offset,
-      primary_skin_faces,
-      primary_skin_entity_ids);
-  SkinBlocks(
-      mesh,
-      secondary_block_ids,
-      contact_entity_id_offset,
-      secondary_skin_faces,
-      secondary_skin_entity_ids);
+  SkinBlocks(mesh, primary_block_ids, contact_entity_id_offset, primary_skin_faces, primary_skin_entity_ids);
+  SkinBlocks(mesh, secondary_block_ids, contact_entity_id_offset, secondary_skin_faces, secondary_skin_entity_ids);
 
   // remove faces that are along partition boundaries
   RemoveInternalSkinFaces(mesh, primary_skin_faces, primary_skin_entity_ids);
-  RemoveInternalSkinFaces(
-      mesh, secondary_skin_faces, secondary_skin_entity_ids);
+  RemoveInternalSkinFaces(mesh, secondary_skin_faces, secondary_skin_entity_ids);
 
   // create a list of ghosted nodes (e.g., nodes that are owned by a different
   // processor)
   std::vector<int> partition_boundary_node_local_ids;
   std::vector<int> min_rank_containing_partition_boundary_nodes;
   myVecComm.GetPartitionBoundaryNodeLocalIds(
-      partition_boundary_node_local_ids,
-      min_rank_containing_partition_boundary_nodes);
+      partition_boundary_node_local_ids, min_rank_containing_partition_boundary_nodes);
 
   std::vector<int> ghosted_node_local_ids;
   for (int i = 0; i < partition_boundary_node_local_ids.size(); i++) {
@@ -284,15 +255,13 @@ ContactManager::CreateContactEntities(
   for (auto& primary_skin_face : primary_skin_faces) {
     for (int& i_node : primary_skin_face) {
       int genesis_mesh_node_id = i_node;
-      i_node =
-          genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+      i_node                   = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
     }
   }
   for (auto& secondary_skin_face : secondary_skin_faces) {
     for (int& i_node : secondary_skin_face) {
       int genesis_mesh_node_id = i_node;
-      i_node =
-          genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
+      i_node                   = genesis_mesh_node_id_to_contact_submodel_id.at(genesis_mesh_node_id);
     }
   }
 
@@ -300,9 +269,7 @@ ContactManager::CreateContactEntities(
   std::vector<int> ghosted_contact_node_ids;
   for (auto node_id : ghosted_node_local_ids) {
     auto it = genesis_mesh_node_id_to_contact_submodel_id.find(node_id);
-    if (it != genesis_mesh_node_id_to_contact_submodel_id.end()) {
-      ghosted_contact_node_ids.push_back(it->second);
-    }
+    if (it != genesis_mesh_node_id_to_contact_submodel_id.end()) { ghosted_contact_node_ids.push_back(it->second); }
   }
 
   // allocate data for the contact submodel
@@ -312,10 +279,8 @@ ContactManager::CreateContactEntities(
   force_.resize(array_len, 0.0);
   for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
     model_coord_[3 * i_node] = coord_[3 * i_node] = coord_x[node_ids_[i_node]];
-    model_coord_[3 * i_node + 1]                  = coord_[3 * i_node + 1] =
-        coord_y[node_ids_[i_node]];
-    model_coord_[3 * i_node + 2] = coord_[3 * i_node + 2] =
-        coord_z[node_ids_[i_node]];
+    model_coord_[3 * i_node + 1] = coord_[3 * i_node + 1] = coord_y[node_ids_[i_node]];
+    model_coord_[3 * i_node + 2] = coord_[3 * i_node + 2] = coord_z[node_ids_[i_node]];
   }
 
   // Store nodes in secondary faces
@@ -333,8 +298,7 @@ ContactManager::CreateContactEntities(
       int node_id_2 = face[0];
       if (i + 1 < num_nodes_in_face) { node_id_2 = face[i + 1]; }
       double edge_length = sqrt(
-          (coord_[3 * node_id_2] - coord_[3 * node_id_1]) *
-              (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
+          (coord_[3 * node_id_2] - coord_[3 * node_id_1]) * (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
           (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
           (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]) *
@@ -345,19 +309,13 @@ ContactManager::CreateContactEntities(
     for (int i_node = 0; i_node < num_nodes_in_face; i_node++) {
       int node_id = face[i_node];
       // omit ghosted nodes
-      if (std::find(
-              ghosted_contact_node_ids.begin(),
-              ghosted_contact_node_ids.end(),
-              node_id) == ghosted_contact_node_ids.end()) {
-        if (std::find(
-                secondary_node_ids.begin(),
-                secondary_node_ids.end(),
-                node_id) == secondary_node_ids.end()) {
+      if (std::find(ghosted_contact_node_ids.begin(), ghosted_contact_node_ids.end(), node_id) ==
+          ghosted_contact_node_ids.end()) {
+        if (std::find(secondary_node_ids.begin(), secondary_node_ids.end(), node_id) == secondary_node_ids.end()) {
           secondary_node_ids.push_back(node_id);
           // note the mapping from contact manager local id to real FEM mesh
           // local id to real FEM mesh global id
-          int contact_node_entity_id =
-              genesis_node_global_ids[node_ids_[node_id]] + 1;
+          int contact_node_entity_id = genesis_node_global_ids[node_ids_[node_id]] + 1;
           secondary_node_entity_ids.push_back(contact_node_entity_id);
           secondary_node_char_lens[node_id] = characteristic_length;
         } else {
@@ -384,14 +342,10 @@ ContactManager::CreateContactEntities(
 
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos()) {
-    nimble_kokkos::HostIntegerArrayView node_ids_h(
-        "contact_node_ids_h", node_ids_.size());
-    for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
-      node_ids_h[i_node] = node_ids_[i_node];
-    }
+    nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
+    for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) { node_ids_h[i_node] = node_ids_[i_node]; }
 
-    nimble_kokkos::HostScalarNodeView model_coord_h(
-        "contact_model_coord_h", array_len);
+    nimble_kokkos::HostScalarNodeView model_coord_h("contact_model_coord_h", array_len);
     for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
       model_coord_h[3 * i_node]     = coord_x[node_ids_[i_node]];
       model_coord_h[3 * i_node + 1] = coord_y[node_ids_[i_node]];
@@ -433,49 +387,33 @@ ContactManager::CreateContactEntities(
   std::vector<int> output(2);
   input[0] = num_contact_faces;
   input[1] = num_contact_nodes;
-  MPI_Reduce(
-      input.data(),
-      output.data(),
-      input.size(),
-      MPI_INT,
-      MPI_SUM,
-      0,
-      MPI_COMM_WORLD);
+  MPI_Reduce(input.data(), output.data(), input.size(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
   num_contact_faces = output[0];
   num_contact_nodes = output[1];
 #endif
   if (mpi_rank == 0) {
     std::cout << "Contact initialization:" << std::endl;
-    std::cout << "  number of triangular contact facets (primary blocks): "
-              << num_contact_faces << std::endl;
-    std::cout << "  number of contact nodes (secondary blocks): "
-              << num_contact_nodes << "\n"
-              << std::endl;
+    std::cout << "  number of triangular contact facets (primary blocks): " << num_contact_faces << std::endl;
+    std::cout << "  number of contact nodes (secondary blocks): " << num_contact_nodes << "\n" << std::endl;
   }
 }
 
 void
-ContactManager::ComputeContactForce(
-    int                step,
-    bool               debug_output,
-    nimble::Viewify<2> contact_force)
+ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error(
-        "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
   }
 
   const auto& parser = data_manager_.GetParser();
   if (parser.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
     std::cout << " Enter if section .. ComputeContactForce \n";
-    auto model_ptr  = data_manager_.GetMacroScaleData();
-    auto model_data = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
-    auto field_ids  = data_manager_.GetFieldIDs();
-    auto displacement_d =
-        model_data->GetDeviceVectorNodeData(field_ids.displacement);
-    auto contact_force_d =
-        model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+    auto model_ptr       = data_manager_.GetMacroScaleData();
+    auto model_data      = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
+    auto field_ids       = data_manager_.GetFieldIDs();
+    auto displacement_d  = model_data->GetDeviceVectorNodeData(field_ids.displacement);
+    auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
     Kokkos::deep_copy(contact_force_d, (double)(0.0));
     //
     ApplyDisplacements(displacement_d);
@@ -484,8 +422,7 @@ ContactManager::ComputeContactForce(
     //
     GetForces(contact_force_d);
     //
-    auto contact_force_h =
-        model_data->GetHostVectorNodeData(field_ids.contact_force);
+    auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
     Kokkos::deep_copy(contact_force_h, contact_force_d);
 #ifdef NIMBLE_HAVE_MPI
     auto          myVectorCommunicator = data_manager_.GetVectorCommunicator();
@@ -516,8 +453,7 @@ ContactManager::ComputeContactForce(
  * @param contact_visualization_exodus_file_name
  */
 void
-ContactManager::InitializeContactVisualization(
-    std::string const& contact_visualization_exodus_file_name)
+ContactManager::InitializeContactVisualization(std::string const& contact_visualization_exodus_file_name)
 {
   // Exodus id convention for contact visualization:
   //
@@ -583,13 +519,7 @@ ContactManager::InitializeContactVisualization(
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
   int global_max_contact_entity_id = max_contact_entity_id;
-  MPI_Allreduce(
-      &max_contact_entity_id,
-      &global_max_contact_entity_id,
-      1,
-      MPI_INT,
-      MPI_MAX,
-      MPI_COMM_WORLD);
+  MPI_Allreduce(&max_contact_entity_id, &global_max_contact_entity_id, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   max_contact_entity_id = global_max_contact_entity_id;
 #endif
 
@@ -614,22 +544,19 @@ ContactManager::InitializeContactVisualization(
 
   int node_index(0);
   for (int i_face = 0; i_face < nfaces; i_face++) {
-    ContactEntity const& face    = getContactFace(i_face);
-    int contact_entity_global_id = face.contact_entity_global_id_;
-    node_global_id.push_back(
-        3 * contact_entity_global_id + max_contact_entity_id + 9);
+    ContactEntity const& face                     = getContactFace(i_face);
+    int                  contact_entity_global_id = face.contact_entity_global_id_;
+    node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 9);
     node_x.push_back(face.coord_1_x_);
     node_y.push_back(face.coord_1_y_);
     node_z.push_back(face.coord_1_z_);
     block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(
-        3 * contact_entity_global_id + max_contact_entity_id + 10);
+    node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 10);
     node_x.push_back(face.coord_2_x_);
     node_y.push_back(face.coord_2_y_);
     node_z.push_back(face.coord_2_z_);
     block_elem_connectivity[block_id].push_back(node_index++);
-    node_global_id.push_back(
-        3 * contact_entity_global_id + max_contact_entity_id + 11);
+    node_global_id.push_back(3 * contact_entity_global_id + max_contact_entity_id + 11);
     node_x.push_back(face.coord_3_x_);
     node_y.push_back(face.coord_3_y_);
     node_z.push_back(face.coord_3_z_);
@@ -646,8 +573,8 @@ ContactManager::InitializeContactVisualization(
   block_elem_connectivity[block_id]  = std::vector<int>();
 
   for (int i_node = 0; i_node < nnodes; i_node++) {
-    ContactEntity const& node    = getContactNode(i_node);
-    int contact_entity_global_id = node.contact_entity_global_id_;
+    ContactEntity const& node                     = getContactNode(i_node);
+    int                  contact_entity_global_id = node.contact_entity_global_id_;
     node_global_id.push_back(contact_entity_global_id);
     node_x.push_back(node.coord_1_x_);
     node_y.push_back(node.coord_1_y_);
@@ -686,11 +613,7 @@ ContactManager::InitializeContactVisualization(
     derived_elem_data_labels[iblock]    = std::vector<std::string>();
   }
   out.InitializeDatabase(
-      mesh,
-      global_data_labels,
-      node_data_labels_for_output,
-      elem_data_labels_for_output,
-      derived_elem_data_labels);
+      mesh, global_data_labels, node_data_labels_for_output, elem_data_labels_for_output, derived_elem_data_labels);
 }
 
 void
@@ -741,45 +664,32 @@ ContactManager::WriteVisualizationData(double t)
 
   int node_index(0);
   for (size_t i_face = 0; i_face < nfaces; i_face++) {
-    ContactEntity const& face = getContactFace(i_face);
-    auto contact_status       = static_cast<double>(face.contact_status());
-    node_data_for_output[0][node_index] =
-        face.coord_1_x_ - model_coord_x[node_index];
-    node_data_for_output[1][node_index] =
-        face.coord_1_y_ - model_coord_y[node_index];
-    node_data_for_output[2][node_index] =
-        face.coord_1_z_ - model_coord_z[node_index];
+    ContactEntity const& face           = getContactFace(i_face);
+    auto                 contact_status = static_cast<double>(face.contact_status());
+    node_data_for_output[0][node_index] = face.coord_1_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_1_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_1_z_ - model_coord_z[node_index];
     node_data_for_output[3][node_index] = contact_status;
     node_index += 1;
-    node_data_for_output[0][node_index] =
-        face.coord_2_x_ - model_coord_x[node_index];
-    node_data_for_output[1][node_index] =
-        face.coord_2_y_ - model_coord_y[node_index];
-    node_data_for_output[2][node_index] =
-        face.coord_2_z_ - model_coord_z[node_index];
+    node_data_for_output[0][node_index] = face.coord_2_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_2_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_2_z_ - model_coord_z[node_index];
     node_data_for_output[3][node_index] = contact_status;
     node_index += 1;
-    node_data_for_output[0][node_index] =
-        face.coord_3_x_ - model_coord_x[node_index];
-    node_data_for_output[1][node_index] =
-        face.coord_3_y_ - model_coord_y[node_index];
-    node_data_for_output[2][node_index] =
-        face.coord_3_z_ - model_coord_z[node_index];
+    node_data_for_output[0][node_index] = face.coord_3_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = face.coord_3_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = face.coord_3_z_ - model_coord_z[node_index];
     node_data_for_output[3][node_index] = contact_status;
     node_index += 1;
   }
 
   const size_t nnodes = numContactNodes();
   for (size_t i_node = 0; i_node < nnodes; i_node++) {
-    ContactEntity const& node = getContactNode(i_node);
-    node_data_for_output[0][node_index] =
-        node.coord_1_x_ - model_coord_x[node_index];
-    node_data_for_output[1][node_index] =
-        node.coord_1_y_ - model_coord_y[node_index];
-    node_data_for_output[2][node_index] =
-        node.coord_1_z_ - model_coord_z[node_index];
-    node_data_for_output[3][node_index] =
-        static_cast<double>(node.contact_status());
+    ContactEntity const& node           = getContactNode(i_node);
+    node_data_for_output[0][node_index] = node.coord_1_x_ - model_coord_x[node_index];
+    node_data_for_output[1][node_index] = node.coord_1_y_ - model_coord_y[node_index];
+    node_data_for_output[2][node_index] = node.coord_1_z_ - model_coord_z[node_index];
+    node_data_for_output[3][node_index] = static_cast<double>(node.contact_status());
     node_index += 1;
   }
 
@@ -803,16 +713,11 @@ ContactManager::ApplyDisplacements(const double* displacement)
   for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
     int node_id = node_ids_[i_node];
     for (int i = 0; i < 3; i++) {
-      coord_[3 * i_node + i] =
-          model_coord_[3 * i_node + i] + displacement[3 * node_id + i];
+      coord_[3 * i_node + i] = model_coord_[3 * i_node + i] + displacement[3 * node_id + i];
     }
   }
-  for (auto& contact_face : contact_faces_) {
-    contact_face.SetCoordinates(coord_.data());
-  }
-  for (auto& contact_node : contact_nodes_) {
-    contact_node.SetCoordinates(coord_.data());
-  }
+  for (auto& contact_face : contact_faces_) { contact_face.SetCoordinates(coord_.data()); }
+  for (auto& contact_node : contact_nodes_) { contact_node.SetCoordinates(coord_.data()); }
 }
 
 void
@@ -820,17 +725,14 @@ ContactManager::GetForces(double* contact_force) const
 {
   for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
     int node_id = node_ids_[i_node];
-    for (int i = 0; i < 3; i++) {
-      contact_force[3 * node_id + i] = force_[3 * i_node + i];
-    }
+    for (int i = 0; i < 3; i++) { contact_force[3 * node_id + i] = force_[3 * i_node + i]; }
   }
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
 // Kokkos Versions of GetForces and ApplyDisplacements
 void
-ContactManager::GetForces(
-    nimble_kokkos::DeviceVectorNodeView contact_force_d) const
+ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const
 {
   int num_nodes_in_contact_manager = node_ids_d_.extent(0);
 
@@ -839,9 +741,7 @@ ContactManager::GetForces(
   nimble_kokkos::DeviceScalarNodeView   force    = force_d_;
 
   Kokkos::parallel_for(
-      "ContactManager::GetForces",
-      num_nodes_in_contact_manager,
-      KOKKOS_LAMBDA(const int i) {
+      "ContactManager::GetForces", num_nodes_in_contact_manager, KOKKOS_LAMBDA(const int i) {
         int node_id                 = node_ids(i);
         contact_force_d(node_id, 0) = force(3 * i);
         contact_force_d(node_id, 1) = force(3 * i + 1);
@@ -850,8 +750,7 @@ ContactManager::GetForces(
 }
 
 void
-ContactManager::ApplyDisplacements(
-    nimble_kokkos::DeviceVectorNodeView displacement_d)
+ContactManager::ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d)
 {
   int num_nodes_in_contact_manager = node_ids_d_.extent(0);
   int num_contact_node_entities    = contact_nodes_d_.extent(0);
@@ -878,17 +777,13 @@ ContactManager::ApplyDisplacements(
       "ContactManager::ApplyDisplacements set contact node entity "
       "displacements",
       num_contact_node_entities,
-      KOKKOS_LAMBDA(const int i_node) {
-        contact_nodes(i_node).SetCoordinates(coord);
-      });
+      KOKKOS_LAMBDA(const int i_node) { contact_nodes(i_node).SetCoordinates(coord); });
 
   Kokkos::parallel_for(
       "ContactManager::ApplyDisplacements set contact face entity "
       "displacements",
       num_contact_face_entities,
-      KOKKOS_LAMBDA(const int i_face) {
-        contact_faces(i_face).SetCoordinates(coord);
-      });
+      KOKKOS_LAMBDA(const int i_face) { contact_faces(i_face).SetCoordinates(coord); });
 }
 
 #endif  // NIMBLE_HAVE_KOKKOS
@@ -906,12 +801,11 @@ ContactManager::SkinBlocks(
   std::map<std::vector<int>, std::vector<int>>::iterator face_it;
 
   for (auto& block_id : block_ids) {
-    int              num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-    int              num_node_per_elem = mesh.GetNumNodesPerElement(block_id);
-    const int* const conn              = mesh.GetConnectivity(block_id);
-    std::vector<int> const& elem_global_ids =
-        mesh.GetElementGlobalIdsInBlock(block_id);
-    int conn_index = 0;
+    int                     num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+    int                     num_node_per_elem = mesh.GetNumNodesPerElement(block_id);
+    const int* const        conn              = mesh.GetConnectivity(block_id);
+    std::vector<int> const& elem_global_ids   = mesh.GetElementGlobalIdsInBlock(block_id);
+    int                     conn_index        = 0;
 
     // key is sorted node list for a face
     int              num_node_per_face = 4;
@@ -1031,16 +925,14 @@ ContactManager::SkinBlocks(
         skin_face.push_back(id);
       }
       skin_faces.push_back(skin_face);
-      int entity_id =
-          (face.second[5] + entity_id_offset)
-          << 5;  // 59 bits for the genesis element id plus an offset value
+      int entity_id = (face.second[5] + entity_id_offset)
+                      << 5;              // 59 bits for the genesis element id plus an offset value
       entity_id |= face.second[6] << 2;  // 3 bits for the face ordinal
-      entity_id |= 0;  // 2 bits for triangle ordinal (unknown until face is
-                       // subdivided downstream)
+      entity_id |= 0;                    // 2 bits for triangle ordinal (unknown until face is
+                                         // subdivided downstream)
       entity_ids.push_back(entity_id);
     } else if (face.second[0] != 2) {
-      throw std::logic_error(
-          "Error in mesh skinning routine, face found more than two times!\n");
+      throw std::logic_error("Error in mesh skinning routine, face found more than two times!\n");
     }
   }
 }
@@ -1067,8 +959,7 @@ ContactManager::RemoveInternalSkinFaces(
   for (int iface = 0; iface < faces.size(); ++iface) {
     const auto&      face = faces[iface];
     std::vector<int> fvec(num_nodes_in_face, std::numeric_limits<int>::max());
-    for (int ii = 0; ii < face.size(); ++ii)
-      fvec[ii] = genesis_node_global_ids[face[ii]];
+    for (int ii = 0; ii < face.size(); ++ii) fvec[ii] = genesis_node_global_ids[face[ii]];
     std::sort(fvec.begin(), fvec.end());
     for (auto inode : fvec) face_global_ids.push_back(inode);
     faceList.emplace(std::make_pair(std::move(fvec), iface));
@@ -1114,10 +1005,8 @@ ContactManager::RemoveInternalSkinFaces(
     //
     int mpi_buffer_num_faces = recv_size / num_nodes_in_face;
     //
-    for (int i_mpi_buff_face = 0; i_mpi_buff_face < mpi_buffer_num_faces;
-         i_mpi_buff_face++) {
-      const auto* mpi_buff_ptr =
-          &mpi_buffer.at(i_mpi_buff_face * num_nodes_in_face);
+    for (int i_mpi_buff_face = 0; i_mpi_buff_face < mpi_buffer_num_faces; i_mpi_buff_face++) {
+      const auto* mpi_buff_ptr = &mpi_buffer.at(i_mpi_buff_face * num_nodes_in_face);
       //
       std::vector<int> tmpList(mpi_buff_ptr, mpi_buff_ptr + num_nodes_in_face);
       auto             tmpIter = faceList.find(tmpList);
@@ -1146,10 +1035,8 @@ ContactManager::RemoveInternalSkinFaces(
   for (std::size_t i = 0; i < entity_ids.size(); ++i) {
     if (!remove_entity_ids_hash[i]) new_entity_ids.emplace_back(entity_ids[i]);
   }
-  std::cout << " Rank " << mpi_rank << " Removed "
-            << remove_face_hash.size() - new_faces.size() << " faces\n";
-  std::cout << " Rank " << mpi_rank << " Removed "
-            << remove_entity_ids_hash.size() - new_entity_ids.size()
+  std::cout << " Rank " << mpi_rank << " Removed " << remove_face_hash.size() - new_faces.size() << " faces\n";
+  std::cout << " Rank " << mpi_rank << " Removed " << remove_entity_ids_hash.size() - new_entity_ids.size()
             << " faces\n";
   std::swap(new_faces, faces);
   std::swap(new_entity_ids, entity_ids);
@@ -1188,8 +1075,7 @@ ContactManager::CreateContactNodesAndFaces(
       int node_id_2 = face[0];
       if (i + 1 < num_nodes_in_face) { node_id_2 = face[i + 1]; }
       double edge_length = sqrt(
-          (coord_[3 * node_id_2] - coord_[3 * node_id_1]) *
-              (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
+          (coord_[3 * node_id_2] - coord_[3 * node_id_1]) * (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
           (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
           (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]) *
@@ -1202,9 +1088,7 @@ ContactManager::CreateContactNodesAndFaces(
     double fictitious_node[3] = {0.0, 0.0, 0.0};
     for (int i = 0; i < num_nodes_in_face; ++i) {
       int node_id = face[i];
-      for (int j = 0; j < 3; j++) {
-        fictitious_node[j] += coord_[3 * node_id + j];
-      }
+      for (int j = 0; j < 3; j++) { fictitious_node[j] += coord_[3 * node_id + j]; }
     }
     for (double& j : fictitious_node) { j /= num_nodes_in_face; }
 
@@ -1319,33 +1203,21 @@ ContactManager::CreateContactNodesAndFaces(
     double characteristic_length = secondary_node_char_lens.at(node_id);
     double model_coord[3];
     for (int i = 0; i < 3; ++i) { model_coord[i] = coord_[3 * node_id + i]; }
-    contact_nodes[i_node] = ContactEntity(
-        ContactEntity::NODE,
-        entity_id,
-        i_node,
-        model_coord,
-        characteristic_length,
-        node_id);
+    contact_nodes[i_node] =
+        ContactEntity(ContactEntity::NODE, entity_id, i_node, model_coord, characteristic_length, node_id);
   }
 }
 
 void
-ContactManager::BoundingBox(
-    double& x_min,
-    double& x_max,
-    double& y_min,
-    double& y_max,
-    double& z_min,
-    double& z_max) const
+ContactManager::BoundingBox(double& x_min, double& x_max, double& y_min, double& y_max, double& z_min, double& z_max)
+    const
 {
   double big = std::numeric_limits<double>::max();
 
   if (data_manager_.GetParser().UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
-    nimble_kokkos::DeviceScalarNodeView contact_bounding_box_d(
-        "contact_bounding_box_d", 6);
-    nimble_kokkos::HostScalarNodeView contact_bounding_box_h(
-        "contact_bounding_box_h", 6);
+    nimble_kokkos::DeviceScalarNodeView contact_bounding_box_d("contact_bounding_box_d", 6);
+    nimble_kokkos::HostScalarNodeView   contact_bounding_box_h("contact_bounding_box_h", 6);
     contact_bounding_box_h(0) = big;         // x_min
     contact_bounding_box_h(1) = -1.0 * big;  // x_max
     contact_bounding_box_h(2) = big;         // y_min
@@ -1354,13 +1226,11 @@ ContactManager::BoundingBox(
     contact_bounding_box_h(5) = -1.0 * big;  // z_max
     Kokkos::deep_copy(contact_bounding_box_d, contact_bounding_box_h);
 
-    nimble_kokkos::DeviceScalarNodeView coord_d = coord_d_;
-    auto contact_vector_size = static_cast<int>(coord_d.extent(0) / 3);
+    nimble_kokkos::DeviceScalarNodeView coord_d             = coord_d_;
+    auto                                contact_vector_size = static_cast<int>(coord_d.extent(0) / 3);
 
     Kokkos::parallel_for(
-        "Contact Bounding Box",
-        contact_vector_size,
-        KOKKOS_LAMBDA(const int i) {
+        "Contact Bounding Box", contact_vector_size, KOKKOS_LAMBDA(const int i) {
           double x = coord_d(3 * i);
           double y = coord_d(3 * i + 1);
           double z = coord_d(3 * i + 2);
@@ -1415,13 +1285,7 @@ ContactManager::BoundingBoxAverageCharacteristicLengthOverAllRanks() const
 #ifdef NIMBLE_HAVE_MPI
   int num_ranks;
   MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-  MPI_Allreduce(
-      &longest_edge,
-      &ave_characteristic_length,
-      1,
-      MPI_DOUBLE,
-      MPI_SUM,
-      MPI_COMM_WORLD);
+  MPI_Allreduce(&longest_edge, &ave_characteristic_length, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   ave_characteristic_length /= num_ranks;
 #endif
   return ave_characteristic_length;
@@ -1456,8 +1320,7 @@ ContactManager::ClosestPointProjection(
     ContactEntity const& node = nodes[i_proj];
     ContactEntity const& tri  = triangles[i_proj];
 
-    ClosestPointProjectionSingle(
-        node, tri, &closest_points[i_proj], &projection_types[i_proj], tol);
+    ClosestPointProjectionSingle(node, tri, &closest_points[i_proj], &projection_types[i_proj], tol);
   }
 }
 
@@ -1503,29 +1366,24 @@ ContactManager::ClosestPointProjectionSingle(
 
   double cross[3];
   CrossProduct(u, w, cross);
-  double gamma =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double gamma = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
 
   CrossProduct(w, v, cross);
-  double beta =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double beta = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
 
   double alpha = 1 - gamma - beta;
 
   bool alpha_is_zero, alpha_in_range;
   (alpha > -tol && alpha < tol) ? alpha_is_zero = true : alpha_is_zero = false;
-  (alpha > -tol && alpha < 1.0 + tol) ? alpha_in_range = true :
-                                        alpha_in_range = false;
+  (alpha > -tol && alpha < 1.0 + tol) ? alpha_in_range = true : alpha_in_range = false;
 
   bool beta_is_zero, beta_in_range;
   (beta > -tol && beta < tol) ? beta_is_zero = true : beta_is_zero = false;
-  (beta > -tol && beta < 1.0 + tol) ? beta_in_range = true :
-                                      beta_in_range = false;
+  (beta > -tol && beta < 1.0 + tol) ? beta_in_range = true : beta_in_range = false;
 
   bool gamma_is_zero, gamma_in_range;
   (gamma > -tol && gamma < tol) ? gamma_is_zero = true : gamma_is_zero = false;
-  (gamma > -tol && gamma < 1.0 + tol) ? gamma_in_range = true :
-                                        gamma_in_range = false;
+  (gamma > -tol && gamma < 1.0 + tol) ? gamma_in_range = true : gamma_in_range = false;
 
   if (alpha_in_range && beta_in_range && gamma_in_range) {
     closest_point->coords_[0] = alpha * p1[0] + beta * p2[0] + gamma * p3[0];
@@ -1614,28 +1472,19 @@ ContactManager::ClosestPointProjectionSingle(
         closest_point->coords_[2] = p3[2];
         break;
       case 4:
-        closest_point->coords_[0] =
-            p1[0] + (p2[0] - p1[0]) * min_distance_squared_t;
-        closest_point->coords_[1] =
-            p1[1] + (p2[1] - p1[1]) * min_distance_squared_t;
-        closest_point->coords_[2] =
-            p1[2] + (p2[2] - p1[2]) * min_distance_squared_t;
+        closest_point->coords_[0] = p1[0] + (p2[0] - p1[0]) * min_distance_squared_t;
+        closest_point->coords_[1] = p1[1] + (p2[1] - p1[1]) * min_distance_squared_t;
+        closest_point->coords_[2] = p1[2] + (p2[2] - p1[2]) * min_distance_squared_t;
         break;
       case 5:
-        closest_point->coords_[0] =
-            p2[0] + (p3[0] - p2[0]) * min_distance_squared_t;
-        closest_point->coords_[1] =
-            p2[1] + (p3[1] - p2[1]) * min_distance_squared_t;
-        closest_point->coords_[2] =
-            p2[2] + (p3[2] - p2[2]) * min_distance_squared_t;
+        closest_point->coords_[0] = p2[0] + (p3[0] - p2[0]) * min_distance_squared_t;
+        closest_point->coords_[1] = p2[1] + (p3[1] - p2[1]) * min_distance_squared_t;
+        closest_point->coords_[2] = p2[2] + (p3[2] - p2[2]) * min_distance_squared_t;
         break;
       case 6:
-        closest_point->coords_[0] =
-            p3[0] + (p1[0] - p3[0]) * min_distance_squared_t;
-        closest_point->coords_[1] =
-            p3[1] + (p1[1] - p3[1]) * min_distance_squared_t;
-        closest_point->coords_[2] =
-            p3[2] + (p1[2] - p3[2]) * min_distance_squared_t;
+        closest_point->coords_[0] = p3[0] + (p1[0] - p3[0]) * min_distance_squared_t;
+        closest_point->coords_[1] = p3[1] + (p1[1] - p3[1]) * min_distance_squared_t;
+        closest_point->coords_[2] = p3[2] + (p1[2] - p3[2]) * min_distance_squared_t;
         break;
     }
   }
@@ -1684,11 +1533,9 @@ ContactManager::SimpleClosestPointProjectionSingle(
   // baricentric coordinates on facet  [ u, w + a n, n ] = [ u, w, n]
   double cross[3];
   CrossProduct(u, w, cross);
-  double alpha3 =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double alpha3 = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
   CrossProduct(w, v, cross);
-  double alpha2 =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double alpha2 = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
   double alpha1 = 1.0 - alpha2 - alpha3;
   // check inside
   double tol2      = 1.0 + tol;
@@ -1697,10 +1544,10 @@ ContactManager::SimpleClosestPointProjectionSingle(
   bool   a3        = (alpha3 > -tol && alpha3 < tol2);
   *projection_type = PROJECTION_TYPE::UNKNOWN;  // indicates outside
   if (a1 && a2 && a3) {
-    *projection_type = PROJECTION_TYPE::FACE;
-    double xp        = alpha1 * p1[0] + alpha2 * p2[0] + alpha3 * p3[0];
-    double yp        = alpha1 * p1[1] + alpha2 * p2[1] + alpha3 * p3[1];
-    double zp        = alpha1 * p1[2] + alpha2 * p2[2] + alpha3 * p3[2];
+    *projection_type          = PROJECTION_TYPE::FACE;
+    double xp                 = alpha1 * p1[0] + alpha2 * p2[0] + alpha3 * p3[0];
+    double yp                 = alpha1 * p1[1] + alpha2 * p2[1] + alpha3 * p3[1];
+    double zp                 = alpha1 * p1[2] + alpha2 * p2[2] + alpha3 * p3[2];
     closest_point->coords_[0] = xp;
     closest_point->coords_[1] = yp;
     closest_point->coords_[2] = zp;
@@ -1711,7 +1558,7 @@ ContactManager::SimpleClosestPointProjectionSingle(
     normal[0]                 = n[0] * s;
     normal[1]                 = n[1] * s;
     normal[2]                 = n[2] * s;
-    gap = dx * normal[0] + dy * normal[1] + dz * normal[2];
+    gap                       = dx * normal[0] + dy * normal[1] + dz * normal[2];
   }
 }
 
@@ -1769,11 +1616,9 @@ ContactManager::Projection(
   // baricentric coordinates on facet  [ u, w + a n, n ] = [ u, w, n]
   double cross[3];
   CrossProduct(u, w, cross);
-  double alpha3 =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double alpha3 = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
   CrossProduct(w, v, cross);
-  double alpha2 =
-      (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
+  double alpha2 = (cross[0] * n[0] + cross[1] * n[1] + cross[2] * n[2]) / n_squared;
   double alpha1 = 1.0 - alpha2 - alpha3;
   // check inside
   double tol2 = 1.0 + tol;
@@ -1782,17 +1627,17 @@ ContactManager::Projection(
   bool   a3   = (alpha3 > -tol && alpha3 < tol2);
   in          = false;
   if (a1 && a2 && a3) {
-    double xp = alpha1 * p1[0] + alpha2 * p2[0] + alpha3 * p3[0];
-    double yp = alpha1 * p1[1] + alpha2 * p2[1] + alpha3 * p3[1];
-    double zp = alpha1 * p1[2] + alpha2 * p2[2] + alpha3 * p3[2];
-    double dx = node.coord_1_x_ - xp;
-    double dy = node.coord_1_y_ - yp;
-    double dz = node.coord_1_z_ - zp;
-    double s  = 1.0 / std::sqrt(n_squared);
-    normal[0] = n[0] * s;
-    normal[1] = n[1] * s;
-    normal[2] = n[2] * s;
-    gap       = dx * normal[0] + dy * normal[1] + dz * normal[2];
+    double xp                  = alpha1 * p1[0] + alpha2 * p2[0] + alpha3 * p3[0];
+    double yp                  = alpha1 * p1[1] + alpha2 * p2[1] + alpha3 * p3[1];
+    double zp                  = alpha1 * p1[2] + alpha2 * p2[2] + alpha3 * p3[2];
+    double dx                  = node.coord_1_x_ - xp;
+    double dy                  = node.coord_1_y_ - yp;
+    double dz                  = node.coord_1_z_ - zp;
+    double s                   = 1.0 / std::sqrt(n_squared);
+    normal[0]                  = n[0] * s;
+    normal[1]                  = n[1] * s;
+    normal[2]                  = n[2] * s;
+    gap                        = dx * normal[0] + dy * normal[1] + dz * normal[2];
     barycentric_coordinates[0] = alpha1;
     barycentric_coordinates[1] = alpha2;
     barycentric_coordinates[2] = alpha3;
@@ -1812,7 +1657,7 @@ ContactManager::zeroContactForce()
   Kokkos::deep_copy(force_d_, 0.0);
   //
   nimble_kokkos::DeviceContactEntityArrayView contact_faces = contact_faces_d_;
-  auto numFaces = contact_faces_d_.extent(0);
+  auto                                        numFaces      = contact_faces_d_.extent(0);
   Kokkos::parallel_for(
       "Zero Face Force", numFaces, KOKKOS_LAMBDA(const int i_face) {
         contact_faces(i_face).force_1_x_ = 0.0;
@@ -1827,7 +1672,7 @@ ContactManager::zeroContactForce()
       });
   //
   nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
-  auto numNodes = contact_nodes_d_.extent(0);
+  auto                                        numNodes      = contact_nodes_d_.extent(0);
   Kokkos::parallel_for(
       "Zero Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
         contact_nodes(i_node).force_1_x_ = 0.0;

@@ -87,8 +87,7 @@ CheckVectorSanity(int vec_length, ScalarT const* const vec, const char* label)
   for (int i = 0; i < vec_length; i++) {
 #ifndef NIMBLE_HAVE_KOKKOS
     if (!std::isfinite(vec[i])) {
-      throw std::logic_error(
-          "\n**** Finite value check failed for " + std::string(label) + "!\n");
+      throw std::logic_error("\n**** Finite value check failed for " + std::string(label) + "!\n");
     }
 #else
     if (vec[i] != vec[i] || vec[i] > DBL_MAX || vec[i] < -DBL_MAX) {
@@ -140,12 +139,12 @@ void
 Print_Full33(std::string label, const ScalarT* const mat, int precision = 2)
 {
   std::cout << "Full33 " << label << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_F_XX] << ", "
-            << mat[K_F_XY] << ", " << mat[K_F_XZ] << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_F_YX] << ", "
-            << mat[K_F_YY] << ", " << mat[K_F_YZ] << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_F_ZX] << ", "
-            << mat[K_F_ZY] << ", " << mat[K_F_ZZ] << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_F_XX] << ", " << mat[K_F_XY] << ", " << mat[K_F_XZ]
+            << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_F_YX] << ", " << mat[K_F_YY] << ", " << mat[K_F_YZ]
+            << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_F_ZX] << ", " << mat[K_F_ZY] << ", " << mat[K_F_ZZ]
+            << std::endl;
 }
 
 template <typename ScalarT>
@@ -153,12 +152,12 @@ void
 Print_Sym33(std::string label, const ScalarT* const mat, int precision = 2)
 {
   std::cout << "Sym33 " << label << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_S_XX] << ", "
-            << mat[K_S_XY] << ", " << mat[K_S_XZ] << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_S_YX] << ", "
-            << mat[K_S_YY] << ", " << mat[K_S_YZ] << std::endl;
-  std::cout << std::setprecision(precision) << "  " << mat[K_S_ZX] << ", "
-            << mat[K_S_ZY] << ", " << mat[K_S_ZZ] << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_S_XX] << ", " << mat[K_S_XY] << ", " << mat[K_S_XZ]
+            << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_S_YX] << ", " << mat[K_S_YY] << ", " << mat[K_S_YZ]
+            << std::endl;
+  std::cout << std::setprecision(precision) << "  " << mat[K_S_ZX] << ", " << mat[K_S_ZY] << ", " << mat[K_S_ZZ]
+            << std::endl;
 }
 
 //! Compute result = mat^T mat
@@ -167,18 +166,12 @@ NIMBLE_INLINE_FUNCTION void
 Square_Full33T_Full33(const ScalarT* const mat, ScalarT* const result)
 {
   assert(result != mat);
-  result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_YX] * mat[K_F_YX] +
-                   mat[K_F_ZX] * mat[K_F_ZX];
-  result[K_S_YY] = mat[K_F_XY] * mat[K_F_XY] + mat[K_F_YY] * mat[K_F_YY] +
-                   mat[K_F_ZY] * mat[K_F_ZY];
-  result[K_S_ZZ] = mat[K_F_XZ] * mat[K_F_XZ] + mat[K_F_YZ] * mat[K_F_YZ] +
-                   mat[K_F_ZZ] * mat[K_F_ZZ];
-  result[K_S_XY] = mat[K_F_XX] * mat[K_F_XY] + mat[K_F_YX] * mat[K_F_YY] +
-                   mat[K_F_ZX] * mat[K_F_ZY];
-  result[K_S_YZ] = mat[K_F_XY] * mat[K_F_XZ] + mat[K_F_YY] * mat[K_F_YZ] +
-                   mat[K_F_ZY] * mat[K_F_ZZ];
-  result[K_S_ZX] = mat[K_F_XX] * mat[K_F_XZ] + mat[K_F_YX] * mat[K_F_YZ] +
-                   mat[K_F_ZX] * mat[K_F_ZZ];
+  result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_YX] * mat[K_F_YX] + mat[K_F_ZX] * mat[K_F_ZX];
+  result[K_S_YY] = mat[K_F_XY] * mat[K_F_XY] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_ZY] * mat[K_F_ZY];
+  result[K_S_ZZ] = mat[K_F_XZ] * mat[K_F_XZ] + mat[K_F_YZ] * mat[K_F_YZ] + mat[K_F_ZZ] * mat[K_F_ZZ];
+  result[K_S_XY] = mat[K_F_XX] * mat[K_F_XY] + mat[K_F_YX] * mat[K_F_YY] + mat[K_F_ZX] * mat[K_F_ZY];
+  result[K_S_YZ] = mat[K_F_XY] * mat[K_F_XZ] + mat[K_F_YY] * mat[K_F_YZ] + mat[K_F_ZY] * mat[K_F_ZZ];
+  result[K_S_ZX] = mat[K_F_XX] * mat[K_F_XZ] + mat[K_F_YX] * mat[K_F_YZ] + mat[K_F_ZX] * mat[K_F_ZZ];
 }
 
 //!  Multiply a full tensor by a scalar
@@ -200,10 +193,7 @@ Mult_Scalar_Full33(ScalarT a, const ScalarT* const mat, ScalarT* const result)
 //!  Sum of a full tensor and a full tensor
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Sum_Full33_Full33(
-    const ScalarT* const A,
-    const ScalarT* const B,
-    ScalarT* const       result)
+Sum_Full33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
   result[K_F_XX] = A[K_F_XX] + B[K_F_XX];
   result[K_F_XY] = A[K_F_XY] + B[K_F_XY];
@@ -219,10 +209,7 @@ Sum_Full33_Full33(
 //!  Sum of a symmetric tensor and a full tensor
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Sum_Sym33_Full33(
-    const ScalarT* const A,
-    const ScalarT* const B,
-    ScalarT* const       result)
+Sum_Sym33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
   result[K_F_XX] = A[K_S_XX] + B[K_F_XX];
   result[K_F_XY] = A[K_S_XY] + B[K_F_XY];
@@ -238,92 +225,55 @@ Sum_Sym33_Full33(
 //!  Multiply a full tensor by a full tensor
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Mult_Full33_Full33(
-    const ScalarT* const A,
-    const ScalarT* const B,
-    ScalarT* const       result)
+Mult_Full33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
   assert(A != result);
   assert(B != result);
-  result[K_F_XX] =
-      A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX];
-  result[K_F_XY] =
-      A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY];
-  result[K_F_XZ] =
-      A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ];
-  result[K_F_YX] =
-      A[K_F_YX] * B[K_F_XX] + A[K_F_YY] * B[K_F_YX] + A[K_F_YZ] * B[K_F_ZX];
-  result[K_F_YY] =
-      A[K_F_YX] * B[K_F_XY] + A[K_F_YY] * B[K_F_YY] + A[K_F_YZ] * B[K_F_ZY];
-  result[K_F_YZ] =
-      A[K_F_YX] * B[K_F_XZ] + A[K_F_YY] * B[K_F_YZ] + A[K_F_YZ] * B[K_F_ZZ];
-  result[K_F_ZX] =
-      A[K_F_ZX] * B[K_F_XX] + A[K_F_ZY] * B[K_F_YX] + A[K_F_ZZ] * B[K_F_ZX];
-  result[K_F_ZY] =
-      A[K_F_ZX] * B[K_F_XY] + A[K_F_ZY] * B[K_F_YY] + A[K_F_ZZ] * B[K_F_ZY];
-  result[K_F_ZZ] =
-      A[K_F_ZX] * B[K_F_XZ] + A[K_F_ZY] * B[K_F_YZ] + A[K_F_ZZ] * B[K_F_ZZ];
+  result[K_F_XX] = A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX];
+  result[K_F_XY] = A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY];
+  result[K_F_XZ] = A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ];
+  result[K_F_YX] = A[K_F_YX] * B[K_F_XX] + A[K_F_YY] * B[K_F_YX] + A[K_F_YZ] * B[K_F_ZX];
+  result[K_F_YY] = A[K_F_YX] * B[K_F_XY] + A[K_F_YY] * B[K_F_YY] + A[K_F_YZ] * B[K_F_ZY];
+  result[K_F_YZ] = A[K_F_YX] * B[K_F_XZ] + A[K_F_YY] * B[K_F_YZ] + A[K_F_YZ] * B[K_F_ZZ];
+  result[K_F_ZX] = A[K_F_ZX] * B[K_F_XX] + A[K_F_ZY] * B[K_F_YX] + A[K_F_ZZ] * B[K_F_ZX];
+  result[K_F_ZY] = A[K_F_ZX] * B[K_F_XY] + A[K_F_ZY] * B[K_F_YY] + A[K_F_ZZ] * B[K_F_ZY];
+  result[K_F_ZZ] = A[K_F_ZX] * B[K_F_XZ] + A[K_F_ZY] * B[K_F_YZ] + A[K_F_ZZ] * B[K_F_ZZ];
 }
 
 //!  Multiply a symmetric tensor by a full tensor
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Mult_Sym33_Full33(
-    const ScalarT* const sym,
-    const ScalarT* const full,
-    ScalarT* const       result)
+Mult_Sym33_Full33(const ScalarT* const sym, const ScalarT* const full, ScalarT* const result)
 {
   assert(sym != result);
   assert(full != result);
-  result[K_F_XX] = sym[K_S_XX] * full[K_F_XX] + sym[K_S_XY] * full[K_F_YX] +
-                   sym[K_S_XZ] * full[K_F_ZX];
-  result[K_F_XY] = sym[K_S_XX] * full[K_F_XY] + sym[K_S_XY] * full[K_F_YY] +
-                   sym[K_S_XZ] * full[K_F_ZY];
-  result[K_F_XZ] = sym[K_S_XX] * full[K_F_XZ] + sym[K_S_XY] * full[K_F_YZ] +
-                   sym[K_S_XZ] * full[K_F_ZZ];
-  result[K_F_YX] = sym[K_S_YX] * full[K_F_XX] + sym[K_S_YY] * full[K_F_YX] +
-                   sym[K_S_YZ] * full[K_F_ZX];
-  result[K_F_YY] = sym[K_S_YX] * full[K_F_XY] + sym[K_S_YY] * full[K_F_YY] +
-                   sym[K_S_YZ] * full[K_F_ZY];
-  result[K_F_YZ] = sym[K_S_YX] * full[K_F_XZ] + sym[K_S_YY] * full[K_F_YZ] +
-                   sym[K_S_YZ] * full[K_F_ZZ];
-  result[K_F_ZX] = sym[K_S_ZX] * full[K_F_XX] + sym[K_S_ZY] * full[K_F_YX] +
-                   sym[K_S_ZZ] * full[K_F_ZX];
-  result[K_F_ZY] = sym[K_S_ZX] * full[K_F_XY] + sym[K_S_ZY] * full[K_F_YY] +
-                   sym[K_S_ZZ] * full[K_F_ZY];
-  result[K_F_ZZ] = sym[K_S_ZX] * full[K_F_XZ] + sym[K_S_ZY] * full[K_F_YZ] +
-                   sym[K_S_ZZ] * full[K_F_ZZ];
+  result[K_F_XX] = sym[K_S_XX] * full[K_F_XX] + sym[K_S_XY] * full[K_F_YX] + sym[K_S_XZ] * full[K_F_ZX];
+  result[K_F_XY] = sym[K_S_XX] * full[K_F_XY] + sym[K_S_XY] * full[K_F_YY] + sym[K_S_XZ] * full[K_F_ZY];
+  result[K_F_XZ] = sym[K_S_XX] * full[K_F_XZ] + sym[K_S_XY] * full[K_F_YZ] + sym[K_S_XZ] * full[K_F_ZZ];
+  result[K_F_YX] = sym[K_S_YX] * full[K_F_XX] + sym[K_S_YY] * full[K_F_YX] + sym[K_S_YZ] * full[K_F_ZX];
+  result[K_F_YY] = sym[K_S_YX] * full[K_F_XY] + sym[K_S_YY] * full[K_F_YY] + sym[K_S_YZ] * full[K_F_ZY];
+  result[K_F_YZ] = sym[K_S_YX] * full[K_F_XZ] + sym[K_S_YY] * full[K_F_YZ] + sym[K_S_YZ] * full[K_F_ZZ];
+  result[K_F_ZX] = sym[K_S_ZX] * full[K_F_XX] + sym[K_S_ZY] * full[K_F_YX] + sym[K_S_ZZ] * full[K_F_ZX];
+  result[K_F_ZY] = sym[K_S_ZX] * full[K_F_XY] + sym[K_S_ZY] * full[K_F_YY] + sym[K_S_ZZ] * full[K_F_ZY];
+  result[K_F_ZZ] = sym[K_S_ZX] * full[K_F_XZ] + sym[K_S_ZY] * full[K_F_YZ] + sym[K_S_ZZ] * full[K_F_ZZ];
 }
 
 //!  Multiply a full tensor by a full tensor and a scalar
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Mult_Scalar_Full33_Full33(
-    ScalarT              alpha,
-    const ScalarT* const A,
-    const ScalarT* const B,
-    ScalarT* const       result)
+Mult_Scalar_Full33_Full33(ScalarT alpha, const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
   assert(A != result);
   assert(B != result);
-  result[K_F_XX] = alpha * (A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] +
-                            A[K_F_XZ] * B[K_F_ZX]);
-  result[K_F_XY] = alpha * (A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] +
-                            A[K_F_XZ] * B[K_F_ZY]);
-  result[K_F_XZ] = alpha * (A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] +
-                            A[K_F_XZ] * B[K_F_ZZ]);
-  result[K_F_YX] = alpha * (A[K_F_YX] * B[K_F_XX] + A[K_F_YY] * B[K_F_YX] +
-                            A[K_F_YZ] * B[K_F_ZX]);
-  result[K_F_YY] = alpha * (A[K_F_YX] * B[K_F_XY] + A[K_F_YY] * B[K_F_YY] +
-                            A[K_F_YZ] * B[K_F_ZY]);
-  result[K_F_YZ] = alpha * (A[K_F_YX] * B[K_F_XZ] + A[K_F_YY] * B[K_F_YZ] +
-                            A[K_F_YZ] * B[K_F_ZZ]);
-  result[K_F_ZX] = alpha * (A[K_F_ZX] * B[K_F_XX] + A[K_F_ZY] * B[K_F_YX] +
-                            A[K_F_ZZ] * B[K_F_ZX]);
-  result[K_F_ZY] = alpha * (A[K_F_ZX] * B[K_F_XY] + A[K_F_ZY] * B[K_F_YY] +
-                            A[K_F_ZZ] * B[K_F_ZY]);
-  result[K_F_ZZ] = alpha * (A[K_F_ZX] * B[K_F_XZ] + A[K_F_ZY] * B[K_F_YZ] +
-                            A[K_F_ZZ] * B[K_F_ZZ]);
+  result[K_F_XX] = alpha * (A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX]);
+  result[K_F_XY] = alpha * (A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY]);
+  result[K_F_XZ] = alpha * (A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ]);
+  result[K_F_YX] = alpha * (A[K_F_YX] * B[K_F_XX] + A[K_F_YY] * B[K_F_YX] + A[K_F_YZ] * B[K_F_ZX]);
+  result[K_F_YY] = alpha * (A[K_F_YX] * B[K_F_XY] + A[K_F_YY] * B[K_F_YY] + A[K_F_YZ] * B[K_F_ZY]);
+  result[K_F_YZ] = alpha * (A[K_F_YX] * B[K_F_XZ] + A[K_F_YY] * B[K_F_YZ] + A[K_F_YZ] * B[K_F_ZZ]);
+  result[K_F_ZX] = alpha * (A[K_F_ZX] * B[K_F_XX] + A[K_F_ZY] * B[K_F_YX] + A[K_F_ZZ] * B[K_F_ZX]);
+  result[K_F_ZY] = alpha * (A[K_F_ZX] * B[K_F_XY] + A[K_F_ZY] * B[K_F_YY] + A[K_F_ZZ] * B[K_F_ZY]);
+  result[K_F_ZZ] = alpha * (A[K_F_ZX] * B[K_F_XZ] + A[K_F_ZY] * B[K_F_YZ] + A[K_F_ZZ] * B[K_F_ZZ]);
 }
 
 //! Compute result = mat mat^T
@@ -332,144 +282,87 @@ NIMBLE_INLINE_FUNCTION void
 Square_Full33_Full33T(const ScalarT* const mat, ScalarT* const result)
 {
   assert(result != mat);
-  result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] +
-                   mat[K_F_XZ] * mat[K_F_XZ];
-  result[K_S_YY] = mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] +
-                   mat[K_F_YZ] * mat[K_F_YZ];
-  result[K_S_ZZ] = mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] +
-                   mat[K_F_ZZ] * mat[K_F_ZZ];
-  result[K_S_XY] = mat[K_F_XX] * mat[K_F_YX] + mat[K_F_XY] * mat[K_F_YY] +
-                   mat[K_F_XZ] * mat[K_F_YZ];
-  result[K_S_YZ] = mat[K_F_YX] * mat[K_F_ZX] + mat[K_F_YY] * mat[K_F_ZY] +
-                   mat[K_F_YZ] * mat[K_F_ZZ];
-  result[K_S_ZX] = mat[K_F_ZX] * mat[K_F_XX] + mat[K_F_ZY] * mat[K_F_XY] +
-                   mat[K_F_ZZ] * mat[K_F_XZ];
+  result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] + mat[K_F_XZ] * mat[K_F_XZ];
+  result[K_S_YY] = mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_YZ] * mat[K_F_YZ];
+  result[K_S_ZZ] = mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] + mat[K_F_ZZ] * mat[K_F_ZZ];
+  result[K_S_XY] = mat[K_F_XX] * mat[K_F_YX] + mat[K_F_XY] * mat[K_F_YY] + mat[K_F_XZ] * mat[K_F_YZ];
+  result[K_S_YZ] = mat[K_F_YX] * mat[K_F_ZX] + mat[K_F_YY] * mat[K_F_ZY] + mat[K_F_YZ] * mat[K_F_ZZ];
+  result[K_S_ZX] = mat[K_F_ZX] * mat[K_F_XX] + mat[K_F_ZY] * mat[K_F_XY] + mat[K_F_ZZ] * mat[K_F_XZ];
 }
 
 //!  Multiply a full tensor by a symmetric tensor, return transpose of resultant
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Mult_Full33_Sym33_ReturnT(
-    const ScalarT* const full,
-    const ScalarT* const sym,
-    ScalarT* const       result)
+Mult_Full33_Sym33_ReturnT(const ScalarT* const full, const ScalarT* const sym, ScalarT* const result)
 {
   assert(full != result);
   assert(sym != result);
-  result[K_F_XX] = full[K_F_XX] * sym[K_S_XX] + full[K_F_XY] * sym[K_S_YX] +
-                   full[K_F_XZ] * sym[K_S_ZX];
-  result[K_F_YX] = full[K_F_XX] * sym[K_S_XY] + full[K_F_XY] * sym[K_S_YY] +
-                   full[K_F_XZ] * sym[K_S_ZY];
-  result[K_F_ZX] = full[K_F_XX] * sym[K_S_XZ] + full[K_F_XY] * sym[K_S_YZ] +
-                   full[K_F_XZ] * sym[K_S_ZZ];
-  result[K_F_XY] = full[K_F_YX] * sym[K_S_XX] + full[K_F_YY] * sym[K_S_YX] +
-                   full[K_F_YZ] * sym[K_S_ZX];
-  result[K_F_YY] = full[K_F_YX] * sym[K_S_XY] + full[K_F_YY] * sym[K_S_YY] +
-                   full[K_F_YZ] * sym[K_S_ZY];
-  result[K_F_ZY] = full[K_F_YX] * sym[K_S_XZ] + full[K_F_YY] * sym[K_S_YZ] +
-                   full[K_F_YZ] * sym[K_S_ZZ];
-  result[K_F_XZ] = full[K_F_ZX] * sym[K_S_XX] + full[K_F_ZY] * sym[K_S_YX] +
-                   full[K_F_ZZ] * sym[K_S_ZX];
-  result[K_F_YZ] = full[K_F_ZX] * sym[K_S_XY] + full[K_F_ZY] * sym[K_S_YY] +
-                   full[K_F_ZZ] * sym[K_S_ZY];
-  result[K_F_ZZ] = full[K_F_ZX] * sym[K_S_XZ] + full[K_F_ZY] * sym[K_S_YZ] +
-                   full[K_F_ZZ] * sym[K_S_ZZ];
+  result[K_F_XX] = full[K_F_XX] * sym[K_S_XX] + full[K_F_XY] * sym[K_S_YX] + full[K_F_XZ] * sym[K_S_ZX];
+  result[K_F_YX] = full[K_F_XX] * sym[K_S_XY] + full[K_F_XY] * sym[K_S_YY] + full[K_F_XZ] * sym[K_S_ZY];
+  result[K_F_ZX] = full[K_F_XX] * sym[K_S_XZ] + full[K_F_XY] * sym[K_S_YZ] + full[K_F_XZ] * sym[K_S_ZZ];
+  result[K_F_XY] = full[K_F_YX] * sym[K_S_XX] + full[K_F_YY] * sym[K_S_YX] + full[K_F_YZ] * sym[K_S_ZX];
+  result[K_F_YY] = full[K_F_YX] * sym[K_S_XY] + full[K_F_YY] * sym[K_S_YY] + full[K_F_YZ] * sym[K_S_ZY];
+  result[K_F_ZY] = full[K_F_YX] * sym[K_S_XZ] + full[K_F_YY] * sym[K_S_YZ] + full[K_F_YZ] * sym[K_S_ZZ];
+  result[K_F_XZ] = full[K_F_ZX] * sym[K_S_XX] + full[K_F_ZY] * sym[K_S_YX] + full[K_F_ZZ] * sym[K_S_ZX];
+  result[K_F_YZ] = full[K_F_ZX] * sym[K_S_XY] + full[K_F_ZY] * sym[K_S_YY] + full[K_F_ZZ] * sym[K_S_ZY];
+  result[K_F_ZZ] = full[K_F_ZX] * sym[K_S_XZ] + full[K_F_ZY] * sym[K_S_YZ] + full[K_F_ZZ] * sym[K_S_ZZ];
 }
 
 //!  Rotate a symetric tensor, result = R^T S R
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Rotate_Sym33_Using_Rtranspose_S_R(
-    const ScalarT* const s,
-    const ScalarT* const r,
-    ScalarT* const       result)
+Rotate_Sym33_Using_Rtranspose_S_R(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
   assert(s != result);
   assert(r != result);
 
-  ScalarT temp_xx =
-      s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_YX] + s[K_S_XZ] * r[K_F_ZX];
-  ScalarT temp_yx =
-      s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_YX] + s[K_S_YZ] * r[K_F_ZX];
-  ScalarT temp_zx =
-      s[K_S_ZX] * r[K_F_XX] + s[K_S_ZY] * r[K_F_YX] + s[K_S_ZZ] * r[K_F_ZX];
-  ScalarT temp_xy =
-      s[K_S_XX] * r[K_F_XY] + s[K_S_XY] * r[K_F_YY] + s[K_S_XZ] * r[K_F_ZY];
-  ScalarT temp_yy =
-      s[K_S_YX] * r[K_F_XY] + s[K_S_YY] * r[K_F_YY] + s[K_S_YZ] * r[K_F_ZY];
-  ScalarT temp_zy =
-      s[K_S_ZX] * r[K_F_XY] + s[K_S_ZY] * r[K_F_YY] + s[K_S_ZZ] * r[K_F_ZY];
-  ScalarT temp_xz =
-      s[K_S_XX] * r[K_F_XZ] + s[K_S_XY] * r[K_F_YZ] + s[K_S_XZ] * r[K_F_ZZ];
-  ScalarT temp_yz =
-      s[K_S_YX] * r[K_F_XZ] + s[K_S_YY] * r[K_F_YZ] + s[K_S_YZ] * r[K_F_ZZ];
-  ScalarT temp_zz =
-      s[K_S_ZX] * r[K_F_XZ] + s[K_S_ZY] * r[K_F_YZ] + s[K_S_ZZ] * r[K_F_ZZ];
+  ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_YX] + s[K_S_XZ] * r[K_F_ZX];
+  ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_YX] + s[K_S_YZ] * r[K_F_ZX];
+  ScalarT temp_zx = s[K_S_ZX] * r[K_F_XX] + s[K_S_ZY] * r[K_F_YX] + s[K_S_ZZ] * r[K_F_ZX];
+  ScalarT temp_xy = s[K_S_XX] * r[K_F_XY] + s[K_S_XY] * r[K_F_YY] + s[K_S_XZ] * r[K_F_ZY];
+  ScalarT temp_yy = s[K_S_YX] * r[K_F_XY] + s[K_S_YY] * r[K_F_YY] + s[K_S_YZ] * r[K_F_ZY];
+  ScalarT temp_zy = s[K_S_ZX] * r[K_F_XY] + s[K_S_ZY] * r[K_F_YY] + s[K_S_ZZ] * r[K_F_ZY];
+  ScalarT temp_xz = s[K_S_XX] * r[K_F_XZ] + s[K_S_XY] * r[K_F_YZ] + s[K_S_XZ] * r[K_F_ZZ];
+  ScalarT temp_yz = s[K_S_YX] * r[K_F_XZ] + s[K_S_YY] * r[K_F_YZ] + s[K_S_YZ] * r[K_F_ZZ];
+  ScalarT temp_zz = s[K_S_ZX] * r[K_F_XZ] + s[K_S_ZY] * r[K_F_YZ] + s[K_S_ZZ] * r[K_F_ZZ];
 
-  result[K_S_XX] =
-      r[K_F_XX] * temp_xx + r[K_F_YX] * temp_yx + r[K_F_ZX] * temp_zx;
-  result[K_S_YY] =
-      r[K_F_XY] * temp_xy + r[K_F_YY] * temp_yy + r[K_F_ZY] * temp_zy;
-  result[K_S_ZZ] =
-      r[K_F_XZ] * temp_xz + r[K_F_YZ] * temp_yz + r[K_F_ZZ] * temp_zz;
-  result[K_S_XY] =
-      r[K_F_XX] * temp_xy + r[K_F_YX] * temp_yy + r[K_F_ZX] * temp_zy;
-  result[K_S_YZ] =
-      r[K_F_XY] * temp_xz + r[K_F_YY] * temp_yz + r[K_F_ZY] * temp_zz;
-  result[K_S_ZX] =
-      r[K_F_XZ] * temp_xx + r[K_F_YZ] * temp_yx + r[K_F_ZZ] * temp_zx;
+  result[K_S_XX] = r[K_F_XX] * temp_xx + r[K_F_YX] * temp_yx + r[K_F_ZX] * temp_zx;
+  result[K_S_YY] = r[K_F_XY] * temp_xy + r[K_F_YY] * temp_yy + r[K_F_ZY] * temp_zy;
+  result[K_S_ZZ] = r[K_F_XZ] * temp_xz + r[K_F_YZ] * temp_yz + r[K_F_ZZ] * temp_zz;
+  result[K_S_XY] = r[K_F_XX] * temp_xy + r[K_F_YX] * temp_yy + r[K_F_ZX] * temp_zy;
+  result[K_S_YZ] = r[K_F_XY] * temp_xz + r[K_F_YY] * temp_yz + r[K_F_ZY] * temp_zz;
+  result[K_S_ZX] = r[K_F_XZ] * temp_xx + r[K_F_YZ] * temp_yx + r[K_F_ZZ] * temp_zx;
 }
 
 //!  Unrotate a symetric tensor, result = R S R^T
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-Unrotate_Sym33_Using_R_S_Rtranspose(
-    const ScalarT* const s,
-    const ScalarT* const r,
-    ScalarT* const       result)
+Unrotate_Sym33_Using_R_S_Rtranspose(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
   assert(s != result);
   assert(r != result);
 
-  ScalarT temp_xx =
-      s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_XY] + s[K_S_XZ] * r[K_F_XZ];
-  ScalarT temp_yx =
-      s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_XY] + s[K_S_YZ] * r[K_F_XZ];
-  ScalarT temp_zx =
-      s[K_S_ZX] * r[K_F_XX] + s[K_S_ZY] * r[K_F_XY] + s[K_S_ZZ] * r[K_F_XZ];
-  ScalarT temp_xy =
-      s[K_S_XX] * r[K_F_YX] + s[K_S_XY] * r[K_F_YY] + s[K_S_XZ] * r[K_F_YZ];
-  ScalarT temp_yy =
-      s[K_S_YX] * r[K_F_YX] + s[K_S_YY] * r[K_F_YY] + s[K_S_YZ] * r[K_F_YZ];
-  ScalarT temp_zy =
-      s[K_S_ZX] * r[K_F_YX] + s[K_S_ZY] * r[K_F_YY] + s[K_S_ZZ] * r[K_F_YZ];
-  ScalarT temp_xz =
-      s[K_S_XX] * r[K_F_ZX] + s[K_S_XY] * r[K_F_ZY] + s[K_S_XZ] * r[K_F_ZZ];
-  ScalarT temp_yz =
-      s[K_S_YX] * r[K_F_ZX] + s[K_S_YY] * r[K_F_ZY] + s[K_S_YZ] * r[K_F_ZZ];
-  ScalarT temp_zz =
-      s[K_S_ZX] * r[K_F_ZX] + s[K_S_ZY] * r[K_F_ZY] + s[K_S_ZZ] * r[K_F_ZZ];
+  ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_XY] + s[K_S_XZ] * r[K_F_XZ];
+  ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_XY] + s[K_S_YZ] * r[K_F_XZ];
+  ScalarT temp_zx = s[K_S_ZX] * r[K_F_XX] + s[K_S_ZY] * r[K_F_XY] + s[K_S_ZZ] * r[K_F_XZ];
+  ScalarT temp_xy = s[K_S_XX] * r[K_F_YX] + s[K_S_XY] * r[K_F_YY] + s[K_S_XZ] * r[K_F_YZ];
+  ScalarT temp_yy = s[K_S_YX] * r[K_F_YX] + s[K_S_YY] * r[K_F_YY] + s[K_S_YZ] * r[K_F_YZ];
+  ScalarT temp_zy = s[K_S_ZX] * r[K_F_YX] + s[K_S_ZY] * r[K_F_YY] + s[K_S_ZZ] * r[K_F_YZ];
+  ScalarT temp_xz = s[K_S_XX] * r[K_F_ZX] + s[K_S_XY] * r[K_F_ZY] + s[K_S_XZ] * r[K_F_ZZ];
+  ScalarT temp_yz = s[K_S_YX] * r[K_F_ZX] + s[K_S_YY] * r[K_F_ZY] + s[K_S_YZ] * r[K_F_ZZ];
+  ScalarT temp_zz = s[K_S_ZX] * r[K_F_ZX] + s[K_S_ZY] * r[K_F_ZY] + s[K_S_ZZ] * r[K_F_ZZ];
 
-  result[K_S_XX] =
-      r[K_F_XX] * temp_xx + r[K_F_XY] * temp_yx + r[K_F_XZ] * temp_zx;
-  result[K_S_YY] =
-      r[K_F_YX] * temp_xy + r[K_F_YY] * temp_yy + r[K_F_YZ] * temp_zy;
-  result[K_S_ZZ] =
-      r[K_F_ZX] * temp_xz + r[K_F_ZY] * temp_yz + r[K_F_ZZ] * temp_zz;
-  result[K_S_XY] =
-      r[K_F_XX] * temp_xy + r[K_F_XY] * temp_yy + r[K_F_XZ] * temp_zy;
-  result[K_S_YZ] =
-      r[K_F_YX] * temp_xz + r[K_F_YY] * temp_yz + r[K_F_YZ] * temp_zz;
-  result[K_S_ZX] =
-      r[K_F_ZX] * temp_xx + r[K_F_ZY] * temp_yx + r[K_F_ZZ] * temp_zx;
+  result[K_S_XX] = r[K_F_XX] * temp_xx + r[K_F_XY] * temp_yx + r[K_F_XZ] * temp_zx;
+  result[K_S_YY] = r[K_F_YX] * temp_xy + r[K_F_YY] * temp_yy + r[K_F_YZ] * temp_zy;
+  result[K_S_ZZ] = r[K_F_ZX] * temp_xz + r[K_F_ZY] * temp_yz + r[K_F_ZZ] * temp_zz;
+  result[K_S_XY] = r[K_F_XX] * temp_xy + r[K_F_XY] * temp_yy + r[K_F_XZ] * temp_zy;
+  result[K_S_YZ] = r[K_F_YX] * temp_xz + r[K_F_YY] * temp_yz + r[K_F_YZ] * temp_zz;
+  result[K_S_ZX] = r[K_F_ZX] * temp_xx + r[K_F_ZY] * temp_yx + r[K_F_ZZ] * temp_zx;
 }
 
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-CrossProduct(
-    const ScalarT* const u,
-    const ScalarT* const v,
-    ScalarT* const       result)
+CrossProduct(const ScalarT* const u, const ScalarT* const v, ScalarT* const result)
 {
   result[0] = u[1] * v[2] - u[2] * v[1];
   result[1] = u[2] * v[0] - u[0] * v[2];
@@ -483,8 +376,7 @@ Determinant_Full33(const ScalarT* const mat)
   ScalarT minor0 = mat[K_F_YY] * mat[K_F_ZZ] - mat[K_F_YZ] * mat[K_F_ZY];
   ScalarT minor1 = mat[K_F_YX] * mat[K_F_ZZ] - mat[K_F_YZ] * mat[K_F_ZX];
   ScalarT minor2 = mat[K_F_YX] * mat[K_F_ZY] - mat[K_F_YY] * mat[K_F_ZX];
-  ScalarT det =
-      mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
+  ScalarT det    = mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
 
   return det;
 }
@@ -494,12 +386,9 @@ NIMBLE_INLINE_FUNCTION ScalarT
 Norm_Sym33(const ScalarT* const mat)
 {
   ScalarT norm = 0.0;
-  norm += mat[K_S_XX] * mat[K_S_XX] + mat[K_S_XY] * mat[K_S_XY] +
-          mat[K_S_XZ] * mat[K_S_XZ];
-  norm += mat[K_S_YX] * mat[K_S_YX] + mat[K_S_YY] * mat[K_S_YY] +
-          mat[K_S_YZ] * mat[K_S_YZ];
-  norm += mat[K_S_ZX] * mat[K_S_ZX] + mat[K_S_ZY] * mat[K_S_ZY] +
-          mat[K_S_ZZ] * mat[K_S_ZZ];
+  norm += mat[K_S_XX] * mat[K_S_XX] + mat[K_S_XY] * mat[K_S_XY] + mat[K_S_XZ] * mat[K_S_XZ];
+  norm += mat[K_S_YX] * mat[K_S_YX] + mat[K_S_YY] * mat[K_S_YY] + mat[K_S_YZ] * mat[K_S_YZ];
+  norm += mat[K_S_ZX] * mat[K_S_ZX] + mat[K_S_ZY] * mat[K_S_ZY] + mat[K_S_ZZ] * mat[K_S_ZZ];
 
   if (norm > 0.0) { norm = std::sqrt(norm); }
 
@@ -511,12 +400,9 @@ NIMBLE_INLINE_FUNCTION ScalarT
 Norm_Full33(const ScalarT* const mat)
 {
   ScalarT norm = 0.0;
-  norm += mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] +
-          mat[K_F_XZ] * mat[K_F_XZ];
-  norm += mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] +
-          mat[K_F_YZ] * mat[K_F_YZ];
-  norm += mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] +
-          mat[K_F_ZZ] * mat[K_F_ZZ];
+  norm += mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] + mat[K_F_XZ] * mat[K_F_XZ];
+  norm += mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_YZ] * mat[K_F_YZ];
+  norm += mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] + mat[K_F_ZZ] * mat[K_F_ZZ];
 
   if (norm > 0.0) { norm = std::sqrt(norm); }
 
@@ -605,8 +491,7 @@ Invert_Full33(const ScalarT* mat, ScalarT* inv)
   ScalarT minor6 = mat[K_F_XY] * mat[K_F_YZ] - mat[K_F_XZ] * mat[K_F_YY];
   ScalarT minor7 = mat[K_F_XX] * mat[K_F_YZ] - mat[K_F_XZ] * mat[K_F_YX];
   ScalarT minor8 = mat[K_F_XX] * mat[K_F_YY] - mat[K_F_XY] * mat[K_F_YX];
-  ScalarT det =
-      mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
+  ScalarT det    = mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
 
   if (det < 0.0) {
     // throw std::logic_error("Error in Invert_Full33(), singular matrix");
@@ -701,10 +586,7 @@ BCH(const ScalarT* const x, const ScalarT* const y, ScalarT* const result)
 // All arguments are assumed to be full tensors (9 components)
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
-BCH_Sym33_Full33(
-    const ScalarT* const sym,
-    const ScalarT* const full,
-    ScalarT* const       result)
+BCH_Sym33_Full33(const ScalarT* const sym, const ScalarT* const full, ScalarT* const result)
 {
   ScalarT temp[9];
   temp[K_F_XX] = sym[K_S_XX];
@@ -736,9 +618,7 @@ Cos_Of_Acos_Divided_By_3(const ScalarT x)
 
   return (0.866025403784438713 + 2.12714890259493060 * x +
           ((1.89202064815951569 + 0.739603278343401613 * x) * x2 +
-           (0.121973926953064794 +
-            x * (0.00655637626263929360 + 0.0000390884982780803443 * x)) *
-               x4)) /
+           (0.121973926953064794 + x * (0.00655637626263929360 + 0.0000390884982780803443 * x)) * x4)) /
          (1.0 + 2.26376989330935617 * x +
           ((1.80461009751278976 + 0.603976798217196003 * x) * x2 +
            (0.0783255761115461708 + 0.00268525944538021629 * x) * x4));
@@ -773,14 +653,12 @@ Eigen_Sym33_NonUnit(
   const ScalarT czx_czx = czx * czx;
   const ScalarT cxx_cyy = cxx * cyy;
 
-  const ScalarT c2 =
-      cxx_cyy + cyy * czz + czz * cxx - cxy_cxy - cyz_cyz - czx_czx;
+  const ScalarT c2 = cxx_cyy + cyy * czz + czz * cxx - cxy_cxy - cyz_cyz - czx_czx;
 
   const ScalarT ThreeOverA     = ScalarT(-3.0) / c2;
   const ScalarT sqrtThreeOverA = std::sqrt(ThreeOverA);
 
-  const ScalarT c3 = cxx * cyz_cyz + cyy * czx_czx -
-                     ScalarT(2.0) * cxy * cyz * czx + czz * (cxy_cxy - cxx_cyy);
+  const ScalarT c3 = cxx * cyz_cyz + cyy * czx_czx - ScalarT(2.0) * cxy * cyz * czx + czz * (cxy_cxy - cxx_cyy);
 
   const ScalarT rr = ScalarT(-0.5) * c3 * ThreeOverA * sqrtThreeOverA;
 
@@ -816,16 +694,13 @@ Eigen_Sym33_NonUnit(
   const bool k1_largest = k1gk2 && !k0gk1;
   const bool k2_largest = !(k0_largest || k1_largest);
 
-  k_row1[0] = if_then_else_zero(k0_largest, crow0[0]) +
-              if_then_else_zero(k1_largest, crow1[0]) +
+  k_row1[0] = if_then_else_zero(k0_largest, crow0[0]) + if_then_else_zero(k1_largest, crow1[0]) +
               if_then_else_zero(k2_largest, crow2[0]);
 
-  k_row1[1] = if_then_else_zero(k0_largest, crow0[1]) +
-              if_then_else_zero(k1_largest, crow1[1]) +
+  k_row1[1] = if_then_else_zero(k0_largest, crow0[1]) + if_then_else_zero(k1_largest, crow1[1]) +
               if_then_else_zero(k2_largest, crow2[1]);
 
-  k_row1[2] = if_then_else_zero(k0_largest, crow0[2]) +
-              if_then_else_zero(k1_largest, crow1[2]) +
+  k_row1[2] = if_then_else_zero(k0_largest, crow0[2]) + if_then_else_zero(k1_largest, crow1[2]) +
               if_then_else_zero(k2_largest, crow2[2]);
 
   row2[0] = if_then_else(k0_largest, crow1[0], crow0[0]);
@@ -836,14 +711,11 @@ Eigen_Sym33_NonUnit(
   row3[1] = if_then_else(k2_largest, crow1[1], crow2[1]);
   row3[2] = if_then_else(k2_largest, crow1[2], crow2[2]);
 
-  const ScalarT ki_ki = ScalarT(1.0) / (if_then_else_zero(k0_largest, k0) +
-                                        if_then_else_zero(k1_largest, k1) +
+  const ScalarT ki_ki = ScalarT(1.0) / (if_then_else_zero(k0_largest, k0) + if_then_else_zero(k1_largest, k1) +
                                         if_then_else_zero(k2_largest, k2));
 
-  const ScalarT ki_dpr1 =
-      ki_ki * (k_row1[0] * row2[0] + k_row1[1] * row2[1] + k_row1[2] * row2[2]);
-  const ScalarT ki_dpr2 =
-      ki_ki * (k_row1[0] * row3[0] + k_row1[1] * row3[1] + k_row1[2] * row3[2]);
+  const ScalarT ki_dpr1 = ki_ki * (k_row1[0] * row2[0] + k_row1[1] * row2[1] + k_row1[2] * row2[2]);
+  const ScalarT ki_dpr2 = ki_ki * (k_row1[0] * row3[0] + k_row1[1] * row3[1] + k_row1[2] * row3[2]);
 
   row2[0] -= ki_dpr1 * k_row1[0];
   row2[1] -= ki_dpr1 * k_row1[1];
@@ -877,12 +749,9 @@ Eigen_Sym33_NonUnit(
   const ScalarT a_atr22 = cxy * a_row2[0] + cyy * a_row2[1] + cyz * a_row2[2];
   const ScalarT a_atr32 = czx * a_row2[0] + cyz * a_row2[1] + czz * a_row2[2];
 
-  ScalarT rm2xx =
-      (k_row1[0] * k_atr11 + k_row1[1] * k_atr21 + k_row1[2] * k_atr31) * ki_ki;
-  const ScalarT k_a_rm2xy =
-      (k_row1[0] * a_atr12 + k_row1[1] * a_atr22 + k_row1[2] * a_atr32);
-  ScalarT rm2yy =
-      (a_row2[0] * a_atr12 + a_row2[1] * a_atr22 + a_row2[2] * a_atr32) * ai_ai;
+  ScalarT       rm2xx       = (k_row1[0] * k_atr11 + k_row1[1] * k_atr21 + k_row1[2] * k_atr31) * ki_ki;
+  const ScalarT k_a_rm2xy   = (k_row1[0] * a_atr12 + k_row1[1] * a_atr22 + k_row1[2] * a_atr32);
+  ScalarT       rm2yy       = (a_row2[0] * a_atr12 + a_row2[1] * a_atr22 + a_row2[2] * a_atr32) * ai_ai;
   const ScalarT rm2xy_rm2xy = k_a_rm2xy * k_a_rm2xy * ai_ai * ki_ki;
 
   //
@@ -924,8 +793,7 @@ Eigen_Sym33_NonUnit(
   eval1 += c1;
   eval2 += c1;
 
-  const ScalarT c2tol =
-      (c1 * c1) * (-1.0e-30);  // DJL where does the magic number come from?
+  const ScalarT c2tol = (c1 * c1) * (-1.0e-30);  // DJL where does the magic number come from?
 
   const bool c2lsmall_neg = c2 < c2tol;
 
@@ -967,8 +835,7 @@ Polar_Decomp(
   ScalarT vec3[3] = {0.0, 0.0, 0.0};
   ScalarT eval[3] = {0.0, 0.0, 0.0};  // Eigen values of mat_inv_squared
 
-  Eigen_Sym33_NonUnit(
-      mat_inv_squared, eval[0], eval[1], eval[2], vec1, vec2, vec3);
+  Eigen_Sym33_NonUnit(mat_inv_squared, eval[0], eval[1], eval[2], vec1, vec2, vec3);
 
   const ScalarT zero = ScalarT(0.0);
 
@@ -976,12 +843,9 @@ Polar_Decomp(
   eval[1] = if_then(eval[1] < zero, zero, eval[1]);
   eval[2] = if_then(eval[2] < zero, zero, eval[2]);
 
-  const ScalarT len1_sq =
-      vec1[K_X] * vec1[K_X] + vec1[K_Y] * vec1[K_Y] + vec1[K_Z] * vec1[K_Z];
-  const ScalarT len2_sq =
-      vec2[K_X] * vec2[K_X] + vec2[K_Y] * vec2[K_Y] + vec2[K_Z] * vec2[K_Z];
-  const ScalarT len3_sq =
-      vec3[K_X] * vec3[K_X] + vec3[K_Y] * vec3[K_Y] + vec3[K_Z] * vec3[K_Z];
+  const ScalarT len1_sq = vec1[K_X] * vec1[K_X] + vec1[K_Y] * vec1[K_Y] + vec1[K_Z] * vec1[K_Z];
+  const ScalarT len2_sq = vec2[K_X] * vec2[K_X] + vec2[K_Y] * vec2[K_Y] + vec2[K_Z] * vec2[K_Z];
+  const ScalarT len3_sq = vec3[K_X] * vec3[K_X] + vec3[K_Y] * vec3[K_Y] + vec3[K_Z] * vec3[K_Z];
 
   const ScalarT xlx = std::sqrt(eval[0]);
   const ScalarT xly = std::sqrt(eval[1]);
@@ -993,24 +857,12 @@ Polar_Decomp(
   const ScalarT xlyi = one / (xly * len2_sq);
   const ScalarT xlzi = one / (xlz * len3_sq);
 
-  left_stretch[K_S_XX] = xlxi * vec1[K_X] * vec1[K_X] +
-                         xlyi * vec2[K_X] * vec2[K_X] +
-                         xlzi * vec3[K_X] * vec3[K_X];
-  left_stretch[K_S_YY] = xlxi * vec1[K_Y] * vec1[K_Y] +
-                         xlyi * vec2[K_Y] * vec2[K_Y] +
-                         xlzi * vec3[K_Y] * vec3[K_Y];
-  left_stretch[K_S_ZZ] = xlxi * vec1[K_Z] * vec1[K_Z] +
-                         xlyi * vec2[K_Z] * vec2[K_Z] +
-                         xlzi * vec3[K_Z] * vec3[K_Z];
-  left_stretch[K_S_XY] = xlxi * vec1[K_X] * vec1[K_Y] +
-                         xlyi * vec2[K_X] * vec2[K_Y] +
-                         xlzi * vec3[K_X] * vec3[K_Y];
-  left_stretch[K_S_YZ] = xlxi * vec1[K_Y] * vec1[K_Z] +
-                         xlyi * vec2[K_Y] * vec2[K_Z] +
-                         xlzi * vec3[K_Y] * vec3[K_Z];
-  left_stretch[K_S_ZX] = xlxi * vec1[K_Z] * vec1[K_X] +
-                         xlyi * vec2[K_Z] * vec2[K_X] +
-                         xlzi * vec3[K_Z] * vec3[K_X];
+  left_stretch[K_S_XX] = xlxi * vec1[K_X] * vec1[K_X] + xlyi * vec2[K_X] * vec2[K_X] + xlzi * vec3[K_X] * vec3[K_X];
+  left_stretch[K_S_YY] = xlxi * vec1[K_Y] * vec1[K_Y] + xlyi * vec2[K_Y] * vec2[K_Y] + xlzi * vec3[K_Y] * vec3[K_Y];
+  left_stretch[K_S_ZZ] = xlxi * vec1[K_Z] * vec1[K_Z] + xlyi * vec2[K_Z] * vec2[K_Z] + xlzi * vec3[K_Z] * vec3[K_Z];
+  left_stretch[K_S_XY] = xlxi * vec1[K_X] * vec1[K_Y] + xlyi * vec2[K_X] * vec2[K_Y] + xlzi * vec3[K_X] * vec3[K_Y];
+  left_stretch[K_S_YZ] = xlxi * vec1[K_Y] * vec1[K_Z] + xlyi * vec2[K_Y] * vec2[K_Z] + xlzi * vec3[K_Y] * vec3[K_Z];
+  left_stretch[K_S_ZX] = xlxi * vec1[K_Z] * vec1[K_X] + xlyi * vec2[K_Z] * vec2[K_X] + xlzi * vec3[K_Z] * vec3[K_X];
 
   Mult_Full33_Sym33_ReturnT(mat_inv, left_stretch, rotation);
 }
@@ -1057,7 +909,8 @@ Polar_Left_LogV_Lame(
   // std::cout << "DJL DEBUGGING eigen values in Polar_Left_LogV_Lame " <<
   // eval[0] << ", " << eval[1] << ", " << eval[2] << std::endl; std::cout <<
   // "DJL DEBUGGING eigen vectors in Polor_Left_LogV_Lame (" << vec1[0] << ", "
-  // << vec1[1] << ", " << vec1[2] << ") (" << vec2[0] << ", " << vec2[1] << ", "
+  // << vec1[1] << ", " << vec1[2] << ") (" << vec2[0] << ", " << vec2[1] << ",
+  // "
   // << vec2[2] << ") (" << vec3[0] << ", " << vec3[1] << ", " << vec3[2] << ")"
   // << std::endl;
 
@@ -1099,23 +952,17 @@ Polar_Left_LogV_Lame(
   temp[K_F_ZX]             = vec1[2] * x[0];
   temp[K_F_ZY]             = vec2[2] * x[1];
   temp[K_F_ZZ]             = vec3[2] * x[2];
-  left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] +
-                             temp[K_F_XY] * vec_transpose[K_F_YX] +
+  left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] + temp[K_F_XY] * vec_transpose[K_F_YX] +
                              temp[K_F_XZ] * vec_transpose[K_F_ZX];
-  left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] +
-                             temp[K_F_YY] * vec_transpose[K_F_YY] +
+  left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] + temp[K_F_YY] * vec_transpose[K_F_YY] +
                              temp[K_F_YZ] * vec_transpose[K_F_ZY];
-  left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] +
-                             temp[K_F_ZY] * vec_transpose[K_F_YZ] +
+  left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] + temp[K_F_ZY] * vec_transpose[K_F_YZ] +
                              temp[K_F_ZZ] * vec_transpose[K_F_ZZ];
-  left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] +
-                             temp[K_F_XY] * vec_transpose[K_F_YY] +
+  left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] + temp[K_F_XY] * vec_transpose[K_F_YY] +
                              temp[K_F_XZ] * vec_transpose[K_F_ZY];
-  left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] +
-                             temp[K_F_YY] * vec_transpose[K_F_YZ] +
+  left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] + temp[K_F_YY] * vec_transpose[K_F_YZ] +
                              temp[K_F_YZ] * vec_transpose[K_F_ZZ];
-  left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] +
-                             temp[K_F_ZY] * vec_transpose[K_F_YX] +
+  left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] + temp[K_F_ZY] * vec_transpose[K_F_YX] +
                              temp[K_F_ZZ] * vec_transpose[K_F_ZX];
 
   // Vinv = eVec*xi*transpose(eVec)
@@ -1141,23 +988,17 @@ Polar_Left_LogV_Lame(
   temp[K_F_ZX]                 = vec1[2] * lnx[0];
   temp[K_F_ZY]                 = vec2[2] * lnx[1];
   temp[K_F_ZZ]                 = vec3[2] * lnx[2];
-  log_left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] +
-                                 temp[K_F_XY] * vec_transpose[K_F_YX] +
+  log_left_stretch_inc[K_S_XX] = temp[K_F_XX] * vec_transpose[K_F_XX] + temp[K_F_XY] * vec_transpose[K_F_YX] +
                                  temp[K_F_XZ] * vec_transpose[K_F_ZX];
-  log_left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] +
-                                 temp[K_F_YY] * vec_transpose[K_F_YY] +
+  log_left_stretch_inc[K_S_YY] = temp[K_F_YX] * vec_transpose[K_F_XY] + temp[K_F_YY] * vec_transpose[K_F_YY] +
                                  temp[K_F_YZ] * vec_transpose[K_F_ZY];
-  log_left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] +
-                                 temp[K_F_ZY] * vec_transpose[K_F_YZ] +
+  log_left_stretch_inc[K_S_ZZ] = temp[K_F_ZX] * vec_transpose[K_F_XZ] + temp[K_F_ZY] * vec_transpose[K_F_YZ] +
                                  temp[K_F_ZZ] * vec_transpose[K_F_ZZ];
-  log_left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] +
-                                 temp[K_F_XY] * vec_transpose[K_F_YY] +
+  log_left_stretch_inc[K_S_XY] = temp[K_F_XX] * vec_transpose[K_F_XY] + temp[K_F_XY] * vec_transpose[K_F_YY] +
                                  temp[K_F_XZ] * vec_transpose[K_F_ZY];
-  log_left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] +
-                                 temp[K_F_YY] * vec_transpose[K_F_YZ] +
+  log_left_stretch_inc[K_S_YZ] = temp[K_F_YX] * vec_transpose[K_F_XZ] + temp[K_F_YY] * vec_transpose[K_F_YZ] +
                                  temp[K_F_YZ] * vec_transpose[K_F_ZZ];
-  log_left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] +
-                                 temp[K_F_ZY] * vec_transpose[K_F_YX] +
+  log_left_stretch_inc[K_S_ZX] = temp[K_F_ZX] * vec_transpose[K_F_XX] + temp[K_F_ZY] * vec_transpose[K_F_YX] +
                                  temp[K_F_ZZ] * vec_transpose[K_F_ZX];
 
   // R = Vinv*F
@@ -1230,8 +1071,7 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
   ScalarT machine_epsilon = std::numeric_limits<ScalarT>::epsilon();
 
   // set firewall to make sure the rotation is indeed 180 degrees
-  if (std::abs(rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] + 1.0) <
-      10.0 * machine_epsilon) {
+  if (std::abs(rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] + 1.0) < 10.0 * machine_epsilon) {
     // throw std::logic_error("\n**** Input check failed for
     // Log_Rotation_Pi()!\n");
   }
@@ -1260,8 +1100,7 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
   ScalarT normal[3];
   CrossProduct(u, v, normal);
 
-  ScalarT norm =
-      normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
+  ScalarT norm = normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
   if (norm > 0.0) { norm = std::sqrt(norm); }
 
   if (norm < machine_epsilon) {
@@ -1272,8 +1111,7 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
 
     CrossProduct(u, w, normal);
 
-    norm =
-        normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
+    norm = normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
     if (norm > 0.0) { norm = std::sqrt(norm); }
 
     if (norm < machine_epsilon) {
@@ -1316,9 +1154,7 @@ Log_Rotation(const ScalarT* const rotation, ScalarT* const log_rotation)
   ScalarT norm = Norm_Sym33(temp);
   if (norm > 100.0 * machine_epsilon) { valid_input = false; }
   ScalarT det_rotation = Determinant_Full33(rotation);
-  if (std::abs(det_rotation - 1.0) > 100.0 * machine_epsilon) {
-    valid_input = false;
-  }
+  if (std::abs(det_rotation - 1.0) > 100.0 * machine_epsilon) { valid_input = false; }
   if (!valid_input) {
     std::stringstream ss;
     ss << "\n**** Input check failed for Log_Rotation()!";
@@ -1332,8 +1168,7 @@ Log_Rotation(const ScalarT* const rotation, ScalarT* const log_rotation)
   }
 
   // acos requires input between -1 and +1
-  ScalarT cosine =
-      0.5 * (rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] - 1.0);
+  ScalarT cosine = 0.5 * (rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] - 1.0);
   if (cosine < -1.0) {
     cosine = -1.0;
   } else if (cosine > 1.0) {

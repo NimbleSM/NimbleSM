@@ -58,8 +58,7 @@ BlockMaterialInterfaceFactory::create(
     nimble::ModelDataBase*                model_data_ptr) const
 {
   std::shared_ptr<nimble::BlockMaterialInterfaceBase> res_ptr(
-      new nimble_kokkos::BlockMaterialInterface(
-          time_n, time_np1, field_ids, blocks, model_data_ptr));
+      new nimble_kokkos::BlockMaterialInterface(time_n, time_np1, field_ids, blocks, model_data_ptr));
   return res_ptr;
 }
 

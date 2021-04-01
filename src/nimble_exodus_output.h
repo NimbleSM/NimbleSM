@@ -77,9 +77,8 @@ class ExodusOutput
   void
   serialize(ArchiveType& ar)
   {
-    ar | filename_ | CPU_word_size_ | IO_word_size_ | dim_ | num_nodes_ |
-        num_elements_ | num_blocks_ | block_ids_ | num_node_sets_ |
-        num_side_sets_ | exodus_write_count_ | elem_data_index_;
+    ar | filename_ | CPU_word_size_ | IO_word_size_ | dim_ | num_nodes_ | num_elements_ | num_blocks_ | block_ids_ |
+        num_node_sets_ | num_side_sets_ | exodus_write_count_ | elem_data_index_;
   }
 #endif
 
@@ -109,7 +108,7 @@ class ExodusOutput
       std::vector<std::vector<double>> const&                node_data,
       std::map<int, std::vector<std::string>> const&         elem_data_names,
       std::map<int, std::vector<std::vector<double>>> const& elem_data,
-      std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+      std::map<int, std::vector<std::string>> const&         derived_elem_data_names,
       std::map<int, std::vector<std::vector<double>>> const& derived_elem_data);
 
   void
@@ -127,15 +126,12 @@ class ExodusOutput
       std::vector<std::vector<double>> const&                node_data,
       std::map<int, std::vector<std::string>> const&         elem_data_names,
       std::map<int, std::vector<std::vector<double>>> const& elem_data,
-      std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+      std::map<int, std::vector<std::string>> const&         derived_elem_data_names,
       std::map<int, std::vector<std::vector<double>>> const& derived_elem_data);
 
  protected:
   void
-  ReportExodusError(
-      int         error_code,
-      const char* method_name,
-      const char* exodus_method_name);
+  ReportExodusError(int error_code, const char* method_name, const char* exodus_method_name);
 
   void
   WriteQARecord(int exodus_file_id);

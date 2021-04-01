@@ -95,10 +95,7 @@ struct PairData
   int prim_rank_  = 0;
   int prim_index_ = -1;
   //
-  PairData(int r_, int i_, int f_r_, int f_i_)
-      : pred_rank_(r_), pred_index_(i_), prim_rank_(f_r_), prim_index_(f_i_)
-  {
-  }
+  PairData(int r_, int i_, int f_r_, int f_i_) : pred_rank_(r_), pred_index_(i_), prim_rank_(f_r_), prim_index_(f_i_) {}
   //
   PairData() = default;
   //
@@ -109,8 +106,7 @@ struct PairData
   {
     return (
         std::tie(pred_rank_, pred_index_, prim_rank_, prim_index_) <
-        std::tie(
-            rhs.pred_rank_, rhs.pred_index_, rhs.prim_rank_, rhs.prim_index_));
+        std::tie(rhs.pred_rank_, rhs.pred_index_, rhs.prim_rank_, rhs.prim_index_));
   }
 };
 
@@ -123,8 +119,7 @@ struct ContactCallback
   //
   template <typename Predicate, typename OutputFunctor>
   KOKKOS_FUNCTION void
-  operator()(Predicate const& pred, int f_primitive, OutputFunctor const& out)
-      const
+  operator()(Predicate const& pred, int f_primitive, OutputFunctor const& out) const
   {
     auto const& p_data     = getData(pred);      // <- type OutputData
     auto const& p_geometry = getGeometry(pred);  // <- type Box
@@ -132,8 +127,7 @@ struct ContactCallback
     //--- Define copy contact entity
     //--- For the node, we only store the coordinates.
     //
-    ContactEntity myNode(
-        ContactEntity::ContactEntityType::NODE, 0, p_data.coord_, 0.0, 0);
+    ContactEntity myNode(ContactEntity::ContactEntityType::NODE, 0, p_data.coord_, 0.0, 0);
     ContactEntity myFace;
     faces_(f_primitive).ExportGeometryInto(myFace);
     //
@@ -142,8 +136,7 @@ struct ContactCallback
     bool   inside                 = false;
     double facet_coordinates[dim] = {0., 0., 0.};
     //
-    ContactManager::Projection(
-        myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
+    ContactManager::Projection(myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
     //
     double force[dim] = {0., 0., 0.};
     if (inside) {
@@ -153,9 +146,8 @@ struct ContactCallback
       bool noSkip = false;
 #pragma omp critical
       {
-        auto result = list_.insert(
-            PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
-        noSkip = result.second;
+        auto result = list_.insert(PairData{p_data.rank_, p_data.index_, rank_, f_primitive});
+        noSkip      = result.second;
       }
       //
       myFace.SetNodalContactForces(force, &facet_coordinates[0]);
@@ -206,11 +198,9 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
   get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
   {
     nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(
-        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point point2(
-        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box box(point1, point2);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
     return box;
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
@@ -229,20 +219,14 @@ struct AccessTraits<nimble::details::PredicateTypeNodesRank, PredicatesTag>
   get(nimble::details::PredicateTypeNodesRank const& v, std::size_t i)
   {
     nimble::ContactEntity& e = v.nodes_(i);
-    ArborX::Point          point1(
-        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point point2(
-        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box box(point1, point2);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
     //
     return attach(
         intersects(box),
         nimble::details::OutputData{
-            static_cast<int>(i),
-            v.rank_,
-            {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_},
-            false,
-            {0, 0, 0}});
+            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
 };
@@ -250,10 +234,9 @@ struct AccessTraits<nimble::details::PredicateTypeNodesRank, PredicatesTag>
 
 namespace nimble {
 
-using memory_space  = nimble_kokkos::kokkos_device_memory_space;
-using kokkos_device = Kokkos::Device<
-    nimble_kokkos::kokkos_device_execution_space,
-    nimble_kokkos::kokkos_device_memory_space>;
+using memory_space = nimble_kokkos::kokkos_device_memory_space;
+using kokkos_device =
+    Kokkos::Device<nimble_kokkos::kokkos_device_execution_space, nimble_kokkos::kokkos_device_memory_space>;
 
 /*!
  * Contact Manager specific to ArborX library
@@ -268,24 +251,18 @@ ArborXParallelContactManager::ArborXParallelContactManager(
 }
 
 void
-ArborXParallelContactManager::ComputeParallelContactForce(
-    int                step,
-    bool               debug_output,
-    nimble::Viewify<2> contact_force)
+ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   if (model_data == nullptr) {
     auto model_ptr = this->data_manager_.GetMacroScaleData().get();
     model_data     = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr);
   }
 
-  auto field_ids = this->data_manager_.GetFieldIDs();
-  auto displacement_d =
-      model_data->GetDeviceVectorNodeData(field_ids.displacement);
+  auto field_ids      = this->data_manager_.GetFieldIDs();
+  auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
 
-  auto contact_force_h =
-      model_data->GetHostVectorNodeData(field_ids.contact_force);
-  auto contact_force_d =
-      model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
+  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
   Kokkos::deep_copy(contact_force_d, (double)(0.0));
 
   this->ApplyDisplacements(displacement_d);
@@ -295,17 +272,14 @@ ArborXParallelContactManager::ComputeParallelContactForce(
   ContactManager::zeroContactForce();
 
   //--- Reset the contact_status flags
-  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
-    contact_faces_d_(jj).ResetContactData();
+  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
 
-  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj)
-    contact_nodes_d_(jj).ResetContactData();
+  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();
   this->stopTimer("Contact:ResetData");
 
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error(
-        "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
   }
 
   Kokkos::View<details::OutputData*, kokkos_device> results("results", 0);
@@ -314,16 +288,14 @@ ArborXParallelContactManager::ComputeParallelContactForce(
   auto                                              comm = MPI_COMM_WORLD;
 
   this->startTimer("ArborX::Search::Def");
-  ArborX::DistributedTree<memory_space> dtree(
-      comm, kokkos_device::execution_space{}, contact_faces_d_);
+  ArborX::DistributedTree<memory_space> dtree(comm, kokkos_device::execution_space{}, contact_faces_d_);
   this->stopTimer("ArborX::Search::Def");
 
   this->startTimer("ArborX::Search::Query");
   dtree.query(
       kokkos_device::execution_space{},
       details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
-      details::ContactCallback{
-          m_rank, contact_faces_d_, penalty_parameter_, list_},
+      details::ContactCallback{m_rank, contact_faces_d_, penalty_parameter_, list_},
       results,
       offset);
   this->stopTimer("ArborX::Search::Query");
@@ -331,7 +303,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(
   this->startTimer("Contact::EnforceInteraction");
   nimble_kokkos::DeviceContactEntityArrayView contact_nodes = contact_nodes_d_;
   nimble_kokkos::DeviceScalarNodeView         force         = force_d_;
-  auto numNodes = contact_nodes_d_.extent(0);
+  auto                                        numNodes      = contact_nodes_d_.extent(0);
   Kokkos::parallel_for(
       "Update Node Force", numNodes, KOKKOS_LAMBDA(const int i_node) {
         auto& myNode = contact_nodes(i_node);
@@ -350,8 +322,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(
   //
   for (size_t iface = 0; iface < contact_faces_d_.extent(0); ++iface) {
     auto& myFace = contact_faces_d_(iface);
-    if (myFace.contact_status())
-      myFace.ScatterForceToContactManagerForceVector(force_d_);
+    if (myFace.contact_status()) myFace.ScatterForceToContactManagerForceVector(force_d_);
   }
   this->stopTimer("Contact::EnforceInteraction");
 
@@ -359,8 +330,8 @@ ArborXParallelContactManager::ComputeParallelContactForce(
   Kokkos::deep_copy(contact_force_h, contact_force_d);
 
   // Perform a reduction to obtain correct values on MPI boundaries
-  constexpr int vector_dim  = 3;
-  auto myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
+  constexpr int vector_dim           = 3;
+  auto          myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
   myVectorCommunicator->VectorReduction(vector_dim, contact_force_h);
 }
 

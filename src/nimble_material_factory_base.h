@@ -60,13 +60,9 @@ class MaterialFactoryBase
 {
  private:
   static inline void
-  find_or_insert_string_in_vector(
-      const std::string&        str,
-      std::vector<std::string>& vec)
+  find_or_insert_string_in_vector(const std::string& str, std::vector<std::string>& vec)
   {
-    if (std::find(vec.begin(), vec.end(), str) == vec.end()) {
-      vec.push_back(str);
-    }
+    if (std::find(vec.begin(), vec.end(), str) == vec.end()) { vec.push_back(str); }
   }
 
  public:
@@ -76,15 +72,13 @@ class MaterialFactoryBase
   inline void
   add_valid_double_parameter_name(const char* name)
   {
-    find_or_insert_string_in_vector(
-        std::string(name), valid_double_parameter_names);
+    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
   }
 
   inline void
   add_valid_string_parameter_name(const char* name)
   {
-    find_or_insert_string_in_vector(
-        std::string(name), valid_string_parameter_names);
+    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
   }
 
   virtual std::shared_ptr<nimble::Material>
@@ -112,9 +106,7 @@ class MaterialFactoryBase
 
  protected:
   std::shared_ptr<nimble::MaterialParameters>
-  ParseMaterialParametersString(
-      const std::string& material_parameters,
-      int                num_material_points = 0) const;
+  ParseMaterialParametersString(const std::string& material_parameters, int num_material_points = 0) const;
 
   //
   //--- Protected Variables

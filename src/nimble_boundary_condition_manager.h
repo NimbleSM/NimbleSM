@@ -83,8 +83,7 @@ class BoundaryConditionManager
   void
   serialize(ArchiveType& ar)
   {
-    ar | node_set_names_ | node_sets_ | boundary_conditions_ | dim_ |
-        time_integration_scheme_;
+    ar | node_set_names_ | node_sets_ | boundary_conditions_ | dim_ | time_integration_scheme_;
   }
 #endif
 
@@ -125,15 +124,12 @@ class BoundaryConditionManager
             bc.expression_.x = reference_coordinates(node_set[n], 0);
             bc.expression_.y = reference_coordinates(node_set[n], 1);
             bc.expression_.z = 0.0;
-            if (dim_ == 3) {
-              bc.expression_.z = reference_coordinates(node_set[n], 2);
-            }
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
             bc.expression_.t                  = 0.0;
             velocity(node_set[n], coordinate) = bc.expression_.eval();
 #ifdef NIMBLE_HAVE_UQ
             for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) =
-                  bc.expression_.eval();
+              offnom_velocities[nuq](node_set[n], coordinate) = bc.expression_.eval();
             }
 #endif
           }
@@ -172,13 +168,11 @@ class BoundaryConditionManager
             velocity(node_set[n], coordinate) = velocity_magnitude;
 #ifdef NIMBLE_HAVE_UQ
             for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) =
-                  velocity_magnitude;
+              offnom_velocities[nuq](node_set[n], coordinate) = velocity_magnitude;
             }
 #endif
             if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) +=
-                  velocity_magnitude * delta_t;
+              displacement(node_set[n], coordinate) += velocity_magnitude * delta_t;
             }
           }
         } else {
@@ -186,36 +180,28 @@ class BoundaryConditionManager
             bc.expression_.x = reference_coordinates(node_set[n], 0);
             bc.expression_.y = reference_coordinates(node_set[n], 1);
             bc.expression_.z = 0.0;
-            if (dim_ == 3) {
-              bc.expression_.z = reference_coordinates(node_set[n], 2);
-            }
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
             bc.expression_.t                  = time_current;
             double velocity_magnitude         = bc.expression_.eval();
             velocity(node_set[n], coordinate) = velocity_magnitude;
 #ifdef NIMBLE_HAVE_UQ
             for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) =
-                  velocity_magnitude;
+              offnom_velocities[nuq](node_set[n], coordinate) = velocity_magnitude;
             }
 #endif
             if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) +=
-                  velocity_magnitude * delta_t;
+              displacement(node_set[n], coordinate) += velocity_magnitude * delta_t;
             }
           }
         }
       }
 
-      else if (
-          bc.bc_type_ == BoundaryCondition::PRESCRIBED_DISPLACEMENT &&
-          delta_t > 0.0) {
+      else if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_DISPLACEMENT && delta_t > 0.0) {
         if (!has_expression) {
           double displacement_magnitude = bc.magnitude_;
           for (unsigned int n = 0; n < node_set.size(); n++) {
             velocity(node_set[n], coordinate) =
-                (displacement_magnitude -
-                 displacement(node_set[n], coordinate)) /
-                delta_t;
+                (displacement_magnitude - displacement(node_set[n], coordinate)) / delta_t;
             if (time_integration_scheme_ == QUASISTATIC) {
               displacement(node_set[n], coordinate) = displacement_magnitude;
             }
@@ -225,15 +211,11 @@ class BoundaryConditionManager
             bc.expression_.x = reference_coordinates(node_set[n], 0);
             bc.expression_.y = reference_coordinates(node_set[n], 1);
             bc.expression_.z = 0.0;
-            if (dim_ == 3) {
-              bc.expression_.z = reference_coordinates(node_set[n], 2);
-            }
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
             bc.expression_.t              = time_current;
             double displacement_magnitude = bc.expression_.eval();
             velocity(node_set[n], coordinate) =
-                (displacement_magnitude -
-                 displacement(node_set[n], coordinate)) /
-                delta_t;
+                (displacement_magnitude - displacement(node_set[n], coordinate)) / delta_t;
             if (time_integration_scheme_ == QUASISTATIC) {
               displacement(node_set[n], coordinate) = displacement_magnitude;
             }

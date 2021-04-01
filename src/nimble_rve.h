@@ -93,9 +93,7 @@ class RVE : public Material
 
   NIMBLE_FUNCTION
   void
-  GetStateVariableLabel(
-      int  index,
-      char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
+  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
   {
     printf("\n**** Error, bad index in RVE::GetStateVariableLabel().\n");
   }

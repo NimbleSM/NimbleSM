@@ -63,9 +63,7 @@ class ModelData;
 
 using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 inline ElemPointRangePolicy
-make_elem_point_range_policy(
-    const int num_block_elems,
-    const int num_points_per_elem)
+make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
 {
   return ElemPointRangePolicy({0, 0}, {num_block_elems, num_points_per_elem});
 }

@@ -56,24 +56,16 @@ class ContactInterface;
 class ParallelContactManager : public ContactManager
 {
  public:
-  ParallelContactManager(
-      std::shared_ptr<ContactInterface> interface,
-      nimble::DataManager&              data_manager);
+  ParallelContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
 
   void
-  ComputeContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) override
+  ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override
   {
     ComputeParallelContactForce(step, debug_output, contact_force);
   }
 
   virtual void
-  ComputeParallelContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) = 0;
+  ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) = 0;
 
   int
   Rank() const noexcept

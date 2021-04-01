@@ -177,10 +177,7 @@ struct AXPYResult
 
 template <std::size_t N>
 void
-AXPYResult<N>::assignTo(
-    double              destCoef,
-    double              rhsCoef,
-    nimble::Viewify<N>& dest) const
+AXPYResult<N>::assignTo(double destCoef, double rhsCoef, nimble::Viewify<N>& dest) const
 {
   const double prod = alpha_ * rhsCoef;
 
@@ -196,8 +193,7 @@ AXPYResult<N>::assignTo(
   } else if (destCoef == 0.0) {
     for (long ii = 0; ii < isize; ++ii) data[ii] = prod * rhs_data[ii];
   } else {
-    for (long ii = 0; ii < isize; ++ii)
-      data[ii] = destCoef * data[ii] + prod * rhs_data[ii];
+    for (long ii = 0; ii < isize; ++ii) data[ii] = destCoef * data[ii] + prod * rhs_data[ii];
   }
 }
 
@@ -228,9 +224,7 @@ class View
  public:
   explicit View(int num_entries) : num_entries_(num_entries)
   {
-    data_ = std::shared_ptr<double>(
-        new double[num_entries_ * static_cast<int>(FieldT)],
-        [](double* p) { delete[] p; });
+    data_ = std::shared_ptr<double>(new double[num_entries_ * static_cast<int>(FieldT)], [](double* p) { delete[] p; });
     data_ptr_ = data_.get();
   }
 
@@ -245,18 +239,14 @@ class View
   double&
   operator()(int i_entry) const
   {
-    static_assert(
-        FieldT == FieldEnum::Scalar,
-        "Operator(int i_entry) called for non-scalar data.");
+    static_assert(FieldT == FieldEnum::Scalar, "Operator(int i_entry) called for non-scalar data.");
     return data_ptr_[i_entry];
   }
 
   double&
   operator()(int i_entry, int i_coord) const
   {
-    static_assert(
-        FieldT != FieldEnum::Scalar,
-        "Operator(int i_entry, int i_coord) called for scalar data.");
+    static_assert(FieldT != FieldEnum::Scalar, "Operator(int i_entry, int i_coord) called for scalar data.");
     return data_ptr_[i_entry * static_cast<int>(FieldT) + i_coord];
   }
 
@@ -298,9 +288,8 @@ class View
     ar | num_entries_ | data_vec;
 
     if (ar.is_unpacking()) {
-      data_ = std::shared_ptr<double>(
-          new double[num_entries_ * static_cast<int>(FieldT)],
-          [](double* p) { delete[] p; });
+      data_ =
+          std::shared_ptr<double>(new double[num_entries_ * static_cast<int>(FieldT)], [](double* p) { delete[] p; });
       data_ptr_ = data_.get();
       for (int i = 0; i < size; i++) { data_ptr_[i] = data_vec[i]; }
     }

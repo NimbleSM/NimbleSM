@@ -65,18 +65,14 @@ class ContactInterface;
 ///  this function.
 ///
 void
-NimbleKokkosInitializeAndGetInput(
-    int             argc,
-    char**          argv,
-    nimble::Parser& parser);
+NimbleKokkosInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser);
 
 void
 NimbleKokkosMain(
-    const std::shared_ptr<MaterialFactoryType>& material_factory,
-    std::shared_ptr<nimble::ContactInterface>   contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
-                          block_material,
-    const nimble::Parser& parser);
+    const std::shared_ptr<MaterialFactoryType>&                       material_factory,
+    std::shared_ptr<nimble::ContactInterface>                         contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
+    const nimble::Parser&                                             parser);
 
 int
 NimbleKokkosFinalize(const nimble::Parser& parser);

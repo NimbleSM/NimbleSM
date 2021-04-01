@@ -66,9 +66,7 @@ class ModelData : public nimble::ModelData
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(
-      nimble::DataManager&                        data_manager,
-      const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
       override;
 
   /// \brief Write output of simulation in Exodus format
@@ -76,8 +74,7 @@ class ModelData : public nimble::ModelData
   /// \param[in] data_manager Reference to data manager
   /// \param[in] time_current Time value
   void
-  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
-      override;
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current) override;
 
   /// \brief Apply initial conditions
   void
@@ -85,10 +82,7 @@ class ModelData : public nimble::ModelData
 
   /// \brief Apply kinematic conditions
   void
-  ApplyKinematicConditions(
-      DataManager& data_manager,
-      double       time_current,
-      double       time_previous) override;
+  ApplyKinematicConditions(DataManager& data_manager, double time_current, double time_previous) override;
 
   /// \brief Update model with new velocity
   ///
@@ -108,8 +102,7 @@ class ModelData : public nimble::ModelData
   /// \note This routine is usually empty.
   ///       The UQ model data is one case using this routine.
   void
-  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
-      override;
+  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt) override;
 
  protected:
   std::shared_ptr<nimble::UqModel> uq_model_;

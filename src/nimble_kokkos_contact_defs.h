@@ -12,14 +12,10 @@
 
 namespace nimble_kokkos {
 
-using DeviceContactEntityArrayView = Kokkos::View<
-    nimble::ContactEntity*,
-    nimble_kokkos::kokkos_layout,
-    nimble_kokkos::kokkos_device>;
-using HostContactEntityArrayView = Kokkos::View<
-    nimble::ContactEntity*,
-    nimble_kokkos::kokkos_layout,
-    nimble_kokkos::kokkos_host>;
+using DeviceContactEntityArrayView =
+    Kokkos::View<nimble::ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device>;
+using HostContactEntityArrayView =
+    Kokkos::View<nimble::ContactEntity*, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_host>;
 
 }  // namespace nimble_kokkos
 

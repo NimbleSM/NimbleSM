@@ -81,11 +81,9 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
   get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
   {
     nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(
-        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point point2(
-        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box box(point1, point2);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
 
     return box;
   }
@@ -105,11 +103,9 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
   get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
   {
     nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(
-        e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point point2(
-        e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box box(point1, point2);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
 
     //
     // What does Intersects returns, how is it used afterwards?
@@ -155,8 +151,7 @@ ArborXSerialContactManager::updateCollisionData(
   //
   // primitives are faces
   //
-  arborx_bvh bvh{
-      nimble_kokkos::kokkos_device_execution_space{}, contact_faces_d_};
+  arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{}, contact_faces_d_};
 
   //
   // indices : position of the primitives that satisfy the predicates.
@@ -177,23 +172,15 @@ ArborXSerialContactManager::updateCollisionData(
 
   // Number of queries, n = size of contact_nodes_d
   // Size of offset = n + 1
-  bvh.query(
-      nimble_kokkos::kokkos_device_execution_space{},
-      contact_nodes_d_,
-      indices,
-      offset);
+  bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_, indices, offset);
 }
 
 void
-ArborXSerialContactManager::ComputeSerialContactForce(
-    int                step,
-    bool               debug_output,
-    nimble::Viewify<2> contact_force)
+ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   //--- Constraint per ContactManager::ComputeContactForce
   if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error(
-        "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
   }
 
   if (model_data == nullptr) {
@@ -201,14 +188,11 @@ ArborXSerialContactManager::ComputeSerialContactForce(
     model_data     = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr);
   }
 
-  auto field_ids = data_manager_.GetFieldIDs();
-  auto displacement_d =
-      model_data->GetDeviceVectorNodeData(field_ids.displacement);
+  auto field_ids      = data_manager_.GetFieldIDs();
+  auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
 
-  auto contact_force_h =
-      model_data->GetHostVectorNodeData(field_ids.contact_force);
-  auto contact_force_d =
-      model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
+  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
   Kokkos::deep_copy(contact_force_d, (double)(0.0));
 
   this->ApplyDisplacements(displacement_d);
@@ -232,11 +216,9 @@ ArborXSerialContactManager::ComputeSerialContactForce(
   ContactManager::zeroContactForce();
 
   // Reset the contact_status flags
-  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
-    contact_faces_d_(jj).set_contact_status(false);
+  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).set_contact_status(false);
 
-  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj)
-    contact_nodes_d_(jj).set_contact_status(false);
+  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).set_contact_status(false);
 
   //
   // The next loop does not track which node is in contact with which face
@@ -252,13 +234,11 @@ ArborXSerialContactManager::ComputeSerialContactForce(
     for (int j = offset(inode); j < offset(inode + 1); ++j) {
       auto& myFace = contact_faces_d_(indices(j));
       //--- Determine whether the node is projected inside the triangular face
-      ContactManager::Projection(
-          myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
+      ContactManager::Projection(myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
       if (inside) {
         contact_faces_d_(indices(j)).set_contact_status(true);
         contact_nodes_d_(inode).set_contact_status(true);
-        EnforceNodeFaceInteraction(
-            myNode, myFace, gap, normal, facet_coordinates, force_d_);
+        EnforceNodeFaceInteraction(myNode, myFace, gap, normal, facet_coordinates, force_d_);
       }
     }
   }
