@@ -83,10 +83,7 @@ class BvhContactManager : public ParallelContactManager
   ~BvhContactManager();
 
   void
-  ComputeParallelContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) override;
+  ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
 
  private:
   bvh::collision_world   m_world;

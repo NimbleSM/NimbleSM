@@ -125,8 +125,7 @@ class ContactInterface
 
  protected:
   inline void
-  ZeroContactForces(
-      nimble_kokkos::DeviceScalarNodeView contact_manager_force) const
+  ZeroContactForces(nimble_kokkos::DeviceScalarNodeView contact_manager_force) const
   {
     Kokkos::deep_copy(contact_manager_force, 0.0);
   }
@@ -137,8 +136,7 @@ class ContactInterface
       nimble_kokkos::DeviceContactEntityArrayView contact_faces,
       KokkosPenaltyContactEnforcement             contact_enforcement)
   {
-    std::cerr << "Warning: running no-op contact---no interface enabled!"
-              << std::endl;
+    std::cerr << "Warning: running no-op contact---no interface enabled!" << std::endl;
   }
 
   KOKKOS_FORCEINLINE_FUNCTION
@@ -151,10 +149,7 @@ class ContactInterface
       const double   direction[3],
       const double   closest_pt[3]) const
   {
-    if (gap < 0.0) {
-      enforcement.EnforceContact(
-          node, face, numNodeFaces, gap, direction, closest_pt);
-    }
+    if (gap < 0.0) { enforcement.EnforceContact(node, face, numNodeFaces, gap, direction, closest_pt); }
   }
 
  protected:

@@ -48,9 +48,7 @@
 #include "nimble.mpi.mpicontext.h"
 
 nimble::reduction::ReductionInfo*
-nimble::reduction::GenerateReductionInfo(
-    const std::vector<int>& raw_global_ids,
-    const mpicontext&       context)
+nimble::reduction::GenerateReductionInfo(const std::vector<int>& raw_global_ids, const mpicontext& context)
 {
   using std::vector;
   int    rank        = context.get_rank();
@@ -75,26 +73,21 @@ nimble::reduction::GenerateReductionInfo(
   if (context.is_root()) {
     std::vector<int> all_global_ids(IDCountAccumulator);
     // See: https://www.open-mpi.org/doc/v2.1/man3/MPI_Gatherv.3.php
-    context.gatherv_recieve(
-        raw_global_ids, all_global_ids, IDCounts, displacements);
+    context.gatherv_recieve(raw_global_ids, all_global_ids, IDCounts, displacements);
 
-    auto ids_by_rank =
-        quanta::partition_into_arrayviews(all_global_ids, IDCounts);
+    auto ids_by_rank = quanta::partition_into_arrayviews(all_global_ids, IDCounts);
 
     auto find_cliques_with_unordered_map = [&] {
       std::unordered_map<int, int> clique_lookup;
       clique_lookup.reserve(all_global_ids.size());
-      num_cliques =
-          fill_clique_lookup(ids_by_rank, quanta::make_indexer(clique_lookup));
+      num_cliques = fill_clique_lookup(ids_by_rank, quanta::make_indexer(clique_lookup));
       quanta::remap(all_global_ids, quanta::make_indexer(clique_lookup));
     };
 
     auto find_cliques_with_vector = [&](int min_id, int max_id) {
       std::vector<int> clique_lookup(max_id - min_id + 1, 0);
-      num_cliques = fill_clique_lookup(
-          ids_by_rank, quanta::make_indexer(clique_lookup.data() - min_id));
-      quanta::remap(
-          all_global_ids, quanta::make_indexer(clique_lookup.data() - min_id));
+      num_cliques = fill_clique_lookup(ids_by_rank, quanta::make_indexer(clique_lookup.data() - min_id));
+      quanta::remap(all_global_ids, quanta::make_indexer(clique_lookup.data() - min_id));
     };
 
     // Use the unordered map version for now
@@ -107,8 +100,7 @@ nimble::reduction::GenerateReductionInfo(
     clique that belongs to multiple ranks.
     */
 
-    context.scatterv_send(
-        all_global_ids, IDCounts, displacements, clique_assignment);
+    context.scatterv_send(all_global_ids, IDCounts, displacements, clique_assignment);
   } else {
     context.gatherv_send(raw_global_ids);
 
@@ -125,8 +117,7 @@ nimble::reduction::GenerateReductionInfo(
     clique_ids.resize(std::distance(clique_ids.begin(), new_end_iter));
     std::vector<int> clique_colors(num_cliques, MPI_UNDEFINED);
     for (int i : clique_ids) clique_colors[i] = 1;
-    reduction_info = new ReductionInfo(
-        clique_colors, clique_ids, clique_assignment, raw_global_ids, context);
+    reduction_info = new ReductionInfo(clique_colors, clique_ids, clique_assignment, raw_global_ids, context);
   }
   return reduction_info;
 }

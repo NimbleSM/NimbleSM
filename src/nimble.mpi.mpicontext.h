@@ -97,10 +97,7 @@ class mpicontext
     return rank;
   }
   mpicontext() = default;
-  mpicontext(MPI_Comm comm)
-      : rank{get_rank(comm)}, size{get_size(comm)}, comm{comm}
-  {
-  }
+  mpicontext(MPI_Comm comm) : rank{get_rank(comm)}, size{get_size(comm)}, comm{comm} {}
   mpicontext(const mpicontext& context) = default;
   mpicontext(mpicontext&& context)      = default;
   mpicontext&
@@ -141,16 +138,14 @@ class mpicontext
   {
     int count = recv_count(rank, tag);
     data.resize(count);
-    MPI_Recv(
-        data.data(), count, MPI_INT, rank, tag, this->comm, MPI_STATUS_IGNORE);
+    MPI_Recv(data.data(), count, MPI_INT, rank, tag, this->comm, MPI_STATUS_IGNORE);
     return count;
   }
   int
   recv(int* data, int rank, int tag, int max_buffer_size) const
   {
     MPI_Status recv_status;
-    MPI_Recv(
-        data, max_buffer_size, MPI_INT, rank, tag, this->comm, &recv_status);
+    MPI_Recv(data, max_buffer_size, MPI_INT, rank, tag, this->comm, &recv_status);
     int count;
     MPI_Get_count(&recv_status, MPI_INT, &count);
     return count;
@@ -162,14 +157,12 @@ class mpicontext
   {
     int count = recv_count(rank, tag);
     if (count > data.size()) data.resize(count);
-    MPI_Recv(
-        data.data(), count, MPI_INT, rank, tag, this->comm, MPI_STATUS_IGNORE);
+    MPI_Recv(data.data(), count, MPI_INT, rank, tag, this->comm, MPI_STATUS_IGNORE);
     return count;
   }
   template <class T, class podT>
   void
-  sendpacked(const T& source, int rank, int tag, std::vector<podT>& buffer)
-      const
+  sendpacked(const T& source, int rank, int tag, std::vector<podT>& buffer) const
   {
     serialization::pack_avoid_resize(source, buffer);
     send(buffer, rank, tag);
@@ -187,8 +180,7 @@ class mpicontext
   void
   sendpacked(const T& source, int rank, int tag) const
   {
-    int sendcount =
-        serialization::pack_avoid_resize(source, serialization_buffer);
+    int sendcount = serialization::pack_avoid_resize(source, serialization_buffer);
     send({serialization_buffer.data(), sendcount}, rank, tag);
   }
   std::vector<std::vector<int>>
@@ -202,23 +194,13 @@ class mpicontext
       // https://www.mpich.org/static/docs/v3.1/www3/MPI_Gather.html
       // https://www.mpich.org/static/docs/v3.1/www3/MPI_Gatherv.html
       // to ensure that the function call is being passed the correct aruments.
-      MPI_Gather(
-          &sendcount,
-          1,
-          MPI_INT,
-          recv_counts.data(),
-          1,
-          MPI_INT,
-          root,
-          this->comm);
+      MPI_Gather(&sendcount, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, root, this->comm);
 
       // Step 2: Get data from all ranks as contiguous block of data
       // destination.size() is the sum of the lengths of all incoming arrays.
-      std::vector<int> destination(
-          std::accumulate(recv_counts.begin(), recv_counts.end(), 0));
+      std::vector<int> destination(std::accumulate(recv_counts.begin(), recv_counts.end(), 0));
       std::vector<int> displacements(this->get_size(), 0);
-      std::partial_sum(
-          recv_counts.begin(), recv_counts.end() - 1, displacements.data() + 1);
+      std::partial_sum(recv_counts.begin(), recv_counts.end() - 1, displacements.data() + 1);
       MPI_Gatherv(
           source.data(),
           sendcount,
@@ -232,8 +214,7 @@ class mpicontext
 
       // Step 3: Copy data from a contiguous block into a vector of vectors.
       std::vector<std::vector<int>> result(this->get_size());
-      int *                         start_iter = destination.data(),
-          *end_iter = destination.data() + recv_counts[0];
+      int *                         start_iter = destination.data(), *end_iter = destination.data() + recv_counts[0];
       for (size_t i = 0; i < result.size(); ++i) {
         result[i]  = std::vector<int>(start_iter, end_iter);
         start_iter = end_iter;
@@ -247,16 +228,7 @@ class mpicontext
       MPI_Gather(&sendcount, 1, MPI_INT, 0, 0, MPI_INT, root, this->get_comm());
 
       // Step 2 (see above)
-      MPI_Gatherv(
-          source.data(),
-          sendcount,
-          MPI_INT,
-          0,
-          0,
-          0,
-          MPI_INT,
-          root,
-          this->get_comm());
+      MPI_Gatherv(source.data(), sendcount, MPI_INT, 0, 0, 0, MPI_INT, root, this->get_comm());
 
       // Return empty vector, as only the root rank will recieve incoming data.
       return {};
@@ -269,27 +241,15 @@ class mpicontext
       // Step 1: notify each rank of how much data they should expect to recieve
       int              recvcount;
       std::vector<int> send_counts(this->get_size());
-      for (size_t i = 0; i < send_counts.size(); ++i) {
-        send_counts[i] = source[i].size();
-      }
-      MPI_Scatter(
-          send_counts.data(),
-          1,
-          MPI_INT,
-          &recvcount,
-          1,
-          MPI_INT,
-          root,
-          this->get_comm());
+      for (size_t i = 0; i < send_counts.size(); ++i) { send_counts[i] = source[i].size(); }
+      MPI_Scatter(send_counts.data(), 1, MPI_INT, &recvcount, 1, MPI_INT, root, this->get_comm());
 
       // Step 2: send out data to each of the ranks.
       std::vector<int> destination(recvcount, 0);
       std::vector<int> displacements(this->get_size(), 0);
-      std::vector<int> source_made_contiguous(
-          std::accumulate(send_counts.begin(), send_counts.end(), 0), 0);
+      std::vector<int> source_made_contiguous(std::accumulate(send_counts.begin(), send_counts.end(), 0), 0);
 
-      std::partial_sum(
-          send_counts.begin(), send_counts.end() - 1, displacements.data() + 1);
+      std::partial_sum(send_counts.begin(), send_counts.end() - 1, displacements.data() + 1);
       MPI_Scatterv(
           source.data(),
           send_counts.data(),
@@ -302,19 +262,9 @@ class mpicontext
           this->get_comm());
     } else {
       int recvcount;
-      MPI_Scatter(
-          0, 0, MPI_INT, &recvcount, 1, MPI_INT, root, this->get_comm());
+      MPI_Scatter(0, 0, MPI_INT, &recvcount, 1, MPI_INT, root, this->get_comm());
       std::vector<int> recvbuff(recvcount);
-      MPI_Scatterv(
-          0,
-          0,
-          0,
-          MPI_INT,
-          recvbuff.data(),
-          recvcount,
-          MPI_INT,
-          root,
-          this->get_comm());
+      MPI_Scatterv(0, 0, 0, MPI_INT, recvbuff.data(), recvcount, MPI_INT, root, this->get_comm());
       return recvbuff;
     }
     return std::vector<int>();
@@ -488,16 +438,15 @@ class mpicontext
     if (is_root()) {
       std::vector<int> counts{gather_recieve(str.size())};
       std::vector<int> displacements(counts.size());
-      std::partial_sum(
-          counts.begin(), counts.end() - 1, displacements.begin() + 1);
+      std::partial_sum(counts.begin(), counts.end() - 1, displacements.begin() + 1);
       std::string dest((size_t)(displacements.back() + counts.back()), ' ');
       MPI_Gatherv(
-          str.data(),    /* data being sent */
-          str.size(),    /* amount of data being sent */
-          MPI_CHAR,      /* type of data being sent */
-          &dest[0],      /* destination of data being sent */
-          counts.data(), /* expected amount of data to be recieved from each
-                            rank */
+          str.data(),           /* data being sent */
+          str.size(),           /* amount of data being sent */
+          MPI_CHAR,             /* type of data being sent */
+          &dest[0],             /* destination of data being sent */
+          counts.data(),        /* expected amount of data to be recieved from each
+                                   rank */
           displacements.data(), /* displacements of revieced data */
           MPI_CHAR,             /* type of data being recieved */
           this->get_root(),     /* root */
@@ -511,9 +460,9 @@ class mpicontext
           str.size(), /* amount of data being sent */
           MPI_CHAR,   /* type of data being sent */
           nullptr,    /* destination of data being sent */
-          nullptr,  /* expected amount of data to be recieved from each rank */
-          nullptr,  /* displacements of revieced data */
-          MPI_CHAR, /* type of data being recieved */
+          nullptr,    /* expected amount of data to be recieved from each rank */
+          nullptr,    /* displacements of revieced data */
+          MPI_CHAR,   /* type of data being recieved */
           get_root(), /* root */
           get_comm()  /* MPI Comm to use */
       );
@@ -537,16 +486,14 @@ class mpicontext
         displacements.emplace_back(displacement_accumulator);
         displacement_accumulator += separator_size + count;
       }
-      std::string dest(
-          (size_t)(displacement_accumulator + _end.size() - separator_size),
-          ' ');
+      std::string dest((size_t)(displacement_accumulator + _end.size() - separator_size), ' ');
       MPI_Gatherv(
-          str.data(),    /* data being sent */
-          str.size(),    /* amount of data being sent */
-          MPI_CHAR,      /* type of data being sent */
-          &dest[0],      /* destination of data being sent */
-          counts.data(), /* expected amount of data to be recieved from each
-                            rank */
+          str.data(),           /* data being sent */
+          str.size(),           /* amount of data being sent */
+          MPI_CHAR,             /* type of data being sent */
+          &dest[0],             /* destination of data being sent */
+          counts.data(),        /* expected amount of data to be recieved from each
+                                   rank */
           displacements.data(), /* displacements of revieced data */
           MPI_CHAR,             /* type of data being recieved */
           this->get_root(),     /* root */
@@ -557,10 +504,7 @@ class mpicontext
         int offset = displacements[i] + counts[i];
         std::copy(separator.begin(), separator.end(), &dest[offset]);
       }
-      std::copy(
-          _end.begin(),
-          _end.end(),
-          &dest[displacements.back() + counts.back()]);
+      std::copy(_end.begin(), _end.end(), &dest[displacements.back() + counts.back()]);
       return dest;
     } else {
       gather_send(str.size());
@@ -569,9 +513,9 @@ class mpicontext
           str.size(), /* amount of data being sent */
           MPI_CHAR,   /* type of data being sent */
           nullptr,    /* destination of data being sent */
-          nullptr,  /* expected amount of data to be recieved from each rank */
-          nullptr,  /* displacements of revieced data */
-          MPI_CHAR, /* type of data being recieved */
+          nullptr,    /* expected amount of data to be recieved from each rank */
+          nullptr,    /* displacements of revieced data */
+          MPI_CHAR,   /* type of data being recieved */
           get_root(), /* root */
           get_comm()  /* MPI Comm to use */
       );
@@ -642,12 +586,11 @@ class mpicontext
   {
     // See: https://www.open-mpi.org/doc/v2.1/man3/MPI_Gatherv.3.php
     MPI_Gatherv(
-        ints.data(), /* data being sent */
-        ints.size(), /* amount of data being sent */
-        MPI_INT,     /* type of data being sent */
-        dest.data(), /* destination of data being sent */
-        counts
-            .data(), /* expected amount of data to be recieved from each rank */
+        ints.data(),          /* data being sent */
+        ints.size(),          /* amount of data being sent */
+        MPI_INT,              /* type of data being sent */
+        dest.data(),          /* destination of data being sent */
+        counts.data(),        /* expected amount of data to be recieved from each rank */
         displacements.data(), /* displacements of revieced data */
         MPI_INT,              /* type of data being recieved */
         this->get_root(),     /* root */

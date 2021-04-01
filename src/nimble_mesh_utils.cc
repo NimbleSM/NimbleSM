@@ -68,10 +68,7 @@ DetermineTangentMatrixNonzeroStructure(
       for (int i_node = 0; i_node < num_nodes_per_elem; i_node++) {
         for (int i_dim = 0; i_dim < dim; i_dim++) {
           linear_system_dof[i_node * dim + i_dim] =
-              linear_system_node_ids
-                      [elem_conn[num_nodes_per_elem * i_elem + i_node]] *
-                  dim +
-              i_dim;
+              linear_system_node_ids[elem_conn[num_nodes_per_elem * i_elem + i_node]] * dim + i_dim;
         }
       }
       int row, col;
@@ -89,9 +86,7 @@ DetermineTangentMatrixNonzeroStructure(
   // i_index and j_index are arrays containing the row and column indices,
   // respectively, for each nonzero
   int num_entries(0);
-  for (int i_row = 0; i_row < num_rows; i_row++) {
-    num_entries += nonzeros[i_row].size();
-  }
+  for (int i_row = 0; i_row < num_rows; i_row++) { num_entries += nonzeros[i_row].size(); }
   i_index.resize(num_entries);
   j_index.resize(num_entries);
   int index(0);

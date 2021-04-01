@@ -63,9 +63,7 @@ class DataManager;
 class ArborXSerialContactManager : public SerialContactManager
 {
  public:
-  ArborXSerialContactManager(
-      std::shared_ptr<ContactInterface> interface,
-      nimble::DataManager&              data_manager);
+  ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
   ArborXSerialContactManager(const ArborXSerialContactManager&)     = delete;
   ArborXSerialContactManager(ArborXSerialContactManager&&) noexcept = default;
 
@@ -78,10 +76,7 @@ class ArborXSerialContactManager : public SerialContactManager
   ~ArborXSerialContactManager() override = default;
 
   void
-  ComputeSerialContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) override;
+  ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
 
  private:
   void

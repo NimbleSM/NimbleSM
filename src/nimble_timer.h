@@ -77,9 +77,7 @@ class TimeKeeper
     using std::chrono::duration_cast;
     end_time_ = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_increment(0.0);
-    if (end_time_ > start_time_) {
-      time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-    }
+    if (end_time_ > start_time_) { time_increment = duration_cast<duration<double>>(end_time_ - start_time_); }
     total_time_ += time_increment.count();
   }
 

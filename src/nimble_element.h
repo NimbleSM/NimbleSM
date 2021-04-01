@@ -67,10 +67,7 @@ class Element
   NumIntegrationPointsPerElement() = 0;
 
   virtual void
-  ComputeLumpedMass(
-      const double  density,
-      const double* node_reference_coords,
-      double*       lumped_mass) const = 0;
+  ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -107,8 +104,7 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView    node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView    node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView        int_pt_quantities,
-      nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity)
-      const = 0;
+      nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const = 0;
 
   NIMBLE_FUNCTION
   virtual void
@@ -116,8 +112,7 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_displacements,
       nimble_kokkos::DeviceFullTensorIntPtSubView        int_pt_quantities,
-      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity)
-      const = 0;
+      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const = 0;
 #endif
 
   virtual void
@@ -132,21 +127,14 @@ class Element
   ComputeDeformationGradients(
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-      nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients)
-      const = 0;
+      nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const = 0;
 #endif
 
   virtual void
-  ComputeTangent(
-      const double* node_reference_coords,
-      const double* node_current_coords,
-      double*       tangent) = 0;
+  ComputeTangent(const double* node_reference_coords, const double* node_current_coords, double* tangent) = 0;
 
   virtual void
-  ComputeNodalForces(
-      const double* node_current_coords,
-      const double* int_pt_stresses,
-      double*       node_forces) = 0;
+  ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces) = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -155,8 +143,7 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView     element_stress_step_np1_d,
-      nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d)
-      const = 0;
+      nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d) const = 0;
 #endif
 
   NIMBLE_INLINE_FUNCTION
@@ -229,10 +216,7 @@ class HexElement : public Element
   }
 
   void
-  ComputeLumpedMass(
-      const double  density,
-      const double* node_reference_coords,
-      double*       lumped_mass) const;
+  ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -277,8 +261,7 @@ class HexElement : public Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_displacements,
       nimble_kokkos::DeviceFullTensorIntPtSubView        int_pt_quantities,
-      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity)
-      const;
+      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const;
 #endif
 
   void
@@ -293,20 +276,14 @@ class HexElement : public Element
   ComputeDeformationGradients(
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-      nimble_kokkos::DeviceFullTensorIntPtSubView deformation_gradients) const;
+      nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const;
 #endif
 
   void
-  ComputeTangent(
-      const double* node_current_coords,
-      const double* material_tangent,
-      double*       element_tangent);
+  ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent);
 
   void
-  ComputeNodalForces(
-      const double* node_current_coords,
-      const double* int_pt_stresses,
-      double*       node_forces);
+  ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces);
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -321,15 +298,11 @@ class HexElement : public Element
  protected:
   NIMBLE_FUNCTION
   void
-  ShapeFunctionValues(
-      const double* natural_coords,
-      double*       shape_function_values);
+  ShapeFunctionValues(const double* natural_coords, double* shape_function_values);
 
   NIMBLE_FUNCTION
   void
-  ShapeFunctionDerivatives(
-      const double* natural_coords,
-      double*       shape_function_derivatives);
+  ShapeFunctionDerivatives(const double* natural_coords, double* shape_function_derivatives);
 
  private:
   static constexpr int dim_         = 3;

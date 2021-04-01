@@ -62,21 +62,14 @@ main(int argc, char** argv)
   nimble::NimbleKokkosInitializeAndGetInput(argc, argv, myParser);
 
   {
-    std::shared_ptr<MaterialFactoryType> material_factory(
-        new nimble_kokkos::MaterialFactory);
-    std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
-        block_material_interface_factory(
-            new nimble_kokkos::BlockMaterialInterfaceFactory);
+    std::shared_ptr<MaterialFactoryType>                       material_factory(new nimble_kokkos::MaterialFactory);
+    std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_interface_factory(
+        new nimble_kokkos::BlockMaterialInterfaceFactory);
     std::shared_ptr<nimble::ContactInterface> contact_interface = nullptr;
     if (myParser.HasContact())
-      contact_interface = std::shared_ptr<nimble::ContactInterface>(
-          new nimble::ContactInterface);
+      contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
-    nimble::NimbleKokkosMain(
-        material_factory,
-        contact_interface,
-        block_material_interface_factory,
-        myParser);
+    nimble::NimbleKokkosMain(material_factory, contact_interface, block_material_interface_factory, myParser);
   }
 
   nimble::NimbleKokkosFinalize(myParser);

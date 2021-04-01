@@ -83,41 +83,32 @@ class TpetraMatrixContainer
 
 #ifdef NIMBLE_HAVE_TRILINOS
 
-  explicit TpetraMatrixContainer(
-      Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>>
-          crs_matrix)
+  explicit TpetraMatrixContainer(Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>> crs_matrix)
       : crs_matrix_(crs_matrix)
   {
   }
 
   bool
-  SumIntoValue(
-      LocalOrdinal  local_row_index,
-      GlobalOrdinal local_col_index,
-      Scalar        value)
+  SumIntoValue(LocalOrdinal local_row_index, GlobalOrdinal local_col_index, Scalar value)
   {
-    auto local_row = static_cast<LocalOrdinal>(local_row_index);
+    auto                            local_row = static_cast<LocalOrdinal>(local_row_index);
     Teuchos::ArrayRCP<LocalOrdinal> local_cols;
     Teuchos::ArrayRCP<Scalar>       values;
 
-    LocalOrdinal success =
-        crs_matrix_->sumIntoLocalValues(local_row, local_cols(), values());
+    LocalOrdinal success = crs_matrix_->sumIntoLocalValues(local_row, local_cols(), values());
 
     if (success == Teuchos::OrdinalTraits<LocalOrdinal>::invalid()) {
       throw std::logic_error(
           "\nError in TpetraMatrixContainer::sumIntoValue(), "
           "replaceLocalValues() failed.\n");
     } else if (success != 1) {
-      throw std::logic_error(
-          "\nError in TpetraMatrixContainer::sumIntoValue(), invalid index.\n");
+      throw std::logic_error("\nError in TpetraMatrixContainer::sumIntoValue(), invalid index.\n");
     }
-    std::cout << "DJL DEBUGGING TpetraMatrixContainer::sumIntoValue() success! "
-              << success << std::endl;
+    std::cout << "DJL DEBUGGING TpetraMatrixContainer::sumIntoValue() success! " << success << std::endl;
   }
 
  private:
-  Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>>
-      crs_matrix_;
+  Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal>> crs_matrix_;
 
 #endif
 };
@@ -126,26 +117,21 @@ class TpetraContainer
 {
  public:
 #ifdef NIMBLE_HAVE_TRILINOS
-  typedef Tpetra::Map<>                         map_type;
-  typedef Tpetra::Vector<>                      vector_type;
-  typedef Tpetra::Vector<>::scalar_type         scalar_type;
-  typedef Tpetra::Vector<>::local_ordinal_type  local_ordinal_type;
-  typedef Tpetra::Vector<>::global_ordinal_type global_ordinal_type;
-  typedef Tpetra::Import<local_ordinal_type, global_ordinal_type>   import_type;
-  typedef Tpetra::Export<local_ordinal_type, global_ordinal_type>   export_type;
-  typedef Tpetra::CrsGraph<local_ordinal_type, global_ordinal_type> graph_type;
-  typedef Tpetra::
-      CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type>
-          matrix_type;
+  typedef Tpetra::Map<>                                                           map_type;
+  typedef Tpetra::Vector<>                                                        vector_type;
+  typedef Tpetra::Vector<>::scalar_type                                           scalar_type;
+  typedef Tpetra::Vector<>::local_ordinal_type                                    local_ordinal_type;
+  typedef Tpetra::Vector<>::global_ordinal_type                                   global_ordinal_type;
+  typedef Tpetra::Import<local_ordinal_type, global_ordinal_type>                 import_type;
+  typedef Tpetra::Export<local_ordinal_type, global_ordinal_type>                 export_type;
+  typedef Tpetra::CrsGraph<local_ordinal_type, global_ordinal_type>               graph_type;
+  typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type> matrix_type;
 
   template <typename LocalOrdinal, typename GlobalOrdinal>
-  class SimpleTieBreak
-      : public Tpetra::Details::TieBreak<LocalOrdinal, GlobalOrdinal>
+  class SimpleTieBreak : public Tpetra::Details::TieBreak<LocalOrdinal, GlobalOrdinal>
   {
     std::size_t
-    selectedIndex(
-        GlobalOrdinal                                    GID,
-        const std::vector<std::pair<int, LocalOrdinal>>& pid_and_lid) const
+    selectedIndex(GlobalOrdinal GID, const std::vector<std::pair<int, LocalOrdinal>>& pid_and_lid) const
     {
       std::size_t selected_index = 0;
       int         selected_pid   = pid_and_lid[0].first;
@@ -164,17 +150,10 @@ class TpetraContainer
   TpetraContainer() {}
 
   void
-  Initialize(
-      GenesisMesh const&      mesh,
-      std::vector<int> const& global_node_ids,
-      comm_type               comm);
+  Initialize(GenesisMesh const& mesh, std::vector<int> const& global_node_ids, comm_type comm);
 
   void
-  Initialize(
-      int                     d,
-      unsigned int            n,
-      comm_type               comm,
-      std::vector<int> const& global_node_ids);
+  Initialize(int d, unsigned int n, comm_type comm, std::vector<int> const& global_node_ids);
 
   void
   AllocateTangentStiffnessMatrix(GenesisMesh const& mesh);
@@ -206,18 +185,17 @@ class TpetraContainer
   std::vector<int> global_node_ids_;
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  comm_type                 comm_;
-  Teuchos::RCP<vector_type> vec_1d_;
-  Teuchos::RCP<vector_type> vec_1d_one_to_one_;
-  Teuchos::RCP<vector_type> vec_3d_;
-  Teuchos::RCP<vector_type> vec_3d_one_to_one_;
-  Teuchos::RCP<export_type> export_into_vec_1d_one_to_one_;
-  Teuchos::RCP<import_type> import_from_vec_1d_one_to_one_;
-  Teuchos::RCP<export_type> export_into_vec_3d_one_to_one_;
-  Teuchos::RCP<import_type> import_from_vec_3d_one_to_one_;
-  Teuchos::RCP<matrix_type> crs_matrix_;
-  TpetraMatrixContainer<scalar_type, local_ordinal_type, global_ordinal_type>
-      crs_matrix_container_;
+  comm_type                                                                   comm_;
+  Teuchos::RCP<vector_type>                                                   vec_1d_;
+  Teuchos::RCP<vector_type>                                                   vec_1d_one_to_one_;
+  Teuchos::RCP<vector_type>                                                   vec_3d_;
+  Teuchos::RCP<vector_type>                                                   vec_3d_one_to_one_;
+  Teuchos::RCP<export_type>                                                   export_into_vec_1d_one_to_one_;
+  Teuchos::RCP<import_type>                                                   import_from_vec_1d_one_to_one_;
+  Teuchos::RCP<export_type>                                                   export_into_vec_3d_one_to_one_;
+  Teuchos::RCP<import_type>                                                   import_from_vec_3d_one_to_one_;
+  Teuchos::RCP<matrix_type>                                                   crs_matrix_;
+  TpetraMatrixContainer<scalar_type, local_ordinal_type, global_ordinal_type> crs_matrix_container_;
 #endif
 };
 

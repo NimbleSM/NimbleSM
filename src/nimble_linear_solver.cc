@@ -52,9 +52,7 @@
 namespace nimble {
 
 void
-CRSMatrixContainer::AllocateNonzeros(
-    std::vector<int> const& i_index,
-    std::vector<int> const& j_index)
+CRSMatrixContainer::AllocateNonzeros(std::vector<int> const& i_index, std::vector<int> const& j_index)
 {
   i_index_ = i_index;
   j_index_ = j_index;
@@ -79,9 +77,7 @@ CRSMatrixContainer::AllocateNonzeros(
 void
 CRSMatrixContainer::SetRowValues(int row, double value)
 {
-  for (int i = row_first_index_[row]; i < row_first_index_[row + 1]; i++) {
-    data_[i] = value;
-  }
+  for (int i = row_first_index_[row]; i < row_first_index_[row + 1]; i++) { data_[i] = value; }
 }
 
 void
@@ -113,24 +109,18 @@ CRSMatrixContainer::FindIndex(int i_index, int j_index) const
     j_value = j_index_[trial];
   }
 
-  throw std::runtime_error(
-      "Error, CRSMatrixContainer::FindIndex() failed to find index.");
+  throw std::runtime_error("Error, CRSMatrixContainer::FindIndex() failed to find index.");
 }
 
 void
 CRSMatrixContainer::MatVec(const double* vec, double* result) const
 {
-  for (unsigned int i_row = 0; i_row < num_rows_; i_row++) {
-    result[i_row] = 0.0;
-  }
-  for (unsigned int i = 0; i < data_.size(); i++) {
-    result[i_index_[i]] += data_[i] * vec[j_index_[i]];
-  }
+  for (unsigned int i_row = 0; i_row < num_rows_; i_row++) { result[i_row] = 0.0; }
+  for (unsigned int i = 0; i < data_.size(); i++) { result[i_index_[i]] += data_[i] * vec[j_index_[i]]; }
 }
 
 void
-CRSMatrixContainer::DiagonalMatrixMatVec(const double* vec, double* result)
-    const
+CRSMatrixContainer::DiagonalMatrixMatVec(const double* vec, double* result) const
 {
   // the matrix must be diagonal
   if (num_rows_ != data_.size()) {
@@ -139,15 +129,11 @@ CRSMatrixContainer::DiagonalMatrixMatVec(const double* vec, double* result)
         "not diagonal.\n");
   }
 
-  for (unsigned int i = 0; i < num_rows_; i++) {
-    result[i] = data_[i] * vec[i];
-  }
+  for (unsigned int i = 0; i < num_rows_; i++) { result[i] = data_[i] * vec[i]; }
 }
 
 void
-PopulateDiagonalPreconditioner(
-    const CRSMatrixContainer& A,
-    CRSMatrixContainer&       M)
+PopulateDiagonalPreconditioner(const CRSMatrixContainer& A, CRSMatrixContainer& M)
 {
   // the preconditioner must be a diagonal matrix
   if (M.num_rows_ != M.data_.size()) {
@@ -158,9 +144,7 @@ PopulateDiagonalPreconditioner(
 
   int m_index(0);
   for (int i = 0; i < A.data_.size(); i++) {
-    if (A.i_index_[i] == A.j_index_[i]) {
-      M.data_[m_index++] = 1.0 / A.data_[i];
-    }
+    if (A.i_index_[i] == A.j_index_[i]) { M.data_[m_index++] = 1.0 / A.data_[i]; }
   }
 }
 
@@ -266,11 +250,7 @@ LU_Solve(int num_entries, nimble::MatrixContainer& mat, double* vec, int* index)
 }
 
 void
-LU_SolveSystem(
-    int                      num_entries,
-    nimble::MatrixContainer& mat,
-    double*                  vec,
-    int*                     scratch)
+LU_SolveSystem(int num_entries, nimble::MatrixContainer& mat, double* vec, int* scratch)
 {
   int* index = scratch;
 
@@ -351,9 +331,7 @@ CG_SolveSystem(
     beta = delta_new / delta_old;
 
     // d = s + beta * d
-    for (unsigned int i = 0; i < num_entries; i++) {
-      d[i] = s[i] + beta * d[i];
-    }
+    for (unsigned int i = 0; i < num_entries; i++) { d[i] = s[i] + beta * d[i]; }
 
     iteration += 1;
   }

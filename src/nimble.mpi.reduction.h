@@ -92,14 +92,11 @@ struct ReductionInfo
     for (int clique_id : clique_assignment)
       if (clique_id > num_ranks) counts[clique_id] += 1;
 
-    for (int clique_id : clique_ids)
-      clique_index_assignment[clique_id].reserve(counts[clique_id]);
+    for (int clique_id : clique_ids) clique_index_assignment[clique_id].reserve(counts[clique_id]);
 
     for (int index = 0, max = clique_assignment.size(); index < max; ++index) {
       int clique_id = clique_assignment[index];
-      if (clique_id > num_ranks) {
-        clique_index_assignment[clique_id].emplace_back(index);
-      }
+      if (clique_id > num_ranks) { clique_index_assignment[clique_id].emplace_back(index); }
     }
 
     std::vector<MPI_Comm> comms{};
@@ -112,18 +109,14 @@ struct ReductionInfo
       }
     }
 
-    if (comms.size() != clique_ids.size())
-      throw std::logic_error("**** Error, comms.size() != clique_ids.size().");
+    if (comms.size() != clique_ids.size()) throw std::logic_error("**** Error, comms.size() != clique_ids.size().");
 
     for (size_t i = 0; i < clique_ids.size(); ++i) {
       int      clique_id  = clique_ids[i];
       MPI_Comm comm       = comms[i];
       auto&    index_list = clique_index_assignment[clique_id];
-      std::sort(index_list.begin(), index_list.end(), [&](int a, int b) {
-        return global_ids[a] < global_ids[b];
-      });
-      this->cliques.emplace_back(
-          std::move(index_list), index_list.size() * 3, comm);
+      std::sort(index_list.begin(), index_list.end(), [&](int a, int b) { return global_ids[a] < global_ids[b]; });
+      this->cliques.emplace_back(std::move(index_list), index_list.size() * 3, comm);
     }
   }
 
@@ -135,8 +128,7 @@ struct ReductionInfo
   void
   Reduce(Lookup&& data)
   {
-    for (auto& clique : cliques)
-      clique.asyncreduce_initialize<field_size>(data);
+    for (auto& clique : cliques) clique.asyncreduce_initialize<field_size>(data);
 
     unfinished.resize(cliques.size());
     std::iota(unfinished.begin(), unfinished.end(), 0);
@@ -144,8 +136,7 @@ struct ReductionInfo
     while (!unfinished.empty()) {
       int increment = 0;
       for (size_t i = 0; i < unfinished.size(); i += increment) {
-        bool reduceFinished =
-            cliques[unfinished[i]].asyncreduce_finalize<field_size>(data);
+        bool reduceFinished = cliques[unfinished[i]].asyncreduce_finalize<field_size>(data);
 
         increment = !reduceFinished;
 
@@ -157,9 +148,7 @@ struct ReductionInfo
     }
   }
   void
-  GetAllIndices(
-      std::vector<int>& indices,
-      std::vector<int>& min_rank_containing_index)
+  GetAllIndices(std::vector<int>& indices, std::vector<int>& min_rank_containing_index)
   {
     for (auto& clique : cliques) {
       int        min_mpi_comm_world_rank = clique.GetMPICommWorldRanks()[0];
@@ -203,22 +192,18 @@ struct ReductionInfo
 template <class list_of_lists_t, class F>
 auto
 fill_clique_lookup(list_of_lists_t& ids_by_rank, F&& clique_lookup) ->
-    typename std::decay<
-        quanta::transformed_iterated_t<F, quanta::elem_t<list_of_lists_t>>>::
-        type
+    typename std::decay<quanta::transformed_iterated_t<F, quanta::elem_t<list_of_lists_t>>>::type
 {
-  typedef decltype(clique_lookup)         lookup_t;
-  typedef quanta::elem_t<list_of_lists_t> inner_list_t;
-  typedef typename std::decay<
-      quanta::transformed_iterated_t<lookup_t, inner_list_t>>::type clique_t;
+  typedef decltype(clique_lookup)                                                           lookup_t;
+  typedef quanta::elem_t<list_of_lists_t>                                                   inner_list_t;
+  typedef typename std::decay<quanta::transformed_iterated_t<lookup_t, inner_list_t>>::type clique_t;
 
   std::unordered_map<clique_t, clique_t> remapped_cliques{};
 
   const clique_t zero{};
   clique_t       rank_plus_one{};
 
-  auto generate_clique_id =
-      quanta::make_counter<clique_t>(quanta::len(ids_by_rank) + 1);
+  auto generate_clique_id = quanta::make_counter<clique_t>(quanta::len(ids_by_rank) + 1);
 
   for (auto& id_list : ids_by_rank) {
     remapped_cliques.clear();
@@ -245,9 +230,7 @@ fill_clique_lookup(list_of_lists_t& ids_by_rank, F&& clique_lookup) ->
 }
 
 ReductionInfo*
-GenerateReductionInfo(
-    const std::vector<int>& raw_global_ids,
-    const mpicontext&       context);
+GenerateReductionInfo(const std::vector<int>& raw_global_ids, const mpicontext& context);
 
 }  // namespace reduction
 }  // namespace nimble

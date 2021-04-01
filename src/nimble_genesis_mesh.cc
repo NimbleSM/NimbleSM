@@ -50,6 +50,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "nimble_macros.h"
+
 #ifdef NIMBLE_HAVE_EXODUS
 #include "exodusII.h"
 #endif
@@ -71,63 +73,46 @@ GenesisMesh::ReadFile(std::string file_name)
   int   word_size    = sizeof(double);
   int   io_word_size = 0;
   float exodus_version;
-  int   exodus_file_id = ex_open(
-      file_name_.c_str(), EX_READ, &word_size, &io_word_size, &exodus_version);
+  int   exodus_file_id = ex_open(file_name_.c_str(), EX_READ, &word_size, &io_word_size, &exodus_version);
   if (exodus_file_id < 0) {
-    std::cout << "\n****Error: unable to open file: " << file_name_.c_str()
-              << "\n"
-              << std::endl;
+    std::cout << "\n****Error: unable to open file: " << file_name_.c_str() << "\n" << std::endl;
     ReportExodusError(exodus_file_id, "GenesisMesh::ReadFile", "ex_open");
   }
 
   // Read the initialization parameters
   int  num_nodes, num_elem, num_blocks, num_node_sets, num_side_sets;
   char title[MAX_LINE_LENGTH + 1];
-  int  retval = ex_get_init(
-      exodus_file_id,
-      title,
-      &dim_,
-      &num_nodes,
-      &num_elem,
-      &num_blocks,
-      &num_node_sets,
-      &num_side_sets);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_init");
+  int  retval =
+      ex_get_init(exodus_file_id, title, &dim_, &num_nodes, &num_elem, &num_blocks, &num_node_sets, &num_side_sets);
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_init");
 
   // Node coordinates
   node_x_.resize(num_nodes);
   node_y_.resize(num_nodes);
   if (dim_ == 3) { node_z_.resize(num_nodes); }
   retval = ex_get_coord(exodus_file_id, &node_x_[0], &node_y_[0], &node_z_[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_coord");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_coord");
 
   // Global node numbering (default map name)
   node_global_id_.resize(num_nodes);
   retval = ex_get_id_map(exodus_file_id, EX_NODE_MAP, &node_global_id_[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_id_map");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_id_map");
   for (int i = 0; i < num_nodes; ++i) {
-    node_global_id_[i] -=
-        1;  // Switch from 1-based indexing to 0-based indexing
+    node_global_id_[i] -= 1;  // Switch from 1-based indexing to 0-based indexing
   }
 
   // Global element numbering (default map name)
   elem_global_id_.resize(num_elem);
   retval = ex_get_id_map(exodus_file_id, EX_ELEM_MAP, &elem_global_id_[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_id_map");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_id_map");
   for (int i = 0; i < num_elem; ++i) {
-    elem_global_id_[i] -=
-        1;  // Switch from 1-based indexing to 0-based indexing
+    elem_global_id_[i] -= 1;  // Switch from 1-based indexing to 0-based indexing
   }
 
   // Check for auxiliary node maps and element maps
   int num_node_maps, num_elem_maps;
   retval = ex_get_map_param(exodus_file_id, &num_node_maps, &num_elem_maps);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_map_param");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_map_param");
   if (num_node_maps > 1 || num_elem_maps > 1) {
     throw std::logic_error(
         "GenesisMesh::ReadFile(), multiple auxiliary node/element maps not "
@@ -140,53 +125,41 @@ GenesisMesh::ReadFile(std::string file_name)
   if (num_node_maps > 0) {
     char map_name[MAX_STR_LENGTH + 1];
     retval = ex_get_name(exodus_file_id, EX_NODE_MAP, 1, map_name);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     if (std::string(map_name) != std::string("original_global_id_map")) {
-      throw std::logic_error(
-          "GenesisMesh::ReadFile(), unsupported auxiliary node map!");
+      throw std::logic_error("GenesisMesh::ReadFile(), unsupported auxiliary node map!");
     }
-    retval =
-        ex_get_num_map(exodus_file_id, EX_NODE_MAP, 1, &node_global_id_[0]);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
+    retval = ex_get_num_map(exodus_file_id, EX_NODE_MAP, 1, &node_global_id_[0]);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
     for (int i = 0; i < num_nodes; ++i) {
-      node_global_id_[i] -=
-          1;  // Switch from 1-based indexing to 0-based indexing
+      node_global_id_[i] -= 1;  // Switch from 1-based indexing to 0-based indexing
     }
   }
   if (num_elem_maps > 0) {
     char map_name[MAX_STR_LENGTH + 1];
     retval = ex_get_name(exodus_file_id, EX_ELEM_MAP, 1, map_name);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     if (std::string(map_name) != std::string("original_global_id_map")) {
-      throw std::logic_error(
-          "GenesisMesh::ReadFile(), unsupported auxiliary element map!");
+      throw std::logic_error("GenesisMesh::ReadFile(), unsupported auxiliary element map!");
     }
-    retval =
-        ex_get_num_map(exodus_file_id, EX_ELEM_MAP, 1, &elem_global_id_[0]);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
+    retval = ex_get_num_map(exodus_file_id, EX_ELEM_MAP, 1, &elem_global_id_[0]);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
     for (int i = 0; i < num_elem; ++i) {
-      elem_global_id_[i] -=
-          1;  // Switch from 1-based indexing to 0-based indexing
+      elem_global_id_[i] -= 1;  // Switch from 1-based indexing to 0-based indexing
     }
   }
 
-  // Read the node sets and side sets
+  // Read the node sets
   if (num_node_sets > 0) {
     node_set_ids_.resize(num_node_sets);
     retval = ex_get_ids(exodus_file_id, EX_NODE_SET, &node_set_ids_[0]);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
   }
-  for (int i = 0; i < num_node_sets; i++) {
+  for (int i = 0; i < num_node_sets; ++i) {
     int  id = node_set_ids_[i];
     char name[MAX_STR_LENGTH + 1];
     retval = ex_get_name(exodus_file_id, EX_NODE_SET, id, name);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     // If the node set name came back blank, create one that looks like
     // "nodelist_1", "nodelist_2", etc.
     std::string node_set_name(name);
@@ -199,47 +172,73 @@ GenesisMesh::ReadFile(std::string file_name)
 
     int num_nodes_in_ns;
     int num_dist_factors_in_ns;
-    retval = ex_get_set_param(
-        exodus_file_id,
-        EX_NODE_SET,
-        id,
-        &num_nodes_in_ns,
-        &num_dist_factors_in_ns);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
+    retval = ex_get_set_param(exodus_file_id, EX_NODE_SET, id, &num_nodes_in_ns, &num_dist_factors_in_ns);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
     node_sets_[id] = std::vector<int>();
     if (num_nodes_in_ns > 0 && num_dist_factors_in_ns == num_nodes_in_ns) {
       node_sets_[id] = std::vector<int>(num_nodes_in_ns);
-      retval =
-          ex_get_set(exodus_file_id, EX_NODE_SET, id, &node_sets_[id][0], NULL);
-      if (retval != 0)
-        ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
+      retval         = ex_get_set(exodus_file_id, EX_NODE_SET, id, &node_sets_[id][0], NULL);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
       // convert from 1-based indexing to 0-based indexing
-      for (unsigned int j = 0; j < node_sets_[id].size(); j++) {
-        node_sets_[id][j] -= 1;
-      }
+      for (unsigned int j = 0; j < node_sets_[id].size(); j++) { node_sets_[id][j] -= 1; }
     }
-    distribution_factors_[id] = std::vector<double>();
+    ns_distribution_factors_[id] = std::vector<double>();
     if (num_nodes_in_ns > 0) {
-      distribution_factors_[id] = std::vector<double>(num_dist_factors_in_ns);
-      retval                    = ex_get_set_dist_fact(
-          exodus_file_id, EX_NODE_SET, id, &distribution_factors_[id][0]);
-      if (retval != 0)
-        ReportExodusError(
-            retval, "GenesisMesh::ReadFile()", "ex_get_set_dist_fact");
+      ns_distribution_factors_[id] = std::vector<double>(num_dist_factors_in_ns);
+      retval = ex_get_set_dist_fact(exodus_file_id, EX_NODE_SET, id, &ns_distribution_factors_[id][0]);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_dist_fact");
+    }
+  }
+
+  // Read the side sets
+  if (num_side_sets > 0) {
+    side_set_ids_.resize(num_side_sets);
+    retval = ex_get_ids(exodus_file_id, EX_SIDE_SET, &side_set_ids_[0]);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
+  }
+  for (int i = 0; i < num_side_sets; ++i) {
+    int  id = side_set_ids_[i];
+    char name[MAX_STR_LENGTH + 1];
+    retval = ex_get_name(exodus_file_id, EX_SIDE_SET, id, name);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    // If the side set name came back blank, create one that looks like
+    // "sideset_1", "sideset_2", etc.
+    std::string side_set_name(name);
+    if (side_set_name.size() == 0) {
+      std::stringstream ss;
+      ss << "sideset_" << id;
+      side_set_name = ss.str();
+    }
+    side_set_names_[id] = side_set_name;
+
+    int num_nodes_in_ss;
+    int num_dist_factors_in_ss;
+    retval = ex_get_set_param(exodus_file_id, EX_SIDE_SET, id, &num_nodes_in_ss, &num_dist_factors_in_ss);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
+    side_sets_[id] = std::vector<int>();
+    if (num_nodes_in_ss > 0 && num_dist_factors_in_ss == num_nodes_in_ss) {
+      side_sets_[id] = std::vector<int>(num_nodes_in_ss);
+      retval         = ex_get_set(exodus_file_id, EX_SIDE_SET, id, &side_sets_[id][0], NULL);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
+      // convert from 1-based indexing to 0-based indexing
+      for (unsigned int j = 0; j < side_sets_[id].size(); j++) { side_sets_[id][j] -= 1; }
+    }
+    ss_distribution_factors_[id] = std::vector<double>();
+    if (num_nodes_in_ss > 0) {
+      ss_distribution_factors_[id] = std::vector<double>(num_dist_factors_in_ss);
+      retval = ex_get_set_dist_fact(exodus_file_id, EX_SIDE_SET, id, &ss_distribution_factors_[id][0]);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_dist_fact");
     }
   }
 
   // Process the element blocks
   std::vector<int> all_block_ids(num_blocks);
   retval = ex_get_ids(exodus_file_id, EX_ELEM_BLOCK, &all_block_ids[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
 
   // Load information only for blocks with elements on this partition
   for (auto block_id : all_block_ids) {
-    int num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0),
-        num_faces_per_elem(0), num_attributes(0);
+    int  num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0), num_faces_per_elem(0), num_attributes(0);
     char elem_type[MAX_STR_LENGTH + 1];
     retval = ex_get_block(
         exodus_file_id,
@@ -251,17 +250,14 @@ GenesisMesh::ReadFile(std::string file_name)
         &num_edges_per_elem,
         &num_faces_per_elem,
         &num_attributes);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
     if (num_elem_this_block > 0) { block_ids_.push_back(block_id); }
     all_block_ids_.push_back(block_id);
 
     // Get the block name, if there is one
     char exodus_block_name[MAX_STR_LENGTH + 1];
-    retval =
-        ex_get_name(exodus_file_id, EX_ELEM_BLOCK, block_id, exodus_block_name);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    retval = ex_get_name(exodus_file_id, EX_ELEM_BLOCK, block_id, exodus_block_name);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     // If the block name came back blank, create one that looks like "block_1",
     // "block_2", etc.
     std::string block_name(exodus_block_name);
@@ -282,8 +278,7 @@ GenesisMesh::ReadFile(std::string file_name)
     int block_id = block_ids_.at(i_block);
 
     // Get the block parameters and the element connectivity
-    int num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0),
-        num_faces_per_elem(0), num_attributes(0);
+    int  num_elem_this_block(0), num_nodes_per_elem(0), num_edges_per_elem(0), num_faces_per_elem(0), num_attributes(0);
     char elem_type[MAX_STR_LENGTH + 1];
     retval = ex_get_block(
         exodus_file_id,
@@ -295,39 +290,27 @@ GenesisMesh::ReadFile(std::string file_name)
         &num_edges_per_elem,
         &num_faces_per_elem,
         &num_attributes);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_block");
     block_num_nodes_per_elem_[block_id] = num_nodes_per_elem;
 
     // global element ids for this block
     block_elem_global_ids_[block_id] = std::vector<int>(num_elem_this_block);
     for (int i = 0; i < num_elem_this_block; i++) {
-      block_elem_global_ids_.at(block_id).at(i) =
-          elem_global_id_[elem_local_index++];
+      block_elem_global_ids_.at(block_id).at(i) = elem_global_id_[elem_local_index++];
     }
 
     // element connectivity for this block
-    block_elem_connectivity_[block_id] =
-        std::vector<int>(num_elem_this_block * num_nodes_per_elem);
-    retval = ex_get_conn(
-        exodus_file_id,
-        EX_ELEM_BLOCK,
-        block_id,
-        &block_elem_connectivity_.at(block_id)[0],
-        0,
-        0);
-    if (retval != 0)
-      ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_conn");
+    block_elem_connectivity_[block_id] = std::vector<int>(num_elem_this_block * num_nodes_per_elem);
+    retval = ex_get_conn(exodus_file_id, EX_ELEM_BLOCK, block_id, &block_elem_connectivity_.at(block_id)[0], 0, 0);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_conn");
     // Switch from 1-based indexing to 0-based indexing
-    for (unsigned int i = 0; i < block_elem_connectivity_.at(block_id).size();
-         i++) {
+    for (unsigned int i = 0; i < block_elem_connectivity_.at(block_id).size(); i++) {
       block_elem_connectivity_.at(block_id).at(i) -= 1;
     }
   }
 
   retval = ex_close(exodus_file_id);
-  if (retval != 0)
-    ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_close");
+  if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_close");
 #endif
 }
 
@@ -346,8 +329,7 @@ GenesisMesh::ReadTextFile(std::string file_name)
 
   if (!mesh_file.is_open()) {
     std::stringstream error_msg_ss;
-    error_msg_ss << "\n** Error, failed to open mesh file " << text_file_name
-                 << "\n";
+    error_msg_ss << "\n** Error, failed to open mesh file " << text_file_name << "\n";
     throw std::logic_error(error_msg_ss.str());
   }
 
@@ -404,10 +386,9 @@ GenesisMesh::ReadTextFile(std::string file_name)
       block_ids_.push_back(block_id);
       block_names_[block_id]              = block_name;
       block_num_nodes_per_elem_[block_id] = num_nodes_per_elem;
-      block_elem_connectivity_[block_id] =
-          std::vector<int>(num_elem_in_block * num_nodes_per_elem);
-      block_elem_global_ids_[block_id] = std::vector<int>(num_elem_in_block);
-      std::vector<int>& conn           = block_elem_connectivity_[block_id];
+      block_elem_connectivity_[block_id]  = std::vector<int>(num_elem_in_block * num_nodes_per_elem);
+      block_elem_global_ids_[block_id]    = std::vector<int>(num_elem_in_block);
+      std::vector<int>& conn              = block_elem_connectivity_[block_id];
       for (int i = 0; i < num_elem_in_block; i++) {
         getline(mesh_file, str);
         std::stringstream ss(str);
@@ -477,12 +458,10 @@ GenesisMesh::Initialize(
 int
 GenesisMesh::GetNumElementsInBlock(int block_id) const
 {
-  unsigned int conn_size = block_elem_connectivity_.at(block_id).size();
+  unsigned int conn_size          = block_elem_connectivity_.at(block_id).size();
   int          num_nodes_per_elem = block_num_nodes_per_elem_.at(block_id);
   int          num_elem_in_block  = 0;
-  if (conn_size > 0) {
-    num_elem_in_block = static_cast<int>(conn_size) / num_nodes_per_elem;
-  }
+  if (conn_size > 0) { num_elem_in_block = static_cast<int>(conn_size) / num_nodes_per_elem; }
   return num_elem_in_block;
 }
 
@@ -490,9 +469,7 @@ std::map<int, int>
 GenesisMesh::GetNumElementsInBlock() const
 {
   std::map<int, int> num_elem_in_each_block;
-  for (std::vector<int>::const_iterator it = block_ids_.begin();
-       it != block_ids_.end();
-       it++) {
+  for (std::vector<int>::const_iterator it = block_ids_.begin(); it != block_ids_.end(); it++) {
     num_elem_in_each_block[*it] = GetNumElementsInBlock(*it);
   }
   return num_elem_in_each_block;
@@ -521,10 +498,7 @@ GenesisMesh::GetElementType(int block_id) const
     }
   }
 
-  if (elem_type == "UNKNOWN") {
-    throw std::logic_error(
-        "Error processing input mesh, unknown element type.");
-  }
+  if (elem_type == "UNKNOWN") { throw std::logic_error("Error processing input mesh, unknown element type."); }
 
   return elem_type;
 }
@@ -544,14 +518,11 @@ GenesisMesh::GetBlockId(std::string const& block_name) const
   for (auto& entry : block_names_) {
     if (entry.second == block_name) { return entry.first; }
   }
-  throw std::logic_error(
-      "\n**** Error in GenesisMesh::GetBlockId(), block name not found.\n");
+  throw std::logic_error("\n**** Error in GenesisMesh::GetBlockId(), block name not found.\n");
 }
 
 void
-GenesisMesh::BlockNamesToOnProcessorBlockIds(
-    std::vector<std::string> const& block_names,
-    std::vector<int>&               block_ids)
+GenesisMesh::BlockNamesToOnProcessorBlockIds(std::vector<std::string> const& block_names, std::vector<int>& block_ids)
 {
   block_ids.clear();
   for (auto& name : block_names) {
@@ -562,13 +533,7 @@ GenesisMesh::BlockNamesToOnProcessorBlockIds(
 }
 
 void
-GenesisMesh::BoundingBox(
-    double& x_min,
-    double& x_max,
-    double& y_min,
-    double& y_max,
-    double& z_min,
-    double& z_max) const
+GenesisMesh::BoundingBox(double& x_min, double& x_max, double& y_min, double& y_max, double& z_min, double& z_max) const
 {
   // THIS WORKS ONLY IN SERIAL
 
@@ -612,10 +577,9 @@ GenesisMesh::AppendPeriodicPair(
     const int* const    global_node_ids,
     std::map<int, int>& global_node_id_secondary_to_primary) const
 {
-  int global_primary_node_id   = global_node_ids[local_primary_node_id];
-  int global_secondary_node_id = global_node_ids[local_secondary_node_id];
-  global_node_id_secondary_to_primary[global_secondary_node_id] =
-      global_primary_node_id;
+  int global_primary_node_id                                    = global_node_ids[local_primary_node_id];
+  int global_secondary_node_id                                  = global_node_ids[local_secondary_node_id];
+  global_node_id_secondary_to_primary[global_secondary_node_id] = global_primary_node_id;
 }
 
 void
@@ -665,14 +629,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool   is_y_max = std::fabs(y - y_max) < tol;
     bool   is_z_min = std::fabs(z - z_min) < tol;
     bool   is_z_max = std::fabs(z - z_max) < tol;
-    if (!is_x_min && !is_x_max && !is_y_min && !is_y_max && !is_z_min &&
-        !is_z_max)
+    if (!is_x_min && !is_x_max && !is_y_min && !is_y_max && !is_z_min && !is_z_max)
       continue;
     else if (is_x_min && is_y_min && is_z_min)
       corner_primary.push_back(n);
-    else if (
-        (is_x_min || is_x_max) && (is_y_min || is_y_max) &&
-        (is_z_min || is_z_max))
+    else if ((is_x_min || is_x_max) && (is_y_min || is_y_max) && (is_z_min || is_z_max))
       corner.push_back(n);
     else if (is_x_min && is_y_min)
       edge_x_min_y_min.push_back(n);
@@ -734,11 +695,7 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
   if (!mesh_is_periodic) throw std::logic_error("Mesh is not periodic!\n");
 
   for (auto const& secondary : corner) {
-    AppendPeriodicPair(
-        corner_primary[0],
-        secondary,
-        global_node_ids,
-        global_node_id_secondary_to_primary);
+    AppendPeriodicPair(corner_primary[0], secondary, global_node_ids, global_node_id_secondary_to_primary);
   }
 
   // declare nodes on edge_x_min_y_min to be primary nodes
@@ -749,17 +706,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_y_min) {
       if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_x_min_y_max
@@ -767,17 +718,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_y_min) {
       if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_x_max_y_max
@@ -785,17 +730,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_y_min) {
       if (std::fabs(node_z_[primary] - node_z_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // declare nodes on edge_x_min_z_min to be primary nodes
@@ -806,17 +745,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_z_min) {
       if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_x_min_z_max
@@ -824,17 +757,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_z_min) {
       if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_x_max_z_max
@@ -842,17 +769,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_x_min_z_min) {
       if (std::fabs(node_y_[primary] - node_y_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // declare nodes on edge_y_min_z_min to be primary nodes
@@ -863,17 +784,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_y_min_z_min) {
       if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_y_min_z_max
@@ -881,17 +796,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_y_min_z_min) {
       if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // edge_y_max_z_max
@@ -899,17 +808,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     bool found = false;
     for (auto const& primary : edge_y_min_z_min) {
       if (std::fabs(node_x_[primary] - node_x_[secondary]) < tol) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match edge node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match edge node.\n");
   }
 
   // find pairs for the surface nodes that are not on corners or edges
@@ -919,17 +822,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     for (auto const& primary : surface_x_min) {
       if ((std::fabs(node_y_[primary] - node_y_[secondary]) < tol) &&
           (std::fabs(node_z_[primary] - node_z_[secondary]) < tol)) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match surface node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match surface node.\n");
   }
 
   for (auto const& secondary : surface_y_max) {
@@ -937,17 +834,11 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     for (auto const& primary : surface_y_min) {
       if ((std::fabs(node_x_[primary] - node_x_[secondary]) < tol) &&
           (std::fabs(node_z_[primary] - node_z_[secondary]) < tol)) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match surface node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match surface node.\n");
   }
 
   for (auto const& secondary : surface_z_max) {
@@ -955,25 +846,18 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
     for (auto const& primary : surface_z_min) {
       if ((std::fabs(node_x_[primary] - node_x_[secondary]) < tol) &&
           (std::fabs(node_y_[primary] - node_y_[secondary]) < tol)) {
-        AppendPeriodicPair(
-            primary,
-            secondary,
-            global_node_ids,
-            global_node_id_secondary_to_primary);
+        AppendPeriodicPair(primary, secondary, global_node_ids, global_node_id_secondary_to_primary);
         found = true;
       }
     }
-    if (!found)
-      throw std::logic_error(
-          "Mesh is not periodic!  Failed to match surface node.\n");
+    if (!found) throw std::logic_error("Mesh is not periodic!  Failed to match surface node.\n");
   }
 
   int                linear_system_length(0);
   std::map<int, int> global_id_to_linear_system_id;
   for (int n = 0; n < num_nodes; n++) {
     int global_node_id = global_node_ids[n];
-    if (global_node_id_secondary_to_primary.find(global_node_id) ==
-        global_node_id_secondary_to_primary.end()) {
+    if (global_node_id_secondary_to_primary.find(global_node_id) == global_node_id_secondary_to_primary.end()) {
       // the node is not a secondary, it belongs in the linear system
       global_id_to_linear_system_id[global_node_id] = linear_system_length;
       linear_system_length += 1;
@@ -982,28 +866,22 @@ GenesisMesh::CreatePeriodicRVELinearSystemMap(
 
   for (int n = 0; n < num_nodes; n++) {
     int global_node_id = global_node_ids[n];
-    if (global_node_id_secondary_to_primary.find(global_node_id) ==
-        global_node_id_secondary_to_primary.end()) {
+    if (global_node_id_secondary_to_primary.find(global_node_id) == global_node_id_secondary_to_primary.end()) {
       int linear_system_id = global_id_to_linear_system_id[global_node_id];
       linear_system_node_ids.push_back(linear_system_id);
     } else {
-      int linear_system_id = global_id_to_linear_system_id
-          [global_node_id_secondary_to_primary[global_node_id]];
+      int linear_system_id = global_id_to_linear_system_id[global_node_id_secondary_to_primary[global_node_id]];
       linear_system_node_ids.push_back(linear_system_id);
     }
   }
 
-  for (int i = 0; i < linear_system_length; i++) {
-    map_from_linear_system[i] = std::vector<int>();
-  }
+  for (int i = 0; i < linear_system_length; i++) { map_from_linear_system[i] = std::vector<int>(); }
   for (int n = 0; n < num_nodes; n++) {
     int linear_system_node_id = linear_system_node_ids[n];
     map_from_linear_system[linear_system_node_id].push_back(n);
   }
 
-  if (map_from_linear_system.size() +
-          global_node_id_secondary_to_primary.size() !=
-      num_nodes) {
+  if (map_from_linear_system.size() + global_node_id_secondary_to_primary.size() != num_nodes) {
     throw std::logic_error("Error in CreatePeriodicRVELinearSystemMap().\n");
   }
 
@@ -1030,9 +908,7 @@ GenesisMesh::Print(bool verbose, int my_rank) const
       std::cout << "    block name: " << block_names_.at(block_id) << std::endl;
       std::cout << "    elem type:  " << GetElementType(block_id) << std::endl;
       std::cout << "    num elems:  "
-                << block_elem_connectivity_.at(block_id).size() /
-                       block_num_nodes_per_elem_.at(block_id)
-                << std::endl;
+                << block_elem_connectivity_.at(block_id).size() / block_num_nodes_per_elem_.at(block_id) << std::endl;
     }
   }
   std::cout << std::endl;
@@ -1040,19 +916,15 @@ GenesisMesh::Print(bool verbose, int my_rank) const
 }
 
 void
-GenesisMesh::ReportExodusError(
-    int         error_code,
-    const char* method_name,
-    const char* exodus_method_name) const
+GenesisMesh::ReportExodusError(int error_code, const char* method_name, const char* exodus_method_name) const
 {
   std::stringstream ss;
   if (error_code < 0) {
-    ss << "\n**Error GenesisMesh::" << method_name
-       << ", Error code: " << error_code << " (" << exodus_method_name << ")\n";
+    ss << "\n**Error GenesisMesh::" << method_name << ", Error code: " << error_code << " (" << exodus_method_name
+       << ")\n";
     throw std::logic_error(ss.str());
   } else {
-    ss << "\n**Warning GenesisMesh::" << method_name
-       << ", Warning code: " << error_code << " (" << exodus_method_name
+    ss << "\n**Warning GenesisMesh::" << method_name << ", Warning code: " << error_code << " (" << exodus_method_name
        << ")\n";
     std::cout << ss.str() << std::endl;
   }

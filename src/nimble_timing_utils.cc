@@ -71,15 +71,12 @@ void
 TimingInfo::BinaryWrite() const
 {
   std::stringstream timinginfo;
-  timinginfo << num_ranks << "\t" << total_simulation_time << "\t"
-             << total_internal_force_time << "\t" << total_contact_time << "\t"
-             << total_exodus_write_time << "\t" << total_vector_reduction_time
-             << "\n";
+  timinginfo << num_ranks << "\t" << total_simulation_time << "\t" << total_internal_force_time << "\t"
+             << total_contact_time << "\t" << total_exodus_write_time << "\t" << total_vector_reduction_time << "\n";
   std::string timingdatastr = timinginfo.str();
 
   std::stringstream filename_stream;
-  filename_stream << "nimble_timing_data_n" << num_ranks << "_" << time_stamp
-                  << ".log";
+  filename_stream << "nimble_timing_data_n" << num_ranks << "_" << time_stamp << ".log";
   std::string timingfilenamestr = filename_stream.str();
   for (char& c : timingfilenamestr) {
     if (c == ' ') c = '-';

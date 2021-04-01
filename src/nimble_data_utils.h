@@ -118,23 +118,12 @@ std::vector<std::string>
 GetComponentLabels(std::string label, Length length, int dim);
 
 std::string
-GetComponentLabel(
-    std::string label,
-    Length      length,
-    int         dim,
-    int         component_index,
-    int         ipt);
+GetComponentLabel(std::string label, Length length, int dim, int component_index, int ipt);
 
 class Field
 {
  public:
-  Field()
-      : id_(-1),
-        label_("none"),
-        relation_(UNDEFINED_RELATION),
-        length_(UNDEFINED_LENGTH)
-  {
-  }
+  Field() : id_(-1), label_("none"), relation_(UNDEFINED_RELATION), length_(UNDEFINED_LENGTH) {}
 
   virtual ~Field() {}
 
@@ -154,10 +143,7 @@ class Field
 };
 
 Length
-LabelToLength(
-    std::string                 label,
-    std::map<int, Field> const& data_fields,
-    int                         dim);
+LabelToLength(std::string label, std::map<int, Field> const& data_fields, int dim);
 
 }  // namespace nimble
 

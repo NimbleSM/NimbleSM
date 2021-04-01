@@ -75,7 +75,7 @@ IOFileName(
     num_ranks_ss << num_ranks;
     std::stringstream my_rank_ss;
     my_rank_ss << my_rank;
-    int num_zero_padding = num_ranks_ss.str().size() - my_rank_ss.str().size();
+    int               num_zero_padding = num_ranks_ss.str().size() - my_rank_ss.str().size();
     std::stringstream ss;
     ss << file_name << "." << num_ranks << ".";
     for (int i = 0; i < num_zero_padding; i++) { ss << 0; }
@@ -157,12 +157,11 @@ IOFileNameThreadSafe(
 
 BlockProperties::BlockProperties(std::string props) : block_id_(-1)
 {
-  size_t space_pos           = props.find(" ");
-  block_name_                = props.substr(0, space_pos);
-  material_key_              = props.substr(space_pos + 1, props.size());
-  size_t      underscore_pos = block_name_.rfind("_");
-  std::string block_id_str =
-      block_name_.substr(underscore_pos + 1, block_name_.size());
+  size_t space_pos                 = props.find(" ");
+  block_name_                      = props.substr(0, space_pos);
+  material_key_                    = props.substr(space_pos + 1, props.size());
+  size_t            underscore_pos = block_name_.rfind("_");
+  std::string       block_id_str   = block_name_.substr(underscore_pos + 1, block_name_.size());
   std::stringstream ss;
   ss << block_id_str;
   ss >> block_id_;
@@ -204,9 +203,7 @@ Parser::ReadFile()
   std::ifstream fin;
   fin.open(file_name_.c_str());
   if (!fin.good()) {
-    std::string msg =
-        "\n**** Error in Parser::ReadFile(), unable to read file " +
-        file_name_ + "\n";
+    std::string msg = "\n**** Error in Parser::ReadFile(), unable to read file " + file_name_ + "\n";
     throw std::logic_error(msg);
   }
 
@@ -230,11 +227,9 @@ Parser::ReadFile()
       // Commands are delimited with a colon
       size_t      colon_pos = line.find(":");
       std::string key       = line.substr(0, colon_pos);
-      key =
-          key.substr(key.find_first_not_of(" "), key.find_last_not_of(" ") + 1);
-      std::string value = line.substr(colon_pos + 1, line.size());
-      value             = value.substr(
-          value.find_first_not_of(" "), value.find_last_not_of(" ") + 1);
+      key                   = key.substr(key.find_first_not_of(" "), key.find_last_not_of(" ") + 1);
+      std::string value     = line.substr(colon_pos + 1, line.size());
+      value                 = value.substr(value.find_first_not_of(" "), value.find_last_not_of(" ") + 1);
 
       ParseKeyValue(key, value);
     }
@@ -253,16 +248,10 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
   } else if (key == "use two level mesh decomposition") {
     std::string value_upper_case(value);
     std::transform(
-        value_upper_case.begin(),
-        value_upper_case.end(),
-        value_upper_case.begin(),
-        (int (*)(int))std::toupper);
-    if (value_upper_case == "TRUE" || value_upper_case == "YES" ||
-        value_upper_case == "ON") {
+        value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
+    if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
       use_two_level_mesh_decomposition_ = true;
-    } else if (
-        value_upper_case == "FALSE" || value_upper_case == "NO" ||
-        value_upper_case == "OFF") {
+    } else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
       use_two_level_mesh_decomposition_ = false;
     } else {
       std::string msg =
@@ -274,16 +263,10 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
   } else if (key == "write timing data file") {
     std::string value_upper_case(value);
     std::transform(
-        value_upper_case.begin(),
-        value_upper_case.end(),
-        value_upper_case.begin(),
-        (int (*)(int))std::toupper);
-    if (value_upper_case == "TRUE" || value_upper_case == "YES" ||
-        value_upper_case == "ON") {
+        value_upper_case.begin(), value_upper_case.end(), value_upper_case.begin(), (int (*)(int))std::toupper);
+    if (value_upper_case == "TRUE" || value_upper_case == "YES" || value_upper_case == "ON") {
       write_timing_data_file_ = true;
-    } else if (
-        value_upper_case == "FALSE" || value_upper_case == "NO" ||
-        value_upper_case == "OFF") {
+    } else if (value_upper_case == "FALSE" || value_upper_case == "NO" || value_upper_case == "OFF") {
       write_timing_data_file_ = false;
     } else {
       std::string msg =
@@ -316,10 +299,8 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
     std::vector<std::string> vals;
     while (ss >> val) { vals.push_back(val); }
 
-    if (vals.size() != 6 || vals[0] != "visualize_contact_entities" ||
-        (vals[1] != "on" && vals[1] != "off") ||
-        vals[2] != "visualize_bounding_boxes" ||
-        (vals[3] != "on" && vals[3] != "off") || vals[4] != "file_name") {
+    if (vals.size() != 6 || vals[0] != "visualize_contact_entities" || (vals[1] != "on" && vals[1] != "off") ||
+        vals[2] != "visualize_bounding_boxes" || (vals[3] != "on" && vals[3] != "off") || vals[4] != "file_name") {
       std::string msg =
           "\n**** Error in Parser::ReadFile(), unexpected value for \"contact "
           "visualization\"\n";
@@ -339,9 +320,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
   } else if (key == "microscale output element ids") {
     std::stringstream ss(value);
     int               global_id;
-    while (ss >> global_id) {
-      microscale_output_element_ids_.push_back(global_id);
-    }
+    while (ss >> global_id) { microscale_output_element_ids_.push_back(global_id); }
   } else if (key == "material parameters") {
     size_t      space_pos           = value.find(" ");
     std::string material_key        = value.substr(0, space_pos);
@@ -367,17 +346,16 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
 #endif
 #ifdef NIMBLE_HAVE_UQ
   else if (key == "uq parameters") {
-    size_t      space_pos    = value.find(" ");
-    std::string material_key = value.substr(0, space_pos);
-    std::string uq_params    = value.substr(space_pos + 1, value.size());
+    size_t      space_pos                = value.find(" ");
+    std::string material_key             = value.substr(0, space_pos);
+    std::string uq_params                = value.substr(space_pos + 1, value.size());
     uq_parameters_strings_[material_key] = uq_params;
   } else if (key == "uq model") {
     uq_model_string_ = value;
   }
 #endif
   else {
-    std::string msg =
-        "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
+    std::string msg = "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
     throw std::logic_error(msg);
   }
 }

@@ -64,20 +64,13 @@
 namespace nimble {
 
 std::vector<int>
-PackIDSpace(
-    const std::vector<int>& raw_node_ids,
-    int                     max_nodes_assigned_to_a_rank,
-    const mpicontext&       context);
+PackIDSpace(const std::vector<int>& raw_node_ids, int max_nodes_assigned_to_a_rank, const mpicontext& context);
 
 int
-GetMaximumNodeId(
-    const std::vector<int>& global_node_ids,
-    const mpicontext&       context);
+GetMaximumNodeId(const std::vector<int>& global_node_ids, const mpicontext& context);
 
 std::unique_ptr<int[]>
-GetNumberOfNodesAssignedToEachRank(
-    const std::vector<int>& global_node_ids,
-    const mpicontext&       context);
+GetNumberOfNodesAssignedToEachRank(const std::vector<int>& global_node_ids, const mpicontext& context);
 
 void
 EnsureCheckpoint(const mpicontext& context, const std::string& message);

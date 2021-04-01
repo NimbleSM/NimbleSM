@@ -49,8 +49,7 @@
 namespace nimble {
 
 void
-ElasticMaterial::register_supported_material_parameters(
-    MaterialFactoryBase& factory)
+ElasticMaterial::register_supported_material_parameters(MaterialFactoryBase& factory)
 {
   factory.add_valid_double_parameter_name("bulk_modulus");
   factory.add_valid_double_parameter_name("shear_modulus");
@@ -58,12 +57,7 @@ ElasticMaterial::register_supported_material_parameters(
 }
 
 ElasticMaterial::ElasticMaterial(MaterialParameters const& material_parameters)
-    : Material(),
-      num_state_variables_(0),
-      dim_(0),
-      density_(0.0),
-      bulk_modulus_(0.0),
-      shear_modulus_(0.0)
+    : Material(), num_state_variables_(0), dim_(0), density_(0.0), bulk_modulus_(0.0), shear_modulus_(0.0)
 {
   dim_           = 3;
   density_       = material_parameters.GetParameterValue("density");
@@ -200,16 +194,14 @@ ElasticMaterial::GetTangent(int num_pts, double* material_tangent) const
 }
 
 void
-NeohookeanMaterial::register_supported_material_parameters(
-    MaterialFactoryBase& factory)
+NeohookeanMaterial::register_supported_material_parameters(MaterialFactoryBase& factory)
 {
   factory.add_valid_double_parameter_name("bulk_modulus");
   factory.add_valid_double_parameter_name("shear_modulus");
   factory.add_valid_double_parameter_name("density");
 }
 
-NeohookeanMaterial::NeohookeanMaterial(
-    MaterialParameters const& material_parameters)
+NeohookeanMaterial::NeohookeanMaterial(MaterialParameters const& material_parameters)
     : Material(),
       num_state_variables_(0),
       dim_(3),
@@ -245,17 +237,12 @@ NeohookeanMaterial::GetStress(
   for (int pt = 0; pt < num_pts; pt++) {
     Polar_Decomp(&deformation_gradient_np1[9 * pt], v, r);
 
-    CheckVectorSanity(
-        9,
-        &deformation_gradient_np1[9 * pt],
-        "neohookean deformation_gradient_np1");
+    CheckVectorSanity(9, &deformation_gradient_np1[9 * pt], "neohookean deformation_gradient_np1");
     CheckVectorSanity(6, v, "neohookean v");
     CheckVectorSanity(9, r, "neohookean r");
 
-    xj = v[K_S_XX] * v[K_S_YY] * v[K_S_ZZ] +
-         2.0 * v[K_S_XY] * v[K_S_YZ] * v[K_S_ZX] -
-         v[K_S_XX] * v[K_S_YZ] * v[K_S_YZ] - v[K_S_YY] * v[K_S_ZX] * v[K_S_ZX] -
-         v[K_S_ZZ] * v[K_S_XY] * v[K_S_XY];
+    xj = v[K_S_XX] * v[K_S_YY] * v[K_S_ZZ] + 2.0 * v[K_S_XY] * v[K_S_YZ] * v[K_S_ZX] -
+         v[K_S_XX] * v[K_S_YZ] * v[K_S_YZ] - v[K_S_YY] * v[K_S_ZX] * v[K_S_ZX] - v[K_S_ZZ] * v[K_S_XY] * v[K_S_XY];
 
     double cbrt_xj = std::cbrt(xj);
     fac            = 1.0 / (cbrt_xj * cbrt_xj);
@@ -318,17 +305,12 @@ NeohookeanMaterial::GetOffNominalStress(
   for (int pt = 0; pt < num_pts; pt++) {
     Polar_Decomp(&deformation_gradient_np1[9 * pt], v, r);
 
-    CheckVectorSanity(
-        9,
-        &deformation_gradient_np1[9 * pt],
-        "neohookean deformation_gradient_np1");
+    CheckVectorSanity(9, &deformation_gradient_np1[9 * pt], "neohookean deformation_gradient_np1");
     CheckVectorSanity(6, v, "neohookean v");
     CheckVectorSanity(9, r, "neohookean r");
 
-    xj = v[K_S_XX] * v[K_S_YY] * v[K_S_ZZ] +
-         2.0 * v[K_S_XY] * v[K_S_YZ] * v[K_S_ZX] -
-         v[K_S_XX] * v[K_S_YZ] * v[K_S_YZ] - v[K_S_YY] * v[K_S_ZX] * v[K_S_ZX] -
-         v[K_S_ZZ] * v[K_S_XY] * v[K_S_XY];
+    xj = v[K_S_XX] * v[K_S_YY] * v[K_S_ZZ] + 2.0 * v[K_S_XY] * v[K_S_YZ] * v[K_S_ZX] -
+         v[K_S_XX] * v[K_S_YZ] * v[K_S_YZ] - v[K_S_YY] * v[K_S_ZX] * v[K_S_ZX] - v[K_S_ZZ] * v[K_S_XY] * v[K_S_XY];
 
     double cbrt_xj = std::cbrt(xj);
     fac            = 1.0 / (cbrt_xj * cbrt_xj);

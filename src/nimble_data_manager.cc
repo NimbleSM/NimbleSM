@@ -85,19 +85,15 @@ DataManager::Initialize()
 
   //--- Create VectorCommunicator
 #ifdef NIMBLE_HAVE_TRILINOS
-  auto comm = (parser_.UseTpetra()) ? Tpetra::getDefaultComm() :
-                                      Teuchos::RCP<const Teuchos::Comm<int>>();
+  auto comm = (parser_.UseTpetra()) ? Tpetra::getDefaultComm() : Teuchos::RCP<const Teuchos::Comm<int>>();
 #else
   int comm = 0;
 #endif
-  vector_communicator_ =
-      std::make_shared<nimble::VectorCommunicator>(dim, num_nodes, comm);
+  vector_communicator_ = std::make_shared<nimble::VectorCommunicator>(dim, num_nodes, comm);
 
   std::vector<int> global_node_ids(num_nodes);
   int const* const global_node_ids_ptr = mesh_.GetNodeGlobalIds();
-  for (int n = 0; n < num_nodes; ++n) {
-    global_node_ids[n] = global_node_ids_ptr[n];
-  }
+  for (int n = 0; n < num_nodes; ++n) { global_node_ids[n] = global_node_ids_ptr[n]; }
 
   // DJL
   // Here is where the initialization occurs for MPI operations
@@ -129,49 +125,37 @@ DataManager::Initialize()
   // Initialize the boundary condition manager
   //
 
-  std::map<int, std::string> const& node_set_names = mesh_.GetNodeSetNames();
-  std::map<int, std::vector<int>> const& node_sets = mesh_.GetNodeSets();
-  std::vector<std::string> const&        bc_strings =
-      parser_.GetBoundaryConditionStrings();
-  std::string time_integration_scheme = parser_.TimeIntegrationScheme();
-  boundary_condition_->Initialize(
-      node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+  std::map<int, std::string> const&      node_set_names          = mesh_.GetNodeSetNames();
+  std::map<int, std::vector<int>> const& node_sets               = mesh_.GetNodeSets();
+  std::vector<std::string> const&        bc_strings              = parser_.GetBoundaryConditionStrings();
+  std::string                            time_integration_scheme = parser_.TimeIntegrationScheme();
+  boundary_condition_->Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
 
   //
   // Initialize vectors for storing fields
   //
 
   if (time_integration_scheme == "explicit")
-    field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(
-        nimble::SCALAR, "lumped_mass", num_nodes);
+    field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
 
-  field_ids_.reference_coordinates = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "reference_coordinate", num_nodes);
-  field_ids_.displacement = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "displacement", num_nodes);
-  field_ids_.velocity =
-      macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
-  field_ids_.acceleration = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "acceleration", num_nodes);
+  field_ids_.reference_coordinates =
+      macroscale_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
+  field_ids_.displacement = macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
+  field_ids_.velocity     = macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
+  field_ids_.acceleration = macroscale_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
 
-  field_ids_.internal_force = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "internal_force", num_nodes);
-  field_ids_.external_force = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "external_force", num_nodes);
+  field_ids_.internal_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+  field_ids_.external_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
 
-  field_ids_.contact_force = macroscale_data_->AllocateNodeData(
-      nimble::VECTOR, "contact_force", num_nodes);
+  field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
 
   if (time_integration_scheme == "quasistatic") {
     //
     // These variables are used in the "quasi-static" simulations
     //
-    macroscale_data_->AllocateNodeData(
-        nimble::VECTOR, "trial_displacement", num_nodes);
-    macroscale_data_->AllocateNodeData(
-        nimble::VECTOR, "displacement_fluctuation", num_nodes);
-    macroscale_data_->AllocateNodeData(
-        nimble::VECTOR, "trial_internal_force", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
+    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
     macroscale_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
   }
 
@@ -214,25 +198,17 @@ DataManager::InitializeOutput(const std::string& filename)
 {
   std::vector<std::string> global_data_labels;
 
-  exodus_output_ =
-      std::shared_ptr<nimble::ExodusOutput>(new nimble::ExodusOutput);
+  exodus_output_ = std::shared_ptr<nimble::ExodusOutput>(new nimble::ExodusOutput);
   exodus_output_->Initialize(filename, mesh_);
 
-  auto& node_data_labels_for_output =
-      macroscale_data_->GetNodeDataLabelsForOutput();
-  auto& elem_data_labels_for_output =
-      macroscale_data_->GetElementDataLabelsForOutput();
-  auto& derived_elem_data_labels =
-      macroscale_data_->GetDerivedElementDataLabelsForOutput();
+  auto& node_data_labels_for_output = macroscale_data_->GetNodeDataLabelsForOutput();
+  auto& elem_data_labels_for_output = macroscale_data_->GetElementDataLabelsForOutput();
+  auto& derived_elem_data_labels    = macroscale_data_->GetDerivedElementDataLabelsForOutput();
 
   macroscale_data_->InitializeExodusOutput(*this);
 
   exodus_output_->InitializeDatabase(
-      mesh_,
-      global_data_labels,
-      node_data_labels_for_output,
-      elem_data_labels_for_output,
-      derived_elem_data_labels);
+      mesh_, global_data_labels, node_data_labels_for_output, elem_data_labels_for_output, derived_elem_data_labels);
 }
 
 void
@@ -243,8 +219,7 @@ DataManager::WriteOutput(double time_current)
 
 void
 DataManager::SetBlockMaterialInterfaceFactory(
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
-        block_material_factory)
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material_factory)
 {
   block_material_factory_ = block_material_factory;
 }

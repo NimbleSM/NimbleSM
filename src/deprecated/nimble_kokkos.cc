@@ -139,15 +139,9 @@ NimbleKokkosInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
   {
     MPI_Init(&argc, &argv);
     int mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    if (mpi_err != MPI_SUCCESS) {
-      throw std::logic_error(
-          "\nError:  MPI_Comm_rank() returned nonzero error code.\n");
-    }
+    if (mpi_err != MPI_SUCCESS) { throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n"); }
     mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    if (mpi_err != MPI_SUCCESS) {
-      throw std::logic_error(
-          "\nError:  MPI_Comm_size() returned nonzero error code.\n");
-    }
+    if (mpi_err != MPI_SUCCESS) { throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n"); }
   }
 #endif
 
@@ -158,8 +152,7 @@ NimbleKokkosInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
   if (argc < 2) {
     if (my_rank == 0) {
 #ifdef NIMBLE_HAVE_MPI
-      std::cout << "Usage:  mpirun -np NP NimbleSM <input_deck.in>\n"
-                << std::endl;
+      std::cout << "Usage:  mpirun -np NP NimbleSM <input_deck.in>\n" << std::endl;
 #else
       std::cout << "Usage:  NimbleSM <input_deck.in>\n" << std::endl;
 #endif
@@ -188,8 +181,7 @@ NimbleKokkosInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 #ifdef NIMBLE_HAVE_VT
   if (parser.UseVT() == true) {
     MPI_Comm vt_comm = MPI_COMM_WORLD;
-    ::vt::CollectiveOps::initialize(
-        argc, argv, ::vt::no_workers, true, &vt_comm);
+    ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
   }
 #endif
 
@@ -201,11 +193,10 @@ NimbleKokkosInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 
 void
 NimbleKokkosMain(
-    const std::shared_ptr<MaterialFactoryType>& material_factory,
-    std::shared_ptr<nimble::ContactInterface>   contact_interface,
-    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
-                          block_material,
-    const nimble::Parser& parser)
+    const std::shared_ptr<MaterialFactoryType>&                       material_factory,
+    std::shared_ptr<nimble::ContactInterface>                         contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
+    const nimble::Parser&                                             parser)
 {
   const int my_rank   = parser.GetRankID();
   const int num_ranks = parser.GetNumRanks();
@@ -219,14 +210,10 @@ NimbleKokkosMain(
   nimble::GenesisMesh rve_mesh;
   {
     //--- This part is independent of Kokkos
-    std::string genesis_file_name = nimble::IOFileName(
-        parser.GenesisFileName(), "g", "", my_rank, num_ranks);
-    std::string rve_genesis_file_name =
-        nimble::IOFileName(parser.RVEGenesisFileName(), "g");
+    std::string genesis_file_name     = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_rank, num_ranks);
+    std::string rve_genesis_file_name = nimble::IOFileName(parser.RVEGenesisFileName(), "g");
     mesh.ReadFile(genesis_file_name);
-    if (rve_genesis_file_name != "none") {
-      rve_mesh.ReadFile(rve_genesis_file_name);
-    }
+    if (rve_genesis_file_name != "none") { rve_mesh.ReadFile(rve_genesis_file_name); }
   }
 
   nimble::DataManager data_manager(parser, mesh, rve_mesh);
@@ -239,10 +226,9 @@ NimbleKokkosMain(
 #else
   std::string tag = "kokkos";
 #endif
-  std::string output_exodus_name =
-      nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
-  const int dim       = mesh.GetDim();
-  const int num_nodes = static_cast<int>(mesh.GetNumNodes());
+  std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
+  const int   dim                = mesh.GetDim();
+  const int   num_nodes          = static_cast<int>(mesh.GetNumNodes());
 
   if (my_rank == 0) {
     std::cout << "\n";
@@ -250,8 +236,7 @@ NimbleKokkosMain(
       std::cout << " Number of Nodes = " << num_nodes << "\n";
       std::cout << " Number of Elements = " << mesh.GetNumElements() << "\n";
     }
-    std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks()
-              << "\n";
+    std::cout << " Number of Global Blocks = " << mesh.GetNumGlobalBlocks() << "\n";
     std::cout << "\n";
     std::cout << " Number of Ranks         = " << num_ranks << "\n";
 #ifdef _OPENMP
@@ -274,8 +259,7 @@ NimbleKokkosMain(
 
   const auto& time_integration_scheme = parser.TimeIntegrationScheme();
   if (time_integration_scheme == "explicit") {
-    details_kokkos::ExplicitTimeIntegrator(
-        parser, mesh, data_manager, contact_interface);
+    details_kokkos::ExplicitTimeIntegrator(parser, mesh, data_manager, contact_interface);
   } else {
     throw std::runtime_error("\n Time Integration Scheme Not Implemented \n");
   }
@@ -321,18 +305,14 @@ ExplicitTimeIntegrator(
 
   auto num_nodes = static_cast<int>(mesh.GetNumNodes());
 
-  auto* model_data_ptr = dynamic_cast<nimble_kokkos::ModelData*>(
-      data_manager.GetMacroScaleData().get());
-  if (model_data_ptr == nullptr) {
-    throw std::runtime_error(" Incompatible Model Data \n");
-  }
+  auto* model_data_ptr = dynamic_cast<nimble_kokkos::ModelData*>(data_manager.GetMacroScaleData().get());
+  if (model_data_ptr == nullptr) { throw std::runtime_error(" Incompatible Model Data \n"); }
   nimble_kokkos::ModelData& model_data = *model_data_ptr;
 
   nimble_kokkos::ProfilingTimer watch_simulation;
   watch_simulation.push_region("Lumped mass gather and compute");
 
-  auto reference_coordinate =
-      model_data.GetVectorNodeData("reference_coordinate");
+  auto reference_coordinate = model_data.GetVectorNodeData("reference_coordinate");
 
   auto velocity = model_data.GetVectorNodeData("velocity");
   velocity.zero();
@@ -357,8 +337,7 @@ ExplicitTimeIntegrator(
 
   watch_simulation.push_region("Contact setup");
 
-  auto contact_manager =
-      nimble::GetContactManager(contact_interface, data_manager);
+  auto contact_manager = nimble::GetContactManager(contact_interface, data_manager);
 
   auto myVectorCommunicator = data_manager.GetVectorCommunicator();
 
@@ -366,35 +345,25 @@ ExplicitTimeIntegrator(
   const bool contact_visualization = parser.ContactVisualization();
 
   if (contact_enabled) {
-    std::vector<std::string> contact_primary_block_names,
-        contact_secondary_block_names;
-    double penalty_parameter;
+    std::vector<std::string> contact_primary_block_names, contact_secondary_block_names;
+    double                   penalty_parameter;
     nimble::ParseContactCommand(
-        parser.ContactString(),
-        contact_primary_block_names,
-        contact_secondary_block_names,
-        penalty_parameter);
+        parser.ContactString(), contact_primary_block_names, contact_secondary_block_names, penalty_parameter);
     std::vector<int> contact_primary_block_ids, contact_secondary_block_ids;
-    mesh.BlockNamesToOnProcessorBlockIds(
-        contact_primary_block_names, contact_primary_block_ids);
-    mesh.BlockNamesToOnProcessorBlockIds(
-        contact_secondary_block_names, contact_secondary_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_primary_block_names, contact_primary_block_ids);
+    mesh.BlockNamesToOnProcessorBlockIds(contact_secondary_block_names, contact_secondary_block_ids);
     contact_manager->SetPenaltyParameter(penalty_parameter);
     contact_manager->CreateContactEntities(
-        mesh,
-        *myVectorCommunicator,
-        contact_primary_block_ids,
-        contact_secondary_block_ids);
+        mesh, *myVectorCommunicator, contact_primary_block_ids, contact_secondary_block_ids);
     if (contact_visualization) {
 #ifdef NIMBLE_HAVE_ARBORX
       std::string tag = "arborx";
 #else
       std::string tag = "kokkos";
 #endif
-      std::string contact_visualization_exodus_file_name = nimble::IOFileName(
-          parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
-      contact_manager->InitializeContactVisualization(
-          contact_visualization_exodus_file_name);
+      std::string contact_visualization_exodus_file_name =
+          nimble::IOFileName(parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
+      contact_manager->InitializeContactVisualization(contact_visualization_exodus_file_name);
     }
   }
 
@@ -409,8 +378,7 @@ ExplicitTimeIntegrator(
   int       output_frequency = parser.OutputFrequency();
 
   model_data.ApplyInitialConditions(data_manager);
-  model_data.ApplyKinematicConditions(
-      data_manager, time_current, time_previous);
+  model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
 
   watch_simulation.pop_region_and_report_time();
 
@@ -419,9 +387,7 @@ ExplicitTimeIntegrator(
 
   data_manager.WriteOutput(time_current);
 
-  if (contact_visualization) {
-    contact_manager->ContactVisualizationWriteStep(time_current);
-  }
+  if (contact_visualization) { contact_manager->ContactVisualizationWriteStep(time_current); }
 
   watch_simulation.pop_region_and_report_time();
   //
@@ -440,17 +406,14 @@ ExplicitTimeIntegrator(
   for (int step = 0; step < num_load_steps; ++step) {
     if (my_rank == 0) {
       if (10 * (step + 1) % num_load_steps == 0 && step != num_load_steps - 1) {
-        std::cout << "   "
-                  << static_cast<int>(
-                         100.0 * static_cast<double>(step + 1) / num_load_steps)
-                  << "% complete" << std::endl
+        std::cout << "   " << static_cast<int>(100.0 * static_cast<double>(step + 1) / num_load_steps) << "% complete"
+                  << std::endl
                   << std::flush;
       } else if (step == num_load_steps - 1) {
         std::cout << "  100% complete\n" << std::endl << std::flush;
       }
     }
-    bool is_output_step =
-        (step % output_frequency == 0 || step == num_load_steps - 1);
+    bool is_output_step = (step % output_frequency == 0 || step == num_load_steps - 1);
 
     watch_internal.push_region("Central difference");
     time_previous = time_current;
@@ -464,8 +427,7 @@ ExplicitTimeIntegrator(
 
     // Apply kinematic boundary conditions
     watch_internal.push_region("BC enforcement");
-    model_data.ApplyKinematicConditions(
-        data_manager, time_current, time_previous);
+    model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
     watch_internal.pop_region_and_report_time();
 
     // U^{n+1} = U^{n} + (dt)*V^{n+1/2}
@@ -480,20 +442,14 @@ ExplicitTimeIntegrator(
 
     watch_internal.push_region("Force calculation");
     model_data.ComputeInternalForce(
-        data_manager,
-        time_previous,
-        time_current,
-        is_output_step,
-        displacement,
-        internal_force);
+        data_manager, time_previous, time_current, is_output_step, displacement, internal_force);
 
     //
     // Evaluate the contact force
     //
     if (contact_enabled) {
       watch_internal_details.push_region("Contact");
-      contact_manager->ComputeContactForce(
-          step + 1, is_output_step, contact_force);
+      contact_manager->ComputeContactForce(step + 1, is_output_step, contact_force);
       total_contact_time += watch_internal_details.pop_region_and_report_time();
       //
       auto tmpNum = contact_manager->numActiveContactFaces();
@@ -507,12 +463,9 @@ ExplicitTimeIntegrator(
     watch_internal.push_region("Central difference");
     if (contact_enabled) {
       for (int i = 0; i < num_nodes; ++i) {
-        acceleration(i, 0) = (1.0 / lumped_mass(i)) *
-                             (internal_force(i, 0) + contact_force(i, 0));
-        acceleration(i, 1) = (1.0 / lumped_mass(i)) *
-                             (internal_force(i, 1) + contact_force(i, 1));
-        acceleration(i, 2) = (1.0 / lumped_mass(i)) *
-                             (internal_force(i, 2) + contact_force(i, 2));
+        acceleration(i, 0) = (1.0 / lumped_mass(i)) * (internal_force(i, 0) + contact_force(i, 0));
+        acceleration(i, 1) = (1.0 / lumped_mass(i)) * (internal_force(i, 1) + contact_force(i, 1));
+        acceleration(i, 2) = (1.0 / lumped_mass(i)) * (internal_force(i, 2) + contact_force(i, 2));
       }
     } else {
       for (int i = 0; i < num_nodes; ++i) {
@@ -529,13 +482,10 @@ ExplicitTimeIntegrator(
     if (is_output_step) {
       //
       watch_internal.push_region("Output");
-      model_data.ApplyKinematicConditions(
-          data_manager, time_current, time_previous);
+      model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
       data_manager.WriteOutput(time_current);
       //
-      if (contact_visualization) {
-        contact_manager->ContactVisualizationWriteStep(time_current);
-      }
+      if (contact_visualization) { contact_manager->ContactVisualizationWriteStep(time_current); }
 
       total_exodus_write_time += watch_internal.pop_region_and_report_time();
     }
@@ -552,8 +502,7 @@ ExplicitTimeIntegrator(
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     if ((my_rank == irank) && (!contactInfo.empty())) {
-      std::cout << " Rank " << irank << " has " << contactInfo.size()
-                << " contact entries "
+      std::cout << " Rank " << irank << " has " << contactInfo.size() << " contact entries "
                 << "(out of " << num_load_steps << " time steps)." << std::endl;
       std::cout.flush();
     }
@@ -588,14 +537,12 @@ ExplicitTimeIntegrator(
       //      total_arborx_time << "\n";
       auto list_timers = contact_manager->getTimers();
       for (const auto& st_pair : list_timers)
-        std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second
-                  << "\n";
+        std::cout << " --- >>> >>> " << st_pair.first << " = " << st_pair.second << "\n";
       std::cout << " --- >>> Get Forces = " << total_contact_getf << "\n";
     }
     std::cout << " --- Exodus Write = " << total_exodus_write_time << "\n";
     std::cout << " --- Update AVU = " << total_update_avu_time << "\n";
-    std::cout << " --- Vector Reduction = " << total_vector_reduction_time
-              << "\n";
+    std::cout << " --- Vector Reduction = " << total_vector_reduction_time << "\n";
   }
 
   return 0;

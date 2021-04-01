@@ -116,16 +116,11 @@ class Parser
     ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_;
     ar | exodus_file_name_ | use_two_level_mesh_decomposition_;
     ar | write_timing_data_file_ | time_integration_scheme_;
-    ar | nonlinear_solver_relative_tolerance_ |
-        nonlinear_solver_max_iterations_;
-    ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ |
-        reduction_version_;
-    ar | contact_string_ | visualize_contact_entities_ |
-        visualize_contact_bounding_boxes_;
-    ar | contact_visualization_file_name_ | microscale_output_element_ids_ |
-        material_strings_;
-    ar | macroscale_blocks_ | microscale_blocks_ |
-        microscale_boundary_condition_strategy_;
+    ar | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_;
+    ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
+    ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
+    ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
+    ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
     ar | boundary_condition_strings_ | output_field_string_;
     ar | file_name_;
     ar | env_set_ | use_kokkos_ | use_tpetra_ | use_vt_;
@@ -169,8 +164,7 @@ class Parser
   std::string
   TimeIntegrationScheme() const
   {
-    if (time_integration_scheme_ != "explicit" &&
-        time_integration_scheme_ != "quasistatic") {
+    if (time_integration_scheme_ != "explicit" && time_integration_scheme_ != "quasistatic") {
       std::string msg =
           "\n**** Error in Parser::TimeIntegrationScheme(), invalid "
           "integration scheme " +
@@ -225,8 +219,7 @@ class Parser
   bool
   ContactVisualization() const
   {
-    bool visualize_contact =
-        visualize_contact_entities_ || visualize_contact_bounding_boxes_;
+    bool visualize_contact = visualize_contact_entities_ || visualize_contact_bounding_boxes_;
     return visualize_contact;
   }
 
@@ -284,10 +277,9 @@ class Parser
   {
     std::map<int, std::string> block_id_to_microscale_props_map;
     for (auto const& entry : microscale_blocks_) {
-      int                    block_id    = entry.first;
-      BlockProperties const& block_props = entry.second;
-      std::string const&     material_props =
-          material_strings_.at(block_props.material_key_);
+      int                    block_id            = entry.first;
+      BlockProperties const& block_props         = entry.second;
+      std::string const&     material_props      = material_strings_.at(block_props.material_key_);
       block_id_to_microscale_props_map[block_id] = material_props;
     }
     return block_id_to_microscale_props_map;
@@ -328,8 +320,7 @@ class Parser
   void
   SetToUseKokkos()
   {
-    if (env_set_)
-      throw std::runtime_error(" Conflicting Environment Variable ");
+    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
     use_kokkos_ = true;
     env_set_    = true;
   }
@@ -341,8 +332,7 @@ class Parser
   void
   SetToUseTpetra()
   {
-    if (env_set_)
-      throw std::runtime_error(" Conflicting Environment Variable ");
+    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
     use_tpetra_ = true;
     env_set_    = true;
   }
@@ -354,8 +344,7 @@ class Parser
   void
   SetToUseUQ()
   {
-    if (env_set_)
-      throw std::runtime_error(" Conflicting Environment Variable ");
+    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
     use_uq_  = true;
     env_set_ = true;
   }
@@ -367,8 +356,7 @@ class Parser
   void
   SetToUseVT()
   {
-    if (env_set_)
-      throw std::runtime_error(" Conflicting Environment Variable ");
+    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
     use_vt_  = true;
     env_set_ = true;
   }

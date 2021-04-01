@@ -83,8 +83,7 @@ class ModelData : public nimble::ModelDataBase
   /// \param num_objects
   /// \return Field ID for the data allocated
   int
-  AllocateNodeData(nimble::Length length, std::string label, int num_objects)
-      override;
+  AllocateNodeData(nimble::Length length, std::string label, int num_objects) override;
 
   /// \brief Returns the field ID for a specific label
   ///
@@ -101,9 +100,7 @@ class ModelData : public nimble::ModelDataBase
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(
-      nimble::DataManager&                        data_manager,
-      const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
       override;
 
   /// \brief Copy time state (n+1) into time state (n)
@@ -133,8 +130,7 @@ class ModelData : public nimble::ModelDataBase
   InitializeExodusOutput(nimble::DataManager& data_manager) override;
 
   void
-  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
-      override;
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current) override;
 
   /// \brief Compute the internal force
   ///
@@ -171,17 +167,12 @@ class ModelData : public nimble::ModelDataBase
   /// \note This routine wll synchronize the host and device displacements.
   ///
   void
-  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
-      override;
+  UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt) override;
 
   //--- Specific routines
 
   int
-  AllocateElementData(
-      int            block_id,
-      nimble::Length length,
-      std::string    label,
-      int            num_objects);
+  AllocateElementData(int block_id, nimble::Length length, std::string label, int num_objects);
 
   int
   AllocateIntegrationPointData(
@@ -213,16 +204,10 @@ class ModelData : public nimble::ModelDataBase
   GetHostVectorNodeData(int field_id);
 
   HostSymTensorIntPtView
-  GetHostSymTensorIntegrationPointData(
-      int          block_id,
-      int          field_id,
-      nimble::Step step);
+  GetHostSymTensorIntegrationPointData(int block_id, int field_id, nimble::Step step);
 
   HostFullTensorIntPtView
-  GetHostFullTensorIntegrationPointData(
-      int          block_id,
-      int          field_id,
-      nimble::Step step);
+  GetHostFullTensorIntegrationPointData(int block_id, int field_id, nimble::Step step);
 
   HostScalarElemView
   GetHostScalarElementData(int block_id, int field_id);
@@ -240,16 +225,10 @@ class ModelData : public nimble::ModelDataBase
   GetDeviceVectorNodeData(int field_id);
 
   DeviceSymTensorIntPtView
-  GetDeviceSymTensorIntegrationPointData(
-      int          block_id,
-      int          field_id,
-      nimble::Step step);
+  GetDeviceSymTensorIntegrationPointData(int block_id, int field_id, nimble::Step step);
 
   DeviceFullTensorIntPtView
-  GetDeviceFullTensorIntegrationPointData(
-      int          block_id,
-      int          field_id,
-      nimble::Step step);
+  GetDeviceFullTensorIntegrationPointData(int block_id, int field_id, nimble::Step step);
 
   DeviceScalarElemView
   GetDeviceScalarElementData(int block_id, int field_id);
@@ -331,27 +310,21 @@ class ModelData : public nimble::ModelDataBase
   std::vector<std::map<int, int>> field_id_to_host_element_data_index_;
   std::vector<std::map<int, int>> field_id_to_device_element_data_index_;
 
-  std::map<int, int>             block_id_to_integration_point_data_index_;
-  std::vector<std::vector<Data>> host_integration_point_data_step_n_;
-  std::vector<std::vector<Data>> host_integration_point_data_step_np1_;
-  std::vector<std::vector<Data>> device_integration_point_data_step_n_;
-  std::vector<std::vector<Data>> device_integration_point_data_step_np1_;
-  std::vector<std::map<int, int>>
-      field_id_to_host_integration_point_data_index_;
-  std::vector<std::map<int, int>>
-      field_id_to_device_integration_point_data_index_;
+  std::map<int, int>              block_id_to_integration_point_data_index_;
+  std::vector<std::vector<Data>>  host_integration_point_data_step_n_;
+  std::vector<std::vector<Data>>  host_integration_point_data_step_np1_;
+  std::vector<std::vector<Data>>  device_integration_point_data_step_n_;
+  std::vector<std::vector<Data>>  device_integration_point_data_step_np1_;
+  std::vector<std::map<int, int>> field_id_to_host_integration_point_data_index_;
+  std::vector<std::map<int, int>> field_id_to_device_integration_point_data_index_;
 
   std::unique_ptr<nimble_kokkos::ExodusOutputManager> exodus_output_manager_;
 
   //--- Work arrays
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>
-      gathered_reference_coordinate_d;
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>
-      gathered_displacement_d;
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>
-      gathered_internal_force_d;
-  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView>
-      gathered_contact_force_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_reference_coordinate_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_displacement_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_internal_force_d;
+  std::vector<nimble_kokkos::DeviceVectorNodeGatheredView> gathered_contact_force_d;
 
   //--- Data for Exodus output
   nimble_kokkos::HostVectorNodeView   displacement_h_;
