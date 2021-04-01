@@ -36,27 +36,17 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
       epu_output_extension = "np" + str(num_ranks) + ".e"
     epu_exodus_output_name = "none"
     epu_ranks_string = str(num_ranks)
+    nimble_output_name = base_name + ".mpi"
     if not cli_flag:
-        nimble_output_name = base_name + ".mpi"
         log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_exodus_output_name = base_name + ".mpi." + epu_output_extension
-        else:
-            epu_exodus_output_name = base_name + ".mpi.e"
     if "use_kokkos" in cli_flag:
-        nimble_output_name = base_name + ".kokkos"
         log_file_name = base_name + ".kokkos.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_exodus_output_name = base_name + ".kokkos." + epu_output_extension
-        else:
-            epu_exodus_output_name = base_name + ".kokkos.e"
     if "use_tpetra" in cli_flag:
-        nimble_output_name = base_name + ".tpetra"
         log_file_name = base_name + ".tpetra.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_exodus_output_name = base_name + ".tpetra." + epu_output_extension
-        else:
-            epu_exodus_output_name = base_name + ".tpetra.e"
+    if num_ranks > 1:
+        epu_exodus_output_name = base_name + ".mpi." + epu_output_extension
+    else:
+        epu_exodus_output_name = base_name + ".mpi.e"
 
     # open the log file
     if os.path.exists(log_file_name):

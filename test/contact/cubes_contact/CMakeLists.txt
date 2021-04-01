@@ -13,7 +13,7 @@ if (NIMBLE_HAVE_ARBORX)
   set(inputfile "${prefix}.in")
 
   add_test(NAME "${prefix}-serial-kokkos"
-           COMMAND python ../../run_test.py --executable "${nimble_kokkos}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND python ../../run_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
           )
 
 endif()
