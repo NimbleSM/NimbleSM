@@ -417,9 +417,6 @@ ExplicitTimeIntegrator(
         contact_secondary_block_ids);
     if (contact_visualization) {
       std::string tag = parser.GetOutputTag();
-#ifdef NIMBLE_HAVE_ARBORX
-      if ((parser.UseKokkos()) && (parser.HasContact())) tag = "arborx";
-#endif
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(
           parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
       contact_manager->InitializeContactVisualization(
