@@ -270,10 +270,6 @@ int NimbleMain(const std::shared_ptr<MaterialFactoryType> &material_factory_base
   }
 
   std::string tag = parser.GetOutputTag();
-#ifdef NIMBLE_HAVE_ARBORX
-  if ((parser.UseKokkos()) && (parser.HasContact()))
-        tag = "arborx";
-#endif
   std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
 
   int dim = mesh.GetDim();
