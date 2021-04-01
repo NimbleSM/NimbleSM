@@ -73,8 +73,7 @@ Element::Invert3x3(double mat[][3], double inv[][3]) const
           "(%e)\n",
           det);
 #else
-    throw std::logic_error(
-        "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+    throw std::logic_error("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
 #endif
   }
 
@@ -239,10 +238,7 @@ Element::MatrixInverseCheckCorrectness(double mat[][3], double inv[][3]) const
   int    n = 3;
   double error[3][3];
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      error[i][j] =
-          mat[i][0] * inv[0][j] + mat[i][1] * inv[1][j] + mat[i][2] * inv[2][j];
-    }
+    for (int j = 0; j < n; j++) { error[i][j] = mat[i][0] * inv[0][j] + mat[i][1] * inv[1][j] + mat[i][2] * inv[2][j]; }
   }
   for (int i = 0; i < n; i++) { error[i][i] -= 1.0; }
   double forbenius_norm = 0.0;
@@ -298,9 +294,7 @@ HexElement::HexElement()
 }
 
 void
-HexElement::ShapeFunctionValues(
-    const double* natural_coords,
-    double*       shape_function_values)
+HexElement::ShapeFunctionValues(const double* natural_coords, double* shape_function_values)
 {
   double r, s, t;
   double c = 1.0 / 8.0;
@@ -325,9 +319,7 @@ HexElement::ShapeFunctionValues(
 }
 
 void
-HexElement::ShapeFunctionDerivatives(
-    const double* natural_coords,
-    double*       shape_function_derivatives)
+HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape_function_derivatives)
 {
   double r, s, t;
   double c = 1.0 / 8.0;
@@ -376,10 +368,7 @@ HexElement::ShapeFunctionDerivatives(
 }
 
 void
-HexElement::ComputeLumpedMass(
-    const double  density,
-    const double* node_reference_coords,
-    double*       lumped_mass) const
+HexElement::ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const
 {
   double consistent_mass_matrix[][24] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -422,19 +411,15 @@ HexElement::ComputeLumpedMass(
     for (int j = 0; j < 8; j++) {
       consistent_mass_matrix[i][j] = 0.0;
       for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] +=
-            int_wts_[int_pt] * density *
-            shape_fcn_vals_[int_pt * num_nodes_ + i] *
-            shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
+        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
+                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
       }
     }
   }
 
   for (int i = 0; i < 8; i++) {
     lumped_mass[i] = 0.0;
-    for (int j = 0; j < 8; j++) {
-      lumped_mass[i] += consistent_mass_matrix[i][j];
-    }
+    for (int j = 0; j < 8; j++) { lumped_mass[i] += consistent_mass_matrix[i][j]; }
   }
 }
 
@@ -486,19 +471,15 @@ HexElement::ComputeLumpedMass(
     for (int j = 0; j < 8; j++) {
       consistent_mass_matrix[i][j] = 0.0;
       for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] +=
-            int_wts_[int_pt] * density *
-            shape_fcn_vals_[int_pt * num_nodes_ + i] *
-            shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
+        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
+                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
       }
     }
   }
 
   for (int i = 0; i < 8; i++) {
     lumped_mass(i) = 0.0;
-    for (int j = 0; j < 8; j++) {
-      lumped_mass(i) += consistent_mass_matrix[i][j];
-    }
+    for (int j = 0; j < 8; j++) { lumped_mass(i) += consistent_mass_matrix[i][j]; }
   }
 }
 #endif
@@ -509,13 +490,11 @@ HexElement::ComputeCharacteristicLength(const double* node_coords)
   // TODO Implement a better algorithm for finding the minimum
   //      length across the element.
 
-  double characteristic_length, distance_squared, min_distance_squared, nx, ny,
-      nz, mx, my, mz;
+  double characteristic_length, distance_squared, min_distance_squared, nx, ny, nz, mx, my, mz;
   double x_min, x_max, y_min, y_max, z_min, z_max;
 
   x_max = y_max = z_max = 0.0;
-  min_distance_squared = x_min = y_min = z_min =
-      std::numeric_limits<double>::max();
+  min_distance_squared = x_min = y_min = z_min = std::numeric_limits<double>::max();
 
   for (int n = 0; n < num_nodes_; n++) {
     nx = node_coords[3 * n];
@@ -528,14 +507,11 @@ HexElement::ComputeCharacteristicLength(const double* node_coords)
     if (nz < z_min) { z_min = nz; }
     if (nz > z_max) { z_max = nz; }
     for (int m = n + 1; m < num_nodes_; m++) {
-      mx = node_coords[3 * m];
-      my = node_coords[3 * m + 1];
-      mz = node_coords[3 * m + 2];
-      distance_squared =
-          (nx - mx) * (nx - mx) + (ny - my) * (ny - my) + (nz - mz) * (nz - mz);
-      if (distance_squared < min_distance_squared) {
-        min_distance_squared = distance_squared;
-      }
+      mx               = node_coords[3 * m];
+      my               = node_coords[3 * m + 1];
+      mz               = node_coords[3 * m + 2];
+      distance_squared = (nx - mx) * (nx - mx) + (ny - my) * (ny - my) + (nz - mz) * (nz - mz);
+      if (distance_squared < min_distance_squared) { min_distance_squared = distance_squared; }
     }
   }
   characteristic_length = std::sqrt(min_distance_squared);
@@ -544,9 +520,7 @@ HexElement::ComputeCharacteristicLength(const double* node_coords)
   if (y_max - y_min < min_box_length) { min_box_length = y_max - y_min; }
   if (z_max - z_min < min_box_length) { min_box_length = z_max - z_min; }
 
-  if (min_box_length < characteristic_length) {
-    characteristic_length = min_box_length;
-  }
+  if (min_box_length < characteristic_length) { characteristic_length = min_box_length; }
 
   return characteristic_length;
 }
@@ -564,9 +538,7 @@ HexElement::ComputeVolumeAverage(
   double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
   volume = 0.0;
-  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
-    volume_averaged_quantities[i_quantity] = 0.0;
-  }
+  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) { volume_averaged_quantities[i_quantity] = 0.0; }
 
   for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
     // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
@@ -593,8 +565,7 @@ HexElement::ComputeVolumeAverage(
     volume += jac_det;
     for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
       volume_averaged_quantities[i_quantity] +=
-          int_pt_quantities[int_pt * num_quantities + i_quantity] *
-          int_wts_[int_pt] * jac_det;
+          int_pt_quantities[int_pt * num_quantities + i_quantity] * int_wts_[int_pt] * jac_det;
     }
   }
 
@@ -802,8 +773,7 @@ HexElement::ComputeDeformationGradients(
 
     for (int j = 0; j < 3; j++) {
       for (int k = 0; k < 3; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] +
-                         a[j][2] * b_inv[2][k];
+        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
       }
     }
 
@@ -877,8 +847,7 @@ HexElement::ComputeDeformationGradients(
 
     for (int j = 0; j < 3; j++) {
       for (int k = 0; k < 3; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] +
-                         a[j][2] * b_inv[2][k];
+        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
       }
     }
 
@@ -896,10 +865,7 @@ HexElement::ComputeDeformationGradients(
 #endif
 
 void
-HexElement::ComputeTangent(
-    const double* node_current_coords,
-    const double* material_tangent,
-    double*       element_tangent)
+HexElement::ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent)
 {
   double jac_det;
   double cc1, cc2, cc3, sfd1, sfd2, sfd3;
@@ -958,12 +924,12 @@ HexElement::ComputeTangent(
     // derivatives of shape function with respect to current coordinate
     double dN_dcc1, dN_dcc2, dN_dcc3;
     for (int n = 0; n < num_nodes_; n++) {
-      sfd1    = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2    = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3    = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      dN_dcc1 = sfd1 * a_inv[0][0] + sfd2 * a_inv[1][0] + sfd3 * a_inv[2][0];
-      dN_dcc2 = sfd1 * a_inv[0][1] + sfd2 * a_inv[1][1] + sfd3 * a_inv[2][1];
-      dN_dcc3 = sfd1 * a_inv[0][2] + sfd2 * a_inv[1][2] + sfd3 * a_inv[2][2];
+      sfd1            = shape_fcn_deriv_[24 * int_pt + 3 * n];
+      sfd2            = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
+      sfd3            = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
+      dN_dcc1         = sfd1 * a_inv[0][0] + sfd2 * a_inv[1][0] + sfd3 * a_inv[2][0];
+      dN_dcc2         = sfd1 * a_inv[0][1] + sfd2 * a_inv[1][1] + sfd3 * a_inv[2][1];
+      dN_dcc3         = sfd1 * a_inv[0][2] + sfd2 * a_inv[1][2] + sfd3 * a_inv[2][2];
       B[0][3 * n]     = dN_dcc1;
       B[1][3 * n + 1] = dN_dcc2;
       B[2][3 * n + 2] = dN_dcc3;
@@ -977,17 +943,14 @@ HexElement::ComputeTangent(
 
     for (int i = 0; i < 6; i++) {
       for (int j = 0; j < 24; j++) {
-        for (int k = 0; k < 6; k++) {
-          temp[i][j] += material_tangent[36 * int_pt + 6 * i + k] * B[k][j];
-        }
+        for (int k = 0; k < 6; k++) { temp[i][j] += material_tangent[36 * int_pt + 6 * i + k] * B[k][j]; }
       }
     }
 
     for (int i = 0; i < 24; i++) {
       for (int j = 0; j < 24; j++) {
         for (int k = 0; k < 6; k++) {
-          element_tangent[i * 24 + j] +=
-              B[k][i] * temp[k][j] * int_wts_[int_pt] * jac_det;
+          element_tangent[i * 24 + j] += B[k][i] * temp[k][j] * int_wts_[int_pt] * jac_det;
         }
       }
     }
@@ -995,10 +958,7 @@ HexElement::ComputeTangent(
 }
 
 void
-HexElement::ComputeNodalForces(
-    const double* node_current_coords,
-    const double* int_pt_stresses,
-    double*       node_forces)
+HexElement::ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces)
 {
   double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
   double jac_det;
@@ -1128,16 +1088,13 @@ HexElement::ComputeNodalForces(
                shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][2] +
                shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][2];
 
-      f1 = dN_dx1 * int_pt_stresses(int_pt, K_S_XX_) +
-           dN_dx2 * int_pt_stresses(int_pt, K_S_YX_) +
+      f1 = dN_dx1 * int_pt_stresses(int_pt, K_S_XX_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YX_) +
            dN_dx3 * int_pt_stresses(int_pt, K_S_ZX_);
 
-      f2 = dN_dx1 * int_pt_stresses(int_pt, K_S_XY_) +
-           dN_dx2 * int_pt_stresses(int_pt, K_S_YY_) +
+      f2 = dN_dx1 * int_pt_stresses(int_pt, K_S_XY_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YY_) +
            dN_dx3 * int_pt_stresses(int_pt, K_S_ZY_);
 
-      f3 = dN_dx1 * int_pt_stresses(int_pt, K_S_XZ_) +
-           dN_dx2 * int_pt_stresses(int_pt, K_S_YZ_) +
+      f3 = dN_dx1 * int_pt_stresses(int_pt, K_S_XZ_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YZ_) +
            dN_dx3 * int_pt_stresses(int_pt, K_S_ZZ_);
 
       f1 *= jac_det * int_wts_[int_pt];

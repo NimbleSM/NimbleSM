@@ -67,10 +67,9 @@ class GenesisMesh
   void
   serialize(ArchiveType& ar)
   {
-    ar | file_name_ | dim_ | node_global_id_ | node_x_ | node_y_ | node_z_ |
-        elem_global_id_ | block_ids_ | block_names_ | block_elem_global_ids_ |
-        block_num_nodes_per_elem_ | block_elem_connectivity_ | node_set_ids_ |
-        node_set_names_ | node_sets_ | distribution_factors_;
+    ar | file_name_ | dim_ | node_global_id_ | node_x_ | node_y_ | node_z_ | elem_global_id_ | block_ids_ |
+        block_names_ | block_elem_global_ids_ | block_num_nodes_per_elem_ | block_elem_connectivity_ | node_set_ids_ |
+        node_set_names_ | node_sets_ | ns_distribution_factors_;
   }
 #endif
 
@@ -190,9 +189,7 @@ class GenesisMesh
   GetBlockId(std::string const& block_name) const;
 
   void
-  BlockNamesToOnProcessorBlockIds(
-      std::vector<std::string> const& block_names,
-      std::vector<int>&               block_ids);
+  BlockNamesToOnProcessorBlockIds(std::vector<std::string> const& block_names, std::vector<int>& block_ids);
 
   int
   GetDim() const
@@ -257,17 +254,11 @@ class GenesisMesh
   std::map<int, std::vector<double>>
   GetDistributionFactors() const
   {
-    return distribution_factors_;
+    return ns_distribution_factors_;
   }
 
   void
-  BoundingBox(
-      double& x_min,
-      double& x_max,
-      double& y_min,
-      double& y_max,
-      double& z_min,
-      double& z_max) const;
+  BoundingBox(double& x_min, double& x_max, double& y_min, double& y_max, double& z_min, double& z_max) const;
 
   std::vector<double>
   BoundingBoxCenter() const;
@@ -313,10 +304,7 @@ class GenesisMesh
 
  protected:
   void
-  ReportExodusError(
-      int         error_code,
-      const char* method_name,
-      const char* exodus_method_name) const;
+  ReportExodusError(int error_code, const char* method_name, const char* exodus_method_name) const;
 
   std::string file_name_;
   int         dim_;
@@ -336,7 +324,7 @@ class GenesisMesh
   std::vector<int>                   node_set_ids_;
   std::map<int, std::string>         node_set_names_;
   std::map<int, std::vector<int>>    node_sets_;
-  std::map<int, std::vector<double>> distribution_factors_;
+  std::map<int, std::vector<double>> ns_distribution_factors_;
 };
 
 }  // namespace nimble

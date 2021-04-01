@@ -61,9 +61,7 @@ LengthToInt(Length length, int dim)
       case VECTOR: value = 2; break;
       case SYMMETRIC_TENSOR: value = 3; break;
       case FULL_TENSOR: value = 4; break;
-      case UNDEFINED_LENGTH:
-        throw std::logic_error(
-            "\nError in LengthToInt(), unrecognized Length.\n");
+      case UNDEFINED_LENGTH: throw std::logic_error("\nError in LengthToInt(), unrecognized Length.\n");
       default: value = static_cast<int>(length); break;
     }
   } else if (dim == 3) {
@@ -72,14 +70,11 @@ LengthToInt(Length length, int dim)
       case VECTOR: value = 3; break;
       case SYMMETRIC_TENSOR: value = 6; break;
       case FULL_TENSOR: value = 9; break;
-      case UNDEFINED_LENGTH:
-        throw std::logic_error(
-            "\nError in LengthToInt(), unrecognized Length.\n");
+      case UNDEFINED_LENGTH: throw std::logic_error("\nError in LengthToInt(), unrecognized Length.\n");
       default: value = static_cast<int>(length); break;
     }
   } else {
-    throw std::logic_error(
-        "\nError in LengthToInt(), unrecognized dimension.\n");
+    throw std::logic_error("\nError in LengthToInt(), unrecognized dimension.\n");
   }
   return value;
 }
@@ -212,12 +207,7 @@ GetComponentLabels(std::string label, Length length, int dim)
 }
 
 std::string
-GetComponentLabel(
-    std::string label,
-    Length      length,
-    int         dim,
-    int         component_index,
-    int         ipt)
+GetComponentLabel(std::string label, Length length, int dim, int component_index, int ipt)
 {
   if (length == VECTOR) {
     switch (component_index) {
@@ -276,20 +266,14 @@ GetComponentLabel(
 }
 
 Length
-LabelToLength(
-    std::string                 label,
-    std::map<int, Field> const& data_fields,
-    int                         dim)
+LabelToLength(std::string label, std::map<int, Field> const& data_fields, int dim)
 {
   label = RemoveIntegrationPointPrefix(label);
   for (auto const& it : data_fields) {
     Field const& field = it.second;
-    if (label == RemoveIntegrationPointPrefix(field.label_)) {
-      return field.length_;
-    }
+    if (label == RemoveIntegrationPointPrefix(field.label_)) { return field.length_; }
   }
-  throw std::logic_error(
-      "\nError in LabelToField(), failed to find label " + label + ".\n");
+  throw std::logic_error("\nError in LabelToField(), failed to find label " + label + ".\n");
 }
 
 }  // namespace nimble

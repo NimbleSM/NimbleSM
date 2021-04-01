@@ -50,24 +50,16 @@ namespace nimble {
 class SerialContactManager : public ContactManager
 {
  public:
-  SerialContactManager(
-      std::shared_ptr<ContactInterface> interface,
-      nimble::DataManager&              data_manager);
+  SerialContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
 
   void
-  ComputeContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) override
+  ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override
   {
     ComputeSerialContactForce(step, debug_output, contact_force);
   }
 
   virtual void
-  ComputeSerialContactForce(
-      int                step,
-      bool               debug_output,
-      nimble::Viewify<2> contact_force) = 0;
+  ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) = 0;
 
  private:
 };

@@ -46,10 +46,9 @@
 bool
 ExpressionParsing::IsCMathFunc(ExpressionParsing::Reader r)
 {
-  if (r == "sin" || r == "cos" || r == "tan" || r == "erf" || r == "exp" ||
-      r == "log" || r == "abs" || r == "asin" || r == "acos" || r == "atan" ||
-      r == "sqrt" || r == "cbrt" || r == "erfc" || r == "ceil" ||
-      r == "round" || r == "floor" || r == "log10")
+  if (r == "sin" || r == "cos" || r == "tan" || r == "erf" || r == "exp" || r == "log" || r == "abs" || r == "asin" ||
+      r == "acos" || r == "atan" || r == "sqrt" || r == "cbrt" || r == "erfc" || r == "ceil" || r == "round" ||
+      r == "floor" || r == "log10")
     return true;
   return false;
 }

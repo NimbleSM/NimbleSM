@@ -64,9 +64,7 @@ class MatrixContainer
   ~MatrixContainer() {}
 
   void
-  AllocateNonzeros(
-      std::vector<int> const& i_index,
-      std::vector<int> const& j_index)
+  AllocateNonzeros(std::vector<int> const& i_index, std::vector<int> const& j_index)
   {
     num_rows_ = 0;
     for (auto const& entry : i_index) {
@@ -125,9 +123,7 @@ class CRSMatrixContainer
   ~CRSMatrixContainer() = default;
 
   void
-  AllocateNonzeros(
-      std::vector<int> const& i_index,
-      std::vector<int> const& j_index);
+  AllocateNonzeros(std::vector<int> const& i_index, std::vector<int> const& j_index);
 
   void
   AllocateDiagonalMatrix(int num_rows)
@@ -212,18 +208,14 @@ class CRSMatrixContainer
   /// \param A Input sparse matrix
   /// \param M Diagonal preconditioner (mathematically M = (diag(A))^{-1})
   friend void
-  PopulateDiagonalPreconditioner(
-      const CRSMatrixContainer& A,
-      CRSMatrixContainer&       M);
+  PopulateDiagonalPreconditioner(const CRSMatrixContainer& A, CRSMatrixContainer& M);
 };
 
 inline double
 InnerProduct(unsigned int num_entries, const double* vec_1, const double* vec_2)
 {
   double result(0.0);
-  for (unsigned int i = 0; i < num_entries; i++) {
-    result += vec_1[i] * vec_2[i];
-  }
+  for (unsigned int i = 0; i < num_entries; i++) { result += vec_1[i] * vec_2[i]; }
 #ifdef NIMBLE_HAVE_MPI
   double restmp = result;
   MPI_Allreduce(&restmp, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -244,11 +236,7 @@ void
 LU_Solve(int num_entries, MatrixContainer& mat, double* vec, int* index);
 
 void
-LU_SolveSystem(
-    int              num_entries,
-    MatrixContainer& mat,
-    double*          vec,
-    int*             scratch);
+LU_SolveSystem(int num_entries, MatrixContainer& mat, double* vec, int* scratch);
 
 struct CGScratchSpace
 {

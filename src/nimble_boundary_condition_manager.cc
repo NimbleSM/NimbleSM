@@ -67,7 +67,7 @@ BoundaryConditionManager::Initialize(
 
   for (int i = 0; i < bc_strings.size(); i++) {
     BoundaryCondition bc;
-    bool is_valid = bc.Initialize(dim_, bc_strings[i], node_set_names);
+    bool              is_valid = bc.Initialize(dim_, bc_strings[i], node_set_names);
     if (is_valid) { boundary_conditions_.push_back(bc); }
   }
 }
@@ -77,10 +77,7 @@ BoundaryConditionManager::IsPeriodicRVEProblem() const
 {
   bool is_periodic_rve_problem(false);
   for (unsigned int i_bc = 0; i_bc < boundary_conditions_.size(); i_bc++) {
-    if (boundary_conditions_.at(i_bc).bc_type_ ==
-        BoundaryCondition::PERIODIC_RVE) {
-      is_periodic_rve_problem = true;
-    }
+    if (boundary_conditions_.at(i_bc).bc_type_ == BoundaryCondition::PERIODIC_RVE) { is_periodic_rve_problem = true; }
   }
   return is_periodic_rve_problem;
 }
@@ -115,24 +112,20 @@ BoundaryConditionManager::ModifyTangentStiffnessMatrixForKinematicBC(
 // explicit template instantiation for MatrixContainer and CRSMatrixContainer
 // matrix types
 template void
-BoundaryConditionManager::ModifyTangentStiffnessMatrixForKinematicBC<
-    MatrixContainer>(
+BoundaryConditionManager::ModifyTangentStiffnessMatrixForKinematicBC<MatrixContainer>(
     int              num_unknowns,
     const int* const global_node_ids,
     double           diagonal_entry,
     MatrixContainer& tangent_stiffness) const;
 template void
-BoundaryConditionManager::ModifyTangentStiffnessMatrixForKinematicBC<
-    CRSMatrixContainer>(
+BoundaryConditionManager::ModifyTangentStiffnessMatrixForKinematicBC<CRSMatrixContainer>(
     int                 num_unknowns,
     const int* const    global_node_ids,
     double              diagonal_entry,
     CRSMatrixContainer& tangent_stiffness) const;
 
 void
-BoundaryConditionManager::ModifyRHSForKinematicBC(
-    const int* const global_node_ids,
-    double*          rhs) const
+BoundaryConditionManager::ModifyRHSForKinematicBC(const int* const global_node_ids, double* rhs) const
 {
   for (unsigned int i_bc = 0; i_bc < boundary_conditions_.size(); i_bc++) {
     BoundaryCondition const& bc          = boundary_conditions_[i_bc];
@@ -151,8 +144,7 @@ BoundaryConditionManager::ModifyRHSForKinematicBC(
 }
 
 void
-BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(
-    int corner_node_id)
+BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(int corner_node_id)
 {
   // Create a node set for the RVE corner nodes
   int max_node_set_id(0);
@@ -160,8 +152,8 @@ BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(
     int node_set_id = entry.first;
     if (node_set_id > max_node_set_id) { max_node_set_id = node_set_id; }
   }
-  int         new_node_set_id   = max_node_set_id + 1;
-  std::string new_node_set_name = "nodelist_" + std::to_string(new_node_set_id);
+  int                        new_node_set_id   = max_node_set_id + 1;
+  std::string                new_node_set_name = "nodelist_" + std::to_string(new_node_set_id);
   std::map<int, std::string> new_node_set_names;
   new_node_set_names[new_node_set_id] = new_node_set_name;
   std::vector<int> new_node_set_node_ids;
@@ -170,18 +162,15 @@ BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(
   node_sets_[new_node_set_id]      = new_node_set_node_ids;
 
   // Create fixed-displacement BCs
-  std::string bc_x_string =
-      "rve_fixed_displacement " + new_node_set_name + " x 0.0";
+  std::string       bc_x_string = "rve_fixed_displacement " + new_node_set_name + " x 0.0";
   BoundaryCondition bc_x;
   bc_x.Initialize(dim_, bc_x_string, new_node_set_names);
   boundary_conditions_.push_back(bc_x);
-  std::string bc_y_string =
-      "rve_fixed_displacement " + new_node_set_name + " y 0.0";
+  std::string       bc_y_string = "rve_fixed_displacement " + new_node_set_name + " y 0.0";
   BoundaryCondition bc_y;
   bc_y.Initialize(dim_, bc_y_string, new_node_set_names);
   boundary_conditions_.push_back(bc_y);
-  std::string bc_z_string =
-      "rve_fixed_displacement " + new_node_set_name + " z 0.0";
+  std::string       bc_z_string = "rve_fixed_displacement " + new_node_set_name + " z 0.0";
   BoundaryCondition bc_z;
   bc_z.Initialize(dim_, bc_z_string, new_node_set_names);
   boundary_conditions_.push_back(bc_z);
@@ -200,10 +189,7 @@ BoundaryConditionManager::GetRVEMacroscaleDeformationGradient(
 
   bool has_rve_macroscale_def_grad = false;
   for (unsigned int i_bc = 0; i_bc < boundary_conditions_.size(); i_bc++) {
-    if (boundary_conditions_[i_bc].bc_type_ ==
-        BoundaryCondition::PERIODIC_RVE) {
-      has_rve_macroscale_def_grad = true;
-    }
+    if (boundary_conditions_[i_bc].bc_type_ == BoundaryCondition::PERIODIC_RVE) { has_rve_macroscale_def_grad = true; }
   }
 
   // For RVE problems, there should only be the RVE boundary condition plus the
@@ -215,8 +201,7 @@ BoundaryConditionManager::GetRVEMacroscaleDeformationGradient(
   }
 
   if (has_rve_macroscale_def_grad) {
-    boundary_conditions_[0].GetRVEMacroscaleDeformationGradient(
-        time, deformation_gradient, x, y, z);
+    boundary_conditions_[0].GetRVEMacroscaleDeformationGradient(time, deformation_gradient, x, y, z);
   }
 }
 

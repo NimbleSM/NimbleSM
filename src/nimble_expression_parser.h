@@ -149,232 +149,188 @@ struct GenericReference : Evaluatable<T>
 
 // This macro produces a structure which calls f(x) on the input and returns the
 // result
-#define MakeGenericFunction(GenericFunction, f)                  \
-  template <typename Out, typename In>                           \
-  struct GenericFunction : Evaluatable<Out>                      \
-  {                                                              \
-    struct ReferenceCase : Evaluatable<Out>                      \
-    {                                                            \
-      In* input1;                                                \
-          operator Out() const { return f(*input1); }            \
-      ReferenceCase(In* in1) : input1(in1) {}                    \
-    };                                                           \
-    Evaluatable<In>* input1;                                     \
-                     operator Out() const { return f(*input1); } \
-    GenericFunction(Evaluatable<In>* in1) : input1(in1) {}       \
-    Evaluatable<Out>*                                            \
-    optimize(MemoryManager& m)                                   \
-    {                                                            \
-      Evaluatable<In>* in1 = this->input1->optimize(m);          \
-      if (GenericConstant<In>* constant =                        \
-              dynamic_cast<GenericConstant<In>*>(in1)) {         \
-        return m.New<GenericConstant<Out>>(f(*in1));             \
-      } else if (                                                \
-          GenericReference<In>* reference =                      \
-              dynamic_cast<GenericReference<In>*>(in1)) {        \
-        return m.New<ReferenceCase>(reference->value);           \
-      }                                                          \
-      this->input1 = in1;                                        \
-      return this;                                               \
-    }                                                            \
+#define MakeGenericFunction(GenericFunction, f)                                                \
+  template <typename Out, typename In>                                                         \
+  struct GenericFunction : Evaluatable<Out>                                                    \
+  {                                                                                            \
+    struct ReferenceCase : Evaluatable<Out>                                                    \
+    {                                                                                          \
+      In* input1;                                                                              \
+          operator Out() const { return f(*input1); }                                          \
+      ReferenceCase(In* in1) : input1(in1) {}                                                  \
+    };                                                                                         \
+    Evaluatable<In>* input1;                                                                   \
+                     operator Out() const { return f(*input1); }                               \
+    GenericFunction(Evaluatable<In>* in1) : input1(in1) {}                                     \
+    Evaluatable<Out>*                                                                          \
+    optimize(MemoryManager& m)                                                                 \
+    {                                                                                          \
+      Evaluatable<In>* in1 = this->input1->optimize(m);                                        \
+      if (GenericConstant<In>* constant = dynamic_cast<GenericConstant<In>*>(in1)) {           \
+        return m.New<GenericConstant<Out>>(f(*in1));                                           \
+      } else if (GenericReference<In>* reference = dynamic_cast<GenericReference<In>*>(in1)) { \
+        return m.New<ReferenceCase>(reference->value);                                         \
+      }                                                                                        \
+      this->input1 = in1;                                                                      \
+      return this;                                                                             \
+    }                                                                                          \
   };
 
-#define MakeGenericOperator(name, operation)                                 \
-  template <typename Out, typename In1, typename In2>                        \
-  struct name : Evaluatable<Out>                                             \
-  {                                                                          \
-    template <typename In1_t, typename In2_t>                                \
-    struct ReferenceCase : Evaluatable<Out>                                  \
-    {                                                                        \
-      In1_t* input1;                                                         \
-      In2_t* input2;                                                         \
-             operator Out() const { return (*input1)operation(*input2); }    \
-      ReferenceCase(In1_t* in1, In2_t* in2) : input1(in1), input2(in2) {}    \
-    };                                                                       \
-    template <typename In2_type>                                             \
-    struct ConstCase1 : Evaluatable<Out>                                     \
-    {                                                                        \
-      In1       input1;                                                      \
-      In2_type* input2;                                                      \
-                operator Out() const { return input1 operation(*input2); }   \
-      ConstCase1(In1 in1, In2_type* in2) : input1(in1), input2(in2) {}       \
-    };                                                                       \
-    template <typename In1_type>                                             \
-    struct ConstCase2 : Evaluatable<Out>                                     \
-    {                                                                        \
-      In1_type* input1;                                                      \
-      In2       input2;                                                      \
-                operator Out() const { return (*input1)operation input2; }   \
-      ConstCase2(In1_type* in1, In2 in2) : input1(in1), input2(in2) {}       \
-    };                                                                       \
-    Evaluatable<In1>* input1;                                                \
-    Evaluatable<In2>* input2;                                                \
-    operator Out() const { return (*input1)operation(*input2); }             \
-    name(Evaluatable<In1>* in1, Evaluatable<In2>* in2)                       \
-        : input1(in1), input2(in2)                                           \
-    {                                                                        \
-    }                                                                        \
-    Evaluatable<Out>*                                                        \
-    optimize(MemoryManager& m)                                               \
-    {                                                                        \
-      Evaluatable<In1>* input1 = this->input1->optimize(m);                  \
-      Evaluatable<In2>* input2 = this->input2->optimize(m);                  \
-      if (auto const1 = dynamic_cast<GenericConstant<In1>*>(input1)) {       \
-        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))       \
-          return m.New<GenericConstant<Out>>((*input1)operation(*input2));   \
-        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))   \
-          return m.New<ConstCase1<In2>>(const1->value, ref2->value);         \
-        else                                                                 \
-          return m.New<ConstCase1<Evaluatable<In2>>>(const1->value, input2); \
-      } else if (auto ref1 = dynamic_cast<GenericReference<In1>*>(input1)) { \
-        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))       \
-          return m.New<ConstCase2<In1>>(ref1->value, const2->value);         \
-        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))   \
-          return m.New<ReferenceCase<In1, In2>>(ref1->value, ref2->value);   \
-        else                                                                 \
-          return m.New<ReferenceCase<In1, Evaluatable<In2>>>(                \
-              ref1->value, input2);                                          \
-      } else if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))  \
-        return m.New<ConstCase2<Evaluatable<In1>>>(input1, const2->value);   \
-      else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))     \
-        return m.New<ReferenceCase<Evaluatable<In1>, In2>>(                  \
-            input1, ref2->value);                                            \
-      this->input1 = input1;                                                 \
-      this->input2 = input2;                                                 \
-      return this;                                                           \
-    }                                                                        \
+#define MakeGenericOperator(name, operation)                                         \
+  template <typename Out, typename In1, typename In2>                                \
+  struct name : Evaluatable<Out>                                                     \
+  {                                                                                  \
+    template <typename In1_t, typename In2_t>                                        \
+    struct ReferenceCase : Evaluatable<Out>                                          \
+    {                                                                                \
+      In1_t* input1;                                                                 \
+      In2_t* input2;                                                                 \
+             operator Out() const { return (*input1)operation(*input2); }            \
+      ReferenceCase(In1_t* in1, In2_t* in2) : input1(in1), input2(in2) {}            \
+    };                                                                               \
+    template <typename In2_type>                                                     \
+    struct ConstCase1 : Evaluatable<Out>                                             \
+    {                                                                                \
+      In1       input1;                                                              \
+      In2_type* input2;                                                              \
+                operator Out() const { return input1 operation(*input2); }           \
+      ConstCase1(In1 in1, In2_type* in2) : input1(in1), input2(in2) {}               \
+    };                                                                               \
+    template <typename In1_type>                                                     \
+    struct ConstCase2 : Evaluatable<Out>                                             \
+    {                                                                                \
+      In1_type* input1;                                                              \
+      In2       input2;                                                              \
+                operator Out() const { return (*input1)operation input2; }           \
+      ConstCase2(In1_type* in1, In2 in2) : input1(in1), input2(in2) {}               \
+    };                                                                               \
+    Evaluatable<In1>* input1;                                                        \
+    Evaluatable<In2>* input2;                                                        \
+                      operator Out() const { return (*input1)operation(*input2); }   \
+    name(Evaluatable<In1>* in1, Evaluatable<In2>* in2) : input1(in1), input2(in2) {} \
+    Evaluatable<Out>*                                                                \
+    optimize(MemoryManager& m)                                                       \
+    {                                                                                \
+      Evaluatable<In1>* input1 = this->input1->optimize(m);                          \
+      Evaluatable<In2>* input2 = this->input2->optimize(m);                          \
+      if (auto const1 = dynamic_cast<GenericConstant<In1>*>(input1)) {               \
+        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))               \
+          return m.New<GenericConstant<Out>>((*input1)operation(*input2));           \
+        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))           \
+          return m.New<ConstCase1<In2>>(const1->value, ref2->value);                 \
+        else                                                                         \
+          return m.New<ConstCase1<Evaluatable<In2>>>(const1->value, input2);         \
+      } else if (auto ref1 = dynamic_cast<GenericReference<In1>*>(input1)) {         \
+        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))               \
+          return m.New<ConstCase2<In1>>(ref1->value, const2->value);                 \
+        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))           \
+          return m.New<ReferenceCase<In1, In2>>(ref1->value, ref2->value);           \
+        else                                                                         \
+          return m.New<ReferenceCase<In1, Evaluatable<In2>>>(ref1->value, input2);   \
+      } else if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))          \
+        return m.New<ConstCase2<Evaluatable<In1>>>(input1, const2->value);           \
+      else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))             \
+        return m.New<ReferenceCase<Evaluatable<In1>, In2>>(input1, ref2->value);     \
+      this->input1 = input1;                                                         \
+      this->input2 = input2;                                                         \
+      return this;                                                                   \
+    }                                                                                \
   };
 
-#define MakeGenericTwoInputFunc(name, f)                                     \
-  template <typename Out, typename In1, typename In2>                        \
-  struct name : Evaluatable<Out>                                             \
-  {                                                                          \
-    template <typename In1_t, typename In2_t>                                \
-    struct ReferenceCase : Evaluatable<Out>                                  \
-    {                                                                        \
-      In1_t* input1;                                                         \
-      In2_t* input2;                                                         \
-             operator Out() const { return f(*input1, *input2); }            \
-      ReferenceCase(In1_t* in1, In2_t* in2) : input1(in1), input2(in2) {}    \
-    };                                                                       \
-    template <typename In2_type>                                             \
-    struct ConstCase1 : Evaluatable<Out>                                     \
-    {                                                                        \
-      In1       input1;                                                      \
-      In2_type* input2;                                                      \
-                operator Out() const { return f(input1, *input2); }          \
-      ConstCase1(In1 in1, In2_type* in2) : input1(in1), input2(in2) {}       \
-    };                                                                       \
-    template <typename In1_type>                                             \
-    struct ConstCase2 : Evaluatable<Out>                                     \
-    {                                                                        \
-      In1_type* input1;                                                      \
-      In2       input2;                                                      \
-                operator Out() const { return f(*input1, input2); }          \
-      ConstCase2(In1_type* in1, In2 in2) : input1(in1), input2(in2) {}       \
-    };                                                                       \
-    Evaluatable<In1>* input1;                                                \
-    Evaluatable<In2>* input2;                                                \
-                      operator Out() const { return f(*input1, *input2); }   \
-    name(Evaluatable<In1>* in1, Evaluatable<In2>* in2)                       \
-        : input1(in1), input2(in2)                                           \
-    {                                                                        \
-    }                                                                        \
-    Evaluatable<Out>*                                                        \
-    optimize(MemoryManager& m)                                               \
-    {                                                                        \
-      Evaluatable<In1>* input1 = this->input1->optimize(m);                  \
-      Evaluatable<In2>* input2 = this->input2->optimize(m);                  \
-      if (auto const1 = dynamic_cast<GenericConstant<In1>*>(input1)) {       \
-        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))       \
-          return m.New<GenericConstant<Out>>(f(*input1, *input2));           \
-        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))   \
-          return m.New<ConstCase1<In2>>(const1->value, ref2->value);         \
-        else                                                                 \
-          return m.New<ConstCase1<Evaluatable<In2>>>(const1->value, input2); \
-      } else if (auto ref1 = dynamic_cast<GenericReference<In1>*>(input1)) { \
-        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))       \
-          return m.New<ConstCase2<In1>>(ref1->value, const2->value);         \
-        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))   \
-          return m.New<ReferenceCase<In1, In2>>(ref1->value, ref2->value);   \
-        else                                                                 \
-          return m.New<ReferenceCase<In1, Evaluatable<In2>>>(                \
-              ref1->value, input2);                                          \
-      } else if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))  \
-        return m.New<ConstCase2<Evaluatable<In1>>>(input1, const2->value);   \
-      else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))     \
-        return m.New<ReferenceCase<Evaluatable<In1>, In2>>(                  \
-            input1, ref2->value);                                            \
-      this->input1 = input1;                                                 \
-      this->input2 = input2;                                                 \
-      return this;                                                           \
-    }                                                                        \
+#define MakeGenericTwoInputFunc(name, f)                                             \
+  template <typename Out, typename In1, typename In2>                                \
+  struct name : Evaluatable<Out>                                                     \
+  {                                                                                  \
+    template <typename In1_t, typename In2_t>                                        \
+    struct ReferenceCase : Evaluatable<Out>                                          \
+    {                                                                                \
+      In1_t* input1;                                                                 \
+      In2_t* input2;                                                                 \
+             operator Out() const { return f(*input1, *input2); }                    \
+      ReferenceCase(In1_t* in1, In2_t* in2) : input1(in1), input2(in2) {}            \
+    };                                                                               \
+    template <typename In2_type>                                                     \
+    struct ConstCase1 : Evaluatable<Out>                                             \
+    {                                                                                \
+      In1       input1;                                                              \
+      In2_type* input2;                                                              \
+                operator Out() const { return f(input1, *input2); }                  \
+      ConstCase1(In1 in1, In2_type* in2) : input1(in1), input2(in2) {}               \
+    };                                                                               \
+    template <typename In1_type>                                                     \
+    struct ConstCase2 : Evaluatable<Out>                                             \
+    {                                                                                \
+      In1_type* input1;                                                              \
+      In2       input2;                                                              \
+                operator Out() const { return f(*input1, input2); }                  \
+      ConstCase2(In1_type* in1, In2 in2) : input1(in1), input2(in2) {}               \
+    };                                                                               \
+    Evaluatable<In1>* input1;                                                        \
+    Evaluatable<In2>* input2;                                                        \
+                      operator Out() const { return f(*input1, *input2); }           \
+    name(Evaluatable<In1>* in1, Evaluatable<In2>* in2) : input1(in1), input2(in2) {} \
+    Evaluatable<Out>*                                                                \
+    optimize(MemoryManager& m)                                                       \
+    {                                                                                \
+      Evaluatable<In1>* input1 = this->input1->optimize(m);                          \
+      Evaluatable<In2>* input2 = this->input2->optimize(m);                          \
+      if (auto const1 = dynamic_cast<GenericConstant<In1>*>(input1)) {               \
+        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))               \
+          return m.New<GenericConstant<Out>>(f(*input1, *input2));                   \
+        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))           \
+          return m.New<ConstCase1<In2>>(const1->value, ref2->value);                 \
+        else                                                                         \
+          return m.New<ConstCase1<Evaluatable<In2>>>(const1->value, input2);         \
+      } else if (auto ref1 = dynamic_cast<GenericReference<In1>*>(input1)) {         \
+        if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))               \
+          return m.New<ConstCase2<In1>>(ref1->value, const2->value);                 \
+        else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))           \
+          return m.New<ReferenceCase<In1, In2>>(ref1->value, ref2->value);           \
+        else                                                                         \
+          return m.New<ReferenceCase<In1, Evaluatable<In2>>>(ref1->value, input2);   \
+      } else if (auto const2 = dynamic_cast<GenericConstant<In2>*>(input2))          \
+        return m.New<ConstCase2<Evaluatable<In1>>>(input1, const2->value);           \
+      else if (auto ref2 = dynamic_cast<GenericReference<In2>*>(input2))             \
+        return m.New<ReferenceCase<Evaluatable<In1>, In2>>(input1, ref2->value);     \
+      this->input1 = input1;                                                         \
+      this->input2 = input2;                                                         \
+      return this;                                                                   \
+    }                                                                                \
   };
 
-MakeGenericFunction(GenericSin, std::sin) MakeGenericFunction(
-    GenericCos,
-    std::cos) MakeGenericFunction(GenericTan, std::tan)
-    MakeGenericFunction(GenericErf, std::erf) MakeGenericFunction(
-        GenericExp,
-        std::exp) MakeGenericFunction(GenericLog, std::log)
-        MakeGenericFunction(GenericAbs, std::abs) MakeGenericFunction(
-            GenericASin,
-            std::asin) MakeGenericFunction(GenericACos, std::acos)
-            MakeGenericFunction(GenericATan, std::atan) MakeGenericFunction(
-                GenericSqrt,
-                std::sqrt) MakeGenericFunction(GenericCbrt, std::cbrt)
-                MakeGenericFunction(GenericErfc, std::erfc) MakeGenericFunction(
-                    GenericCeil,
-                    std::ceil) MakeGenericFunction(GenericRound, std::round)
-                    MakeGenericFunction(
-                        GenericFloor,
-                        std::
-                            floor) MakeGenericFunction(GenericLog10, std::log10)
-                        MakeGenericFunction(GenericNeg, -) MakeGenericFunction(
-                            GenericNot,
-                            !)
+MakeGenericFunction(GenericSin, std::sin) MakeGenericFunction(GenericCos, std::cos) MakeGenericFunction(
+    GenericTan,
+    std::tan) MakeGenericFunction(GenericErf, std::erf) MakeGenericFunction(GenericExp, std::exp)
+    MakeGenericFunction(GenericLog, std::log) MakeGenericFunction(GenericAbs, std::abs)
+        MakeGenericFunction(GenericASin, std::asin) MakeGenericFunction(GenericACos, std::acos)
+            MakeGenericFunction(GenericATan, std::atan) MakeGenericFunction(GenericSqrt, std::sqrt)
+                MakeGenericFunction(GenericCbrt, std::cbrt) MakeGenericFunction(GenericErfc, std::erfc)
+                    MakeGenericFunction(GenericCeil, std::ceil) MakeGenericFunction(GenericRound, std::round)
+                        MakeGenericFunction(GenericFloor, std::floor) MakeGenericFunction(GenericLog10, std::log10)
+                            MakeGenericFunction(GenericNeg, -) MakeGenericFunction(GenericNot, !)
 
-                            MakeGenericOperator(
-                                GenericAdd,
-                                +) MakeGenericOperator(GenericMultiply, *)
-                                MakeGenericOperator(GenericDivide, /) MakeGenericOperator(
-                                    GenericSubtract,
-                                    -) MakeGenericOperator(GenericGreater, >)
-                                    MakeGenericOperator(
-                                        GenericGreaterOrEqual,
-                                        >=) MakeGenericOperator(GenericLess, <)
-                                        MakeGenericOperator(
-                                            GenericLessOrEqual,
-                                            <=) MakeGenericOperator(GenericEqual, ==)
-                                            MakeGenericOperator(
-                                                GenericInequal,
-                                                !=) MakeGenericOperator(GenericAnd, &&)
-                                                MakeGenericOperator(
-                                                    GenericXor,
-                                                    xor)
-                                                    MakeGenericOperator(
-                                                        GenericOr,
-                                                        ||)
-                                                        MakeGenericTwoInputFunc(
-                                                            GenericPow,
-                                                            std::pow)
-                                                            MakeGenericTwoInputFunc(
-                                                                GenericMod,
-                                                                std::fmod)
+                                MakeGenericOperator(GenericAdd, +) MakeGenericOperator(GenericMultiply, *)
+                                    MakeGenericOperator(GenericDivide, /) MakeGenericOperator(GenericSubtract, -)
+                                        MakeGenericOperator(GenericGreater, >) MakeGenericOperator(
+                                            GenericGreaterOrEqual,
+                                            >=) MakeGenericOperator(GenericLess, <)
+                                            MakeGenericOperator(GenericLessOrEqual, <=)
+                                                MakeGenericOperator(GenericEqual, ==)
+                                                    MakeGenericOperator(GenericInequal, !=)
+                                                        MakeGenericOperator(GenericAnd, &&)
+                                                            MakeGenericOperator(GenericXor, xor)
+                                                                MakeGenericOperator(GenericOr, ||)
+                                                                    MakeGenericTwoInputFunc(GenericPow, std::pow)
+                                                                        MakeGenericTwoInputFunc(GenericMod, std::fmod)
 
-                                                                template <
-                                                                    typename Out>
-                                                                struct
-    Conditional : Evaluatable<Out>
+                                                                            template <typename Out>
+                                                                            struct Conditional : Evaluatable<Out>
 {
   Evaluatable<bool>* condition;
   Evaluatable<Out>*  IfTrue;
   Evaluatable<Out>*  IfFalse;
-  operator Out() const { return (*condition) ? (*IfTrue) : (*IfFalse); }
-  Conditional(
-      Evaluatable<bool>* condition,
-      Evaluatable<Out>*  WhenTrue,
-      Evaluatable<Out>*  WhenFalse)
+                     operator Out() const { return (*condition) ? (*IfTrue) : (*IfFalse); }
+  Conditional(Evaluatable<bool>* condition, Evaluatable<Out>* WhenTrue, Evaluatable<Out>* WhenFalse)
       : condition(condition), IfTrue(WhenTrue), IfFalse(WhenFalse)
   {
   }
@@ -418,9 +374,7 @@ struct Reader
   Reader(const char* lit, unsigned int len) : first(lit), length(len) {}
   Reader(const std::string& s) : Reader(s.c_str(), s.size()) {}
   Reader(const char* lit) : first(lit), length(std::strlen(lit)) {}
-  Reader(const char* start, const char* end) : first(start), length(end - start)
-  {
-  }
+  Reader(const char* start, const char* end) : first(start), length(end - start) {}
   Reader(const Reader& r) : first(r.first), length(r.length) {}
 
   Reader
@@ -518,8 +472,7 @@ struct Reader
       } else
         return false;
     }
-    return scan == last &&
-           *lit == '\0';  // Ensures that all the characters matched.
+    return scan == last && *lit == '\0';  // Ensures that all the characters matched.
   }
   inline operator char() { return first[pos]; }
   char
@@ -610,8 +563,7 @@ class EquationContext
     char c = *r.first;
     if (IsDigit(c) || c == '(' || c == '-' || r.length < 3) return 0;
     while (c = r.first[r.pos], c != '(' && c != ' ' && r.pos < r.length) {
-      if (c != '*' && c != '/' && c != '^' && c != '+' && c != '=' &&
-          c != '<' && c != '~' && c != '>')
+      if (c != '*' && c != '/' && c != '^' && c != '+' && c != '=' && c != '<' && c != '~' && c != '>')
         r.pos++;
       else
         return 0;
@@ -619,9 +571,7 @@ class EquationContext
     if (r >> '(') {
       int p     = r.pos;
       int depth = r.Next('(', ')');
-      if (depth > 0)
-        throw std::invalid_argument(
-            "Mismatched parethesis in " + r.MakeString());
+      if (depth > 0) throw std::invalid_argument("Mismatched parethesis in " + r.MakeString());
       if (r.pos < r.length - 1) return 0;
       Reader func_name = r.sub(r.first, p);
       if (IsCMathFunc(func_name)) {
@@ -637,10 +587,7 @@ class EquationContext
     if (r >> '?') {
       int p1    = r.pos;
       int depth = r.Next('?', ':');
-      if (depth > 0)
-        throw std::invalid_argument(
-            "Couldn't find matching : for ternary operator in " +
-            r.MakeString());
+      if (depth > 0) throw std::invalid_argument("Couldn't find matching : for ternary operator in " + r.MakeString());
       if (r.pos != r.length) {
         return mem.New<RealValuedConditional>(
             ParseBooleanExpression(r.sub(r.first, p1)),
@@ -649,58 +596,41 @@ class EquationContext
       }
     }
     if (r << '%')
-      return mem.New<DoubleMod>(
-          ParseEquation(r.sub(r.first, r.pos)),
-          ParseEquation(r.sub(r.pos + 1, r.length)));
+      return mem.New<DoubleMod>(ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
 
     if (r << '+')
-      return mem.New<DoubleAdd>(
-          ParseEquation(r.sub(r.first, r.pos)),
-          ParseEquation(r.sub(r.pos + 1, r.length)));
+      return mem.New<DoubleAdd>(ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
 
     if (r << '-') {
       // We need to ensure that we found a minus sign and not a value negation
-      while (r.pos > 0 && (r.first[r.pos] == '-' || r.first[r.pos] == ' '))
-        r.pos--;
+      while (r.pos > 0 && (r.first[r.pos] == '-' || r.first[r.pos] == ' ')) r.pos--;
       if (r.pos > 0 || r.first[r.pos] != '-') {
         char c = r.first[r.pos];
-        if (c != '*' && c != '/' && c != '^' && c != 'e' && c != '=' &&
-            c != '<' && c != '~' && c != '>') {
-          while (r.first[r.pos] != '-')
-            r.pos++;  // Moves it back to the last minus sign
+        if (c != '*' && c != '/' && c != '^' && c != 'e' && c != '=' && c != '<' && c != '~' && c != '>') {
+          while (r.first[r.pos] != '-') r.pos++;  // Moves it back to the last minus sign
           return mem.New<DoubleSubtract>(
-              ParseEquation(r.sub(r.first, r.pos)),
-              ParseEquation(r.sub(r.pos + 1, r.length)));
+              ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
         }
       }
     }
 
     if (r << '*')
-      return mem.New<DoubleMultiply>(
-          ParseEquation(r.sub(r.first, r.pos)),
-          ParseEquation(r.sub(r.pos + 1, r.length)));
+      return mem.New<DoubleMultiply>(ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
 
     if (r << '/')
-      return mem.New<DoubleDivide>(
-          ParseEquation(r.sub(r.first, r.pos)),
-          ParseEquation(r.sub(r.pos + 1, r.length)));
+      return mem.New<DoubleDivide>(ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
 
     if (r >> '^') {
       RealValuedExpression* base       = ParseEquation(r.sub(r.first, r.pos));
       Reader                power_text = r.sub(r.pos + 1, r.length);
       ApplyNecessaryFormatting(power_text);
       if (IsInteger(power_text))
-        return mem.New<DoubleToIntegerPow>(
-            base,
-            mem.New<GenericConstant<int>>(strtol(power_text.first, NULL, 10)));
+        return mem.New<DoubleToIntegerPow>(base, mem.New<GenericConstant<int>>(strtol(power_text.first, NULL, 10)));
       else
         return mem.New<DoublePow>(base, ParseEquation(power_text));
     }
 
-    if (*r.first == '-') {
-      return mem.New<GenericNeg<double, double>>(
-          ParseEquation(r.sub(1, r.length)));
-    }
+    if (*r.first == '-') { return mem.New<GenericNeg<double, double>>(ParseEquation(r.sub(1, r.length))); }
 
     return 0;
   }
@@ -714,43 +644,34 @@ class EquationContext
 
     if (r << '|')
       return mem.New<GenericOr<bool, bool, bool>>(
-          ParseBooleanExpression(r.sub(r.first, r.pos)),
-          ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
+          ParseBooleanExpression(r.sub(r.first, r.pos)), ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
 
     if (r << '^')
       return mem.New<GenericXor<bool, bool, bool>>(
-          ParseBooleanExpression(r.sub(r.first, r.pos)),
-          ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
+          ParseBooleanExpression(r.sub(r.first, r.pos)), ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
 
     if (r << '&')
       return mem.New<GenericAnd<bool, bool, bool>>(
-          ParseBooleanExpression(r.sub(r.first, r.pos)),
-          ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
+          ParseBooleanExpression(r.sub(r.first, r.pos)), ParseBooleanExpression(r.sub(r.pos + 1, r.length)));
 
-    if (r << '!')
-      return mem.New<GenericNot<bool, bool>>(
-          ParseBooleanExpression(r.sub(r.first + 1, r.length)));
+    if (r << '!') return mem.New<GenericNot<bool, bool>>(ParseBooleanExpression(r.sub(r.first + 1, r.length)));
 
     if (r << '>') {
       if (r.first[r.pos + 1] == '=')
         return mem.New<GenericGreaterOrEqual<bool, double, double>>(
-            ParseEquation(r.sub(r.first, r.pos)),
-            ParseEquation(r.sub(r.pos + 2, r.length)));
+            ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 2, r.length)));
       else
         return mem.New<GenericGreater<bool, double, double>>(
-            ParseEquation(r.sub(r.first, r.pos)),
-            ParseEquation(r.sub(r.pos + 1, r.length)));
+            ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
     }
 
     if (r << '<') {
       if (r.first[r.pos + 1] == '=')
         return mem.New<GenericLessOrEqual<bool, double, double>>(
-            ParseEquation(r.sub(r.first, r.pos)),
-            ParseEquation(r.sub(r.pos + 2, r.length)));
+            ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 2, r.length)));
       else
         return mem.New<GenericLess<bool, double, double>>(
-            ParseEquation(r.sub(r.first, r.pos)),
-            ParseEquation(r.sub(r.pos + 1, r.length)));
+            ParseEquation(r.sub(r.first, r.pos)), ParseEquation(r.sub(r.pos + 1, r.length)));
     }
 
     /*if(r << '~') {
@@ -764,11 +685,9 @@ class EquationContext
     if (r << '=') {
       if (r.first[r.pos - 1] == '=')
         return mem.New<GenericEqual<bool, double, double>>(
-            ParseEquation(r.sub(r.pos + 1, r.length)),
-            ParseEquation(r.sub(r.first, r.pos - 1)));
+            ParseEquation(r.sub(r.pos + 1, r.length)), ParseEquation(r.sub(r.first, r.pos - 1)));
     }
-    throw std::invalid_argument(
-        "Unable to parse \"" + r.MakeString() + "\" as boolean");
+    throw std::invalid_argument("Unable to parse \"" + r.MakeString() + "\" as boolean");
   }
 };
 
@@ -808,10 +727,7 @@ struct BoundaryConditionFunctor
       throw arg;
     }
   }
-  BoundaryConditionFunctor(const BoundaryConditionFunctor& other)
-      : BoundaryConditionFunctor(other.equation)
-  {
-  }
+  BoundaryConditionFunctor(const BoundaryConditionFunctor& other) : BoundaryConditionFunctor(other.equation) {}
   BoundaryConditionFunctor&
   operator=(const BoundaryConditionFunctor& other)
   {

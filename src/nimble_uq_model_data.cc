@@ -58,18 +58,14 @@ ModelData::InitializeBlocks(
 {
   nimble::ModelData::InitializeBlocks(data_manager, material_factory_base);
   //
-  uq_model_ = std::shared_ptr<nimble::UqModel>(
-      new nimble::UqModel(dim, num_nodes, num_blocks));
+  uq_model_ = std::shared_ptr<nimble::UqModel>(new nimble::UqModel(dim, num_nodes, num_blocks));
   uq_model_->ParseConfiguration(parser->UqModelString());
   std::map<std::string, std::string> lines = parser_.UqParamsStrings();
-  for (std::map<std::string, std::string>::iterator it = lines.begin();
-       it != lines.end();
-       it++) {
-    std::string material_key = it->first;
-    int         block_id     = parser_.GetBlockIdFromMaterial(material_key);
+  for (std::map<std::string, std::string>::iterator it = lines.begin(); it != lines.end(); it++) {
+    std::string material_key            = it->first;
+    int         block_id                = parser_.GetBlockIdFromMaterial(material_key);
     std::string uq_params_this_material = it->second;
-    uq_model_->ParseBlockInput(
-        uq_params_this_material, block_id, blocks[block_id]);
+    uq_model_->ParseBlockInput(uq_params_this_material, block_id, blocks[block_id]);
   }
   //
   // initialize
@@ -89,9 +85,7 @@ ModelData::InitializeBlocks(
 }
 
 void
-ModelData::WriteExodusOutput(
-    nimble::DataManager& data_manager,
-    double               time_current)
+ModelData::WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
 {
   nimble::ModelData::WriteExodusOutput(data_manager, time_current);
 
@@ -102,8 +96,7 @@ ModelData::WriteExodusOutput(
     int            num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
     int const*     elem_conn         = mesh.GetConnectivity(block_id);
     nimble::Block& block             = block_it->second;
-    uq_model_->PerformAnalyses(
-        reference_coordinate, num_elem_in_block, elem_conn, block_id, block);
+    uq_model_->PerformAnalyses(reference_coordinate, num_elem_in_block, elem_conn, block_id, block);
   }
   uq_model_->Write(step);
 }
@@ -114,27 +107,18 @@ ModelData::ApplyInitialConditions(DataManager& data_manager)
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto velocity             = GetVectorNodeData("velocity");
-  bc->ApplyInitialConditions(
-      reference_coordinate, velocity, bc_offnom_velocity_views_);
+  bc->ApplyInitialConditions(reference_coordinate, velocity, bc_offnom_velocity_views_);
 }
 
 void
-ModelData::ApplyKinematicConditions(
-    DataManager& data_manager,
-    double       time_current,
-    double       time_previous)
+ModelData::ApplyKinematicConditions(DataManager& data_manager, double time_current, double time_previous)
 {
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto displacement         = GetVectorNodeData("displacement");
   auto velocity             = GetVectorNodeData("velocity");
   bc->ApplyKinematicBC(
-      time_current,
-      time_previous,
-      reference_coordinate,
-      displacement,
-      velocity,
-      bc_offnom_velocity_views_);
+      time_current, time_previous, reference_coordinate, displacement, velocity, bc_offnom_velocity_views_);
 }
 
 void
@@ -144,9 +128,7 @@ ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
 }
 
 void
-ModelData::UpdateWithNewDisplacement(
-    nimble::DataManager& data_manager,
-    double               dt)
+ModelData::UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
 {
   // advance approximate trajectories
   uq_model_->UpdateDisplacement(dt);

@@ -71,17 +71,12 @@ BlockBase::ComputeCriticalTimeStep(
     for (int node = 0; node < num_node_per_elem; node++) {
       int node_id = elem_conn[elem * num_node_per_elem + node];
       for (int i = 0; i < vector_size; i++) {
-        node_coord[node * vector_size + i] =
-            node_reference_coordinates(node_id, i) +
-            node_displacements(node_id, i);
+        node_coord[node * vector_size + i] = node_reference_coordinates(node_id, i) + node_displacements(node_id, i);
       }
     }
 
-    double elem_critical_time_step =
-        element_->ComputeCharacteristicLength(node_coord) / sound_speed;
-    if (elem_critical_time_step < critical_time_step) {
-      critical_time_step = elem_critical_time_step;
-    }
+    double elem_critical_time_step = element_->ComputeCharacteristicLength(node_coord) / sound_speed;
+    if (elem_critical_time_step < critical_time_step) { critical_time_step = elem_critical_time_step; }
   }
 
   return critical_time_step;

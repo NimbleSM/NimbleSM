@@ -51,8 +51,7 @@
 
 namespace nimble_kokkos {
 
-class BlockMaterialInterfaceFactory
-    : public nimble::BlockMaterialInterfaceFactoryBase
+class BlockMaterialInterfaceFactory : public nimble::BlockMaterialInterfaceFactoryBase
 {
  public:
   BlockMaterialInterfaceFactory()           = default;

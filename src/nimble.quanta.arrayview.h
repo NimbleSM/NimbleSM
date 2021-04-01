@@ -60,22 +60,13 @@ class arrayview_t
 
  public:
   arrayview_t() : addr(nullptr), count(0) {}
-  arrayview_t(T* addr, size_t start, size_t count)
-      : addr(addr + start), count(count)
-  {
-  }
+  arrayview_t(T* addr, size_t start, size_t count) : addr(addr + start), count(count) {}
   arrayview_t(T* addr, size_t count) : addr(addr), count(count) {}
-  arrayview_t(T* begin, T* end)
-      : addr(begin), count((size_t)end - (size_t)begin)
-  {
-  }
+  arrayview_t(T* begin, T* end) : addr(begin), count((size_t)end - (size_t)begin) {}
   arrayview_t(const arrayview_t& s) : addr(s.addr), count(s.count) {}
   arrayview_t(arrayview_t&& s) : addr(s.addr), count(s.count) {}
   arrayview_t(std::vector<T>& vect) : addr(vect.data()), count(vect.size()) {}
-  arrayview_t(std::vector<T>& vect, size_t start, size_t count)
-      : addr(vect.data() + start), count(count)
-  {
-  }
+  arrayview_t(std::vector<T>& vect, size_t start, size_t count) : addr(vect.data() + start), count(count) {}
 
   T*
   begin() const
@@ -215,9 +206,7 @@ class spanarray
   }
   template <class int_t>
   spanarray(const std::vector<int_t>& sect_sizes)
-      : spanarray{
-            (size_t)std::accumulate(sect_sizes.begin(), sect_sizes.end(), 0),
-            sect_sizes.size()}
+      : spanarray{(size_t)std::accumulate(sect_sizes.begin(), sect_sizes.end(), 0), sect_sizes.size()}
   {
     size_t displacement = 0;
     T*     scan0        = data();

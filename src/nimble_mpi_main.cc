@@ -71,31 +71,25 @@ main(int argc, char* argv[])
     std::shared_ptr<MaterialFactoryType> material_factory = nullptr;
 #ifdef NIMBLE_HAVE_KOKKOS
     if (myParser.UseKokkos()) {
-      material_factory = std::shared_ptr<MaterialFactoryType>(
-          new nimble_kokkos::MaterialFactory);
+      material_factory = std::shared_ptr<MaterialFactoryType>(new nimble_kokkos::MaterialFactory);
     } else
 #endif
     {
-      material_factory =
-          std::shared_ptr<MaterialFactoryType>(new nimble::MaterialFactory);
+      material_factory = std::shared_ptr<MaterialFactoryType>(new nimble::MaterialFactory);
     }
 
-    std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material =
-        nullptr;
+    std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material = nullptr;
 #ifdef NIMBLE_HAVE_KOKKOS
     if (myParser.UseKokkos())
       block_material =
-          std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>(
-              new nimble_kokkos::BlockMaterialInterfaceFactory);
+          std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>(new nimble_kokkos::BlockMaterialInterfaceFactory);
 #endif
 
     std::shared_ptr<nimble::ContactInterface> contact_interface = nullptr;
     if (myParser.HasContact())
-      contact_interface = std::shared_ptr<nimble::ContactInterface>(
-          new nimble::ContactInterface);
+      contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
-    status = nimble::NimbleMain(
-        material_factory, contact_interface, block_material, myParser);
+    status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
   }
 
   nimble::NimbleFinalize(myParser);

@@ -92,9 +92,7 @@ class ModelData : public ModelDataBase
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(
-      nimble::DataManager&                        data_manager,
-      const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
       override;
 
   /// \brief Copy time state (n+1) into time state (n)
@@ -127,8 +125,7 @@ class ModelData : public ModelDataBase
   InitializeExodusOutput(nimble::DataManager& data_manager) override;
 
   void
-  WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
-      override;
+  WriteExodusOutput(nimble::DataManager& data_manager, double time_current) override;
 
   /// \brief Compute the external force
   ///
@@ -167,11 +164,10 @@ class ModelData : public ModelDataBase
   void
   serialize(ArchiveType& ar)
   {
-    ar | dim_ | critical_time_step_ | block_ids_ | blocks_ | data_fields_ |
-        node_data_ | output_node_component_labels_ | element_data_fields_ |
-        element_component_labels_ | element_data_n_ | element_data_np1_ |
-        output_element_component_labels_ | derived_output_element_data_labels_ |
-        globally_shared_nodes_ | global_node_id_to_local_node_id_;
+    ar | dim_ | critical_time_step_ | block_ids_ | blocks_ | data_fields_ | node_data_ | output_node_component_labels_ |
+        element_data_fields_ | element_component_labels_ | element_data_n_ | element_data_np1_ |
+        output_element_component_labels_ | derived_output_element_data_labels_ | globally_shared_nodes_ |
+        global_node_id_to_local_node_id_;
   }
 #endif
 
@@ -182,18 +178,13 @@ class ModelData : public ModelDataBase
   GetNodeData(int field_id);
 
   void
-  GetNodeDataForOutput(
-      std::vector<std::vector<double>>& single_component_arrays);
+  GetNodeDataForOutput(std::vector<std::vector<double>>& single_component_arrays);
 
   void
-  DeclareElementData(
-      int block_id,
-      std::vector<std::pair<std::string, Length>> const&
-          data_labels_and_lengths);
+  DeclareElementData(int block_id, std::vector<std::pair<std::string, Length>> const& data_labels_and_lengths);
 
   void
-  AllocateElementData(
-      std::map<int, int> const& num_integration_points_in_each_block);
+  AllocateElementData(std::map<int, int> const& num_integration_points_in_each_block);
 
   std::vector<double>&
   GetElementDataOld(int block_id)
@@ -208,8 +199,7 @@ class ModelData : public ModelDataBase
   }
 
   void
-  GetElementDataForOutput(
-      std::map<int, std::vector<std::vector<double>>>& single_component_arrays);
+  GetElementDataForOutput(std::map<int, std::vector<std::vector<double>>>& single_component_arrays);
 
   void
   SpecifyOutputFields(std::string output_field_string);
@@ -243,10 +233,7 @@ class ModelData : public ModelDataBase
   AssignFieldId(Field& field);
 
   void
-  GetNodeDataComponent(
-      int           field_id,
-      int           component,
-      double* const component_data);
+  GetNodeDataComponent(int field_id, int component, double* const component_data);
 
   double*
   GetNodeData(const std::string& label);

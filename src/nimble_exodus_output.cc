@@ -60,9 +60,7 @@
 namespace nimble {
 
 void
-ExodusOutput::Initialize(
-    std::string const& filename,
-    GenesisMesh const& genesis_mesh)
+ExodusOutput::Initialize(std::string const& filename, GenesisMesh const& genesis_mesh)
 {
   filename_          = filename;
   dim_               = genesis_mesh.GetDim();
@@ -85,50 +83,31 @@ ExodusOutput::InitializeDatabase(
 {
 #ifndef NIMBLE_HAVE_EXODUS
   InitializeDatabaseTextFile(
-      genesis_mesh,
-      global_data_names,
-      node_data_names,
-      elem_data_names,
-      derived_elem_data_names);
+      genesis_mesh, global_data_names, node_data_names, elem_data_names, derived_elem_data_names);
 #else
 
   int num_global_data = static_cast<int>(global_data_names.size());
   int num_node_data   = static_cast<int>(node_data_names.size());
 
   // Initialize exodus database; Overwrite any existing file with this name
-  int exodus_file_id =
-      ex_create(filename_.c_str(), EX_CLOBBER, &CPU_word_size_, &IO_word_size_);
-  if (exodus_file_id < 0)
-    ReportExodusError(exodus_file_id, "InitializeDatabase", "ex_create");
+  int exodus_file_id = ex_create(filename_.c_str(), EX_CLOBBER, &CPU_word_size_, &IO_word_size_);
+  if (exodus_file_id < 0) ReportExodusError(exodus_file_id, "InitializeDatabase", "ex_create");
 
   // Write the Quality Assurance (QA) record
   int retval = ex_put_init(
-      exodus_file_id,
-      "NimbleSM",
-      dim_,
-      num_nodes_,
-      num_elements_,
-      num_global_blocks_,
-      num_node_sets_,
-      num_side_sets_);
-  if (retval != 0)
-    ReportExodusError(retval, "InitializeDatabase", "ex_put_init");
+      exodus_file_id, "NimbleSM", dim_, num_nodes_, num_elements_, num_global_blocks_, num_node_sets_, num_side_sets_);
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_init");
   WriteQARecord(exodus_file_id);
 
   // Write nodal coordinate names to database
   const char* coord_names[3] = {"x", "y", "z"};
-  retval = ex_put_coord_names(exodus_file_id, const_cast<char**>(coord_names));
-  if (retval != 0)
-    ReportExodusError(retval, "InitializeDatabase", "ex_put_coord_names");
+  retval                     = ex_put_coord_names(exodus_file_id, const_cast<char**>(coord_names));
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_coord_names");
 
   // Write the coordinates
   retval = ex_put_coord(
-      exodus_file_id,
-      genesis_mesh.GetCoordinatesX(),
-      genesis_mesh.GetCoordinatesY(),
-      genesis_mesh.GetCoordinatesZ());
-  if (retval != 0)
-    ReportExodusError(retval, "InitializeDatabase", "ex_put_coord");
+      exodus_file_id, genesis_mesh.GetCoordinatesX(), genesis_mesh.GetCoordinatesY(), genesis_mesh.GetCoordinatesZ());
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_coord");
 
   // Get the list of global IDs for element blocks
   std::set<int> gid_list;
@@ -151,17 +130,8 @@ ExodusOutput::InitializeDatabase(
       elem_type             = genesis_mesh.GetElementType(gid);
     }
     retval = ex_put_block(
-        exodus_file_id,
-        EX_ELEM_BLOCK,
-        gid,
-        elem_type.c_str(),
-        num_elements_in_block,
-        num_nodes_per_elem,
-        0,
-        0,
-        0);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_block");
+        exodus_file_id, EX_ELEM_BLOCK, gid, elem_type.c_str(), num_elements_in_block, num_nodes_per_elem, 0, 0, 0);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_block");
   }
 
   // Write the block names
@@ -173,9 +143,7 @@ ExodusOutput::InitializeDatabase(
     strcpy(block_names[i], block_name.c_str());
   }
   retval = ex_put_names(exodus_file_id, EX_ELEM_BLOCK, block_names);
-  if (retval != 0)
-    ReportExodusError(
-        retval, "InitializeDatabase", "ex_put_names EX_ELEM_BLOCK");
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_names EX_ELEM_BLOCK");
 
   // Write element connectivity
   for (int i = 0; i < num_blocks_; ++i) {
@@ -184,15 +152,11 @@ ExodusOutput::InitializeDatabase(
     if (num_elements_in_block > 0) {
       const int* conn = genesis_mesh.GetConnectivity(id);
       // Switch from 0-based indexing to 1-based indexing
-      int num_node_in_elem = genesis_mesh.GetNumNodesPerElement(id);
+      int              num_node_in_elem = genesis_mesh.GetNumNodesPerElement(id);
       std::vector<int> exodus_conn(num_elements_in_block * num_node_in_elem);
-      for (int j = 0; j < num_elements_in_block * num_node_in_elem; j++) {
-        exodus_conn[j] = conn[j] + 1;
-      }
-      retval = ex_put_conn(
-          exodus_file_id, EX_ELEM_BLOCK, id, &exodus_conn[0], nullptr, nullptr);
-      if (retval != 0)
-        ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
+      for (int j = 0; j < num_elements_in_block * num_node_in_elem; j++) { exodus_conn[j] = conn[j] + 1; }
+      retval = ex_put_conn(exodus_file_id, EX_ELEM_BLOCK, id, &exodus_conn[0], nullptr, nullptr);
+      if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_conn");
     }
   }
 
@@ -200,41 +164,34 @@ ExodusOutput::InitializeDatabase(
   const int* node_global_ids = genesis_mesh.GetNodeGlobalIds();
   // Switch to 1-based indexing
   std::vector<int> temp_node_global_ids(num_nodes_);
-  for (int i = 0; i < num_nodes_; ++i) {
-    temp_node_global_ids[i] = node_global_ids[i] + 1;
-  }
+  for (int i = 0; i < num_nodes_; ++i) { temp_node_global_ids[i] = node_global_ids[i] + 1; }
   retval = ex_put_id_map(exodus_file_id, EX_NODE_MAP, &temp_node_global_ids[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
 
   // Write global element number map (global element IDs)
   const int* elem_global_ids = genesis_mesh.GetElementGlobalIds();
   // Switch to 1-based indexing
   std::vector<int> temp_elem_global_ids(num_elements_);
-  for (int i = 0; i < num_elements_; ++i) {
-    temp_elem_global_ids[i] = elem_global_ids[i] + 1;
-  }
+  for (int i = 0; i < num_elements_; ++i) { temp_elem_global_ids[i] = elem_global_ids[i] + 1; }
   retval = ex_put_id_map(exodus_file_id, EX_ELEM_MAP, &temp_elem_global_ids[0]);
-  if (retval != 0)
-    ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
+  if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_id_map");
 
   // Write node sets
   if (num_node_sets_ > 0) {
-    std::vector<int>           node_set_ids   = genesis_mesh.GetNodeSetIds();
-    std::map<int, std::string> node_set_names = genesis_mesh.GetNodeSetNames();
-    std::map<int, std::vector<int>>    node_sets = genesis_mesh.GetNodeSets();
-    std::map<int, std::vector<double>> distribution_factors =
-        genesis_mesh.GetDistributionFactors();
-    std::vector<int> num_nodes_per_set(num_node_sets_);
-    std::vector<int> num_distribution_factors_per_set(num_node_sets_);
-    int              total_num_node(0);
-    int              total_num_dist(0);
+    std::vector<int>                   node_set_ids            = genesis_mesh.GetNodeSetIds();
+    std::map<int, std::string>         node_set_names          = genesis_mesh.GetNodeSetNames();
+    std::map<int, std::vector<int>>    node_sets               = genesis_mesh.GetNodeSets();
+    std::map<int, std::vector<double>> ns_distribution_factors = genesis_mesh.GetDistributionFactors();
+    std::vector<int>                   num_nodes_per_set(num_node_sets_);
+    std::vector<int>                   num_ns_distribution_factors_per_set(num_node_sets_);
+    int                                total_num_node(0);
+    int                                total_num_dist(0);
     for (int i = 0; i < num_node_sets_; i++) {
-      int id               = node_set_ids[i];
-      int nn               = static_cast<int>(node_sets[id].size());
-      int ndf              = static_cast<int>(distribution_factors[id].size());
-      num_nodes_per_set[i] = nn;
-      num_distribution_factors_per_set[i] = ndf;
+      int id                                 = node_set_ids[i];
+      int nn                                 = static_cast<int>(node_sets[id].size());
+      int ndf                                = static_cast<int>(ns_distribution_factors[id].size());
+      num_nodes_per_set[i]                   = nn;
+      num_ns_distribution_factors_per_set[i] = ndf;
       total_num_node += nn;
       total_num_dist += ndf;
     }
@@ -252,23 +209,20 @@ ExodusOutput::InitializeDatabase(
         // Switch from 0-based indexing to 1-based indexing
         node_sets_node_list[node_index++] = n_set + 1;
       }
-      for (const auto& j_factor : distribution_factors[id]) {
-        node_sets_dist_fact[dist_index++] = j_factor;
-      }
+      for (const auto& j_factor : ns_distribution_factors[id]) { node_sets_dist_fact[dist_index++] = j_factor; }
     }
 
     ex_set_specs set_specs;
     set_specs.sets_ids            = node_set_ids.data();
     set_specs.num_entries_per_set = num_nodes_per_set.data();
-    set_specs.num_dist_per_set    = num_distribution_factors_per_set.data();
+    set_specs.num_dist_per_set    = num_ns_distribution_factors_per_set.data();
     set_specs.sets_entry_index    = node_sets_node_index.data();
     set_specs.sets_dist_index     = node_sets_dist_index.data();
     set_specs.sets_entry_list     = node_sets_node_list.data();
     set_specs.sets_extra_list     = nullptr;
     set_specs.sets_dist_fact      = node_sets_dist_fact.data();
-    retval = ex_put_concat_sets(exodus_file_id, EX_NODE_SET, &set_specs);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_concat_sets");
+    retval                        = ex_put_concat_sets(exodus_file_id, EX_NODE_SET, &set_specs);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_concat_sets");
   }
 
   // Write global data info
@@ -280,12 +234,9 @@ ExodusOutput::InitializeDatabase(
       strcpy(global_var_names[i], global_data_names[i].c_str());
     }
     retval = ex_put_variable_param(exodus_file_id, EX_GLOBAL, num_global_data);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
-    retval = ex_put_variable_names(
-        exodus_file_id, EX_GLOBAL, num_global_data, global_var_names);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+    retval = ex_put_variable_names(exodus_file_id, EX_GLOBAL, num_global_data, global_var_names);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
   }
 
   // Write node data info
@@ -297,30 +248,22 @@ ExodusOutput::InitializeDatabase(
       strcpy(node_var_names[i], node_data_names[i].c_str());
     }
     retval = ex_put_variable_param(exodus_file_id, EX_NODAL, num_node_data);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
-    retval = ex_put_variable_names(
-        exodus_file_id, EX_NODAL, num_node_data, node_var_names);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+    retval = ex_put_variable_names(exodus_file_id, EX_NODAL, num_node_data, node_var_names);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
   }
 
   // Write element data info
   std::set<std::string> unique_elem_var_names;
   for (int i = 0; i < num_blocks_; ++i) {
     int id = block_ids_[i];
-    for (const auto& jname : elem_data_names.at(id)) {
-      unique_elem_var_names.insert(jname);
-    }
-    for (const auto& jname : derived_elem_data_names.at(id)) {
-      unique_elem_var_names.insert(jname);
-    }
+    for (const auto& jname : elem_data_names.at(id)) { unique_elem_var_names.insert(jname); }
+    for (const auto& jname : derived_elem_data_names.at(id)) { unique_elem_var_names.insert(jname); }
   }
 
   // Create map from data name to exodus element data index
   std::vector<std::string> elem_var_names;
-  for (std::set<std::string>::const_iterator it = unique_elem_var_names.begin();
-       it != unique_elem_var_names.end();
+  for (std::set<std::string>::const_iterator it = unique_elem_var_names.begin(); it != unique_elem_var_names.end();
        it++) {
     elem_var_names.push_back(*it);
     elem_data_index_[*it] = static_cast<int>(elem_var_names.size());
@@ -334,14 +277,10 @@ ExodusOutput::InitializeDatabase(
       element_var_names[i] = new char[MAX_STR_LENGTH + 1];
       strcpy(element_var_names[i], elem_var_names[i].c_str());
     }
-    retval =
-        ex_put_variable_param(exodus_file_id, EX_ELEM_BLOCK, num_element_vars);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
-    retval = ex_put_variable_names(
-        exodus_file_id, EX_ELEM_BLOCK, num_element_vars, element_var_names);
-    if (retval != 0)
-      ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
+    retval = ex_put_variable_param(exodus_file_id, EX_ELEM_BLOCK, num_element_vars);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_param");
+    retval = ex_put_variable_names(exodus_file_id, EX_ELEM_BLOCK, num_element_vars, element_var_names);
+    if (retval != 0) ReportExodusError(retval, "InitializeDatabase", "ex_put_variable_names");
   }
 
   // Close exodus file
@@ -356,9 +295,7 @@ ExodusOutput::InitializeDatabase(
     delete[] block_names;
   }
   if (global_var_names != nullptr) {
-    for (int i = num_global_data; i > 0; i--) {
-      delete[] global_var_names[i - 1];
-    }
+    for (int i = num_global_data; i > 0; i--) { delete[] global_var_names[i - 1]; }
     delete[] global_var_names;
   }
   if (node_var_names != nullptr) {
@@ -366,9 +303,7 @@ ExodusOutput::InitializeDatabase(
     delete[] node_var_names;
   }
   if (element_var_names != nullptr) {
-    for (int i = num_element_vars; i > 0; i--) {
-      delete[] element_var_names[i - 1];
-    }
+    for (int i = num_element_vars; i > 0; i--) { delete[] element_var_names[i - 1]; }
     delete[] element_var_names;
   }
 #endif
@@ -381,31 +316,19 @@ ExodusOutput::WriteStep(
     std::vector<std::vector<double>> const&                node_data,
     std::map<int, std::vector<std::string>> const&         elem_data_names,
     std::map<int, std::vector<std::vector<double>>> const& elem_data,
-    std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+    std::map<int, std::vector<std::string>> const&         derived_elem_data_names,
     std::map<int, std::vector<std::vector<double>>> const& derived_elem_data)
 {
   exodus_write_count_ += 1;
 
 #ifndef NIMBLE_HAVE_EXODUS
   WriteStepTextFile(
-      time,
-      global_data,
-      node_data,
-      elem_data_names,
-      elem_data,
-      derived_elem_data_names,
-      derived_elem_data);
+      time, global_data, node_data, elem_data_names, elem_data, derived_elem_data_names, derived_elem_data);
 #else
 
   float exodus_version;
-  int   exodus_file_id = ex_open(
-      filename_.c_str(),
-      EX_WRITE,
-      &CPU_word_size_,
-      &IO_word_size_,
-      &exodus_version);
-  if (exodus_file_id < 0)
-    ReportExodusError(exodus_file_id, "WriteStep", "ex_open");
+  int   exodus_file_id = ex_open(filename_.c_str(), EX_WRITE, &CPU_word_size_, &IO_word_size_, &exodus_version);
+  if (exodus_file_id < 0) ReportExodusError(exodus_file_id, "WriteStep", "ex_open");
 
   // Write time value
   int retval = ex_put_time(exodus_file_id, exodus_write_count_, &time);
@@ -414,14 +337,7 @@ ExodusOutput::WriteStep(
   // Write global data
   int num_global_vars = static_cast<int>(global_data.size());
   if (num_global_vars > 0) {
-    retval = ex_put_var(
-        exodus_file_id,
-        exodus_write_count_,
-        EX_GLOBAL,
-        1,
-        0,
-        num_global_vars,
-        &global_data[0]);
+    retval = ex_put_var(exodus_file_id, exodus_write_count_, EX_GLOBAL, 1, 0, num_global_vars, &global_data[0]);
     if (retval != 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
   }
 
@@ -429,14 +345,8 @@ ExodusOutput::WriteStep(
   if (num_nodes_ > 0) {
     for (unsigned int i = 0; i < node_data.size(); ++i) {
       int variable_index = static_cast<int>(i + 1);
-      retval             = ex_put_var(
-          exodus_file_id,
-          exodus_write_count_,
-          EX_NODAL,
-          variable_index,
-          1,
-          num_nodes_,
-          &node_data[i][0]);
+      retval =
+          ex_put_var(exodus_file_id, exodus_write_count_, EX_NODAL, variable_index, 1, num_nodes_, &node_data[i][0]);
       if (retval != 0) ReportExodusError(retval, "WriteStep", "ex_put_var");
     }
   }
@@ -448,9 +358,8 @@ ExodusOutput::WriteStep(
     for (int j = 0; j < num_elem_data; ++j) {
       std::string data_name      = elem_data_names.at(block_id).at(j);
       int         variable_index = elem_data_index_.at(data_name);
-      int         block_num_elem =
-          static_cast<int>(elem_data.at(block_id).at(j).size());
-      retval = ex_put_var(
+      int         block_num_elem = static_cast<int>(elem_data.at(block_id).at(j).size());
+      retval                     = ex_put_var(
           exodus_file_id,
           exodus_write_count_,
           EX_ELEM_BLOCK,
@@ -464,9 +373,8 @@ ExodusOutput::WriteStep(
     for (int j = 0; j < num_derived_elem_data; ++j) {
       std::string data_name      = derived_elem_data_names.at(block_id).at(j);
       int         variable_index = elem_data_index_.at(data_name);
-      int         block_num_elem =
-          static_cast<int>(derived_elem_data.at(block_id).at(j).size());
-      retval = ex_put_var(
+      int         block_num_elem = static_cast<int>(derived_elem_data.at(block_id).at(j).size());
+      retval                     = ex_put_var(
           exodus_file_id,
           exodus_write_count_,
           EX_ELEM_BLOCK,
@@ -510,22 +418,20 @@ ExodusOutput::InitializeDatabaseTextFile(
   for (int i = 0; i < num_nodes_; ++i) {
     // switch to 1-based indexing
     int global_id = node_global_ids[i] + 1;
-    output_file << std::setprecision(16) << global_id << " " << x_coord[i]
-                << " " << y_coord[i] << " " << z_coord[i] << std::endl;
+    output_file << std::setprecision(16) << global_id << " " << x_coord[i] << " " << y_coord[i] << " " << z_coord[i]
+                << std::endl;
   }
 
   // Write the element blocks
   for (int i_block = 0; i_block < num_blocks_; ++i_block) {
-    int         block_id   = block_ids_[i_block];
-    std::string block_name = genesis_mesh.GetBlockName(block_id);
-    int num_elem_in_block  = genesis_mesh.GetNumElementsInBlock(block_id);
-    int num_nodes_per_elem = genesis_mesh.GetNumNodesPerElement(block_id);
+    int         block_id           = block_ids_[i_block];
+    std::string block_name         = genesis_mesh.GetBlockName(block_id);
+    int         num_elem_in_block  = genesis_mesh.GetNumElementsInBlock(block_id);
+    int         num_nodes_per_elem = genesis_mesh.GetNumNodesPerElement(block_id);
     output_file << "element_block\n"
-                << block_id << " " << block_name << " " << num_elem_in_block
-                << " " << num_nodes_per_elem << std::endl;
-    std::vector<int> const& global_elem_ids =
-        genesis_mesh.GetElementGlobalIdsInBlock(block_id);
-    const int* const elem_conn = genesis_mesh.GetConnectivity(block_id);
+                << block_id << " " << block_name << " " << num_elem_in_block << " " << num_nodes_per_elem << std::endl;
+    std::vector<int> const& global_elem_ids = genesis_mesh.GetElementGlobalIdsInBlock(block_id);
+    const int* const        elem_conn       = genesis_mesh.GetConnectivity(block_id);
     for (int i_elem = 0; i_elem < num_elem_in_block; i_elem++) {
       // switch to 1-based indexing
       int global_id = global_elem_ids[i_elem] + 1;
@@ -540,14 +446,13 @@ ExodusOutput::InitializeDatabaseTextFile(
   }
 
   // Write node sets
-  std::vector<int>           node_set_ids   = genesis_mesh.GetNodeSetIds();
-  std::map<int, std::string> node_set_names = genesis_mesh.GetNodeSetNames();
-  std::map<int, std::vector<int>> node_sets = genesis_mesh.GetNodeSets();
+  std::vector<int>                node_set_ids   = genesis_mesh.GetNodeSetIds();
+  std::map<int, std::string>      node_set_names = genesis_mesh.GetNodeSetNames();
+  std::map<int, std::vector<int>> node_sets      = genesis_mesh.GetNodeSets();
   for (auto& node_set_id : node_set_ids) {
     std::vector<int> const& node_set = node_sets[node_set_id];
     output_file << "nodeset" << std::endl;
-    output_file << node_set_id << " " << node_set_names[node_set_id] << " "
-                << node_set.size() << std::endl;
+    output_file << node_set_id << " " << node_set_names[node_set_id] << " " << node_set.size() << std::endl;
     for (auto& node_id : node_set) {
       // switch to 1-based indexing
       output_file << node_id + 1 << std::endl;
@@ -568,15 +473,12 @@ ExodusOutput::InitializeDatabaseTextFile(
   std::set<std::string> unique_elem_var_names;
   for (int i = 0; i < num_blocks_; ++i) {
     int id = block_ids_[i];
-    for (const auto& my_name : elem_data_names.at(id))
-      unique_elem_var_names.insert(my_name);
-    for (const auto& my_name : derived_elem_data_names.at(id))
-      unique_elem_var_names.insert(my_name);
+    for (const auto& my_name : elem_data_names.at(id)) unique_elem_var_names.insert(my_name);
+    for (const auto& my_name : derived_elem_data_names.at(id)) unique_elem_var_names.insert(my_name);
   }
   // Create map from data name to exodus element data index
   std::vector<std::string> elem_var_names;
-  for (std::set<std::string>::const_iterator it = unique_elem_var_names.begin();
-       it != unique_elem_var_names.end();
+  for (std::set<std::string>::const_iterator it = unique_elem_var_names.begin(); it != unique_elem_var_names.end();
        it++) {
     elem_var_names.push_back(*it);
     elem_data_index_[*it] = static_cast<int>(elem_var_names.size());
@@ -596,7 +498,7 @@ ExodusOutput::WriteStepTextFile(
     std::vector<std::vector<double>> const&                node_data,
     std::map<int, std::vector<std::string>> const&         elem_data_names,
     std::map<int, std::vector<std::vector<double>>> const& elem_data,
-    std::map<int, std::vector<std::string>> const& derived_elem_data_names,
+    std::map<int, std::vector<std::string>> const&         derived_elem_data_names,
     std::map<int, std::vector<std::vector<double>>> const& derived_elem_data)
 {
   std::string   text_filename = filename_ + ".txt";
@@ -614,9 +516,7 @@ ExodusOutput::WriteStepTextFile(
   // Node data
   output_file << "node_data_values" << std::endl;
   for (auto const& data : node_data) {
-    for (auto const& datum : data) {
-      output_file << std::setprecision(16) << datum << std::endl;
-    }
+    for (auto const& datum : data) { output_file << std::setprecision(16) << datum << std::endl; }
   }
 
   // Element data
@@ -627,27 +527,19 @@ ExodusOutput::WriteStepTextFile(
     for (int j = 0; j < num_elem_data; ++j) {
       std::string data_name      = elem_data_names.at(block_id).at(j);
       int         variable_index = elem_data_index_.at(data_name);
-      int         block_num_elem =
-          static_cast<int>(elem_data.at(block_id).at(j).size());
-      output_file << data_name << " " << variable_index << " " << block_id
-                  << " " << block_num_elem << std::endl;
+      int         block_num_elem = static_cast<int>(elem_data.at(block_id).at(j).size());
+      output_file << data_name << " " << variable_index << " " << block_id << " " << block_num_elem << std::endl;
       std::vector<double> const& data = elem_data.at(block_id).at(j);
-      for (auto const& datum : data) {
-        output_file << std::setprecision(16) << datum << std::endl;
-      }
+      for (auto const& datum : data) { output_file << std::setprecision(16) << datum << std::endl; }
     }
     int num_derived_elem_data = derived_elem_data_names.at(block_id).size();
     for (int j = 0; j < num_derived_elem_data; ++j) {
       std::string data_name      = derived_elem_data_names.at(block_id).at(j);
       int         variable_index = elem_data_index_.at(data_name);
-      int         block_num_elem =
-          static_cast<int>(derived_elem_data.at(block_id).at(j).size());
-      output_file << data_name << " " << variable_index << " " << block_id
-                  << " " << block_num_elem << std::endl;
+      int         block_num_elem = static_cast<int>(derived_elem_data.at(block_id).at(j).size());
+      output_file << data_name << " " << variable_index << " " << block_id << " " << block_num_elem << std::endl;
       std::vector<double> const& data = derived_elem_data.at(block_id).at(j);
-      for (auto const& datum : data) {
-        output_file << std::setprecision(16) << datum << std::endl;
-      }
+      for (auto const& datum : data) { output_file << std::setprecision(16) << datum << std::endl; }
     }
   }
 
@@ -668,8 +560,7 @@ ExodusOutput::WriteQARecord(int exodus_file_id)
   // timestream << std::put_time(std::localtime(&time_now_t), "%T");
 
   // Quality assurance (QA) data
-  std::string qa_name_string, qa_descriptor_string, qa_date_string,
-      qa_time_string;
+  std::string qa_name_string, qa_descriptor_string, qa_date_string, qa_time_string;
   qa_name_string       = "NimbleSM";
   qa_descriptor_string = "unknown";
   qa_date_string       = datestream.str();
@@ -678,8 +569,8 @@ ExodusOutput::WriteQARecord(int exodus_file_id)
   // Copy to required c-style arrays
   int   num_qa_records = 1;
   char* qa_records[1][4];
-  char  qa_name[MAX_STR_LENGTH + 1], qa_descriptor[MAX_STR_LENGTH + 1],
-      qa_date[MAX_STR_LENGTH + 1], qa_time[MAX_STR_LENGTH + 1];
+  char  qa_name[MAX_STR_LENGTH + 1], qa_descriptor[MAX_STR_LENGTH + 1], qa_date[MAX_STR_LENGTH + 1],
+      qa_time[MAX_STR_LENGTH + 1];
   qa_records[0][0] = qa_name;
   qa_records[0][1] = qa_descriptor;
   qa_records[0][2] = qa_date;
@@ -696,20 +587,15 @@ ExodusOutput::WriteQARecord(int exodus_file_id)
 }
 
 void
-ExodusOutput::ReportExodusError(
-    int         error_code,
-    const char* method_name,
-    const char* exodus_method_name)
+ExodusOutput::ReportExodusError(int error_code, const char* method_name, const char* exodus_method_name)
 {
   std::stringstream ss;
   if (error_code < 0) {
-    ss << "**Error ExodusOutput::" << method_name
-       << "(), Error code: " << error_code << " (" << exodus_method_name
+    ss << "**Error ExodusOutput::" << method_name << "(), Error code: " << error_code << " (" << exodus_method_name
        << ")\n";
     throw std::logic_error(ss.str());
   } else {
-    ss << "**Warning ExodusOutput::" << method_name
-       << "(), Warning code: " << error_code << " (" << exodus_method_name
+    ss << "**Warning ExodusOutput::" << method_name << "(), Warning code: " << error_code << " (" << exodus_method_name
        << ")\n";
     std::cout << ss.str() << std::endl;
   }

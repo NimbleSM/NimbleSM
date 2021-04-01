@@ -82,33 +82,21 @@ TriangleArea(
   b[1] = pt_3_y - pt_1_y;
   b[2] = pt_3_z - pt_1_z;
   CrossProduct(b, a, cross);
-  area = 0.5 *
-         std::sqrt(
-             cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]);
+  area = 0.5 * std::sqrt(cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]);
   return area;
 }
 
 NIMBLE_INLINE_FUNCTION
 double
-PointEdgeClosestPointFindT(
-    double const p1[],
-    double const p2[],
-    double const p[])
+PointEdgeClosestPointFindT(double const p1[], double const p2[], double const p[])
 {
-  return ((p[0] - p1[0]) * (p2[0] - p1[0]) + (p[1] - p1[1]) * (p2[1] - p1[1]) +
-          (p[2] - p1[2]) * (p2[2] - p1[2])) /
-         ((p2[0] - p1[0]) * (p2[0] - p1[0]) +
-          (p2[1] - p1[1]) * (p2[1] - p1[1]) +
-          (p2[2] - p1[2]) * (p2[2] - p1[2]));
+  return ((p[0] - p1[0]) * (p2[0] - p1[0]) + (p[1] - p1[1]) * (p2[1] - p1[1]) + (p[2] - p1[2]) * (p2[2] - p1[2])) /
+         ((p2[0] - p1[0]) * (p2[0] - p1[0]) + (p2[1] - p1[1]) * (p2[1] - p1[1]) + (p2[2] - p1[2]) * (p2[2] - p1[2]));
 }
 
 NIMBLE_INLINE_FUNCTION
 double
-PointEdgeClosestPointFindDistanceSquared(
-    double const p1[],
-    double const p2[],
-    double const p[],
-    double       t)
+PointEdgeClosestPointFindDistanceSquared(double const p1[], double const p2[], double const p[], double t)
 {
   double temp1 = p1[0] + (p2[0] - p1[0]) * t - p[0];
   double temp2 = p1[1] + (p2[1] - p1[1]) * t - p[1];
@@ -223,8 +211,7 @@ class ContactEntity
       node_id_3_for_fictitious_node_ = node_ids_for_fictitious_node[2];
       node_id_4_for_fictitious_node_ = node_ids_for_fictitious_node[3];
     } else {
-      printf(
-          "\n**** Error in ContactEntity constructor, invalid entity type.\n");
+      printf("\n**** Error in ContactEntity constructor, invalid entity type.\n");
     }
 
     coord_1_x_ = coord[0];
@@ -262,10 +249,8 @@ class ContactEntity
       int n2     = 3 * node_id_3_for_fictitious_node_;
       int n3     = 3 * node_id_4_for_fictitious_node_;
       coord_3_x_ = (coord[n0] + coord[n1] + coord[n2] + coord[n3]) / 4.0;
-      coord_3_y_ =
-          (coord[n0 + 1] + coord[n1 + 1] + coord[n2 + 1] + coord[n3 + 1]) / 4.0;
-      coord_3_z_ =
-          (coord[n0 + 2] + coord[n1 + 2] + coord[n2 + 2] + coord[n3 + 2]) / 4.0;
+      coord_3_y_ = (coord[n0 + 1] + coord[n1 + 1] + coord[n2 + 1] + coord[n3 + 1]) / 4.0;
+      coord_3_z_ = (coord[n0 + 2] + coord[n1 + 2] + coord[n2 + 2] + coord[n3 + 2]) / 4.0;
     }
     SetBoundingBox();
   }
@@ -424,9 +409,7 @@ class ContactEntity
   /// \note Indices for node(s) of the entity are not accessed.
   NIMBLE_INLINE_FUNCTION
   void
-  SetNodalContactForces(
-      const double* const contact_force,
-      const double* const N = nullptr)
+  SetNodalContactForces(const double* const contact_force, const double* const N = nullptr)
   {
     switch (entity_type_) {
       default: break;
@@ -455,9 +438,7 @@ class ContactEntity
   // DEPRECATED
   NIMBLE_INLINE_FUNCTION
   void
-  ComputeNodalContactForces(
-      const double* const contact_force,
-      const double* const closest_point_projection)
+  ComputeNodalContactForces(const double* const contact_force, const double* const closest_point_projection)
   {
     double N[3] = {0.0, 0.0, 0.0};
 
@@ -486,15 +467,7 @@ class ContactEntity
           coord_3_y_,
           coord_3_z_);
       double full_area = TriangleArea(
-          coord_1_x_,
-          coord_1_y_,
-          coord_1_z_,
-          coord_2_x_,
-          coord_2_y_,
-          coord_2_z_,
-          coord_3_x_,
-          coord_3_y_,
-          coord_3_z_);
+          coord_1_x_, coord_1_y_, coord_1_z_, coord_2_x_, coord_2_y_, coord_2_z_, coord_3_x_, coord_3_y_, coord_3_z_);
       N[0] = area_1 / full_area;
       N[1] = area_2 / full_area;
       N[2] = 1.0 - N[0] - N[1];
@@ -530,17 +503,11 @@ class ContactEntity
   //--- List of friend functions
   template <typename ArgT>
   friend void
-  SerializeContactFaces(
-      int                num_entities,
-      ArgT               contact_entities,
-      std::vector<char>& buffer);
+  SerializeContactFaces(int num_entities, ArgT contact_entities, std::vector<char>& buffer);
 
   template <typename ArgT>
   friend void
-  UnserializeContactFaces(
-      int                num_entities,
-      ArgT               contact_entities,
-      std::vector<char>& buffer);
+  UnserializeContactFaces(int num_entities, ArgT contact_entities, std::vector<char>& buffer);
 
  public:
   // positions of nodes that define triangular contact patch
@@ -613,10 +580,7 @@ class ContactEntity
 
 template <typename ArgT>
 void
-SerializeContactFaces(
-    int                num_entities,
-    ArgT               contact_entities,
-    std::vector<char>& buffer)
+SerializeContactFaces(int num_entities, ArgT contact_entities, std::vector<char>& buffer)
 {
   constexpr size_t size_int    = sizeof(int);
   constexpr size_t size_double = sizeof(double);
@@ -663,10 +627,7 @@ SerializeContactFaces(
 
 template <typename ArgT>
 void
-UnserializeContactFaces(
-    int                num_entities,
-    ArgT               contact_entities,
-    std::vector<char>& buffer)
+UnserializeContactFaces(int num_entities, ArgT contact_entities, std::vector<char>& buffer)
 {
   constexpr size_t size_int    = sizeof(int);
   constexpr size_t size_double = sizeof(double);

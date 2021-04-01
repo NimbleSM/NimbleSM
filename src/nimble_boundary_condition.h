@@ -87,32 +87,20 @@ class BoundaryCondition
   void
   serialize(ArchiveType& ar)
   {
-    ar | dim_ | node_set_name_ | node_set_id_ | coordinate_ | magnitude_ |
-        bc_type_ | has_expression_ | expression_string_ |
-        rve_macroscale_deformation_gradient_strings_;
+    ar | dim_ | node_set_name_ | node_set_id_ | coordinate_ | magnitude_ | bc_type_ | has_expression_ |
+        expression_string_ | rve_macroscale_deformation_gradient_strings_;
 
     if (ar.is_unpacking()) {
-      if (has_expression_) {
-        expression_ =
-            ExpressionParsing::BoundaryConditionFunctor(expression_string_);
-      }
+      if (has_expression_) { expression_ = ExpressionParsing::BoundaryConditionFunctor(expression_string_); }
     }
   }
 #endif
 
   bool
-  Initialize(
-      int                               dim,
-      std::string                       bc_string,
-      std::map<int, std::string> const& node_set_names);
+  Initialize(int dim, std::string bc_string, std::map<int, std::string> const& node_set_names);
 
   void
-  GetRVEMacroscaleDeformationGradient(
-      double  time,
-      double* deformation_gradient,
-      double  x,
-      double  y,
-      double  z);
+  GetRVEMacroscaleDeformationGradient(double time, double* deformation_gradient, double x, double y, double z);
 
   int                                         dim_;
   std::string                                 node_set_name_;
@@ -123,7 +111,7 @@ class BoundaryCondition
   bool                                        has_expression_;
   std::string                                 expression_string_;
   ExpressionParsing::BoundaryConditionFunctor expression_;
-  std::vector<std::string> rve_macroscale_deformation_gradient_strings_;
+  std::vector<std::string>                    rve_macroscale_deformation_gradient_strings_;
 };
 
 }  // namespace nimble

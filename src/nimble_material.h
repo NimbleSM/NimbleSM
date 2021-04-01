@@ -115,29 +115,25 @@ class MaterialParameters
   inline void
   AddParameter(const char* parameter_name, double parameter_value)
   {
-    material_double_parameters_.insert(
-        std::make_pair(std::string(parameter_name), parameter_value));
+    material_double_parameters_.insert(std::make_pair(std::string(parameter_name), parameter_value));
   }
 
   inline void
   AddStringParameter(const char* parameter_name, const char* parameter_value)
   {
-    material_string_parameters_.insert(std::make_pair(
-        std::string(parameter_name), std::string(parameter_value)));
+    material_string_parameters_.insert(std::make_pair(std::string(parameter_name), std::string(parameter_value)));
   }
 
   inline bool
   IsParameter(const char* parameter_name) const
   {
-    return material_double_parameters_.find(parameter_name) !=
-           material_double_parameters_.end();
+    return material_double_parameters_.find(parameter_name) != material_double_parameters_.end();
   }
 
   inline bool
   IsStringParameter(const char* parameter_name) const
   {
-    return material_string_parameters_.find(parameter_name) !=
-           material_string_parameters_.end();
+    return material_string_parameters_.find(parameter_name) != material_string_parameters_.end();
   }
 
   inline std::string
@@ -166,8 +162,7 @@ class MaterialParameters
     try {
       return material_double_parameters_.at(parameter_name);
     } catch (...) {
-      std::string errMsg = "Double parameter '" + std::string(parameter_name) +
-                           "' does not exist";
+      std::string errMsg = "Double parameter '" + std::string(parameter_name) + "' does not exist";
       throw std::runtime_error(errMsg);
     }
   }
@@ -178,8 +173,7 @@ class MaterialParameters
     try {
       return material_string_parameters_.at(parameter_name);
     } catch (...) {
-      std::string errMsg = "String parameter '" + std::string(parameter_name) +
-                           "' does not exist";
+      std::string errMsg = "String parameter '" + std::string(parameter_name) + "' does not exist";
       throw std::runtime_error(errMsg);
     }
   }
@@ -208,19 +202,11 @@ class MaterialParameters
     printf("\n--MaterialParameters\n");
     printf("  material name %s\n", material_name_.c_str());
     int num_material_double_parameters_ = material_double_parameters_.size();
-    printf(
-        "  number of material double parameters %d\n",
-        num_material_double_parameters_);
-    for (auto p : material_double_parameters_) {
-      printf("  %s %f\n", p.first.c_str(), p.second);
-    }
+    printf("  number of material double parameters %d\n", num_material_double_parameters_);
+    for (auto p : material_double_parameters_) { printf("  %s %f\n", p.first.c_str(), p.second); }
     int num_material_string_parameters_ = material_string_parameters_.size();
-    printf(
-        "  number of material string parameters %d\n",
-        num_material_string_parameters_);
-    for (auto p : material_string_parameters_) {
-      printf("  %s %s\n", p.first.c_str(), p.second.c_str());
-    }
+    printf("  number of material string parameters %d\n", num_material_string_parameters_);
+    for (auto p : material_string_parameters_) { printf("  %s %s\n", p.first.c_str(), p.second.c_str()); }
   }
 
  private:
@@ -257,9 +243,7 @@ class Material
 
   NIMBLE_FUNCTION
   virtual void
-  GetStateVariableLabel(
-      int  index,
-      char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const = 0;
+  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const = 0;
 
   NIMBLE_FUNCTION
   virtual double
@@ -308,14 +292,12 @@ class Material
   NIMBLE_FUNCTION
   virtual void
   GetStress(
-      double time_previous,
-      double time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) = 0;
+      double                                              time_previous,
+      double                                              time_current,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) = 0;
 #endif
   NIMBLE_FUNCTION
   virtual void
@@ -375,9 +357,7 @@ class ElasticMaterial : public Material
 
   NIMBLE_FUNCTION
   void
-  GetStateVariableLabel(
-      int  index,
-      char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
+  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
   {
     printf(
         "\n**** Error, bad index in "
@@ -435,14 +415,12 @@ class ElasticMaterial : public Material
   NIMBLE_INLINE_FUNCTION
   void
   GetStress(
-      double time_previous,
-      double time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
+      double                                              time_previous,
+      double                                              time_current,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) override;
 #endif
 
   NIMBLE_FUNCTION
@@ -489,9 +467,7 @@ class NeohookeanMaterial : public Material
 
   NIMBLE_FUNCTION
   void
-  GetStateVariableLabel(
-      int  index,
-      char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
+  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
   {
     printf(
         "\n**** Error, bad index in "
@@ -549,14 +525,12 @@ class NeohookeanMaterial : public Material
   NIMBLE_INLINE_FUNCTION
   void
   GetStress(
-      double time_previous,
-      double time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-          deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1) override;
+      double                                              time_previous,
+      double                                              time_current,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
+      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) override;
 #endif
 
   NIMBLE_FUNCTION
@@ -589,16 +563,14 @@ ElasticMaterial::GetStress(
     double                                              time_previous,
     double                                              time_current,
     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-                                                       deformation_gradient_np1,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1)
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1)
 {
-  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad =
-      deformation_gradient_np1;
-  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView& stress = stress_np1;
-  double                                              strain[6];
-  double                                              trace_strain;
+  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
+  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView&  stress   = stress_np1;
+  double                                               strain[6];
+  double                                               trace_strain;
 
   double two_mu = 2.0 * shear_modulus_;
   double lambda = bulk_modulus_ - 2.0 * shear_modulus_ / 3.0;
@@ -628,10 +600,9 @@ NeohookeanMaterial::GetStress(
     double                                              time_previous,
     double                                              time_current,
     nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView
-                                                       deformation_gradient_np1,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_n,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView stress_np1)
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1)
 {
   double xj, fac, pressure, bxx, byy, bzz, bxy, byz, bzx, trace;
   double sxx, syy, szz, sxy, syz, szx, syx, szy, sxz;
@@ -646,10 +617,8 @@ NeohookeanMaterial::GetStress(
   CheckVectorSanity(6, v, "neohookean v");
   CheckVectorSanity(9, r, "neohookean r");
 
-  xj = v[K_S_XX_] * v[K_S_YY_] * v[K_S_ZZ_] +
-       2.0 * v[K_S_XY_] * v[K_S_YZ_] * v[K_S_ZX_] -
-       v[K_S_XX_] * v[K_S_YZ_] * v[K_S_YZ_] -
-       v[K_S_YY_] * v[K_S_ZX_] * v[K_S_ZX_] -
+  xj = v[K_S_XX_] * v[K_S_YY_] * v[K_S_ZZ_] + 2.0 * v[K_S_XY_] * v[K_S_YZ_] * v[K_S_ZX_] -
+       v[K_S_XX_] * v[K_S_YZ_] * v[K_S_YZ_] - v[K_S_YY_] * v[K_S_ZX_] * v[K_S_ZX_] -
        v[K_S_ZZ_] * v[K_S_XY_] * v[K_S_XY_];
 
   double cbrt_xj = std::cbrt(xj);
@@ -657,23 +626,17 @@ NeohookeanMaterial::GetStress(
 
   pressure = 0.5 * bulk_modulus_ * (xj - 1.0 / xj);
 
-  bxx = v[K_S_XX_] * v[K_S_XX_] + v[K_S_XY_] * v[K_S_YX_] +
-        v[K_S_XZ_] * v[K_S_ZX_];
+  bxx = v[K_S_XX_] * v[K_S_XX_] + v[K_S_XY_] * v[K_S_YX_] + v[K_S_XZ_] * v[K_S_ZX_];
 
-  byy = v[K_S_YX_] * v[K_S_XY_] + v[K_S_YY_] * v[K_S_YY_] +
-        v[K_S_YZ_] * v[K_S_ZY_];
+  byy = v[K_S_YX_] * v[K_S_XY_] + v[K_S_YY_] * v[K_S_YY_] + v[K_S_YZ_] * v[K_S_ZY_];
 
-  bzz = v[K_S_ZX_] * v[K_S_XZ_] + v[K_S_ZY_] * v[K_S_YZ_] +
-        v[K_S_ZZ_] * v[K_S_ZZ_];
+  bzz = v[K_S_ZX_] * v[K_S_XZ_] + v[K_S_ZY_] * v[K_S_YZ_] + v[K_S_ZZ_] * v[K_S_ZZ_];
 
-  bxy = v[K_S_XX_] * v[K_S_XY_] + v[K_S_XY_] * v[K_S_YY_] +
-        v[K_S_XZ_] * v[K_S_ZY_];
+  bxy = v[K_S_XX_] * v[K_S_XY_] + v[K_S_XY_] * v[K_S_YY_] + v[K_S_XZ_] * v[K_S_ZY_];
 
-  byz = v[K_S_YX_] * v[K_S_XZ_] + v[K_S_YY_] * v[K_S_YZ_] +
-        v[K_S_YZ_] * v[K_S_ZZ_];
+  byz = v[K_S_YX_] * v[K_S_XZ_] + v[K_S_YY_] * v[K_S_YZ_] + v[K_S_YZ_] * v[K_S_ZZ_];
 
-  bzx = v[K_S_ZX_] * v[K_S_XX_] + v[K_S_ZY_] * v[K_S_YX_] +
-        v[K_S_ZZ_] * v[K_S_ZX_];
+  bzx = v[K_S_ZX_] * v[K_S_XX_] + v[K_S_ZY_] * v[K_S_YX_] + v[K_S_ZZ_] * v[K_S_ZX_];
 
   bxx = fac * bxx;
   byy = fac * byy;

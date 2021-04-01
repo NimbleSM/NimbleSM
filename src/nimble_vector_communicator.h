@@ -91,10 +91,7 @@ class VectorCommunicator
  public:
   VectorCommunicator() = default;
 
-  VectorCommunicator(int d, unsigned int n, comm_type comm)
-      : dim_(d), num_nodes_(n), comm_(comm)
-  {
-  }
+  VectorCommunicator(int d, unsigned int n, comm_type comm) : dim_(d), num_nodes_(n), comm_(comm) {}
 
   ~VectorCommunicator() = default;
 
@@ -120,8 +117,7 @@ class VectorCommunicator
       MPI_Comm duplicate_of_world;
       MPI_Comm_dup(MPI_COMM_WORLD, &duplicate_of_world);
       mpicontext                context{duplicate_of_world};
-      reduction::ReductionInfo* reduction_info =
-          reduction::GenerateReductionInfo(global_node_ids, context);
+      reduction::ReductionInfo* reduction_info = reduction::GenerateReductionInfo(global_node_ids, context);
       MeshReductionInfo.reset(reduction_info);
     }
 #endif
@@ -132,9 +128,7 @@ class VectorCommunicator
   /// \param node_local_ids
   /// \param min_rank_containing_node
   void
-  GetPartitionBoundaryNodeLocalIds(
-      std::vector<int>& node_local_ids,
-      std::vector<int>& min_rank_containing_node)
+  GetPartitionBoundaryNodeLocalIds(std::vector<int>& node_local_ids, std::vector<int>& min_rank_containing_node)
   {
 #ifdef NIMBLE_HAVE_MPI
     MeshReductionInfo->GetAllIndices(node_local_ids, min_rank_containing_node);

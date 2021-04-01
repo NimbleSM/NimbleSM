@@ -192,10 +192,7 @@ class ModelDataBase
 
   /// \brief Apply kinematic conditions
   virtual void
-  ApplyKinematicConditions(
-      nimble::DataManager& data_manager,
-      double               time_current,
-      double               time_previous);
+  ApplyKinematicConditions(nimble::DataManager& data_manager, double time_current, double time_previous);
 
   /// \brief Update model with new velocity
   ///

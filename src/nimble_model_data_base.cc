@@ -51,9 +51,7 @@ namespace nimble {
 void
 ModelDataBase::SetDimension(int dim)
 {
-  if (dim != 2 && dim != 3) {
-    throw std::logic_error("\nError:  Invalid dimension in ModelData\n");
-  }
+  if (dim != 2 && dim != 3) { throw std::logic_error("\nError:  Invalid dimension in ModelData\n"); }
   dim_ = dim;
 }
 
@@ -92,10 +90,7 @@ ModelDataBase::ApplyInitialConditions(nimble::DataManager& data_manager)
 }
 
 void
-ModelDataBase::ApplyKinematicConditions(
-    nimble::DataManager& data_manager,
-    double               time_current,
-    double               time_previous)
+ModelDataBase::ApplyKinematicConditions(nimble::DataManager& data_manager, double time_current, double time_previous)
 {
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
@@ -107,12 +102,7 @@ ModelDataBase::ApplyKinematicConditions(
   else
     displacement = GetVectorNodeData("displacement");
 
-  bc->ApplyKinematicBC(
-      time_current,
-      time_previous,
-      reference_coordinate,
-      displacement,
-      velocity);
+  bc->ApplyKinematicBC(time_current, time_previous, reference_coordinate, displacement, velocity);
 }
 
 }  // namespace nimble

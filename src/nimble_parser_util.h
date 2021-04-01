@@ -70,11 +70,11 @@ inline std::vector<std::string>
 tokenize_string(const std::string& s)
 {
   std::vector<std::string> tokens;
-  auto quote_delimited_segments = tokenize_string_with_separator(s, '"');
-  auto is_quoted_segment        = [](int i) -> bool { return (i % 2) == 1; };
-  auto quote                    = quote_delimited_segments.begin();
-  auto quote_end                = quote_delimited_segments.end();
-  int  i                        = 0;
+  auto                     quote_delimited_segments = tokenize_string_with_separator(s, '"');
+  auto                     is_quoted_segment        = [](int i) -> bool { return (i % 2) == 1; };
+  auto                     quote                    = quote_delimited_segments.begin();
+  auto                     quote_end                = quote_delimited_segments.end();
+  int                      i                        = 0;
   for (; quote != quote_end; ++quote, ++i) {
     if (is_quoted_segment(i)) {
       tokens.push_back(*quote);

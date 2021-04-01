@@ -82,9 +82,8 @@ struct RVEData
   void
   serialize(ArchiveType& ar)
   {
-    ar | model_data_ | residual_vector_ | linear_solver_solution_ |
-        tangent_stiffness_ | write_exodus_output_ | exodus_output_ |
-        derived_elem_data_;
+    ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ |
+        exodus_output_ | derived_elem_data_;
   }
 #endif
 };
@@ -99,10 +98,7 @@ class DataManager
   /// \param rve_mesh Reference to RVE mesh
   ///
   /// \note The RVE mesh could be empty.
-  DataManager(
-      const nimble::Parser&      parser,
-      const nimble::GenesisMesh& mesh,
-      const nimble::GenesisMesh& rve_mesh);
+  DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh, const nimble::GenesisMesh& rve_mesh);
 
   /// \brief Destructor
   ~DataManager() = default;
@@ -227,8 +223,7 @@ class DataManager
   ///
   void
   SetBlockMaterialInterfaceFactory(
-      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
-          block_material_factory);
+      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material_factory);
 
   /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
   ///
@@ -264,8 +259,7 @@ class DataManager
   std::shared_ptr<nimble::VectorCommunicator> vector_communicator_;
   std::shared_ptr<nimble::ExodusOutput>       exodus_output_;
 
-  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
-      block_material_factory_;
+  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_factory_;
 
   std::shared_ptr<nimble::BoundaryConditionManager> boundary_condition_;
 };

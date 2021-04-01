@@ -77,32 +77,25 @@ darma_main_task(std::vector<std::string> args)
   // Banner
   std::cout << "\n-- NimbleSM" << std::endl << std::flush;
   std::cout << "-- version " << nimble::NimbleVersion() << "\n" << std::endl;
-  std::cout << "NimbleSM initialized on " << num_ranks << " virtual rank(s)."
-            << std::endl
-            << std::flush;
+  std::cout << "NimbleSM initialized on " << num_ranks << " virtual rank(s)." << std::endl << std::flush;
 
-  auto macroscale_mesh_collection = initial_access_collection<GenesisMesh>(
-      "macroscale mesh", index_range = Range1D<int>(num_ranks));
-  auto rve_mesh_collection = initial_access_collection<GenesisMesh>(
-      "rve mesh", index_range = Range1D<int>(num_ranks));
-  auto data_manager_collection = initial_access_collection<DataManager>(
-      "data manager", index_range = Range1D<int>(num_ranks));
-  auto boundary_condition_manager_collection =
-      initial_access_collection<BoundaryConditionManager>(
-          "boundary condition manager", index_range = Range1D<int>(num_ranks));
-  auto exodus_output_collection = initial_access_collection<ExodusOutput>(
-      "exodus output", index_range = Range1D<int>(num_ranks));
+  auto macroscale_mesh_collection =
+      initial_access_collection<GenesisMesh>("macroscale mesh", index_range = Range1D<int>(num_ranks));
+  auto rve_mesh_collection = initial_access_collection<GenesisMesh>("rve mesh", index_range = Range1D<int>(num_ranks));
+  auto data_manager_collection =
+      initial_access_collection<DataManager>("data manager", index_range = Range1D<int>(num_ranks));
+  auto boundary_condition_manager_collection = initial_access_collection<BoundaryConditionManager>(
+      "boundary condition manager", index_range = Range1D<int>(num_ranks));
+  auto exodus_output_collection =
+      initial_access_collection<ExodusOutput>("exodus output", index_range = Range1D<int>(num_ranks));
   auto derived_element_data_collection =
-      initial_access_collection<DerivedElementDataType>(
-          "derived element data", index_range = Range1D<int>(num_ranks));
+      initial_access_collection<DerivedElementDataType>("derived element data", index_range = Range1D<int>(num_ranks));
   auto boundary_node_global_ids_collection =
-      initial_access_collection<std::vector<int>>(
-          "boundary node global ids", index_range = Range1D<int>(num_ranks));
-  auto boundary_ranks_collection = initial_access_collection<std::vector<int>>(
-      "boundary ranks", index_range = Range1D<int>(num_ranks));
+      initial_access_collection<std::vector<int>>("boundary node global ids", index_range = Range1D<int>(num_ranks));
+  auto boundary_ranks_collection =
+      initial_access_collection<std::vector<int>>("boundary ranks", index_range = Range1D<int>(num_ranks));
 
-  std::cout << "\nReading input deck " << input_deck_name << std::endl
-            << std::flush;
+  std::cout << "\nReading input deck " << input_deck_name << std::endl << std::flush;
   Parser parser;
   parser.Initialize(input_deck_name);
   std::cout << "  complete." << std::endl << std::flush;
@@ -135,10 +128,7 @@ darma_main_task(std::vector<std::string> args)
   // }
 
   create_concurrent_work<ReadGenesisFiles>(
-      macroscale_mesh_collection,
-      rve_mesh_collection,
-      parser,
-      index_range = Range1D<int>(num_ranks));
+      macroscale_mesh_collection, rve_mesh_collection, parser, index_range = Range1D<int>(num_ranks));
 
   create_concurrent_work<InitializeDataManager>(
       macroscale_mesh_collection,
@@ -149,8 +139,7 @@ darma_main_task(std::vector<std::string> args)
 
   {
     auto my_global_node_ids_collection =
-        initial_access_collection<std::vector<int>>(
-            "my global node ids", index_range = Range1D<int>(num_ranks));
+        initial_access_collection<std::vector<int>>("my global node ids", index_range = Range1D<int>(num_ranks));
     create_concurrent_work<IdentifyGloballySharedNodes>(
         macroscale_mesh_collection,
         data_manager_collection,
@@ -161,10 +150,7 @@ darma_main_task(std::vector<std::string> args)
   }
 
   create_concurrent_work<InitializeBoundaryConditionManager>(
-      macroscale_mesh_collection,
-      boundary_condition_manager_collection,
-      parser,
-      index_range = Range1D<int>(num_ranks));
+      macroscale_mesh_collection, boundary_condition_manager_collection, parser, index_range = Range1D<int>(num_ranks));
 
   create_concurrent_work<InitializeExodusOutput>(
       macroscale_mesh_collection,
@@ -174,15 +160,11 @@ darma_main_task(std::vector<std::string> args)
       index_range = Range1D<int>(num_ranks));
 
   create_concurrent_work<ComputeLumpedMass>(
-      macroscale_mesh_collection,
-      data_manager_collection,
-      index_range = Range1D<int>(num_ranks));
+      macroscale_mesh_collection, data_manager_collection, index_range = Range1D<int>(num_ranks));
 
   {
-    auto lumped_mass_reduction_buffer_collection =
-        initial_access_collection<std::vector<double>>(
-            "lumped mass reduction buffer",
-            index_range = Range1D<int>(num_ranks));
+    auto lumped_mass_reduction_buffer_collection = initial_access_collection<std::vector<double>>(
+        "lumped mass reduction buffer", index_range = Range1D<int>(num_ranks));
     create_concurrent_work<DistributedVectorReduction>(
         data_manager_collection,
         boundary_node_global_ids_collection,
@@ -194,15 +176,10 @@ darma_main_task(std::vector<std::string> args)
   }
 
   create_concurrent_work<ComputeCriticalTimeStep>(
-      macroscale_mesh_collection,
-      data_manager_collection,
-      parser,
-      index_range = Range1D<int>(num_ranks));
+      macroscale_mesh_collection, data_manager_collection, parser, index_range = Range1D<int>(num_ranks));
 
   create_concurrent_work<ApplyInitialConditions>(
-      boundary_condition_manager_collection,
-      data_manager_collection,
-      index_range = Range1D<int>(num_ranks));
+      boundary_condition_manager_collection, data_manager_collection, index_range = Range1D<int>(num_ranks));
 
   create_concurrent_work<ApplyKinematicBC>(
       boundary_condition_manager_collection,
@@ -224,22 +201,17 @@ darma_main_task(std::vector<std::string> args)
       time_current,
       index_range = Range1D<int>(num_ranks));
 
-  auto internal_force_reduction_buffer_collection =
-      initial_access_collection<std::vector<double>>(
-          "internal force reduction buffer",
-          index_range = Range1D<int>(num_ranks));
+  auto internal_force_reduction_buffer_collection = initial_access_collection<std::vector<double>>(
+      "internal force reduction buffer", index_range = Range1D<int>(num_ranks));
 
   for (int step = 0; step < num_load_steps; step++) {
     is_output_step = false;
-    if (step % output_frequency == 0 || step == num_load_steps - 1) {
-      is_output_step = true;
-    }
+    if (step % output_frequency == 0 || step == num_load_steps - 1) { is_output_step = true; }
 
     progress_bar_flag = NONE;
     if (step == 0) {
       progress_bar_flag = FIRST_STEP;
-    } else if (
-        10 * (step + 1) % num_load_steps == 0 && step != num_load_steps - 1) {
+    } else if (10 * (step + 1) % num_load_steps == 0 && step != num_load_steps - 1) {
       progress_bar_flag = PRINT_PROGRESS;
     } else if (step == num_load_steps - 1) {
       progress_bar_flag = LAST_STEP;
