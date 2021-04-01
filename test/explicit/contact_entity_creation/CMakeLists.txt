@@ -11,7 +11,7 @@ if (NIMBLE_HAVE_KOKKOS)
   endforeach()
 
   add_test(NAME "${prefix}-serial-kokkos"
-           COMMAND python ../../run_test.py --executable "${nimble_kokkos}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND python ../../run_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
           )
 
   if (NIMBLE_HAVE_MPI)
@@ -24,7 +24,7 @@ if (NIMBLE_HAVE_KOKKOS)
     foreach (nrank 2 4)
 
       add_test(NAME "${prefix}-np${nrank}-kokkos"
-               COMMAND python ../../run_test.py --executable "${nimble_kokkos}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
+               COMMAND python ../../run_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endforeach()
 

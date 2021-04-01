@@ -41,7 +41,7 @@
 //@HEADER
 */
 
-#include "nimble_mpi.h"
+#include "nimble_main.h"
 
 #include "nimble.quanta.stopwatch.h"
 #include "nimble_block_material_interface_factory_base.h"
@@ -257,8 +257,9 @@ NimbleMain(
     if (rve_genesis_file_name != "none") { rve_mesh.ReadFile(rve_genesis_file_name); }
   }
 
-  std::string tag = parser.GetOutputTag();
-  std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
+  const std::string tag = "mpi";
+  std::string output_exodus_name =
+      nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
 
   int dim       = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
@@ -387,7 +388,7 @@ ExplicitTimeIntegrator(
     contact_manager->CreateContactEntities(
         mesh, *myVectorCommunicator, contact_primary_block_ids, contact_secondary_block_ids);
     if (contact_visualization) {
-      std::string tag = parser.GetOutputTag();
+      const std::string tag = "mpi";
       std::string contact_visualization_exodus_file_name = nimble::IOFileName(
           parser.ContactVisualizationFileName(), "e", tag, my_rank, num_ranks);
       contact_manager->InitializeContactVisualization(

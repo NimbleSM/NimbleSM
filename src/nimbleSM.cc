@@ -46,7 +46,7 @@
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_contact_interface.h"
 #include "nimble_material_factory.h"
-#include "nimble_mpi.h"
+#include "nimble_main.h"
 #include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
