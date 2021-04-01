@@ -325,6 +325,10 @@ class GenesisMesh
   std::map<int, std::string>         node_set_names_;
   std::map<int, std::vector<int>>    node_sets_;
   std::map<int, std::vector<double>> ns_distribution_factors_;
+  std::vector<int>                   side_set_ids_;
+  std::map<int, std::string>         side_set_names_;
+  std::map<int, std::vector<int>>    side_sets_;
+  std::map<int, std::vector<double>> ss_distribution_factors_;
 };
 
 }  // namespace nimble
