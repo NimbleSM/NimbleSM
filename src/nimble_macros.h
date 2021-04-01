@@ -99,4 +99,4 @@
 #define NIMBLE_DEBUG_ASSERT(cond) NIMBLE_EXPECT(cond)
 #define NIMBLE_DEBUG_ASSERT_VERBOSE(cond, msg) NIMBLE_EXPECT(cond, msg)
 
-#endif  // NIMBLE_DEBUG_HPP
+#endif  // NIMBLE_MACROS_H
