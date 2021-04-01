@@ -50,6 +50,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "nimble_macros.h"
+
 #ifdef NIMBLE_HAVE_EXODUS
 #include "exodusII.h"
 #endif
@@ -153,7 +155,7 @@ GenesisMesh::ReadFile(std::string file_name)
     retval = ex_get_ids(exodus_file_id, EX_NODE_SET, &node_set_ids_[0]);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
   }
-  for (int i = 0; i < num_node_sets; i++) {
+  for (int i = 0; i < num_node_sets; ++i) {
     int  id = node_set_ids_[i];
     char name[MAX_STR_LENGTH + 1];
     retval = ex_get_name(exodus_file_id, EX_NODE_SET, id, name);
@@ -189,10 +191,44 @@ GenesisMesh::ReadFile(std::string file_name)
   }
 
   // Read the side sets
-  if (num_node_sets > 0) {
-    node_set_ids_.resize(num_node_sets);
-    retval = ex_get_ids(exodus_file_id, EX_NODE_SET, &node_set_ids_[0]);
+  if (num_side_sets > 0) {
+    side_set_ids_.resize(num_side_sets);
+    retval = ex_get_ids(exodus_file_id, EX_SIDE_SET, &side_set_ids_[0]);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_ids");
+  }
+  for (int i = 0; i < num_side_sets; ++i) {
+    int  id = side_set_ids_[i];
+    char name[MAX_STR_LENGTH + 1];
+    retval = ex_get_name(exodus_file_id, EX_SIDE_SET, id, name);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
+    // If the side set name came back blank, create one that looks like
+    // "sideset_1", "sideset_2", etc.
+    std::string side_set_name(name);
+    if (side_set_name.size() == 0) {
+      std::stringstream ss;
+      ss << "sideset_" << id;
+      side_set_name = ss.str();
+    }
+    side_set_names_[id] = side_set_name;
+
+    int num_nodes_in_ss;
+    int num_dist_factors_in_ss;
+    retval = ex_get_set_param(exodus_file_id, EX_SIDE_SET, id, &num_nodes_in_ss, &num_dist_factors_in_ss);
+    if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_param");
+    side_sets_[id] = std::vector<int>();
+    if (num_nodes_in_ss > 0 && num_dist_factors_in_ss == num_nodes_in_ss) {
+      side_sets_[id] = std::vector<int>(num_nodes_in_ss);
+      retval         = ex_get_set(exodus_file_id, EX_SIDE_SET, id, &side_sets_[id][0], NULL);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set");
+      // convert from 1-based indexing to 0-based indexing
+      for (unsigned int j = 0; j < side_sets_[id].size(); j++) { side_sets_[id][j] -= 1; }
+    }
+    ss_distribution_factors_[id] = std::vector<double>();
+    if (num_nodes_in_ss > 0) {
+      ss_distribution_factors_[id] = std::vector<double>(num_dist_factors_in_ss);
+      retval = ex_get_set_dist_fact(exodus_file_id, EX_SIDE_SET, id, &ss_distribution_factors_[id][0]);
+      if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_set_dist_fact");
+    }
   }
 
   // Process the element blocks
