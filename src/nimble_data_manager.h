@@ -44,20 +44,19 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
-#include "nimble_defs.h"
-
 #include "nimble_block.h"
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_data_utils.h"
+#include "nimble_defs.h"
 #include "nimble_exodus_output.h"
 #include "nimble_model_data.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <vector>
-  #include <string>
-  #include <map>
+#include <map>
+#include <string>
+#include <vector>
 #endif
 
 namespace nimble {
@@ -68,27 +67,31 @@ class ModelDataBase;
 class Parser;
 class VectorCommunicator;
 
-struct RVEData {
-  nimble::ModelData model_data_;
-  std::vector<double> residual_vector_;
-  std::vector<double> linear_solver_solution_;
-  CRSMatrixContainer tangent_stiffness_;
-  bool write_exodus_output_;
-  ExodusOutput exodus_output_;
-  std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
+struct RVEData
+{
+  nimble::ModelData                               model_data_;
+  std::vector<double>                             residual_vector_;
+  std::vector<double>                             linear_solver_solution_;
+  CRSMatrixContainer                              tangent_stiffness_;
+  bool                                            write_exodus_output_;
+  ExodusOutput                                    exodus_output_;
+  std::map<int, std::vector<std::vector<double>>> derived_elem_data_;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ | exodus_output_ | derived_elem_data_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | model_data_ | residual_vector_ | linear_solver_solution_ |
+        tangent_stiffness_ | write_exodus_output_ | exodus_output_ |
+        derived_elem_data_;
+  }
 #endif
 };
 
-class DataManager {
-
-public:
-
+class DataManager
+{
+ public:
   /// \brief Constructor
   ///
   /// \param parser Reference to parser information
@@ -96,16 +99,19 @@ public:
   /// \param rve_mesh Reference to RVE mesh
   ///
   /// \note The RVE mesh could be empty.
-  DataManager(const nimble::Parser &parser,
-              const nimble::GenesisMesh &mesh,
-              const nimble::GenesisMesh &rve_mesh);
+  DataManager(
+      const nimble::Parser&      parser,
+      const nimble::GenesisMesh& mesh,
+      const nimble::GenesisMesh& rve_mesh);
 
   /// \brief Destructor
   ~DataManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
-  template<typename ArchiveType>
-  void serialize(ArchiveType& ar) {
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
     ar | macroscale_data_ | rve_data_;
   }
 #endif
@@ -115,123 +121,155 @@ public:
   /// \param global_element_id Global ID to element
   /// \param integration_point_id Integration point ID
   /// \return Reference to RVE data
-  RVEData& AllocateRVEData(int global_element_id,
-                           int integration_point_id);
+  RVEData&
+  AllocateRVEData(int global_element_id, int integration_point_id);
 
   /// \brief Get RVE data for an integration point in an element
   ///
   /// \param global_element_id Global ID to element
   /// \param integration_point_id Integration point ID
   /// \return Reference to RVE data
-  RVEData& GetRVEData(int global_element_id,
-                      int integration_point_id);
+  RVEData&
+  GetRVEData(int global_element_id, int integration_point_id);
 
   /// \brief Initialize the data for Exodus output
   ///
   /// \param filename File name for the output files
-  void InitializeOutput(const std::string &filename);
+  void
+  InitializeOutput(const std::string& filename);
 
   /// \brief Return constant reference to parser information
   ///
   /// \return Reference to parser information
-  const nimble::Parser &GetParser() const
-  { return parser_; }
+  const nimble::Parser&
+  GetParser() const
+  {
+    return parser_;
+  }
 
   /// \brief Return constant reference to mesh
   ///
   /// \return Reference to mesh
-  const nimble::GenesisMesh &GetMesh() const
-  { return mesh_; }
+  const nimble::GenesisMesh&
+  GetMesh() const
+  {
+    return mesh_;
+  }
 
   /// \brief Return constant reference to RVE mesh
   ///
   /// \return Reference to RVE mesh
-  const nimble::GenesisMesh &GetRVEMesh() const
-  { return rve_mesh_; }
+  const nimble::GenesisMesh&
+  GetRVEMesh() const
+  {
+    return rve_mesh_;
+  }
 
   /// \brief Return shared pointer to ModelData objet
   ///
   /// \return Shared pointer
-  std::shared_ptr<nimble::ModelDataBase> GetMacroScaleData()
-  { return macroscale_data_; }
+  std::shared_ptr<nimble::ModelDataBase>
+  GetMacroScaleData()
+  {
+    return macroscale_data_;
+  }
 
   /// \brief Return a const reference to the field IDs
   ///
   /// \return Field IDs
-  const nimble::FieldIds& GetFieldIDs() const
-  { return field_ids_; }
+  const nimble::FieldIds&
+  GetFieldIDs() const
+  {
+    return field_ids_;
+  }
 
   /// \brief Return reference to the field IDs
   ///
   /// \return Field IDs
-  nimble::FieldIds& GetFieldIDs()
-  { return field_ids_; }
+  nimble::FieldIds&
+  GetFieldIDs()
+  {
+    return field_ids_;
+  }
 
   /// \brief Return shared pointer to VectorCommunicator objet
   ///
   /// \return Shared pointer
-  std::shared_ptr< nimble::VectorCommunicator > GetVectorCommunicator()
-  { return vector_communicator_; }
+  std::shared_ptr<nimble::VectorCommunicator>
+  GetVectorCommunicator()
+  {
+    return vector_communicator_;
+  }
 
   /// \brief Return reference to RVE-macroscale deformation gradient
   ///
   /// \return Reference
-  std::vector<double>& GetRVEDeformationGradient()
-  { return rve_macroscale_deformation_gradient_; }
+  std::vector<double>&
+  GetRVEDeformationGradient()
+  {
+    return rve_macroscale_deformation_gradient_;
+  }
 
   /// \brief Write output of simulations
   ///
   /// \param[in] time_current Time value
-  void WriteOutput(double time_current);
+  void
+  WriteOutput(double time_current);
 
-  std::shared_ptr< nimble::ExodusOutput > GetExodusOutput()
-  { return exodus_output_; }
+  std::shared_ptr<nimble::ExodusOutput>
+  GetExodusOutput()
+  {
+    return exodus_output_;
+  }
 
   /// \brief Set BlockMaterialInterfaceFactoryBase object and initialize
   ///        block data information.
   ///
-  void SetBlockMaterialInterfaceFactory(
-      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase > &block_material_factory
-  );
+  void
+  SetBlockMaterialInterfaceFactory(
+      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
+          block_material_factory);
 
   /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
   ///
   /// \return Shared pointer
-  std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > GetBlockMaterialInterfaceFactory();
+  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
+  GetBlockMaterialInterfaceFactory();
 
   /// \brief Return shared pointer to BoundaryConditionManager object
   ///
   /// \return Shared pointer
-  std::shared_ptr< nimble::BoundaryConditionManager > GetBoundaryConditionManager() {
+  std::shared_ptr<nimble::BoundaryConditionManager>
+  GetBoundaryConditionManager()
+  {
     return boundary_condition_;
   }
 
-protected:
-
+ protected:
   /// \brief Initialize data for simulation
-  void Initialize();
+  void
+  Initialize();
 
-protected:
-
-  const nimble::Parser &parser_;
-  const nimble::GenesisMesh &mesh_;
-  const nimble::GenesisMesh &rve_mesh_;
+ protected:
+  const nimble::Parser&                  parser_;
+  const nimble::GenesisMesh&             mesh_;
+  const nimble::GenesisMesh&             rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
 
-  std::map<std::pair<int,int>, RVEData> rve_data_;
-  std::vector<double> rve_macroscale_deformation_gradient_;
+  std::map<std::pair<int, int>, RVEData> rve_data_;
+  std::vector<double>                    rve_macroscale_deformation_gradient_;
 
   nimble::FieldIds field_ids_;
 
-  std::shared_ptr< nimble::VectorCommunicator > vector_communicator_;
-  std::shared_ptr< nimble::ExodusOutput > exodus_output_;
+  std::shared_ptr<nimble::VectorCommunicator> vector_communicator_;
+  std::shared_ptr<nimble::ExodusOutput>       exodus_output_;
 
-  std::shared_ptr< nimble::BlockMaterialInterfaceFactoryBase > block_material_factory_;
+  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
+      block_material_factory_;
 
-  std::shared_ptr< nimble::BoundaryConditionManager > boundary_condition_;
+  std::shared_ptr<nimble::BoundaryConditionManager> boundary_condition_;
+};
 
- };
-
-} // namespace nimble
+}  // namespace nimble
 
 #endif

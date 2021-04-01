@@ -45,7 +45,6 @@
 #define SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_
 
 #include "nimble_block_material_interface_base.h"
-
 #include "nimble_data_utils.h"
 #include "nimble_kokkos_block.h"
 #include "nimble_kokkos_defs.h"
@@ -56,38 +55,44 @@ namespace nimble {
 class ModelDataBase;
 class FieldIds;
 
-}
+}  // namespace nimble
 
 namespace nimble_kokkos {
 
 class ModelData;
 
-using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2> >;
-inline ElemPointRangePolicy make_elem_point_range_policy(const int num_block_elems, const int num_points_per_elem)
+using ElemPointRangePolicy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+inline ElemPointRangePolicy
+make_elem_point_range_policy(
+    const int num_block_elems,
+    const int num_points_per_elem)
 {
-  return ElemPointRangePolicy( { 0, 0 }, { num_block_elems, num_points_per_elem });
+  return ElemPointRangePolicy({0, 0}, {num_block_elems, num_points_per_elem});
 }
 
-class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase {
+class BlockMaterialInterface : public nimble::BlockMaterialInterfaceBase
+{
  public:
-
-  BlockMaterialInterface(double time_n_, double time_np1_,
-                         const nimble::FieldIds &field_ids_,
-                         const std::vector<nimble::BlockData>& blocks_,
-                         nimble::ModelDataBase *model_data_);
+  BlockMaterialInterface(
+      double                                time_n_,
+      double                                time_np1_,
+      const nimble::FieldIds&               field_ids_,
+      const std::vector<nimble::BlockData>& blocks_,
+      nimble::ModelDataBase*                model_data_);
 
   ~BlockMaterialInterface() override = default;
 
-  void ComputeStress() const override;
+  void
+  ComputeStress() const override;
 
  protected:
-  const double time_n;
-  const double time_np1;
-  const nimble::FieldIds &field_ids;
-  nimble_kokkos::ModelData *model_data;
+  const double                   time_n;
+  const double                   time_np1;
+  const nimble::FieldIds&        field_ids;
+  nimble_kokkos::ModelData*      model_data;
   std::vector<nimble::BlockData> blocks;
 };
 
-}
+}  // namespace nimble_kokkos
 
 #endif /* SRC_NIMBLE_KOKKOS_BLOCK_MATERIAL_INTERFACE_H_ */

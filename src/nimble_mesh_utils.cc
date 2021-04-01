@@ -45,55 +45,62 @@
 
 namespace nimble {
 
-  void DetermineTangentMatrixNonzeroStructure(GenesisMesh const & mesh,
-                                              std::vector<int> const & linear_system_node_ids,
-                                              std::vector<int> & i_index,
-                                              std::vector<int> & j_index) {
+void
+DetermineTangentMatrixNonzeroStructure(
+    GenesisMesh const&      mesh,
+    std::vector<int> const& linear_system_node_ids,
+    std::vector<int>&       i_index,
+    std::vector<int>&       j_index)
+{
+  std::vector<int> block_ids = mesh.GetBlockIds();
+  int              dim       = mesh.GetDim();
+  int              num_rows  = linear_system_node_ids.size() * dim;
 
-    std::vector<int> block_ids = mesh.GetBlockIds();
-    int dim = mesh.GetDim();
-    int num_rows = linear_system_node_ids.size() * dim;
+  // column indexes for the nonzeros in each row
+  std::vector<std::set<int>> nonzeros(num_rows);
 
-    // column indexes for the nonzeros in each row
-    std::vector< std::set<int> > nonzeros(num_rows);
-
-    for (auto const & block_id : block_ids) {
-      int num_elem = mesh.GetNumElementsInBlock(block_id);
-      int num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
-      std::vector<int> linear_system_dof(num_nodes_per_elem * dim);
-      int const * elem_conn = mesh.GetConnectivity(block_id);
-      for (int i_elem=0 ; i_elem < num_elem ; i_elem++) {
-        for (int i_node=0 ; i_node<num_nodes_per_elem ; i_node++) {
-          for (int i_dim=0 ; i_dim<dim ; i_dim++) {
-            linear_system_dof[i_node * dim + i_dim] = linear_system_node_ids[ elem_conn[num_nodes_per_elem*i_elem + i_node] ] * dim + i_dim;
-          }
-        }
-        int row, col;
-        for (int i=0 ; i<num_nodes_per_elem * dim ; i++) {
-          for (int j=0 ; j<num_nodes_per_elem * dim ; j++) {
-            row = linear_system_dof[i];
-            col = linear_system_dof[j];
-            nonzeros[row].insert(col);
-            nonzeros[col].insert(row);
-          }
+  for (auto const& block_id : block_ids) {
+    int              num_elem           = mesh.GetNumElementsInBlock(block_id);
+    int              num_nodes_per_elem = mesh.GetNumNodesPerElement(block_id);
+    std::vector<int> linear_system_dof(num_nodes_per_elem * dim);
+    int const*       elem_conn = mesh.GetConnectivity(block_id);
+    for (int i_elem = 0; i_elem < num_elem; i_elem++) {
+      for (int i_node = 0; i_node < num_nodes_per_elem; i_node++) {
+        for (int i_dim = 0; i_dim < dim; i_dim++) {
+          linear_system_dof[i_node * dim + i_dim] =
+              linear_system_node_ids
+                      [elem_conn[num_nodes_per_elem * i_elem + i_node]] *
+                  dim +
+              i_dim;
         }
       }
-    }
-
-    // i_index and j_index are arrays containing the row and column indices, respectively, for each nonzero
-    int num_entries(0);
-    for (int i_row=0 ; i_row<num_rows ; i_row++) {
-      num_entries += nonzeros[i_row].size();
-    }
-    i_index.resize(num_entries);
-    j_index.resize(num_entries);
-    int index(0);
-    for (int i_row=0 ; i_row<num_rows ; i_row++) {
-      for (auto const & entry : nonzeros[i_row]) {
-        i_index[index] = i_row;
-        j_index[index++] = entry;
+      int row, col;
+      for (int i = 0; i < num_nodes_per_elem * dim; i++) {
+        for (int j = 0; j < num_nodes_per_elem * dim; j++) {
+          row = linear_system_dof[i];
+          col = linear_system_dof[j];
+          nonzeros[row].insert(col);
+          nonzeros[col].insert(row);
+        }
       }
     }
   }
 
-} // namespace nimble
+  // i_index and j_index are arrays containing the row and column indices,
+  // respectively, for each nonzero
+  int num_entries(0);
+  for (int i_row = 0; i_row < num_rows; i_row++) {
+    num_entries += nonzeros[i_row].size();
+  }
+  i_index.resize(num_entries);
+  j_index.resize(num_entries);
+  int index(0);
+  for (int i_row = 0; i_row < num_rows; i_row++) {
+    for (auto const& entry : nonzeros[i_row]) {
+      i_index[index]   = i_row;
+      j_index[index++] = entry;
+    }
+  }
+}
+
+}  // namespace nimble

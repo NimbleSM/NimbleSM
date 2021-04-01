@@ -41,24 +41,26 @@
 //@HEADER
 */
 
+#include "nimble_kokkos_block_material_interface_factory.h"
+
 #include <memory>
 
-#include "nimble_kokkos_block_material_interface_factory.h"
 #include "nimble_kokkos_block_material_interface.h"
-
 
 namespace nimble_kokkos {
 
-std::shared_ptr<nimble::BlockMaterialInterfaceBase> BlockMaterialInterfaceFactory::create
-(
-    double time_n, double time_np1,
-    const nimble::FieldIds &field_ids,
-    const std::vector<nimble::BlockData> &blocks,
-    nimble::ModelDataBase *model_data_ptr
-) const
+std::shared_ptr<nimble::BlockMaterialInterfaceBase>
+BlockMaterialInterfaceFactory::create(
+    double                                time_n,
+    double                                time_np1,
+    const nimble::FieldIds&               field_ids,
+    const std::vector<nimble::BlockData>& blocks,
+    nimble::ModelDataBase*                model_data_ptr) const
 {
-  std::shared_ptr<nimble::BlockMaterialInterfaceBase> res_ptr(new nimble_kokkos::BlockMaterialInterface(time_n, time_np1, field_ids, blocks, model_data_ptr));
+  std::shared_ptr<nimble::BlockMaterialInterfaceBase> res_ptr(
+      new nimble_kokkos::BlockMaterialInterface(
+          time_n, time_np1, field_ids, blocks, model_data_ptr));
   return res_ptr;
 }
 
-}
+}  // namespace nimble_kokkos

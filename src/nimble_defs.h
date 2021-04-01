@@ -51,7 +51,6 @@ using MaterialFactoryType = nimble::ExtrasMaterialFactory;
 using MaterialFactoryType = nimble::MaterialFactoryBase;
 #endif
 
-
 #ifndef NIMBLE_HAVE_KOKKOS
 
 #define NIMBLE_FUNCTION
@@ -63,4 +62,4 @@ using MaterialFactoryType = nimble::MaterialFactoryBase;
 
 #endif
 
-#endif // NIMBLESM_NIMBLE_DEFS_H
+#endif  // NIMBLESM_NIMBLE_DEFS_H

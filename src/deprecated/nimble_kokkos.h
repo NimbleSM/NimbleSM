@@ -44,8 +44,8 @@
 #ifndef NIMBLE_KOKKOS_H
 #define NIMBLE_KOKKOS_H
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include "nimble_defs.h"
 #include "nimble_parser.h"
@@ -64,15 +64,23 @@ class ContactInterface;
 /// \note The variable 'parser' should not be modified after calling
 ///  this function.
 ///
-void NimbleKokkosInitializeAndGetInput(int argc, char **argv, nimble::Parser &parser);
+void
+NimbleKokkosInitializeAndGetInput(
+    int             argc,
+    char**          argv,
+    nimble::Parser& parser);
 
-void NimbleKokkosMain(const std::shared_ptr<MaterialFactoryType>& material_factory,
-                      std::shared_ptr<nimble::ContactInterface> contact_interface,
-                      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> &block_material,
-                      const nimble::Parser &parser);
+void
+NimbleKokkosMain(
+    const std::shared_ptr<MaterialFactoryType>& material_factory,
+    std::shared_ptr<nimble::ContactInterface>   contact_interface,
+    const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
+                          block_material,
+    const nimble::Parser& parser);
 
-int NimbleKokkosFinalize(const nimble::Parser &parser);
+int
+NimbleKokkosFinalize(const nimble::Parser& parser);
 
-}
+}  // namespace nimble
 
 #endif

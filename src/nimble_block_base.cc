@@ -42,46 +42,49 @@
 */
 
 #include "nimble_block_base.h"
+
 #include "nimble_element.h"
 
 namespace nimble {
 
-double BlockBase::ComputeCriticalTimeStep(const nimble::Viewify<2> &node_reference_coordinates,
-                                          const nimble::Viewify<2> &node_displacements,
-                                         int num_elem,
-                                         const int * const elem_conn) const
+double
+BlockBase::ComputeCriticalTimeStep(
+    const nimble::Viewify<2>& node_reference_coordinates,
+    const nimble::Viewify<2>& node_displacements,
+    int                       num_elem,
+    const int* const          elem_conn) const
 {
-  int dim = element_->Dim();
-  int num_node_per_elem = element_->NumNodesPerElement();
-  double sound_speed = std::sqrt( GetBulkModulus() / GetDensity() );
+  int    dim                = element_->Dim();
+  int    num_node_per_elem  = element_->NumNodesPerElement();
+  double sound_speed        = std::sqrt(GetBulkModulus() / GetDensity());
   double critical_time_step = std::numeric_limits<double>::max();
 
   int vector_size = 0;
   if (dim == 2) {
     vector_size = 2;
-  }
-  else if (dim == 3) {
+  } else if (dim == 3) {
     vector_size = 3;
   }
-  double node_coord[vector_size*num_node_per_elem];
+  double node_coord[vector_size * num_node_per_elem];
 
-  for (int elem=0 ; elem<num_elem ; elem++) {
-
-    for (int node=0 ; node<num_node_per_elem ; node++) {
-      int node_id = elem_conn[elem*num_node_per_elem + node];
-      for (int i=0 ; i<vector_size ; i++) {
-        node_coord[node*vector_size + i] = node_reference_coordinates(node_id, i) + node_displacements(node_id, i);
+  for (int elem = 0; elem < num_elem; elem++) {
+    for (int node = 0; node < num_node_per_elem; node++) {
+      int node_id = elem_conn[elem * num_node_per_elem + node];
+      for (int i = 0; i < vector_size; i++) {
+        node_coord[node * vector_size + i] =
+            node_reference_coordinates(node_id, i) +
+            node_displacements(node_id, i);
       }
     }
 
-    double elem_critical_time_step = element_->ComputeCharacteristicLength(node_coord) / sound_speed;
+    double elem_critical_time_step =
+        element_->ComputeCharacteristicLength(node_coord) / sound_speed;
     if (elem_critical_time_step < critical_time_step) {
       critical_time_step = elem_critical_time_step;
     }
   }
 
   return critical_time_step;
-
 }
 
-} // namespace nimble
+}  // namespace nimble
