@@ -1,5 +1,5 @@
 genesis input file:               contact_entity_creation.g
-exodus output file:               contact_entity_creation.e
+exodus output file:               contact_entity_creation_output.e
 final time:                       2.0e-9
 number of load steps:             60
 output frequency:                 20
@@ -14,4 +14,4 @@ macroscale block:                 block_4 material_1
 macroscale block:                 block_5 material_1
 boundary condition:               initial_velocity nodelist_1 x 1.0e7
 contact:                          primary_blocks block_1 block_2 secondary_blocks block_3 block_5 penalty_parameter 1.0e13
-contact visualization:            visualize_contact_entities on visualize_bounding_boxes off file_name contact_entity_creation_vis.e
+contact visualization:            visualize_contact_entities on visualize_bounding_boxes off file_name contact_entity_creation.e
