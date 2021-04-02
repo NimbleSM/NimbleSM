@@ -1,5 +1,5 @@
 
-set(prefix "wave_in_bar")
+set(prefix "notched_plate_native_neohookean")
 
 foreach (ext "in" "g" "gold.e" "exodiff")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${prefix}.${ext}

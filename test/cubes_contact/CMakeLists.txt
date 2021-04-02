@@ -1,7 +1,20 @@
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cubes_contact.in
-               ${CMAKE_CURRENT_BINARY_DIR}/cubes_contact.in COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cubes_contact.g
-               ${CMAKE_CURRENT_BINARY_DIR}/cubes_contact.g COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cubes_contact.gold.e
-               ${CMAKE_CURRENT_BINARY_DIR}/cubes_contact.gold.e COPYONLY)
+set(prefix "cubes_contact")
+
+if (NIMBLE_HAVE_ARBORX)
+  #
+  # When ArborX is set, Kokkos is also present
+  #
+  foreach (ext "in" "g" "gold.e" "exodiff")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${prefix}.${ext}
+                   ${CMAKE_CURRENT_BINARY_DIR}/${prefix}.${ext} COPYONLY)
+  endforeach()
+
+  set(inputfile "${prefix}.in")
+
+  add_test(NAME "${prefix}-serial-kokkos"
+           COMMAND python ../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
+          )
+
+endif()
+
