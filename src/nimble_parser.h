@@ -309,10 +309,6 @@ class Parser
     return output_field_string_;
   }
 
-  /// \brief Get output prefix for simulation
-  std::string
-  GetOutputTag() const;
-
   /// \brief Set that Kokkos is used for the simulation
   ///
   /// \note The function will throw an exception when an environment

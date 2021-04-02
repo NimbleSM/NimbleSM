@@ -22,7 +22,8 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_expression_parser.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_main.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.h
@@ -56,7 +57,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_vector_communicator.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_version.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.h)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_main.h)
 
 if(NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
@@ -67,6 +68,11 @@ if(NIMBLE_HAVE_KOKKOS)
 endif()
 
 if(NIMBLE_HAVE_MPI)
+  target_sources(nimble PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction_utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction.cc
+  )
+  #
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.mpicontext.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.rank_clique_reducer.h
@@ -96,26 +102,6 @@ IF(NIMBLE_HAVE_UQ)
   )
 ENDIF()
 
-if (NIMBLE_HAVE_TRILINOS)
-#  add_executable(NimbleSM_Tpetra nimble_tpetra.cc)
-  add_executable(NimbleSM_Tpetra nimble_mpi_main.cc)
-  target_link_libraries(NimbleSM_Tpetra PRIVATE nimble::nimble)
-  install(TARGETS NimbleSM_Tpetra EXPORT NimbleSMTargets
-          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-          PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-endif()
-
-# UH -- Need to rename the executable without the MPI keyword
-target_sources(nimble PRIVATE
-  ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction_utils.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble.mpi.reduction.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_mpi.cc
-  )
-add_executable(NimbleSM_MPI nimble_mpi_main.cc)
-target_link_libraries(NimbleSM_MPI PRIVATE nimble::nimble)
-
 IF(NIMBLE_HAVE_KOKKOS)
   target_sources(nimble PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
@@ -130,24 +116,20 @@ IF(NIMBLE_HAVE_KOKKOS)
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.h
     ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
   )
+ENDIF()
 
+add_executable(nimble.exe nimble.cc)
+target_link_libraries(nimble.exe PRIVATE nimble::nimble)
+
+IF(NIMBLE_HAVE_KOKKOS)
   IF (NIMBLE_HAVE_ARBORX)
-    message("Executable = NimbleSM_ArborX")
-    add_executable(NimbleSM_ArborX nimble_mpi_main.cc)
-    target_link_libraries(NimbleSM_ArborX PRIVATE nimble::nimble ArborX::ArborX)
-  ELSE()
-    message("Executable = NimbleSM_Kokkos")
-    add_executable(NimbleSM_Kokkos nimble_mpi_main.cc)
-    if (NIMBLE_HAVE_TRILINOS)
-      target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
-    ELSE()
-      if (NIMBLE_HAVE_MPI)
-        target_link_libraries(NimbleSM_Kokkos nimble::nimble MPI::MPI_CXX)
-      else()
-        target_link_libraries(NimbleSM_Kokkos nimble::nimble)
-      endif()
-    ENDIF()
+    target_link_libraries(nimble.exe PRIVATE ArborX::ArborX)
+  ENDIF()
+
+  if (NIMBLE_HAVE_TRILINOS OR NIMBLE_HAVE_MPI)
+    target_link_libraries(nimble.exe PRIVATE MPI::MPI_CXX)
   ENDIF()
 ENDIF()
 
 set_target_properties(nimble PROPERTIES PUBLIC_HEADER "${NIMBLE_PUBLIC_HEADERS}")
+
