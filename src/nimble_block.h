@@ -178,17 +178,6 @@ class Block : public nimble::BlockBase
 #endif
       bool compute_stress_only = false) const;
 
-  template <typename MatT>
-  void
-  ComputeTangentStiffnessMatrix(
-      int                 num_global_unknowns,
-      const double* const reference_coordinates,
-      const double* const displacement,
-      int                 num_elem,
-      const int* const    elem_conn,
-      const int* const    global_node_ids,
-      MatT&               tangent_stiffness) const;
-
   void
   ComputeDerivedElementData(
       const double* const               reference_coordinates,
