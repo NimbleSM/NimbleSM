@@ -360,17 +360,4 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
   }
 }
 
-std::string
-Parser::GetOutputTag() const
-{
-  std::string tag = std::string("mpi");
-  if (use_kokkos_) {
-    tag = std::string("kokkos");
-  } else if (use_tpetra_) {
-    tag = std::string("tpetra");
-  }
-
-  return tag;
-}
-
 }  // namespace nimble

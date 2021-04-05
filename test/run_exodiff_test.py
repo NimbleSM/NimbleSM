@@ -7,130 +7,53 @@ import glob
 import argparse as ap
 from subprocess import Popen
 
-def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have_charm, qthreads_num_shepherds, qthreads_num_workers_per_shepherd):
+def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
 
     result = 0
     base_name = input_deck_name[:-3]
 
     command = []
 
-    if charm_run != None:
-        command.append(charm_run)
-        command.append("+p")
-        command.append(str(num_ranks))
-        command.append("++local")
-
     epu_required = False
-    if "NimbleSM_MPI" in executable_name or "NimbleSM_Kokkos" in executable_name or "NimbleSM_Tpetra" in executable_name or "NimbleSM_Qthreads" in executable_name or "NimbleSM_ArborX" in executable_name:
-        if num_ranks > 1:
-            command.append("mpirun")
-            command.append("-np")
-            command.append(str(num_ranks))
-            epu_required = True
-            command.append("--use-hwthread-cpus")
-#        else:
-#            command.append("1")
-        command.append(executable_name)
-        if "NimbleSM_Tpetra" in executable_name: 
-          command.append("--use_tpetra")
-        if "NimbleSM_Kokkos" in executable_name: 
-          command.append("--use_kokkos")
-        if "NimbleSM_ArborX" in executable_name: 
-          command.append("--use_kokkos")
-    if "NimbleSM_Qthreads" in executable_name:
-        if qthreads_num_shepherds:
-            command.append("-num_shepherds")
-            command.append(str(qthreads_num_shepherds))
-        if qthreads_num_workers_per_shepherd:
-            command.append("-num_workers_per_shepherd")
-            command.append(str(qthreads_num_workers_per_shepherd))
-        if int(qthreads_num_shepherds) > 0 or int(qthreads_num_workers_per_shepherd) > 0:
-            epu_required = True
-    if "NimbleSM_Darma" in executable_name:
-        command.append(executable_name)
-        if num_ranks:
-            command.append("--ranks")
-            command.append(str(num_ranks))
-        command.append("--app-argv")
-        if num_virtual_ranks:
-            command.append("num-virtual-ranks")
-            command.append(str(num_virtual_ranks))
-            epu_required = True
+    if num_ranks > 1:
+      command.append("mpirun")
+      command.append("-np")
+      command.append(str(num_ranks))
+      epu_required = True
+      command.append("--use-hwthread-cpus")
+    #
+    command.append(executable_name)
+    #
+    if cli_flag:
+      command.append("--" + cli_flag)
     command.append(input_deck_name)
 
     # differentiate output files based on type of run
     nimble_output_name = "none"
     log_file_name = "none"
-    epu_output_extension = "none"
+    epu_output_extension = ".e"
+    if num_ranks > 1:
+      epu_output_extension = "np" + str(num_ranks) + ".e"
     epu_exodus_output_name = "none"
-    epu_ranks_string = "none"
-    if "NimbleSM_ArborX" in executable_name:
-        nimble_output_name = base_name + ".arborx"
-        log_file_name = base_name + ".arborx.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_output_extension = "np" + str(num_ranks) + ".e"
-            epu_exodus_output_name = base_name + ".arborx." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".arborx.e"
-        epu_ranks_string = str(num_ranks)
-    if "NimbleSM_MPI" in executable_name:
-        nimble_output_name = base_name + ".mpi"
+    epu_ranks_string = str(num_ranks)
+    nimble_output_name = base_name + ".out"
+    if not cli_flag:
         log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_output_extension = "np" + str(num_ranks) + ".e"
-            epu_exodus_output_name = base_name + ".mpi." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".mpi.e"
-        epu_ranks_string = str(num_ranks)
-    if "NimbleSM_Kokkos" in executable_name:
-        nimble_output_name = base_name + ".kokkos"
+    if "use_kokkos" in cli_flag:
         log_file_name = base_name + ".kokkos.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_output_extension = "np" + str(num_ranks) + ".e"
-            epu_exodus_output_name = base_name + ".kokkos." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".kokkos.e"
-        epu_ranks_string = str(num_ranks)
-    if "NimbleSM_Qthreads" in executable_name:
-        nimble_output_name = base_name + ".qthreads"
-        log_file_name = base_name + ".qthreads.np" + str(num_ranks) + ".ns" + str(qthreads_num_shepherds) + ".nwps" + str(qthreads_num_workers_per_shepherd) + ".log"
-        if num_ranks > 1 or qthreads_num_shepherds > 1 or qthreads_num_workers_per_shepherd > 1:
-            epu_output_extension = "np" + str(num_ranks) + ".ns" + str(qthreads_num_shepherds) + ".nwps" + str(qthreads_num_workers_per_shepherd) + ".e"
-            epu_exodus_output_name = base_name + ".qthreads." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".qthreads.e"
-        epu_ranks_string = str(num_ranks*qthreads_num_shepherds*qthreads_num_workers_per_shepherd)
-    if "NimbleSM_Tpetra" in executable_name:
-        nimble_output_name = base_name + ".tpetra"
+    if "use_tpetra" in cli_flag:
         log_file_name = base_name + ".tpetra.np" + str(num_ranks) + ".log"
-        if num_ranks > 1:
-            epu_output_extension = "np" + str(num_ranks) + ".e"
-            epu_exodus_output_name = base_name + ".tpetra." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".tpetra.e"
-        epu_ranks_string = str(num_ranks)
-    if "NimbleSM_Darma" in executable_name:
-        nimble_output_name = base_name + ".darma"
-        log_file_name = base_name + ".darma.np" + str(num_virtual_ranks) + ".log"
-        if num_ranks > 1:
-            epu_output_extension = "np" + str(num_virtual_ranks) + ".e"
-            epu_exodus_output_name = base_name + ".darma." + epu_output_extension
-        else:
-            epu_output_extension = ".e"
-            epu_exodus_output_name = base_name + ".darma.e"
-        epu_ranks_string = str(num_virtual_ranks)
+    if num_ranks > 1:
+        epu_exodus_output_name = base_name + ".out." + epu_output_extension
+    else:
+        epu_exodus_output_name = base_name + ".out.e"
 
     # open the log file
     if os.path.exists(log_file_name):
         os.remove(log_file_name)
     logfile = open(log_file_name, 'w')
 
-    logfile.write("\nrun_exodiff_test.py command: " + " ".join(command) + "\n")
+    logfile.write("\nrun_test.py command: " + " ".join(command) + "\n")
     logfile.flush()
 
     # remove old output files, if any (this will miss some files in parallel runs)
@@ -179,49 +102,26 @@ def runtest(executable_name, input_deck_name, num_ranks, num_virtual_ranks, have
 
 if __name__ == "__main__":
 
-    parser = ap.ArgumentParser(description='run_exodiff_test.py', prefix_chars='-')
+    parser = ap.ArgumentParser(description='run_test.py', prefix_chars='-')
     parser.add_argument('--executable', required=True, action='store', nargs=1, metavar='executable', help='Name of NimbleSM executable')
+    parser.add_argument('--cli-flag', required=True, action='store', nargs=1, metavar='cli_flag', help='Command Line flags')
     parser.add_argument('--input-deck', required=True, action='store', nargs=1, metavar='input_deck', help='NimbleSM input deck (*.in)')
     parser.add_argument('--num-ranks', required=False, type=int, action='store', nargs=1, metavar='num_ranks', help='Number of physical ranks')
-    parser.add_argument('--num-virtual-ranks', required=False, type=int, action='store', nargs=1, metavar='num_virtual_ranks', help='Number of virtual ranks')
-    parser.add_argument('--charm-run', required=False, action='store', nargs=1, metavar='charm_run', help='Charm++ executable (charmrun)')
-    parser.add_argument('--qthreads-num-shepherds', required=False, type=int, action='store', nargs=1, metavar='qthread-num-shepherds', help='Number of qthreads shepherds')
-    parser.add_argument('--qthreads-num-workers-per-shepherd', required=False, type=int, action='store', nargs=1, metavar='qthread-num-workers-per-shepherd', help='Number of qthreads workers per shepherd')
 
     args = vars(parser.parse_args())
     print(args)
 
     executable = args['executable'][0]
-
+    cli_flag = args['cli_flag'][0]
     input_deck = args['input_deck'][0]
 
     num_ranks = 1
     if args['num_ranks'] != None:
         num_ranks = args['num_ranks'][0]
 
-    num_virtual_ranks = 1
-    if args['num_virtual_ranks'] != None:
-        num_virtual_ranks = args['num_virtual_ranks'][0]
-
-    charm_run = None
-    if args['charm_run'] != None:
-        if args['charm_run'][0] != "not available":
-            charm_run = args['charm_run'][0]
-
-    qthreads_num_shepherds = None
-    if args['qthreads_num_shepherds'] != None:
-        qthreads_num_shepherds = args['qthreads_num_shepherds'][0]
-
-    qthreads_num_workers_per_shepherd = None
-    if args['qthreads_num_workers_per_shepherd'] != None:
-        qthreads_num_workers_per_shepherd = args['qthreads_num_workers_per_shepherd'][0]
-
-    result = runtest(executable,
+    result = runtestdiff(executable,
+                     cli_flag,
                      input_deck,
-                     num_ranks,
-                     num_virtual_ranks,
-                     charm_run,
-                     qthreads_num_shepherds,
-                     qthreads_num_workers_per_shepherd)
+                     num_ranks)
 
     sys.exit(result)
