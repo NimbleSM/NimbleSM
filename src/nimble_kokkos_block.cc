@@ -41,13 +41,8 @@
 //@HEADER
 */
 
-#include <nimble_data_utils.h>
 #include <nimble_kokkos_block.h>
 #include <nimble_kokkos_material_factory.h>
-#include <nimble_linear_solver.h>
-
-#include <cmath>
-#include <limits>
 
 namespace nimble_kokkos {
 
@@ -81,84 +76,5 @@ Block::InstantiateElement()
   Kokkos::parallel_for(
       1, KOKKOS_LAMBDA(int) { new (pointer_that_lives_on_the_stack) nimble::HexElement(); });
 }
-
-template <typename MatT>
-void
-Block::ComputeTangentStiffnessMatrix(
-    int                 num_global_unknowns,
-    const double* const reference_coordinates,
-    const double* const displacement,
-    int                 num_elem,
-    const int* const    elem_conn,
-    const int* const    global_node_ids,
-    MatT&               tangent_stiffness) const
-{
-  int dim                 = element_->Dim();
-  int num_node_per_elem   = element_->NumNodesPerElement();
-  int num_int_pt_per_elem = element_->NumIntegrationPointsPerElement();
-
-  int vector_size      = LengthToInt(nimble::VECTOR, dim);
-  int full_tensor_size = LengthToInt(nimble::FULL_TENSOR, dim);
-  int sym_tensor_size  = LengthToInt(nimble::SYMMETRIC_TENSOR, dim);
-
-  double cur_coord[vector_size * num_node_per_elem];
-  double material_tangent[6 * 6 * num_int_pt_per_elem];  // correct for 3D,
-                                                         // overkill for 2D
-  double element_tangent[num_node_per_elem * vector_size * num_node_per_elem * vector_size];
-
-  for (int elem = 0; elem < num_elem; elem++) {
-    for (int node = 0; node < num_node_per_elem; node++) {
-      int node_id = elem_conn[elem * num_node_per_elem + node];
-      for (int i = 0; i < vector_size; i++) {
-        cur_coord[node * vector_size + i] =
-            reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
-      }
-    }
-
-    material_->GetTangent(num_int_pt_per_elem, material_tangent);
-
-    element_->ComputeTangent(cur_coord, material_tangent, element_tangent);
-
-    for (int row = 0; row < num_node_per_elem; row++) {
-      int global_row_node = global_node_ids[elem_conn[elem * num_node_per_elem + row]];
-      for (int col = 0; col < num_node_per_elem; col++) {
-        int global_col_node = global_node_ids[elem_conn[elem * num_node_per_elem + col]];
-        for (int i = 0; i < vector_size; i++) {
-          for (int j = 0; j < vector_size; j++) {
-            int    local_row_index  = row * vector_size + i;
-            int    local_col_index  = col * vector_size + j;
-            int    global_row_index = global_row_node * vector_size + i;
-            int    global_col_index = global_col_node * vector_size + j;
-            double value = element_tangent[local_row_index * num_node_per_elem * vector_size + local_col_index];
-            tangent_stiffness(global_row_index, global_col_index) += value;
-            // tangent_stiffness.sumIntoValue(global_row_index,
-            // global_col_index, value);
-          }
-        }
-      }
-    }
-  }
-}
-
-// explicit template instantiation for MatrixContainer and CRSMatrixContainer
-// matrix types
-template void
-Block::ComputeTangentStiffnessMatrix<nimble::MatrixContainer>(
-    int                      num_global_unknowns,
-    const double* const      reference_coordinates,
-    const double* const      displacement,
-    int                      num_elem,
-    const int* const         elem_conn,
-    const int* const         global_node_ids,
-    nimble::MatrixContainer& tangent_stiffness) const;
-template void
-Block::ComputeTangentStiffnessMatrix<nimble::CRSMatrixContainer>(
-    int                         num_global_unknowns,
-    const double* const         reference_coordinates,
-    const double* const         displacement,
-    int                         num_elem,
-    const int* const            elem_conn,
-    const int* const            global_node_ids,
-    nimble::CRSMatrixContainer& tangent_stiffness) const;
 
 }  // namespace nimble_kokkos

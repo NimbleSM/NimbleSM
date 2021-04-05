@@ -101,6 +101,17 @@ class BlockBase
       int                       num_elem,
       const int*                elem_conn) const;
 
+  template <typename MatT>
+  void
+  ComputeTangentStiffnessMatrix(
+      int                 num_global_unknowns,
+      const double* const reference_coordinates,
+      const double* const displacement,
+      int                 num_elem,
+      const int* const    elem_conn,
+      const int* const    global_node_ids,
+      MatT&               tangent_stiffness) const;
+
  protected:
   std::string                macro_material_parameters_ = "none";
   std::map<int, std::string> rve_material_parameters_;

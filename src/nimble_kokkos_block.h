@@ -124,17 +124,6 @@ class Block : public nimble::BlockBase
     return elem_conn_d;
   }
 
-  template <typename MatT>
-  void
-  ComputeTangentStiffnessMatrix(
-      int           num_global_unknowns,
-      const double* reference_coordinates,
-      const double* displacement,
-      int           num_elem,
-      const int*    elem_conn,
-      const int*    global_node_ids,
-      MatT&         tangent_stiffness) const;
-
   std::shared_ptr<nimble::NGPLAMEData>
   GetNGPLAMEData()
   {
