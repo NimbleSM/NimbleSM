@@ -118,16 +118,16 @@ IF(NIMBLE_HAVE_KOKKOS)
   )
 ENDIF()
 
-add_executable(nimble.exe nimble.cc)
-target_link_libraries(nimble.exe PRIVATE nimble::nimble)
+add_executable(NimbleSM nimble.cc)
+target_link_libraries(NimbleSM PRIVATE nimble::nimble)
 
 IF(NIMBLE_HAVE_KOKKOS)
   IF (NIMBLE_HAVE_ARBORX)
-    target_link_libraries(nimble.exe PRIVATE ArborX::ArborX)
+    target_link_libraries(NimbleSM PRIVATE ArborX::ArborX)
   ENDIF()
 
   if (NIMBLE_HAVE_TRILINOS OR NIMBLE_HAVE_MPI)
-    target_link_libraries(nimble.exe PRIVATE MPI::MPI_CXX)
+    target_link_libraries(NimbleSM PRIVATE MPI::MPI_CXX)
   ENDIF()
 ENDIF()
 
