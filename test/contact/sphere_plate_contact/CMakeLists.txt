@@ -2,7 +2,9 @@
 set(prefix "sphere_plate_contact")
 
 if (NIMBLE_HAVE_ARBORX)
-
+  #
+  # When ArborX is set, Kokkos is also present
+  #
   foreach (ext "in" "g" "gold.e" "exodiff")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${prefix}.${ext}
                    ${CMAKE_CURRENT_BINARY_DIR}/${prefix}.${ext} COPYONLY)
