@@ -119,30 +119,11 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 {
   for (int ia = 1; ia < argc; ++ia) {
     std::string my_arg = std::string(argv[ia]);
-    if (my_arg == "--use_vt") {
-#ifdef NIMBLE_HAVE_VT
-      parser.SetToUseVT();
-#else
-      std::cerr << "\n Flag '--use_vt' ignored \n\n";
-#endif
+    //
+    // Skip flags for Kokkos, Tpetra, and VT as they have already been processed
+    //
+    if ((my_arg == "--use_kokkos") || (my_arg == "--use_kokkos") || (my_arg == "--use_vt"))
       continue;
-    }
-    if (my_arg == "--use_kokkos") {
-#ifdef NIMBLE_HAVE_KOKKOS
-      parser.SetToUseKokkos();
-#else
-      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
-#endif
-      continue;
-    }
-    if (my_arg == "--use_tpetra") {
-#ifdef NIMBLE_HAVE_TRILINOS
-      parser.SetToUseTpetra();
-#else
-      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
-#endif
-      continue;
-    }
     //
     if (my_arg == "--use_uq") {
 #ifdef NIMBLE_HAVE_UQ
