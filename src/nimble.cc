@@ -45,8 +45,8 @@
 
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_contact_interface.h"
-#include "nimble_material_factory.h"
 #include "nimble_main.h"
+#include "nimble_material_factory.h"
 #include "nimble_parser.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -54,28 +54,44 @@
 #include "nimble_kokkos_material_factory.h"
 #endif
 
+namespace details {
+
+int
+parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags);
+
+}
+
 int
 main(int argc, char* argv[])
 {
-  nimble::Parser myParser;
   //
-  // note: If the command line does not specify any parameter '--use-kokkos',
-  // '--use-tpetra', or '--use-vt', we could choose to specify one of them with
-  // either myParser.SetToUseKokkos() or myParser.SetToUseTpetra() or
-  // myParser.SetToUseVT()
+  // Quick parsing of command line to check whether Kokkos, Tpetra, or VT is used.
   //
-  nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
+  nimble::EnvironmentFlags myFlags;
+  details::parseCommandLine(argc, argv, myFlags);
 
-  int status = 0;
-  {
-    std::shared_ptr<MaterialFactoryType> material_factory = nullptr;
+  try {
+    //
+    // Create new Parser variable
+    //
+    nimble::Parser myParser;
+    if (myFlags.use_kokkos_)
+      myParser.SetToUseKokkos();
+    else if (myFlags.use_tpetra_)
+      myParser.SetToUseTpetra();
+    else if (myFlags.use_vt_)
+      myParser.SetToUseVT();
+
+    nimble::NimbleInitializeAndGetInput(argc, argv, myParser);
+
+    std::shared_ptr<nimble::MaterialFactoryBase> material_factory = nullptr;
 #ifdef NIMBLE_HAVE_KOKKOS
     if (myParser.UseKokkos()) {
-      material_factory = std::shared_ptr<MaterialFactoryType>(new nimble_kokkos::MaterialFactory);
+      material_factory = std::shared_ptr<nimble::MaterialFactoryBase>(new nimble_kokkos::MaterialFactory);
     } else
 #endif
     {
-      material_factory = std::shared_ptr<MaterialFactoryType>(new nimble::MaterialFactory);
+      material_factory = std::shared_ptr<nimble::MaterialFactoryBase>(new nimble::MaterialFactory);
     }
 
     std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material = nullptr;
@@ -89,10 +105,65 @@ main(int argc, char* argv[])
     if (myParser.HasContact())
       contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
-    status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
+    int status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
+
+  } catch (...) {
+    std::cerr << "\n !!! NimbleSM Simulation did not end correctly !!!\n\n";
   }
 
-  nimble::NimbleFinalize(myParser);
+  nimble::NimbleFinalize(myFlags);
 
-  return status;
+  return 0;
 }
+
+namespace details {
+
+int
+parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags)
+{
+  for (int ia = 1; ia < argc; ++ia) {
+    std::string my_arg = std::string(argv[ia]);
+    if (my_arg == "--use_kokkos") {
+#ifdef NIMBLE_HAVE_KOKKOS
+      if (!myFlags.env_set_) {
+        myFlags.use_kokkos_ = true;
+        myFlags.env_set_    = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_kokkos' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
+#endif
+      continue;
+    }
+    if (my_arg == "--use_tpetra") {
+#ifdef NIMBLE_HAVE_TRILINOS
+      if (!myFlags.env_set_) {
+        myFlags.use_tpetra_ = true;
+        myFlags.env_set_    = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_tpetra' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
+#endif
+      continue;
+    }
+    if (my_arg == "--use_vt") {
+#ifdef NIMBLE_HAVE_VT
+      if (!myFlags.env_set_) {
+        myFlags.use_vt_  = true;
+        myFlags.env_set_ = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_vt' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_vt' ignored \n\n";
+#endif
+      continue;
+    }
+  }
+  return 0;
+}
+
+}  // namespace details

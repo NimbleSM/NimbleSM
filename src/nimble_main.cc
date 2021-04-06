@@ -239,7 +239,7 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 
 int
 NimbleMain(
-    const std::shared_ptr<MaterialFactoryType>&                       material_factory_base,
+    const std::shared_ptr<nimble::MaterialFactoryBase>&               material_factory_base,
     std::shared_ptr<nimble::ContactInterface>                         contact_interface,
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     const nimble::Parser&                                             parser)
@@ -302,18 +302,18 @@ NimbleMain(
 }
 
 void
-NimbleFinalize(const nimble::Parser& parser)
+NimbleFinalize(const nimble::EnvironmentFlags &env_flags)
 {
 #ifdef NIMBLE_HAVE_VT
   while (!::vt::curRT->isTerminated()) ::vt::runScheduler();
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  if (parser.UseKokkos()) Kokkos::finalize();
+  if (env_flags.use_kokkos_) Kokkos::finalize();
 #endif
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (!parser.UseTpetra()) {
+  if (!env_flags.use_tpetra_) {
 #ifdef NIMBLE_HAVE_MPI
     MPI_Finalize();
 #endif
