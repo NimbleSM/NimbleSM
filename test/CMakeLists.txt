@@ -2,7 +2,7 @@
 # Define common variables
 #
 
-set(exe_loc ${CMAKE_BINARY_DIR}/src/nimble.exe)
+set(exe_loc ${CMAKE_BINARY_DIR}/src/NimbleSM)
 
 set(nimble_exe ${exe_loc})
 set(nimble_exe_cli_arg "")
