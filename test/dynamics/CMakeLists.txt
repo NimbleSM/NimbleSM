@@ -2,7 +2,7 @@
 # Include test directories
 #
 
-#add_subdirectory(brick_with_fibers)
+add_subdirectory(brick_with_fibers)
 #add_subdirectory(notched_plate_native_hypoelastic)
 #add_subdirectory(notched_plate_native_neohookean)
 #add_subdirectory(rigid_body_motion)
