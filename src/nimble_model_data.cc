@@ -419,7 +419,7 @@ ModelData::GetNodeDataComponent(int field_id, int component, double* const compo
 void
 ModelData::InitializeBlocks(
     nimble::DataManager&                        data_manager,
-    const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+    const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
 {
   const auto& mesh_     = data_manager.GetMesh();
   const auto& parser_   = data_manager.GetParser();
