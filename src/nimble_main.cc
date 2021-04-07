@@ -87,6 +87,54 @@
 
 namespace nimble {
 
+int
+parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags)
+{
+  for (int ia = 1; ia < argc; ++ia) {
+    std::string my_arg = std::string(argv[ia]);
+    if (my_arg == "--use_kokkos") {
+#ifdef NIMBLE_HAVE_KOKKOS
+      if (!myFlags.env_set_) {
+        myFlags.use_kokkos_ = true;
+        myFlags.env_set_    = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_kokkos' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
+#endif
+      continue;
+    }
+    if (my_arg == "--use_tpetra") {
+#ifdef NIMBLE_HAVE_TRILINOS
+      if (!myFlags.env_set_) {
+        myFlags.use_tpetra_ = true;
+        myFlags.env_set_    = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_tpetra' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
+#endif
+      continue;
+    }
+    if (my_arg == "--use_vt") {
+#ifdef NIMBLE_HAVE_VT
+      if (!myFlags.env_set_) {
+        myFlags.use_vt_  = true;
+        myFlags.env_set_ = true;
+      } else {
+        std::cerr << "\n Environment Already Set !! '--use_vt' ignored \n\n";
+      }
+#else
+      std::cerr << "\n Flag '--use_vt' ignored \n\n";
+#endif
+      continue;
+    }
+  }
+  return 0;
+}
+
 namespace details {
 
 int
@@ -119,30 +167,11 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 {
   for (int ia = 1; ia < argc; ++ia) {
     std::string my_arg = std::string(argv[ia]);
-    if (my_arg == "--use_vt") {
-#ifdef NIMBLE_HAVE_VT
-      parser.SetToUseVT();
-#else
-      std::cerr << "\n Flag '--use_vt' ignored \n\n";
-#endif
+    //
+    // Skip flags for Kokkos, Tpetra, and VT as they have already been processed
+    //
+    if ((my_arg == "--use_kokkos") || (my_arg == "--use_kokkos") || (my_arg == "--use_vt"))
       continue;
-    }
-    if (my_arg == "--use_kokkos") {
-#ifdef NIMBLE_HAVE_KOKKOS
-      parser.SetToUseKokkos();
-#else
-      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
-#endif
-      continue;
-    }
-    if (my_arg == "--use_tpetra") {
-#ifdef NIMBLE_HAVE_TRILINOS
-      parser.SetToUseTpetra();
-#else
-      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
-#endif
-      continue;
-    }
     //
     if (my_arg == "--use_uq") {
 #ifdef NIMBLE_HAVE_UQ
@@ -239,7 +268,7 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 
 int
 NimbleMain(
-    const std::shared_ptr<MaterialFactoryType>&                       material_factory_base,
+    const std::shared_ptr<nimble::MaterialFactoryBase>&               material_factory_base,
     std::shared_ptr<nimble::ContactInterface>                         contact_interface,
     const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material,
     const nimble::Parser&                                             parser)
@@ -302,18 +331,18 @@ NimbleMain(
 }
 
 void
-NimbleFinalize(const nimble::Parser& parser)
+NimbleFinalize(const nimble::EnvironmentFlags &env_flags)
 {
 #ifdef NIMBLE_HAVE_VT
   while (!::vt::curRT->isTerminated()) ::vt::runScheduler();
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  if (parser.UseKokkos()) Kokkos::finalize();
+  if (env_flags.use_kokkos_) Kokkos::finalize();
 #endif
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (!parser.UseTpetra()) {
+  if (!env_flags.use_tpetra_) {
 #ifdef NIMBLE_HAVE_MPI
     MPI_Finalize();
 #endif

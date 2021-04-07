@@ -58,6 +58,7 @@
 namespace nimble {
 
 class DataManager;
+class MaterialFactoryBase;
 
 struct FieldIds
 {
@@ -110,7 +111,7 @@ class ModelDataBase
   virtual void
   InitializeBlocks(
       nimble::DataManager&                        data_manager,
-      const std::shared_ptr<MaterialFactoryType>& material_factory_base) = 0;
+      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base) = 0;
 
   /// \brief Copy time state (n+1) into time state (n)
   ///

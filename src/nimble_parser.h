@@ -316,7 +316,8 @@ class Parser
   void
   SetToUseKokkos()
   {
-    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_kokkos_))
+      throw std::runtime_error(" Conflicting Environment Variable ");
     use_kokkos_ = true;
     env_set_    = true;
   }
@@ -328,21 +329,18 @@ class Parser
   void
   SetToUseTpetra()
   {
-    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_tpetra_))
+      throw std::runtime_error(" Conflicting Environment Variable ");
     use_tpetra_ = true;
     env_set_    = true;
   }
 
   /// \brief Set that UQ is used for the simulation
   ///
-  /// \note The function will throw an exception when an environment
-  /// has been set previously
   void
   SetToUseUQ()
   {
-    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
     use_uq_  = true;
-    env_set_ = true;
   }
 
   /// \brief Set that VT is used for the simulation
@@ -352,7 +350,8 @@ class Parser
   void
   SetToUseVT()
   {
-    if (env_set_) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_vt_))
+      throw std::runtime_error(" Conflicting Environment Variable ");
     use_vt_  = true;
     env_set_ = true;
   }

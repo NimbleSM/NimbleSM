@@ -60,6 +60,7 @@
 namespace nimble {
 
 class DataManager;
+class MaterialFactoryBase;
 class VectorCommunicator;
 
 class ModelData : public ModelDataBase
@@ -92,7 +93,7 @@ class ModelData : public ModelDataBase
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
       override;
 
   /// \brief Copy time state (n+1) into time state (n)

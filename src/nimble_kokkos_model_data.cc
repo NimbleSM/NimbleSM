@@ -893,7 +893,7 @@ ModelData::GetBlockIds() const
 void
 ModelData::InitializeBlocks(
     nimble::DataManager&                        data_manager,
-    const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+    const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
 {
   bool store_unrotated_stress(true);
 
