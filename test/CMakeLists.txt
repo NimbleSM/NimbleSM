@@ -28,9 +28,7 @@ add_subdirectory(single_elem_complex_displacement)
 add_subdirectory(wave_in_bar)
 
 if (NIMBLE_HAVE_TRILINOS)
-# This will become
-#    add_subdirectory(quasistatic)
-    add_subdirectory(brick_with_fiber_periodic)
+    add_subdirectory(quasistatic)
 endif()
 
 if (NIMBLE_HAVE_KOKKOS)
