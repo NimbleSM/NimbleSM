@@ -54,13 +54,6 @@
 #include "nimble_kokkos_material_factory.h"
 #endif
 
-namespace details {
-
-int
-parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags);
-
-}
-
 int
 main(int argc, char* argv[])
 {
@@ -68,7 +61,7 @@ main(int argc, char* argv[])
   // Quick parsing of command line to check whether Kokkos, Tpetra, or VT is used.
   //
   nimble::EnvironmentFlags myFlags;
-  details::parseCommandLine(argc, argv, myFlags);
+  nimble::parseCommandLine(argc, argv, myFlags);
 
   try {
     //
@@ -115,55 +108,3 @@ main(int argc, char* argv[])
 
   return 0;
 }
-
-namespace details {
-
-int
-parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags)
-{
-  for (int ia = 1; ia < argc; ++ia) {
-    std::string my_arg = std::string(argv[ia]);
-    if (my_arg == "--use_kokkos") {
-#ifdef NIMBLE_HAVE_KOKKOS
-      if (!myFlags.env_set_) {
-        myFlags.use_kokkos_ = true;
-        myFlags.env_set_    = true;
-      } else {
-        std::cerr << "\n Environment Already Set !! '--use_kokkos' ignored \n\n";
-      }
-#else
-      std::cerr << "\n Flag '--use_kokkos' ignored \n\n";
-#endif
-      continue;
-    }
-    if (my_arg == "--use_tpetra") {
-#ifdef NIMBLE_HAVE_TRILINOS
-      if (!myFlags.env_set_) {
-        myFlags.use_tpetra_ = true;
-        myFlags.env_set_    = true;
-      } else {
-        std::cerr << "\n Environment Already Set !! '--use_tpetra' ignored \n\n";
-      }
-#else
-      std::cerr << "\n Flag '--use_tpetra' ignored \n\n";
-#endif
-      continue;
-    }
-    if (my_arg == "--use_vt") {
-#ifdef NIMBLE_HAVE_VT
-      if (!myFlags.env_set_) {
-        myFlags.use_vt_  = true;
-        myFlags.env_set_ = true;
-      } else {
-        std::cerr << "\n Environment Already Set !! '--use_vt' ignored \n\n";
-      }
-#else
-      std::cerr << "\n Flag '--use_vt' ignored \n\n";
-#endif
-      continue;
-    }
-  }
-  return 0;
-}
-
-}  // namespace details

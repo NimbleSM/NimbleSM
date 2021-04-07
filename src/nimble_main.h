@@ -63,6 +63,21 @@ struct EnvironmentFlags {
   bool env_set_ = false;
 };
 
+/// \brief Routine to parse command-line input parameters
+///
+/// \param argc  Number of parameters on the command line
+/// \param argv  List of parameters on the command line
+/// \param myFlags  Variable with parsing results
+///
+/// \return Status flag (0 = success)
+///
+/// \note This routine will process the command-line flags:
+/// "--use_kokkos" to use Kokkos library
+/// "--use_tpetra" to use Tpetra library
+/// "--use_vt" to use VT runtime
+int
+parseCommandLine(int argc, char** argv, nimble::EnvironmentFlags& myFlags);
+
 }  // namespace nimble
 
 namespace nimble {
