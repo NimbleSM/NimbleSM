@@ -18,6 +18,9 @@ set(nimble_tpetra_flag "-tpetra")
 # Include test directories
 #
 
+#--- contact
+add_subdirectory(contact)
+
 #--- dynamics
 add_subdirectory(brick_with_fibers)
 add_subdirectory(notched_plate_native_hypoelastic)
@@ -27,20 +30,8 @@ add_subdirectory(simple_deformation_modes)
 add_subdirectory(single_elem_complex_displacement)
 add_subdirectory(wave_in_bar)
 
-if (NIMBLE_HAVE_TRILINOS)
-# This will become
-#    add_subdirectory(quasistatic)
-    add_subdirectory(brick_with_fiber_periodic)
-endif()
-
-if (NIMBLE_HAVE_KOKKOS)
-    add_subdirectory(contact_entity_creation)
-endif()
-
-if (NIMBLE_HAVE_ARBORX)
-    add_subdirectory(cubes_contact)
-    add_subdirectory(sphere_plate_contact)
-endif()
+#--- quasistatic
+add_subdirectory(quasistatic)
 
 #
 # Copy files
