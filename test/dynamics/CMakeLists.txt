@@ -3,8 +3,8 @@
 #
 
 add_subdirectory(brick_with_fibers)
-#add_subdirectory(notched_plate_native_hypoelastic)
-#add_subdirectory(notched_plate_native_neohookean)
+add_subdirectory(notched_plate_native_hypoelastic)
+add_subdirectory(notched_plate_native_neohookean)
 add_subdirectory(rigid_body_motion)
 add_subdirectory(simple_deformation_modes)
 add_subdirectory(single_elem_complex_displacement)

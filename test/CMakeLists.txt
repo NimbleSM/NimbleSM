@@ -24,10 +24,6 @@ add_subdirectory(contact)
 #--- dynamics
 add_subdirectory(dynamics)
 
-#--- Temporary solution
-add_subdirectory(notched_plate_native_hypoelastic)
-add_subdirectory(notched_plate_native_neohookean)
-
 #--- quasistatic
 add_subdirectory(quasistatic)
 
