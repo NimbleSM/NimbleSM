@@ -11,7 +11,7 @@ if(NIMBLE_HAVE_TRILINOS)
   set(inputfile "${prefix}.in")
 
   add_test(NAME "${prefix}-serial-tpetra"
-           COMMAND python ../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_tpetra" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND python ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_tpetra" --input-deck "${inputfile}" --num-ranks 1
           )
 
 endif()
