@@ -3,6 +3,13 @@ NimbleSM is a Lagrangian finite-element code for solid mechanics.  Its primary a
 
 NimbleSM may be built with the following optional dependencies:
 
+## ArborX
+
+Performance portable algorithms for geometric search.
+Required for contact simulations.
+
+https://github.com/arborx/ArborX
+
 ## Exodus
 
 Library for I/O.  It is highly recommended that you build NimbleSM with exodus support.  The alternative is an exceedingly slow text-based I/O system.
@@ -12,23 +19,26 @@ https://github.com/gsjaardema/seacas
 ## Kokkos
 
 Performance portability programming ecosystem.  Utilized by NimbleSM for improved performance on GPU-based systems and other emerging hardware platforms.
+Required for contact simulation with ArborX.
 
 https://github.com/kokkos/kokkos
 
-## Qthreads
+## MPI
 
-Lightweight locality-aware user-level threading runtime.  Utilized by NimbleSM for improved performance via on-node accelerators.
+Message passing library
 
-https://github.com/Qthreads/qthreads
+https://www.open-mpi.org
 
 ## Trilinos
 
-Algorithms for the solution of large-scale engineering and scientific problems.  Utilized by NimbleSM for parallel linear solvers.  Required for parallel execution of implicit time integration (quasi-statics).
+Algorithms for the solution of large-scale engineering and scientific problems.  Utilized by NimbleSM for parallel linear solvers.  
+Required for parallel execution of implicit time integration (quasi-statics).
 
 https://trilinos.org
 
-## Darma
+# VT
 
-An asynchronous many task (AMT) programming model and runtime.  Not publicly available.
+Novel runtime tasking library for C++, built for general scientific applications.
+Features using VT are still work in progress.
 
-https://github.com/darma-tasking
+https://github.com/DARMA-tasking/vt
