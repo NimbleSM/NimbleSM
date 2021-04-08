@@ -1,1 +1,0 @@
-../notched_plate/notched_plate.g
