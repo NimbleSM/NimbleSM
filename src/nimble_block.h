@@ -61,23 +61,15 @@ class MaterialFactory;
 
 namespace nimble {
 
-class UqModel;  // Forward declaration to avoid circular header inclusion
-
 class Block : public nimble::BlockBase
 {
  public:
   Block()
       : BlockBase(),
         vol_ave_volume_offset_(-1)
-#ifdef NIMBLE_HAVE_UQ
-        ,
-        bulk_modulus_uq_index_(-1),
-        shear_modulus_uq_index_(-1)
-#endif
-  {
-  }
+  {}
 
-  ~Block() = default;
+  ~Block() override = default;
 
 #ifdef NIMBLE_HAVE_DARMA
   template <typename ArchiveType>
@@ -172,10 +164,6 @@ class Block : public nimble::BlockBase
       std::vector<double>&            elem_data_np1,
       DataManager&                    data_manager,
       bool                            is_output_step,
-#ifdef NIMBLE_HAVE_UQ
-      const bool&                is_off_nominal,
-      std::vector<double> const& uq_params_this_sample,
-#endif
       bool compute_stress_only = false) const;
 
   void
@@ -188,20 +176,6 @@ class Block : public nimble::BlockBase
       std::vector<double> const&        elem_data_np1,
       int                               num_derived_elem_data,
       std::vector<std::vector<double>>& derived_elem_data);
-
-#ifdef NIMBLE_HAVE_UQ
-  // HACK specific to elastic models
-  void
-  SetUqParameters(const std::map<std::string, int>& param_indices)
-  {
-    bulk_modulus_uq_index_  = -1;
-    shear_modulus_uq_index_ = -1;
-    for (auto const& it : param_indices) {
-      if (it.first == "bulk_modulus") { bulk_modulus_uq_index_ = it.second; }
-      if (it.first == "shear_modulus") { shear_modulus_uq_index_ = it.second; }
-    }
-  }
-#endif
 
  protected:
   void
@@ -216,12 +190,6 @@ class Block : public nimble::BlockBase
   std::vector<int>   vol_ave_offsets_;
   std::map<int, int> vol_ave_index_to_derived_data_index_;
 
-#ifdef NIMBLE_HAVE_UQ
-  // HACK specific to elastic models
-  //  std::pair<int, int> range_of_uq_params_;
-  int bulk_modulus_uq_index_;
-  int shear_modulus_uq_index_;
-#endif
 };
 
 }  // namespace nimble

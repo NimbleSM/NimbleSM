@@ -56,10 +56,6 @@
 #include "nimble_rve.h"
 #endif
 
-#ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
-#endif
-
 namespace nimble {
 
 void
@@ -268,10 +264,6 @@ Block::ComputeInternalForce(
     std::vector<double>&            elem_data_np1,
     DataManager&                    data_manager,
     bool                            is_output_step,
-#ifdef NIMBLE_HAVE_UQ
-    const bool&                is_off_nominal,
-    std::vector<double> const& uq_params_this_sample,
-#endif
     bool compute_stress_only) const
 {
   int dim                 = element_->Dim();
@@ -327,9 +319,6 @@ Block::ComputeInternalForce(
       }
     }
 
-#ifdef NIMBLE_HAVE_UQ
-    if (!is_off_nominal) {  // Execute below only for the nominal solution
-#endif
       // Copy data from the global data containers
       for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {
         for (int i_component = 0; i_component < full_tensor_size; i_component++) {
@@ -380,17 +369,6 @@ Block::ComputeInternalForce(
         }
       }
 
-#ifdef NIMBLE_HAVE_UQ
-    } else {  // For off-nominal solutions
-      material_->GetOffNominalStress(
-          uq_params_this_sample[bulk_modulus_uq_index_],
-          uq_params_this_sample[shear_modulus_uq_index_],
-          num_int_pt_per_elem,
-          def_grad_np1,
-          cauchy_stress_np1);
-    }
-#endif
-
     if (!compute_stress_only) {
       // Compute element contribution to nodal force
       element_->ComputeNodalForces(cur_coord, cauchy_stress_np1, force);
@@ -403,7 +381,8 @@ Block::ComputeInternalForce(
         }
       }
     }
-  }
+  } // for (int elem = 0; elem < num_elem; elem++)
+
 }
 
 void

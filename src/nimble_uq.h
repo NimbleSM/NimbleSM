@@ -49,11 +49,16 @@
 #include <vector>
 #include <map>
 
+namespace nimble_uq {
+class Block;
+}
+
 namespace nimble {
   class GenesisMesh;;
   class ModelData;
   class Block;
-  class MaterialFactory;
+class MaterialFactory;
+  class MaterialFactoryBase;
 
 //========================================================================
   class UqModel { // model
@@ -61,7 +66,7 @@ namespace nimble {
 
   public:
 
-    UqModel(int ndim, int nnodes, int nblocks=1);
+    UqModel(int ndim, const GenesisMesh *mesh, ModelData *data);
     virtual ~UqModel() = default;
 
     void ParseConfiguration(
@@ -71,12 +76,12 @@ namespace nimble {
       std::string const & line, 
       const int & block_id,
       std::string const & nominal_params_string,
-      MaterialFactory& material_factory,
+      const std::shared_ptr< nimble::MaterialFactoryBase>& material_factory,
       bool block_id_present,
-      std::map<int, Block> & blocks);
+      std::map<int, nimble_uq::Block*> & blocks);
 
     // pre time integration
-    void Initialize(GenesisMesh & mesh, ModelData & data);
+    void Initialize();
     // post time integration
     void Finalize();
     // where all memory allocation is done
@@ -163,8 +168,8 @@ namespace nimble {
     int nsamples_; // number of _requested_ samples not necessarily all
     int nexact_samples_; //Subset of nsamples_ for which exact trajectories are computed
     int nparameters_;
-    GenesisMesh * mesh_;
-    ModelData * data_;
+    const GenesisMesh *mesh_;
+    ModelData *data_;
     const double* mass_ ;
     std::string samples_fname_;
     std::vector<std::string> names_;

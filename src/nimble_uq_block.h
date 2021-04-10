@@ -41,95 +41,72 @@
 //@HEADER
 */
 
-#ifndef SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_
-#define SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_
+#ifndef NIMBLESM_NIMBLE_UQ_BLOCK_H
+#define NIMBLESM_NIMBLE_UQ_BLOCK_H
 
-#include <algorithm>
-#include <map>
+#ifdef NIMBLE_HAVE_UQ
+
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace nimble {
-class Material;
-class MaterialParameters;
-}  // namespace nimble
+#include "nimble_block.h"
 
 namespace nimble {
+class DataManager;
+}
 
-class MaterialFactoryBase
+namespace nimble_uq {
+
+class Block : public nimble::Block
 {
- private:
-  static inline void
-  find_or_insert_string_in_vector(const std::string& str, std::vector<std::string>& vec)
-  {
-    if (std::find(vec.begin(), vec.end(), str) == vec.end()) { vec.push_back(str); }
-  }
-
  public:
-  MaterialFactoryBase();
-  virtual ~MaterialFactoryBase() = default;
+  Block() : nimble::Block(), bulk_modulus_uq_index_(-1), shear_modulus_uq_index_(-1) {}
 
-  inline void
-  add_valid_double_parameter_name(const char* name)
-  {
-    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
-  }
+  ~Block() override = default;
 
-  inline void
-  add_valid_string_parameter_name(const char* name)
-  {
-    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
-  }
+  void
+  ComputeInternalForce(
+      const double*                   reference_coordinates,
+      const double*                   displacement,
+      const double*                   velocity,
+      const double*                   rve_macroscale_deformation_gradient,
+      double*                         internal_force,
+      double                          time_previous,
+      double                          time_current,
+      int                             num_elem,
+      const int*                      elem_conn,
+      const int*                      elem_global_ids,
+      std::vector<std::string> const& elem_data_labels,
+      std::vector<double> const&      elem_data_n,
+      std::vector<double>&            elem_data_np1,
+      nimble::DataManager&            data_manager,
+      bool                            is_output_step,
+      const bool&                     is_off_nominal,
+      std::vector<double> const&      uq_params_this_sample,
+      bool                            compute_stress_only = false) const;
 
-  virtual std::shared_ptr<nimble::Material>
-  get_material() const
+  // HACK specific to elastic models
+  void
+  SetUqParameters(const std::map<std::string, int>& param_indices)
   {
-    return material;
-  }
-
-  virtual void
-  parse_and_create(const std::string& mat_params, int num_points)
-  {
-    material_params = ParseMaterialParametersString(mat_params, num_points);
-    create();
-  }
-
-  virtual void
-  parse_and_create(const std::string& mat_params)
-  {
-    parse_and_create(mat_params, 0);
-  }
-
-  virtual std::map<std::string, double>
-  parse_material_params_string(const std::string& mat_params)
-  {
-    return ParseMaterialParamsStringToMap(mat_params);
+    bulk_modulus_uq_index_  = -1;
+    shear_modulus_uq_index_ = -1;
+    for (auto const& it : param_indices) {
+      if (it.first == "bulk_modulus") { bulk_modulus_uq_index_ = it.second; }
+      if (it.first == "shear_modulus") { shear_modulus_uq_index_ = it.second; }
+    }
   }
 
  protected:
-  virtual void
-  create() = 0;
-
- protected:
-  std::shared_ptr<nimble::MaterialParameters>
-  ParseMaterialParametersString(const std::string& material_parameters, int num_material_points = 0) const;
-
-  std::map<std::string, double>
-  ParseMaterialParamsStringToMap(const std::string& material_parameters) const;
-
-  //
-  //--- Protected Variables
-  //
-
-  std::shared_ptr<nimble::Material>                 material = nullptr;
-  std::shared_ptr<const nimble::MaterialParameters> material_params;
-
- private:
-  std::vector<std::string> valid_double_parameter_names;
-  std::vector<std::string> valid_string_parameter_names;
+  // HACK specific to elastic models
+  //  std::pair<int, int> range_of_uq_params_;
+  int bulk_modulus_uq_index_ = -1;
+  int shear_modulus_uq_index_ = -1;
 };
 
-}  // namespace nimble
+}  // namespace nimble_uq
 
-#endif /* SRC_NIMBLE_MATERIAL_FACTORY_BASE_H_ */
+#endif
+
+#endif  // NIMBLESM_NIMBLE_UQ_BLOCK_H

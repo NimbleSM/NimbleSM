@@ -203,7 +203,7 @@ class ModelData : public ModelDataBase
   GetElementDataForOutput(std::map<int, std::vector<std::vector<double>>>& single_component_arrays);
 
   void
-  SpecifyOutputFields(std::string output_field_string);
+  SpecifyOutputFields(const std::string &output_field_string);
 
   std::map<int, Block>&
   GetBlocks()
@@ -238,6 +238,10 @@ class ModelData : public ModelDataBase
 
   double*
   GetNodeData(const std::string& label);
+
+  template< typename TBlock >
+  void EmplaceBlocks(nimble::DataManager& data_manager,
+                     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
 
  protected:
   //! Block ids

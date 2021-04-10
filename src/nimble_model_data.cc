@@ -49,10 +49,16 @@
 #include <stdexcept>
 
 #include "nimble_data_manager.h"
+#include "nimble_genesis_mesh.h"
 #include "nimble_material_factory.h"
 #include "nimble_parser.h"
+#include "nimble_rve.h"
 #include "nimble_vector_communicator.h"
 #include "nimble_view.h"
+
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq_block.h"
+#endif
 
 namespace nimble {
 
@@ -167,25 +173,21 @@ void
 ModelData::GetElementDataForOutput(std::map<int, std::vector<std::vector<double>>>& single_component_arrays)
 {
   // Allocate space in single_component_arrays, if necessary
-  for (std::map<int, std::vector<std::string>>::const_iterator output_it = output_element_component_labels_.begin();
-       output_it != output_element_component_labels_.end();
-       output_it++) {
-    int block_id = output_it->first;
+  for (auto & output_element_component_label : output_element_component_labels_) {
+    int block_id = output_element_component_label.first;
     if (single_component_arrays.find(block_id) == single_component_arrays.end()) {
       single_component_arrays[block_id] = std::vector<std::vector<double>>();
     }
-    unsigned int num_output_fields_for_block = output_it->second.size();
+    unsigned int num_output_fields_for_block = output_element_component_label.second.size();
     if (single_component_arrays[block_id].size() != num_output_fields_for_block) {
       single_component_arrays[block_id].resize(num_output_fields_for_block);
     }
   }
 
   // Copy the data, in component form, to single_component_arrays
-  for (std::map<int, std::vector<std::string>>::const_iterator output_it = output_element_component_labels_.begin();
-       output_it != output_element_component_labels_.end();
-       output_it++) {
-    int                             block_id                                       = output_it->first;
-    std::vector<std::string> const& output_element_component_labels_for_this_block = output_it->second;
+  for (auto & output_element_component_label : output_element_component_labels_) {
+    int                             block_id                                       = output_element_component_label.first;
+    std::vector<std::string> const& output_element_component_labels_for_this_block = output_element_component_label.second;
     unsigned int                    num_element_variables = element_component_labels_.at(block_id).size();
     unsigned int                    num_output_variables  = output_element_component_labels_for_this_block.size();
     unsigned int                    array_size = element_data_np1_.at(block_id).size() / num_element_variables;
@@ -211,7 +213,7 @@ ModelData::GetElementDataForOutput(std::map<int, std::vector<std::vector<double>
 }
 
 void
-ModelData::SpecifyOutputFields(std::string output_field_string)
+ModelData::SpecifyOutputFields(const std::string &output_field_string)
 {
   // Parse the string into individual field labels
   std::vector<std::string> requested_output_labels;
@@ -233,8 +235,8 @@ ModelData::SpecifyOutputFields(std::string output_field_string)
     if (relation == NODE) {
       node_noncomponent_labels.push_back(label);
       std::vector<std::string> component_labels = GetComponentLabels(label, length, dim_);
-      for (unsigned int i_component_label = 0; i_component_label < component_labels.size(); i_component_label++) {
-        node_component_labels.push_back(component_labels[i_component_label]);
+      for (const auto & component_label : component_labels) {
+        node_component_labels.push_back(component_label);
       }
     } else if (relation == ELEMENT) {
       if (!HasIntegrationPointPrefix(label)) {
@@ -245,17 +247,16 @@ ModelData::SpecifyOutputFields(std::string output_field_string)
       }
       element_int_pt_noncomponent_labels.push_back(label);
       std::vector<std::string> int_pt_component_labels = GetComponentLabels(label, length, dim_);
-      for (unsigned int i_component_label = 0; i_component_label < int_pt_component_labels.size();
-           i_component_label++) {
-        element_int_pt_component_labels.push_back(int_pt_component_labels[i_component_label]);
+      for (const auto & int_pt_component_label : int_pt_component_labels) {
+        element_int_pt_component_labels.push_back(int_pt_component_label);
       }
       std::string label_without_prefix = RemoveIntegrationPointPrefix(label);
       if (std::find(element_noncomponent_labels.begin(), element_noncomponent_labels.end(), label_without_prefix) ==
           element_noncomponent_labels.end()) {
         element_noncomponent_labels.push_back(label_without_prefix);
         std::vector<std::string> component_labels = GetComponentLabels(label_without_prefix, length, dim_);
-        for (unsigned int i_component_label = 0; i_component_label < component_labels.size(); i_component_label++) {
-          element_component_labels.push_back(component_labels[i_component_label]);
+        for (const auto & component_label : component_labels) {
+          element_component_labels.push_back(component_label);
         }
       }
     }
@@ -416,6 +417,48 @@ ModelData::GetNodeDataComponent(int field_id, int component, double* const compo
   }
 }
 
+template <typename TBlock>
+void
+ModelData::EmplaceBlocks(
+    nimble::DataManager&                                data_manager,
+    const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
+{
+  const auto& mesh_   = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
+
+  auto material_factory_ptr = dynamic_cast<nimble::MaterialFactory*>(material_factory_base.get());
+
+//  const auto              num_blocks = static_cast<int>(mesh_.GetNumBlocks());
+  const std::vector<int>& block_ids  = mesh_.GetBlockIds();
+  for (int block_id : block_ids) {
+    std::string const&                macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::map<int, std::string> const& rve_material_parameters   = parser_.GetMicroscaleMaterialParameters();
+    std::string                       rve_bc_strategy           = parser_.GetMicroscaleBoundaryConditionStrategy();
+    blocks_[block_id]                                           = TBlock();
+    blocks_[block_id].Initialize(
+        macro_material_parameters,
+        rve_material_parameters,
+        data_manager.GetRVEMesh(),
+        rve_bc_strategy,
+        *material_factory_ptr);
+    std::vector<std::pair<std::string, nimble::Length>> data_labels_and_lengths;
+    blocks_[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
+    DeclareElementData(block_id, data_labels_and_lengths);
+  }
+}
+
+template void
+ModelData::EmplaceBlocks<nimble::Block>(
+    nimble::DataManager&                                data_manager,
+    const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
+
+#ifdef NIMBLE_HAVE_UQ
+template void
+ModelData::EmplaceBlocks<::nimble_uq::Block>(
+    nimble::DataManager&                                data_manager,
+    const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
+#endif
+
 void
 ModelData::InitializeBlocks(
     nimble::DataManager&                        data_manager,
@@ -427,23 +470,7 @@ ModelData::InitializeBlocks(
 
   auto material_factory_ptr = dynamic_cast<nimble::MaterialFactory*>(material_factory_base.get());
 
-  const auto num_blocks = static_cast<int>(mesh_.GetNumBlocks());
-
-  std::map<int, nimble::Block>&          blocks = GetBlocks();
-  std::map<int, nimble::Block>::iterator block_it;
-  std::vector<int>                       block_ids = mesh_.GetBlockIds();
-  for (int i = 0; i < num_blocks; i++) {
-    int                               block_id                  = block_ids[i];
-    std::string const&                macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const& rve_material_parameters   = parser_.GetMicroscaleMaterialParameters();
-    std::string                       rve_bc_strategy           = parser_.GetMicroscaleBoundaryConditionStrategy();
-    blocks[block_id]                                            = nimble::Block();
-    blocks[block_id].Initialize(
-        macro_material_parameters, rve_material_parameters, rve_mesh_, rve_bc_strategy, *material_factory_ptr);
-    std::vector<std::pair<std::string, nimble::Length>> data_labels_and_lengths;
-    blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
-    DeclareElementData(block_id, data_labels_and_lengths);
-  }
+  EmplaceBlocks<nimble::Block>(data_manager, material_factory_base);
 
   std::map<int, int> num_elem_in_each_block = mesh_.GetNumElementsInBlock();
   AllocateElementData(num_elem_in_each_block);
@@ -453,11 +480,11 @@ ModelData::InitializeBlocks(
 
   // Initialize the element data
   std::vector<int> rve_output_elem_ids = parser_.MicroscaleOutputElementIds();
-  for (block_it = blocks.begin(); block_it != blocks.end(); block_it++) {
-    int                     block_id          = block_it->first;
+  for (auto & block_it : blocks_) {
+    int                     block_id          = block_it.first;
     int                     num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
     std::vector<int> const& elem_global_ids   = mesh_.GetElementGlobalIdsInBlock(block_id);
-    nimble::Block&          block             = block_it->second;
+    nimble::Block&          block             = block_it.second;
     std::vector<double>&    elem_data_n       = GetElementDataOld(block_id);
     std::vector<double>&    elem_data_np1     = GetElementDataNew(block_id);
     block.InitializeElementData(
@@ -490,13 +517,11 @@ ModelData::ComputeLumpedMass(nimble::DataManager& data_manager)
   // step
   //
   critical_time_step_                           = std::numeric_limits<double>::max();
-  std::map<int, nimble::Block>&          blocks = GetBlocks();
-  std::map<int, nimble::Block>::iterator block_it;
-  for (block_it = blocks.begin(); block_it != blocks.end(); block_it++) {
-    int            block_id          = block_it->first;
+  for (auto &block_it : blocks_) {
+    int            block_id          = block_it.first;
     int            num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
     int const*     elem_conn         = mesh_.GetConnectivity(block_id);
-    nimble::Block& block             = block_it->second;
+    nimble::Block& block             = block_it.second;
     block.ComputeLumpedMassMatrix(reference_coordinate.data(), num_elem_in_block, elem_conn, lumped_mass);
     double block_critical_time_step =
         block.ComputeCriticalTimeStep(reference_coordinate, displacement, num_elem_in_block, elem_conn);
@@ -541,8 +566,6 @@ ModelData::GetVectorNodeData(const std::string& label)
 void
 ModelData::InitializeExodusOutput(nimble::DataManager& data_manager)
 {
-  const auto& mesh_ = data_manager.GetMesh();
-
   for (auto& block_it : blocks_) {
     int block_id                 = block_it.first;
     derived_elem_data_[block_id] = std::vector<std::vector<double>>();
