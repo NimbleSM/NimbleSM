@@ -44,7 +44,6 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
-#include "nimble_block.h"
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_data_utils.h"
 #include "nimble_defs.h"

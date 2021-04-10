@@ -46,14 +46,20 @@
 
 #ifdef NIMBLE_HAVE_UQ
 
-#include "nimble_data_manager.h"
+#include <map>
+
 #include "nimble_model_data.h"
 #include "nimble_view.h"
 
-namespace nimble_uq {
-
+namespace nimble {
 class UqModel;
 class DataManager;
+class MaterialFactoryBase;
+}
+
+namespace nimble_uq {
+
+class Block;
 
 class ModelData : public nimble::ModelData
 {
@@ -67,7 +73,7 @@ class ModelData : public nimble::ModelData
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<MaterialFactoryType>& material_factory_base)
+  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
       override;
 
   /// \brief Compute the internal force
@@ -122,9 +128,12 @@ class ModelData : public nimble::ModelData
   UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt) override;
 
  protected:
-  std::shared_ptr<nimble::UqModel> uq_model_;
 
+  std::shared_ptr<nimble::UqModel> uq_model_;
   std::vector<nimble::Viewify<2>> bc_offnom_velocity_views_;
+
+  std::map< int, nimble_uq::Block* > uq_blocks_;
+
 };
 
 }  // namespace nimble_uq

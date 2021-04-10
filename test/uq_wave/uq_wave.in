@@ -1,4 +1,4 @@
-genesis input file:               bar.g
+genesis input file:               uq_wave.g
 exodus output file:               uq_wave.e
 final time:                       1.0e-5
 number of load steps:             10000

@@ -76,7 +76,7 @@ class BoundaryConditionManager
       int                                    dim,
       std::string                            time_integration_scheme);
 
-  virtual ~BoundaryConditionManager() {}
+  virtual ~BoundaryConditionManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
   template <typename ArchiveType>
@@ -94,16 +94,11 @@ class BoundaryConditionManager
   void
   ApplyInitialConditions(
       const ViewT reference_coordinates,
-      ViewT       velocity
-#ifdef NIMBLE_HAVE_UQ
-      ,
+      ViewT       velocity,
       std::vector<ViewT>& offnom_velocities
-#endif
   )
   {
-    for (unsigned int i_bc = 0; i_bc < boundary_conditions_.size(); i_bc++) {
-      BoundaryCondition& bc = boundary_conditions_.at(i_bc);
-
+    for (auto & bc : boundary_conditions_) {
       if (bc.bc_type_ == BoundaryCondition::INITIAL_VELOCITY) {
         int                     node_set_id    = bc.node_set_id_;
         int                     coordinate     = bc.coordinate_;
@@ -111,27 +106,112 @@ class BoundaryConditionManager
         std::vector<int> const& node_set       = node_sets_[node_set_id];
         if (!has_expression) {
           double magnitude = bc.magnitude_;
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            velocity(node_set[n], coordinate) = magnitude;
-#ifdef NIMBLE_HAVE_UQ
+          for (int n : node_set) {
+            velocity(n, coordinate) = magnitude;
             for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) = magnitude;
+              offnom_velocities[nuq](n, coordinate) = magnitude;
             }
-#endif
           }
         } else {
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            bc.expression_.x = reference_coordinates(node_set[n], 0);
-            bc.expression_.y = reference_coordinates(node_set[n], 1);
+          for (int n : node_set) {
+            bc.expression_.x = reference_coordinates(n, 0);
+            bc.expression_.y = reference_coordinates(n, 1);
             bc.expression_.z = 0.0;
-            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(n, 2); }
             bc.expression_.t                  = 0.0;
-            velocity(node_set[n], coordinate) = bc.expression_.eval();
-#ifdef NIMBLE_HAVE_UQ
+            velocity(n, coordinate) = bc.expression_.eval();
             for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) = bc.expression_.eval();
+              offnom_velocities[nuq](n, coordinate) = bc.expression_.eval();
             }
-#endif
+          }
+        }
+      }
+    }
+  }
+
+  template <typename ViewT>
+  void
+  ApplyInitialConditions(
+      const ViewT reference_coordinates,
+      ViewT       velocity
+  )
+  {
+    std::vector<ViewT> empty;
+    ApplyInitialConditions<ViewT>(reference_coordinates, velocity, empty);
+  }
+
+  template <typename ViewT>
+  void
+  ApplyKinematicBC(
+      double      time_current,
+      double      time_previous,
+      const ViewT reference_coordinates,
+      ViewT       displacement,
+      ViewT       velocity,
+      std::vector<ViewT>& offnom_velocities
+  )
+  {
+    double delta_t = time_current - time_previous;
+
+    for (auto & bc : boundary_conditions_) {
+      int                     node_set_id    = bc.node_set_id_;
+      int                     coordinate     = bc.coordinate_;
+      bool                    has_expression = bc.has_expression_;
+      std::vector<int> const& node_set       = node_sets_[node_set_id];
+
+      if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_VELOCITY) {
+        if (!has_expression) {
+          double velocity_magnitude = bc.magnitude_;
+          for (int n : node_set) {
+            velocity(n, coordinate) = velocity_magnitude;
+            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
+              offnom_velocities[nuq](n, coordinate) = velocity_magnitude;
+            }
+            if (time_integration_scheme_ == QUASISTATIC) {
+              displacement(n, coordinate) += velocity_magnitude * delta_t;
+            }
+          }
+        } else {
+          for (int n : node_set) {
+            bc.expression_.x = reference_coordinates(n, 0);
+            bc.expression_.y = reference_coordinates(n, 1);
+            bc.expression_.z = 0.0;
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(n, 2); }
+            bc.expression_.t                  = time_current;
+            double velocity_magnitude         = bc.expression_.eval();
+            velocity(n, coordinate) = velocity_magnitude;
+            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
+              offnom_velocities[nuq](n, coordinate) = velocity_magnitude;
+            }
+            if (time_integration_scheme_ == QUASISTATIC) {
+              displacement(n, coordinate) += velocity_magnitude * delta_t;
+            }
+          }
+        }
+      }
+      else if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_DISPLACEMENT && delta_t > 0.0) {
+        if (!has_expression) {
+          double displacement_magnitude = bc.magnitude_;
+          for (int n : node_set) {
+            velocity(n, coordinate) =
+                (displacement_magnitude - displacement(n, coordinate)) / delta_t;
+            if (time_integration_scheme_ == QUASISTATIC) {
+              displacement(n, coordinate) = displacement_magnitude;
+            }
+          }
+        } else {
+          for (int n : node_set) {
+            bc.expression_.x = reference_coordinates(n, 0);
+            bc.expression_.y = reference_coordinates(n, 1);
+            bc.expression_.z = 0.0;
+            if (dim_ == 3) { bc.expression_.z = reference_coordinates(n, 2); }
+            bc.expression_.t              = time_current;
+            double displacement_magnitude = bc.expression_.eval();
+            velocity(n, coordinate) =
+                (displacement_magnitude - displacement(n, coordinate)) / delta_t;
+            if (time_integration_scheme_ == QUASISTATIC) {
+              displacement(n, coordinate) = displacement_magnitude;
+            }
           }
         }
       }
@@ -146,95 +226,23 @@ class BoundaryConditionManager
       const ViewT reference_coordinates,
       ViewT       displacement,
       ViewT       velocity
-#ifdef NIMBLE_HAVE_UQ
-      ,
-      std::vector<ViewT>& offnom_velocities
-#endif
   )
   {
-    double delta_t = time_current - time_previous;
-
-    for (unsigned int i_bc = 0; i_bc < boundary_conditions_.size(); i_bc++) {
-      BoundaryCondition&      bc             = boundary_conditions_[i_bc];
-      int                     node_set_id    = bc.node_set_id_;
-      int                     coordinate     = bc.coordinate_;
-      bool                    has_expression = bc.has_expression_;
-      std::vector<int> const& node_set       = node_sets_[node_set_id];
-
-      if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_VELOCITY) {
-        if (!has_expression) {
-          double velocity_magnitude = bc.magnitude_;
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            velocity(node_set[n], coordinate) = velocity_magnitude;
-#ifdef NIMBLE_HAVE_UQ
-            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) = velocity_magnitude;
-            }
-#endif
-            if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) += velocity_magnitude * delta_t;
-            }
-          }
-        } else {
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            bc.expression_.x = reference_coordinates(node_set[n], 0);
-            bc.expression_.y = reference_coordinates(node_set[n], 1);
-            bc.expression_.z = 0.0;
-            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
-            bc.expression_.t                  = time_current;
-            double velocity_magnitude         = bc.expression_.eval();
-            velocity(node_set[n], coordinate) = velocity_magnitude;
-#ifdef NIMBLE_HAVE_UQ
-            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](node_set[n], coordinate) = velocity_magnitude;
-            }
-#endif
-            if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) += velocity_magnitude * delta_t;
-            }
-          }
-        }
-      }
-
-      else if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_DISPLACEMENT && delta_t > 0.0) {
-        if (!has_expression) {
-          double displacement_magnitude = bc.magnitude_;
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            velocity(node_set[n], coordinate) =
-                (displacement_magnitude - displacement(node_set[n], coordinate)) / delta_t;
-            if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) = displacement_magnitude;
-            }
-          }
-        } else {
-          for (unsigned int n = 0; n < node_set.size(); n++) {
-            bc.expression_.x = reference_coordinates(node_set[n], 0);
-            bc.expression_.y = reference_coordinates(node_set[n], 1);
-            bc.expression_.z = 0.0;
-            if (dim_ == 3) { bc.expression_.z = reference_coordinates(node_set[n], 2); }
-            bc.expression_.t              = time_current;
-            double displacement_magnitude = bc.expression_.eval();
-            velocity(node_set[n], coordinate) =
-                (displacement_magnitude - displacement(node_set[n], coordinate)) / delta_t;
-            if (time_integration_scheme_ == QUASISTATIC) {
-              displacement(node_set[n], coordinate) = displacement_magnitude;
-            }
-          }
-        }
-      }
-    }
+    std::vector<ViewT> empty;
+    ApplyKinematicBC(time_current, time_previous, reference_coordinates, displacement,
+                     velocity, empty);
   }
 
   template <typename MatT>
   void
   ModifyTangentStiffnessMatrixForKinematicBC(
       int              num_unknowns,
-      const int* const global_node_ids,
+      const int* global_node_ids,
       double           diagonal_entry,
       MatT&            tangent_stiffness) const;
 
   void
-  ModifyRHSForKinematicBC(const int* const global_node_ids, double* rhs) const;
+  ModifyRHSForKinematicBC(const int* global_node_ids, double* rhs) const;
 
   void
   CreateRVEFixedCornersBoundaryConditions(int corner_node_id);

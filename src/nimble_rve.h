@@ -143,19 +143,19 @@ class RVE : public Material
       DataManager&        data_manager,
       bool                is_output_step) override;
 
-#ifdef NIMBLE_HAVE_KOKKOS
-  NIMBLE_FUNCTION
-  void
-  GetStress(
-      double                                         time_previous,
-      double                                         time_current,
-      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_n,
-      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_np1)
-  {
-  }
-#endif
+//#ifdef NIMBLE_HAVE_KOKKOS
+//  NIMBLE_FUNCTION
+//  void
+//  GetStress(
+//      double                                         time_previous,
+//      double                                         time_current,
+//      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
+//      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
+//      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_n,
+//      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_np1)
+//  {
+//  }
+//#endif
 
   NIMBLE_FUNCTION
   void
@@ -169,9 +169,8 @@ class RVE : public Material
       const double&       shear_mod,
       int                 num_pts,
       const double* const deformation_gradient_np1,
-      double*             stress_np1)
-  {
-  }
+      double*             stress_np1) override
+  {}
 #endif
 
  private:

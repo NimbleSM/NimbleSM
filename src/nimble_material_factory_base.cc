@@ -97,4 +97,38 @@ MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_p
       material_name, material_string_parameters, material_double_parameters, num_material_points);
 }
 
+std::map<std::string, double>
+MaterialFactoryBase::ParseMaterialParamsStringToMap(const std::string& material_parameters) const
+{
+  auto tokens = nimble::tokenize_string(material_parameters);
+
+  // The first string is the material name, followed by the material properties (key-value pairs)
+  assert(tokens.size() > 1);
+
+  const std::string material_name = tokens.front();
+  auto              token         = tokens.cbegin() + 1;
+  auto              tokens_end    = tokens.cend();
+
+  std::map<std::string, std::string> material_string_parameters;
+  std::map<std::string, double>      material_double_parameters;
+  for (; token != tokens_end; token += 2) {
+    auto&& key = *token;
+    auto&& val = *(token + 1);
+    if (std::find(valid_double_parameter_names.begin(), valid_double_parameter_names.end(), key) !=
+        valid_double_parameter_names.end()) {
+      double double_val = nimble::string_to_double(val);
+      material_double_parameters.insert(std::make_pair(key, double_val));
+    } else if (
+        std::find(valid_string_parameter_names.begin(), valid_string_parameter_names.end(), key) !=
+        valid_string_parameter_names.end()) {
+      material_string_parameters.insert(std::make_pair(key, val));
+    } else {
+      std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
+      throw std::runtime_error(errMsg);
+    }
+  }
+
+  return material_double_parameters;
+}
+
 }  // namespace nimble
