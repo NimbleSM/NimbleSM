@@ -41,6 +41,7 @@
 //@HEADER
 */
 
+#include <exception>
 #include <memory>
 
 #include "nimble_block_material_interface_factory_base.h"
@@ -89,9 +90,10 @@ main(int argc, char* argv[])
 
     std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material = nullptr;
 #ifdef NIMBLE_HAVE_KOKKOS
-    if (myParser.UseKokkos())
+    if (myParser.UseKokkos()) {
       block_material =
           std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>(new nimble_kokkos::BlockMaterialInterfaceFactory);
+    }
 #endif
 
     std::shared_ptr<nimble::ContactInterface> contact_interface = nullptr;
@@ -100,7 +102,11 @@ main(int argc, char* argv[])
 
     int status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
 
-  } catch (...) {
+  } 
+  catch (std::exception &e) {
+    std::cerr << "Standard exception: " << e.what() << std::endl;
+  } 
+  catch (...) {
     std::cerr << "\n !!! NimbleSM Simulation did not end correctly !!!\n\n";
   }
 

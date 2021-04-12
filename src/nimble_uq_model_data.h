@@ -47,19 +47,20 @@
 #ifdef NIMBLE_HAVE_UQ
 
 #include <map>
+#include <memory>
 
 #include "nimble_model_data.h"
-#include "nimble_view.h"
 
 namespace nimble {
 class UqModel;
 class DataManager;
 class MaterialFactoryBase;
+
+template<>
+class Viewify<2>;
 }
 
 namespace nimble_uq {
-
-class Block;
 
 class ModelData : public nimble::ModelData
 {
@@ -129,10 +130,8 @@ class ModelData : public nimble::ModelData
 
  protected:
 
-  std::shared_ptr<nimble::UqModel> uq_model_;
-  std::vector<nimble::Viewify<2>> bc_offnom_velocity_views_;
-
-  std::map< int, nimble_uq::Block* > uq_blocks_;
+  std::shared_ptr< nimble::UqModel > uq_model_;
+  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views_;
 
 };
 

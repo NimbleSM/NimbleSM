@@ -44,13 +44,14 @@
 #ifndef SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_FACTORY_BASE_H
 #define SRC_NIMBLE_BLOCK_MATERIAL_INTERFACE_FACTORY_BASE_H
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
-#include "nimble_block_material_interface_base.h"
 
 namespace nimble {
 
+class BlockData;
 class BlockMaterialInterfaceBase;
 class ModelDataBase;
 
@@ -68,7 +69,7 @@ class BlockMaterialInterfaceFactoryBase
       double                                time_np1,
       const nimble::FieldIds&               field_ids,
       const std::vector<nimble::BlockData>& blocks,
-      nimble::ModelDataBase*                model_data_ptr) const = 0;
+      nimble::ModelDataBase *               model_data_ptr) const = 0;
 };
 
 }  // namespace nimble

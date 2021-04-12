@@ -770,7 +770,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   std::vector<double> rve_center;
   if (bc.IsPeriodicRVEProblem()) { rve_center = mesh.BoundingBoxCenter(); }
 
-  std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
+  auto &blocks = model_data.GetBlocks();
 
   data_manager.WriteOutput(time_current);
 
@@ -827,8 +827,8 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         int            block_id          = block_it.first;
         int            num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
         int const*     elem_conn         = mesh.GetConnectivity(block_id);
-        nimble::Block& block             = block_it.second;
-        block.ComputeTangentStiffnessMatrix(
+        auto &block             = block_it.second;
+        block->ComputeTangentStiffnessMatrix(
             linear_system_num_unknowns,
             reference_coordinate.data(),
             displacement.data(),
