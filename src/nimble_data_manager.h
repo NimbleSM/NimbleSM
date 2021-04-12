@@ -227,8 +227,8 @@ class DataManager
   /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
   ///
   /// \return Shared pointer
-  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
-  GetBlockMaterialInterfaceFactory();
+  const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& 
+  GetBlockMaterialInterfaceFactory() const;
 
   /// \brief Return shared pointer to BoundaryConditionManager object
   ///
@@ -248,19 +248,19 @@ class DataManager
   const nimble::Parser&                  parser_;
   const nimble::GenesisMesh&             mesh_;
   const nimble::GenesisMesh&             rve_mesh_;
-  std::shared_ptr<nimble::ModelDataBase> macroscale_data_;
+  std::shared_ptr<nimble::ModelDataBase> macroscale_data_ = nullptr;
 
   std::map<std::pair<int, int>, RVEData> rve_data_;
   std::vector<double>                    rve_macroscale_deformation_gradient_;
 
   nimble::FieldIds field_ids_;
 
-  std::shared_ptr<nimble::VectorCommunicator> vector_communicator_;
-  std::shared_ptr<nimble::ExodusOutput>       exodus_output_;
+  std::shared_ptr<nimble::VectorCommunicator> vector_communicator_ = nullptr;
+  std::shared_ptr<nimble::ExodusOutput>       exodus_output_ = nullptr;
 
-  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_factory_;
+  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_factory_ = nullptr;
 
-  std::shared_ptr<nimble::BoundaryConditionManager> boundary_condition_;
+  std::shared_ptr<nimble::BoundaryConditionManager> boundary_condition_ = nullptr;
 };
 
 }  // namespace nimble

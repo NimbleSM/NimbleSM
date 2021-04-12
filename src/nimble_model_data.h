@@ -205,13 +205,13 @@ class ModelData : public ModelDataBase
   void
   SpecifyOutputFields(const std::string &output_field_string);
 
-  std::map<int, Block>&
+  std::map<int, std::shared_ptr< nimble::Block> >&
   GetBlocks()
   {
     return blocks_;
   }
 
-  std::map<int, Block> const&
+  std::map<int, std::shared_ptr< nimble::Block> > const&
   GetBlocks() const
   {
     return blocks_;
@@ -243,12 +243,15 @@ class ModelData : public ModelDataBase
   void EmplaceBlocks(nimble::DataManager& data_manager,
                      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
 
+  void AllocateInitializeElementData(nimble::DataManager&                                data_manager,
+                                     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
+
  protected:
   //! Block ids
   std::vector<int> block_ids_;
 
   //! Blocks
-  std::map<int, Block> blocks_;
+  std::map<int, std::shared_ptr<nimble::Block> > blocks_;
 
   //! Map key is the field_id, value is the corresponding Field.
   std::map<int, Field> data_fields_;

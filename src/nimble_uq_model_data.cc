@@ -67,52 +67,9 @@ ModelData::InitializeBlocks(
   //
   const auto& mesh_     = data_manager.GetMesh();
   const auto& parser_   = data_manager.GetParser();
-  const auto& rve_mesh_ = data_manager.GetRVEMesh();
-
-  auto material_factory_ptr = dynamic_cast<nimble::MaterialFactory*>(material_factory_base.get());
 
   nimble::ModelData::EmplaceBlocks< nimble_uq::Block >(data_manager, material_factory_base);
 
-  std::map<int, int> num_elem_in_each_block = mesh_.GetNumElementsInBlock();
-  AllocateElementData(num_elem_in_each_block);
-  SpecifyOutputFields(parser_.GetOutputFieldString());
-  std::map<int, std::vector<std::string>> const& elem_data_labels         = GetElementDataLabels();
-  std::map<int, std::vector<std::string>> const& derived_elem_data_labels = GetDerivedElementDataLabelsForOutput();
-
-  // Initialize the element data
-  std::vector<int> rve_output_elem_ids = parser_.MicroscaleOutputElementIds();
-  for (auto block_it : blocks_) {
-    int                     block_id          = block_it.first;
-    int                     num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
-    std::vector<int> const& elem_global_ids   = mesh_.GetElementGlobalIdsInBlock(block_id);
-    nimble::Block&          block             = block_it.second;
-    std::vector<double>&    elem_data_n       = GetElementDataOld(block_id);
-    std::vector<double>&    elem_data_np1     = GetElementDataNew(block_id);
-    block.InitializeElementData(
-        num_elem_in_block,
-        elem_global_ids,
-        rve_output_elem_ids,
-        elem_data_labels.at(block_id),
-        derived_elem_data_labels.at(block_id),
-        elem_data_n,
-        elem_data_np1,
-        *material_factory_ptr,
-        data_manager);
-  }
-  //
-  //
-  //
-  //
-  // Make a copy of cast blocks
-  //
-  for (auto block_it : blocks_) {
-    int id = block_it.first;
-    nimble_uq::Block* cast_block = dynamic_cast<nimble_uq::Block*>(&block_it.second);
-    // Add test if nullptr
-    uq_blocks_[id] = cast_block;
-  }
-  int num_nodes = mesh_.GetNumNodes();
-  int num_blocks = mesh_.GetNumBlocks();
   std::vector<int> block_ids = mesh_.GetBlockIds();
   uq_model_ = std::shared_ptr<nimble::UqModel>(new nimble::UqModel(dim_, &mesh_, this));
   uq_model_->ParseConfiguration(parser_.UqModelString());
@@ -124,12 +81,12 @@ ModelData::InitializeBlocks(
     std::string const & nominal_params_string = parser_.GetMacroscaleMaterialParameters(block_id);
     bool block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end() ;
     uq_model_->ParseBlockInput( uq_params_this_material, block_id, nominal_params_string,
-                               material_factory_base, block_id_present, uq_blocks_ );
+                               material_factory_base, block_id_present, blocks_ );
   }
   //
-  // initialize
-  //
   uq_model_->Initialize();
+  //
+  AllocateInitializeElementData(data_manager, material_factory_base);
   //
   uq_model_->Setup();
   /// FOR CALL TO BCS ===================
@@ -156,7 +113,7 @@ ModelData::WriteExodusOutput(nimble::DataManager& data_manager, double time_curr
     int            block_id          = block_it.first;
     int            num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
     int const*     elem_conn         = mesh_.GetConnectivity(block_id);
-    nimble::Block& block             = block_it.second;
+    auto &block = block_it.second;
     uq_model_->PerformAnalyses(reference_coordinate.data(), num_elem_in_block, elem_conn, block_id, block);
   }
   // UH -- DEBUG TO FIX
@@ -201,15 +158,15 @@ ModelData::ComputeInternalForce(
 
   auto& rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
 
-  for (auto& block_it : uq_blocks_) {
+  for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
     int                        num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
     int const*                 elem_conn         = mesh.GetConnectivity(block_id);
     std::vector<int> const&    elem_global_ids   = mesh.GetElementGlobalIdsInBlock(block_id);
-    auto                       block             =  block_it.second;
     std::vector<double> const& elem_data_n       = GetElementDataOld(block_id);
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     bool                       is_off_nominal    = false;  // HACK
+    auto block = dynamic_cast< nimble_uq::Block* >( block_it.second.get() );
     std::vector<double>        uq_params_this_sample;      // HACK
     block->ComputeInternalForce(
         reference_coord,

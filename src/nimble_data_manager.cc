@@ -229,8 +229,8 @@ DataManager::SetBlockMaterialInterfaceFactory(
   block_material_factory_ = block_material_factory;
 }
 
-std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>
-DataManager::GetBlockMaterialInterfaceFactory()
+const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
+DataManager::GetBlockMaterialInterfaceFactory() const
 {
   return block_material_factory_;
 }
