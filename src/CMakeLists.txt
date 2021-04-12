@@ -86,10 +86,8 @@ endif()
 
 add_subdirectory(contact)
 
-IF(NOT NIMBLE_HAVE_KOKKOS)
-  target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.cc)
-  set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS} ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.h)
-ENDIF()
+target_sources(nimble PRIVATE ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.cc)
+set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS} ${CMAKE_CURRENT_LIST_DIR}/nimble_rve.h)
 
 IF(NIMBLE_HAVE_UQ)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}

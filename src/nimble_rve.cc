@@ -55,6 +55,10 @@
 #include "nimble_utils.h"
 #include "nimble_view.h"
 
+#ifdef NIMBLE_HAVE_UQ
+#include "nimble_uq_block.h"
+#endif
+
 namespace nimble {
 
 RVE::RVE(
@@ -174,14 +178,14 @@ RVE::InitializeRVE(
 
   // Blocks
   int                           num_blocks = rve_mesh_.GetNumBlocks();
-  std::map<int, nimble::Block>& blocks     = model_data.GetBlocks();
+  auto& blocks     = model_data.GetBlocks();
   std::vector<int>              block_ids  = rve_mesh_.GetBlockIds();
   for (int i = 0; i < num_blocks; i++) {
     int block_id     = block_ids[i];
-    blocks[block_id] = nimble::Block();
-    blocks[block_id].Initialize(material_parameters_string_.at(block_id), factory);
+    blocks[block_id] = std::shared_ptr<nimble::Block>(new nimble::Block());
+    blocks[block_id]->Initialize(material_parameters_string_.at(block_id), factory);
     std::vector<std::pair<std::string, nimble::Length>> data_labels_and_lengths;
-    blocks[block_id].GetDataLabelsAndLengths(data_labels_and_lengths);
+    blocks[block_id]->GetDataLabelsAndLengths(data_labels_and_lengths);
     model_data.DeclareElementData(block_id, data_labels_and_lengths);
   }
   model_data.AllocateElementData(rve_mesh_.GetNumElementsInBlock());
@@ -199,8 +203,8 @@ RVE::InitializeRVE(
     std::vector<int> const& elem_global_ids   = rve_mesh_.GetElementGlobalIdsInBlock(block_id);
     std::vector<double>&    elem_data_n       = model_data.GetElementDataOld(block_id);
     std::vector<double>&    elem_data_np1     = model_data.GetElementDataNew(block_id);
-    nimble::Block&          block             = block_it.second;
-    block.InitializeElementData(
+    auto&          block             = block_it.second;
+    block->InitializeElementData(
         num_elem_in_block,
         elem_global_ids,
         rve_output_global_elem_ids,
@@ -277,11 +281,11 @@ RVE::InitializeRVE(
   for (auto& block_it : blocks) {
     int block_id                                 = block_it.first;
     derived_elem_data[block_id]                  = std::vector<std::vector<double>>();
-    nimble::Block&             block             = block_it.second;
+    auto&             block             = block_it.second;
     int                        num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
     int const*                 elem_conn         = rve_mesh_.GetConnectivity(block_id);
     std::vector<double> const& elem_data_np1     = model_data.GetElementDataNew(block_id);
-    block.ComputeDerivedElementData(
+    block->ComputeDerivedElementData(
         reference_coordinate.data(),
         displacement,
         num_elem_in_block,
@@ -388,7 +392,7 @@ RVE::GetStress(
     std::map<int, std::vector<std::string>> const& derived_elem_data_labels =
         model_data.GetDerivedElementDataLabelsForOutput();
 
-    std::map<int, nimble::Block>& blocks = model_data.GetBlocks();
+    auto& blocks = model_data.GetBlocks();
 
     std::vector<double>                             global_data_for_output;
     std::vector<std::vector<double>>                node_data_for_output;
@@ -424,47 +428,52 @@ RVE::GetStress(
         std::vector<int> const&    elem_global_ids     = rve_mesh_.GetElementGlobalIdsInBlock(block_id);
         std::vector<double> const& elem_data_n         = model_data.GetElementDataOld(block_id);
         std::vector<double>&       elem_data_np1       = model_data.GetElementDataNew(block_id);
-        Block&                     block               = id_block_pair.second;
+        auto&                      block               = id_block_pair.second;
         bool                       compute_stress_only = true;
 #ifdef NIMBLE_HAVE_UQ
-        std::vector<double> params_this_sample(0);
-        block.ComputeInternalForce(
-            reference_coordinate.data(),
-            displacement,
-            velocity.data(),
-            identity.data(),
-            internal_force,
-            time_previous,
-            time_current,
-            num_elem_in_block,
-            elem_conn,
-            elem_global_ids.data(),
-            elem_data_labels.at(block_id),
-            elem_data_n,
-            elem_data_np1,
-            data_manager,
-            compute_stress_only,
-            false,
-            params_this_sample);
-#else
-        block.ComputeInternalForce(
-            reference_coordinate.data(),
-            displacement,
-            velocity.data(),
-            identity.data(),
-            internal_force,
-            time_previous,
-            time_current,
-            num_elem_in_block,
-            elem_conn,
-            elem_global_ids.data(),
-            elem_data_labels.at(block_id),
-            elem_data_n,
-            elem_data_np1,
-            data_manager,
-            compute_stress_only,
-            false);
+        if (dynamic_cast< nimble_uq::Block* >(block.get())) {
+          std::vector<double> params_this_sample(0);
+          auto uq_block_ptr = dynamic_cast< nimble_uq::Block* >(block.get());
+          uq_block_ptr->ComputeInternalForce(
+              reference_coordinate.data(),
+              displacement,
+              velocity.data(),
+              identity.data(),
+              internal_force,
+              time_previous,
+              time_current,
+              num_elem_in_block,
+              elem_conn,
+              elem_global_ids.data(),
+              elem_data_labels.at(block_id),
+              elem_data_n,
+              elem_data_np1,
+              data_manager,
+              compute_stress_only,
+              false,
+              params_this_sample);
+        }
+        else
 #endif
+        {
+          block->ComputeInternalForce(
+              reference_coordinate.data(),
+              displacement,
+              velocity.data(),
+              identity.data(),
+              internal_force,
+              time_previous,
+              time_current,
+              num_elem_in_block,
+              elem_conn,
+              elem_global_ids.data(),
+              elem_data_labels.at(block_id),
+              elem_data_n,
+              elem_data_np1,
+              data_manager,
+              compute_stress_only,
+              false);
+        }
       }
       CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
     } else if (boundary_condition_strategy_ == PERIODIC_BC) {
@@ -496,48 +505,52 @@ RVE::GetStress(
         int                        num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
         int const*                 elem_conn         = rve_mesh_.GetConnectivity(block_id);
         std::vector<int> const&    elem_global_ids   = rve_mesh_.GetElementGlobalIdsInBlock(block_id);
-        nimble::Block&             block             = block_it.second;
+        auto&             block             = block_it.second;
         std::vector<double> const& elem_data_n       = model_data.GetElementDataOld(block_id);
         std::vector<double>&       elem_data_np1     = model_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
-        std::vector<double> params_this_sample(0);
-        block.ComputeInternalForce(
-            reference_coordinate.data(),
-            displacement,
-            velocity.data(),
-            identity.data(),
-            internal_force,
-            time_previous,
-            time_current,
-            num_elem_in_block,
-            elem_conn,
-            elem_global_ids.data(),
-            elem_data_labels.at(block_id),
-            elem_data_n,
-            elem_data_np1,
-            data_manager,
-            false,
-            false,
-            params_this_sample);
-
-#else
-        block.ComputeInternalForce(
-            reference_coordinate.data(),
-            displacement,
-            velocity.data(),
-            def_grad,
-            internal_force,
-            time_previous,
-            time_current,
-            num_elem_in_block,
-            elem_conn,
-            elem_global_ids.data(),
-            elem_data_labels.at(block_id),
-            elem_data_n,
-            elem_data_np1,
-            data_manager,
-            false);
+        if (dynamic_cast< nimble_uq::Block* >(block.get())) {
+          std::vector<double> params_this_sample(0);
+          auto                uq_block_ptr = dynamic_cast<nimble_uq::Block*>(block.get());
+          uq_block_ptr->ComputeInternalForce(
+              reference_coordinate.data(),
+              displacement,
+              velocity.data(),
+              identity.data(),
+              internal_force,
+              time_previous,
+              time_current,
+              num_elem_in_block,
+              elem_conn,
+              elem_global_ids.data(),
+              elem_data_labels.at(block_id),
+              elem_data_n,
+              elem_data_np1,
+              data_manager,
+              false,
+              false,
+              params_this_sample);
+        }
+        else
 #endif
+        {
+          block->ComputeInternalForce(
+              reference_coordinate.data(),
+              displacement,
+              velocity.data(),
+              def_grad,
+              internal_force,
+              time_previous,
+              time_current,
+              num_elem_in_block,
+              elem_conn,
+              elem_global_ids.data(),
+              elem_data_labels.at(block_id),
+              elem_data_n,
+              elem_data_np1,
+              data_manager,
+              false);
+        }
       }
       CheckVectorSanity(num_unknowns, internal_force, "RVE internal force, initial residual calculation");
 
@@ -594,8 +607,8 @@ RVE::GetStress(
           int            block_id          = block_it.first;
           int            num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
           int const*     elem_conn         = rve_mesh_.GetConnectivity(block_id);
-          nimble::Block& block             = block_it.second;
-          block.ComputeTangentStiffnessMatrix(
+          auto& block             = block_it.second;
+          block->ComputeTangentStiffnessMatrix(
               linear_system_num_unknowns,
               reference_coordinate.data(),
               displacement,
@@ -671,48 +684,52 @@ RVE::GetStress(
           int                        num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
           int const*                 elem_conn         = rve_mesh_.GetConnectivity(block_id);
           std::vector<int> const&    elem_global_ids   = rve_mesh_.GetElementGlobalIdsInBlock(block_id);
-          nimble::Block&             block             = block_it.second;
+          auto&             block             = block_it.second;
           std::vector<double> const& elem_data_n       = model_data.GetElementDataOld(block_id);
           std::vector<double>&       elem_data_np1     = model_data.GetElementDataNew(block_id);
 #ifdef NIMBLE_HAVE_UQ
-          std::vector<double> params_this_sample(0);
-          block.ComputeInternalForce(
-              reference_coordinate.data(),
-              displacement,
-              velocity.data(),
-              identity.data(),
-              internal_force,
-              time_previous,
-              time_current,
-              num_elem_in_block,
-              elem_conn,
-              elem_global_ids.data(),
-              elem_data_labels.at(block_id),
-              elem_data_n,
-              elem_data_np1,
-              data_manager,
-              false,
-              false,
-              params_this_sample);
-
-#else
-          block.ComputeInternalForce(
-              reference_coordinate.data(),
-              displacement,
-              velocity.data(),
-              def_grad,
-              internal_force,
-              time_previous,
-              time_current,
-              num_elem_in_block,
-              elem_conn,
-              elem_global_ids.data(),
-              elem_data_labels.at(block_id),
-              elem_data_n,
-              elem_data_np1,
-              data_manager,
-              false);
+          if (dynamic_cast< nimble_uq::Block* >(block.get())) {
+            std::vector<double> params_this_sample(0);
+            auto                uq_block_ptr = dynamic_cast<nimble_uq::Block*>(block.get());
+            uq_block_ptr->ComputeInternalForce(
+                reference_coordinate.data(),
+                displacement,
+                velocity.data(),
+                identity.data(),
+                internal_force,
+                time_previous,
+                time_current,
+                num_elem_in_block,
+                elem_conn,
+                elem_global_ids.data(),
+                elem_data_labels.at(block_id),
+                elem_data_n,
+                elem_data_np1,
+                data_manager,
+                false,
+                false,
+                params_this_sample);
+          }
+else
 #endif
+          {
+            block->ComputeInternalForce(
+                reference_coordinate.data(),
+                displacement,
+                velocity.data(),
+                def_grad,
+                internal_force,
+                time_previous,
+                time_current,
+                num_elem_in_block,
+                elem_conn,
+                elem_global_ids.data(),
+                elem_data_labels.at(block_id),
+                elem_data_n,
+                elem_data_np1,
+                data_manager,
+                false);
+          }
         }
         CheckVectorSanity(num_unknowns, internal_force, "RVE internal force");
         for (int i = 0; i < linear_system_num_nodes * dim; i++) { residual_vector[i] = 0.0; }
@@ -754,11 +771,11 @@ RVE::GetStress(
       if (write_rve_exodus_output && is_output_step && pt == 0) {
         for (auto& block_it : blocks) {
           int                        block_id          = block_it.first;
-          nimble::Block&             block             = block_it.second;
+          auto&             block             = block_it.second;
           int                        num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
           int const*                 elem_conn         = rve_mesh_.GetConnectivity(block_id);
           std::vector<double> const& elem_data_np1     = model_data.GetElementDataNew(block_id);
-          block.ComputeDerivedElementData(
+          block->ComputeDerivedElementData(
               reference_coordinate.data(),
               displacement,
               num_elem_in_block,
@@ -788,11 +805,11 @@ RVE::GetStress(
     // Compute the volume-averaged stress
     for (auto& id_block_pair : blocks) {
       int                        block_id          = id_block_pair.first;
-      Block&                     block             = id_block_pair.second;
+      auto&                     block             = id_block_pair.second;
       int                        num_elem_in_block = rve_mesh_.GetNumElementsInBlock(block_id);
       int const*                 elem_conn         = rve_mesh_.GetConnectivity(block_id);
       std::vector<double> const& elem_data_np1     = model_data.GetElementDataNew(block_id);
-      block.ComputeDerivedElementData(
+      block->ComputeDerivedElementData(
           reference_coordinate.data(),
           displacement,
           num_elem_in_block,
