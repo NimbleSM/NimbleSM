@@ -55,6 +55,10 @@
 #include "nimble_kokkos_material_factory.h"
 #endif
 
+#ifdef NIMBLE_HAVE_VT
+#include <vt/transport.h>
+#endif
+
 int
 main(int argc, char* argv[])
 {
@@ -100,7 +104,19 @@ main(int argc, char* argv[])
     if (myParser.HasContact())
       contact_interface = std::shared_ptr<nimble::ContactInterface>(new nimble::ContactInterface);
 
-    int status = nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
+    if (myFlags.use_vt_) {
+#ifdef NIMBLE_HAVE_VT
+      vt::runInEpochCollective( [&](){
+        nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
+        } );
+#else
+      // This situation should never occur.
+      throw std::invalid_argument(" Flag 'use_vt_' set in wrong environment ");
+#endif
+    }
+    else {
+      nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
+    }
 
   } 
   catch (std::exception &e) {

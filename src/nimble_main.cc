@@ -189,6 +189,10 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 
 }  // namespace details
 
+#ifdef NIMBLE_HAVE_VT
+std::unique_ptr< ::vt::runtime::Runtime > vt_rt;
+#endif
+
 void
 NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 {
@@ -252,7 +256,7 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 #ifdef NIMBLE_HAVE_VT
   if (parser.UseVT() == true) {
     MPI_Comm vt_comm = MPI_COMM_WORLD;
-    ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
+    vt_rt = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
     //
     // Check whether we need the next line
     //
@@ -334,7 +338,7 @@ void
 NimbleFinalize(const nimble::EnvironmentFlags &env_flags)
 {
 #ifdef NIMBLE_HAVE_VT
-  while (!::vt::curRT->isTerminated()) ::vt::runScheduler();
+  ::vt::finalize( std::move( vt_rt ) );
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
