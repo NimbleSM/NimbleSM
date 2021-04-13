@@ -56,7 +56,7 @@
 #include "nimble_view.h"
 
 #ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq_block.h"
+#include "uq/nimble_uq_block.h"
 #endif
 
 namespace nimble {

@@ -44,8 +44,8 @@
 #include "nimble_data_manager.h"
 
 #ifdef NIMBLE_HAVE_UQ
-#include "nimble_uq.h"
-#include "nimble_uq_model_data.h"
+#include "uq/nimble_uq.h"
+#include "uq/nimble_uq_model_data.h"
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
