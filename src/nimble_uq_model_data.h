@@ -50,14 +50,13 @@
 #include <memory>
 
 #include "nimble_model_data.h"
+#include "nimble_view.h"
 
 namespace nimble {
 class UqModel;
 class DataManager;
 class MaterialFactoryBase;
 
-template<>
-class Viewify<2>;
 }
 
 namespace nimble_uq {
