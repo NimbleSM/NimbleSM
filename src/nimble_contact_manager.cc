@@ -161,7 +161,7 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 
 #ifdef NIMBLE_HAVE_BVH
   if (data_manager.GetParser().UseVT()) {
-    return std::make_shared<nimble::BVHContactManager>(
+    return std::make_shared<nimble::BvhContactManager>(
         interface, data_manager, data_manager.GetParser().ContactDicing());
   }
 #endif

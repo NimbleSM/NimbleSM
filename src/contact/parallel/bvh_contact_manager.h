@@ -49,7 +49,7 @@
 
 #include "parallel_contact_manager.h"
 
-namespace nvh {
+namespace bvh {
 
 class collision_object;
 
