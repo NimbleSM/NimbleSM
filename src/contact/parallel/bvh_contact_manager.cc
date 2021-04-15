@@ -47,6 +47,8 @@
 
 #include <fstream>
 #include <iomanip>
+
+#include "bvh/collision_object.hpp"
 #ifdef NIMBLE_HAVE_KOKKOS
 #include <bvh/narrowphase/kokkos.hpp>
 #endif
@@ -163,8 +165,10 @@ struct NarrowphaseFunc
   BvhContactManager* contact_manager;
 };
 
-BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface, std::size_t _overdecomposition)
-    : ParallelContactManager(interface),
+BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface, 
+    nimble::DataManager &data_manager,
+    std::size_t _overdecomposition)
+    : ParallelContactManager(interface, data_manager),
       m_world{_overdecomposition},
       m_nodes{&m_world.create_collision_object()},
       m_faces{&m_world.create_collision_object()}
@@ -172,30 +176,24 @@ BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface
   m_world.set_narrowphase_functor<ContactEntity>(NarrowphaseFunc{this});
 }
 
-BvhContactManager::BvhContactManager(BvhContactManager&&) = default;
-
-BvhContactManager&
-BvhContactManager::operator=(BvhContactManager&&) = default;
-
-BvhContactManager::~BvhContactManager() = default;
-
 void
 BvhContactManager::ComputeBoundingVolumes()
 {
   for (auto&& node : contact_nodes_) {
     const double           inflation_length = node.inflation_factor * node.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&node.coord_1_x_);
-    node.kdop_                              = bvh::dop_6d::from_sphere(*v, inflation_length);
+    node.kdop_                              = bvh::dop_26d::from_sphere(*v, inflation_length);
   }
   for (auto&& face : contact_faces_) {
     const double           inflation_length = face.inflation_factor * face.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&face.coord_1_x_);
-    face.kdop_                              = bvh::dop_6d::from_vertices(v, v + 3, inflation_length);
+    face.kdop_                              = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
   }
 }
 
 void
-BvhContactManager::ComputeParallelContactForce(int step, bool debug_output)
+BvhContactManager::ComputeParallelContactForce(int step, 
+    bool debug_output, nimble::Viewify<2> contact_force)
 {
   total_search_time.Start();
   m_world.start_iteration();

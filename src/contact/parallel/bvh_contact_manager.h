@@ -72,15 +72,16 @@ class BvhContactManager : public ParallelContactManager
       std::shared_ptr<ContactInterface> interface,
       nimble::DataManager&              data_manager,
       std::size_t                       _overdecomposition);
+
   BvhContactManager(const BvhContactManager&) = delete;
-  BvhContactManager(BvhContactManager&&);
+  BvhContactManager(BvhContactManager&&) = delete;
 
   BvhContactManager&
   operator=(const BvhContactManager&) = delete;
   BvhContactManager&
-  operator=(BvhContactManager&&);
+  operator=(BvhContactManager&&) = delete;
 
-  ~BvhContactManager();
+  ~BvhContactManager() = default;
 
   void
   ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;

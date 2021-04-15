@@ -293,6 +293,15 @@ class ContactManager
       double*              barycentric_coordinates,
       double               tolerance = 1.e-8);
 
+  /// \brief Return the penalty coefficient for enforcing contact force
+  ///
+  /// \return Penalty value
+  double
+  GetPenaltyForceParam() const noexcept
+  {
+    return enforcement.penalty;
+  }
+
  protected:
   //
   // Specific functions
@@ -367,12 +376,6 @@ class ContactManager
       ContactEntity::vertex* closest_point,
       PROJECTION_TYPE*       projection_type,
       double                 tolerance);
-
-  double
-  GetPenaltyForceParam() const noexcept
-  {
-    return enforcement.penalty;
-  }
 
   /// \brief Returns a read-only reference to contact face entity
   ///

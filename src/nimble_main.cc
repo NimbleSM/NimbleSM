@@ -190,7 +190,7 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 }  // namespace details
 
 #ifdef NIMBLE_HAVE_VT
-std::unique_ptr< ::vt::runtime::Runtime > vt_rt;
+static ::vt::RuntimePtrType vt_rt = nullptr;
 #endif
 
 void
@@ -338,7 +338,8 @@ void
 NimbleFinalize(const nimble::EnvironmentFlags &env_flags)
 {
 #ifdef NIMBLE_HAVE_VT
-  ::vt::finalize( std::move( vt_rt ) );
+  if (env_flags.use_vt_)
+    ::vt::finalize( std::move( vt_rt ) );
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
