@@ -44,71 +44,21 @@
 #ifndef SRC_NIMBLE_MATERIAL_FACTORY_H_
 #define SRC_NIMBLE_MATERIAL_FACTORY_H_
 
-#include <algorithm>
-#include <memory>
-#include <string>
-#include <vector>
-#include <map>
-
-namespace nimble {
-class Material;
-class MaterialParameters;
-}
+#include "nimble_material_factory_base.h"
 
 namespace nimble {
 
-class MaterialFactoryBase {
- private:
-  static inline void find_or_insert_string_in_vector(const std::string &str, std::vector<std::string> &vec) {
-    if (std::find(vec.begin(), vec.end(), str) == vec.end()) {
-      vec.push_back(str);
-    }
-  }
-
+class MaterialFactory : public nimble::MaterialFactoryBase
+{
  public:
-  MaterialFactoryBase();
-  virtual ~MaterialFactoryBase() = default;
-
-  virtual void create() = 0;
-
-  inline void add_valid_double_parameter_name(const char *name) {
-    find_or_insert_string_in_vector(std::string(name), valid_double_parameter_names);
-  }
-
-  inline void add_valid_string_parameter_name(const char *name) {
-    find_or_insert_string_in_vector(std::string(name), valid_string_parameter_names);
-  }
+  explicit MaterialFactory();
+  ~MaterialFactory() override = default;
 
  protected:
-  std::shared_ptr<nimble::MaterialParameters> ParseMaterialParametersString(const std::string& material_parameters,
-                                                                            const int num_material_points = 0) const;
-
-  std::map<std::string, double> ParseMaterialParamsStringToMap(const std::string& material_parameters) const;
-
- private:
-  std::vector<std::string> valid_double_parameter_names;
-  std::vector<std::string> valid_string_parameter_names;
+  void
+  create() override;
 };
 
-class MaterialFactory : public MaterialFactoryBase {
- public:
-  MaterialFactory();
-  virtual ~MaterialFactory() = default;
-
-  void parse_and_create(const std::string& mat_params);
-
-  std::map<std::string, double> parse_material_params_string(const std::string& material_parameters);
-
-  inline std::shared_ptr<Material> get_material() const { return material; }
-
- protected:
-  virtual void create() override;
-
-  std::shared_ptr<Material> material;
-
-  std::shared_ptr<const nimble::MaterialParameters> material_params;
-};
-
-}
+}  // namespace nimble
 
 #endif /* SRC_NIMBLE_MATERIAL_FACTORY_H_ */

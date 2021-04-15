@@ -44,24 +44,25 @@
 #ifndef NIMBLE_SERIAL_CONTACT_MANAGER_H
 #define NIMBLE_SERIAL_CONTACT_MANAGER_H
 
-#include "../../nimble_contact_manager.h"
-#include "../../nimble_kokkos.h"
+#include "nimble_contact_manager.h"
 
 namespace nimble {
-  class SerialContactManager: public ContactManager {
-  public:
+class SerialContactManager : public ContactManager
+{
+ public:
+  SerialContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
 
-    SerialContactManager(std::shared_ptr<ContactInterface> interface);
+  void
+  ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override
+  {
+    ComputeSerialContactForce(step, debug_output, contact_force);
+  }
 
-    void ComputeContactForce(int step, bool debug_output) override {
-      ComputeSerialContactForce(step, debug_output);
-    }
+  virtual void
+  ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) = 0;
 
-    virtual void ComputeSerialContactForce(int step, bool debug_output) = 0;
-
-  private:
-
-  };
-}
+ private:
+};
+}  // namespace nimble
 
 #endif  // NIMBLE_SERIAL_CONTACT_MANAGER_H

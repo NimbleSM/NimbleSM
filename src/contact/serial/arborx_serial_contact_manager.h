@@ -50,34 +50,44 @@
 
 #include "serial_contact_manager.h"
 
-namespace nimble {
+namespace nimble_kokkos {
 
-  class ArborXSerialContactManager: public SerialContactManager
-  {
-  public:
+class ModelData;
 
-    explicit ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface);
-    ArborXSerialContactManager(const ArborXSerialContactManager &) = delete;
-    ArborXSerialContactManager(ArborXSerialContactManager &&) noexcept = default;
-
-//    ArborXSerialContactManager &operator=( const ArborXSerialContactManager &) = delete;
-
-    ArborXSerialContactManager & operator=( ArborXSerialContactManager &&) noexcept = default;
-
-    ~ArborXSerialContactManager() override = default;
-
-    void ComputeSerialContactForce(int step, bool debug_output) override;
-
-  private:
-
-    void updateCollisionData(
-         Kokkos::View<int *, nimble_kokkos::kokkos_device> &indices,
-         Kokkos::View<int *, nimble_kokkos::kokkos_device> &offset
-    );
-
-  };
 }
 
-#endif // NIMBLE_HAVE_ARBORX
+namespace nimble {
 
-#endif // NIMBLE_ARBORX_SERIAL_CONTACT_MANAGER_H
+class DataManager;
+
+class ArborXSerialContactManager : public SerialContactManager
+{
+ public:
+  ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
+  ArborXSerialContactManager(const ArborXSerialContactManager&)     = delete;
+  ArborXSerialContactManager(ArborXSerialContactManager&&) noexcept = default;
+
+  //    ArborXSerialContactManager &operator=( const ArborXSerialContactManager
+  //    &) = delete;
+
+  ArborXSerialContactManager&
+  operator=(ArborXSerialContactManager&&) noexcept = default;
+
+  ~ArborXSerialContactManager() override = default;
+
+  void
+  ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
+
+ private:
+  void
+  updateCollisionData(
+      Kokkos::View<int*, nimble_kokkos::kokkos_device>& indices,
+      Kokkos::View<int*, nimble_kokkos::kokkos_device>& offset);
+
+  nimble_kokkos::ModelData* model_data = nullptr;
+};
+}  // namespace nimble
+
+#endif  // NIMBLE_HAVE_ARBORX
+
+#endif  // NIMBLE_ARBORX_SERIAL_CONTACT_MANAGER_H

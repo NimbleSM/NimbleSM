@@ -7,6 +7,10 @@ on:
       - master
       - develop
   pull_request:
+    branches:
+      - develop-refactor
+      - master
+      - develop
 
   workflow_dispatch:
 
@@ -15,9 +19,6 @@ jobs:
   build:
 
     runs-on: ubuntu-18.04
-
-    env:
-      CMAKE_BUILD_TYPE: Release
 
     steps:
     - uses: actions/checkout@v1

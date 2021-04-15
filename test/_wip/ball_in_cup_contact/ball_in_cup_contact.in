@@ -11,4 +11,4 @@ boundary condition:               prescribed_velocity nodelist_1 x 0.0
 boundary condition:               prescribed_velocity nodelist_1 y 0.0
 boundary condition:               prescribed_velocity nodelist_1 z 0.0
 boundary condition:               initial_velocity nodelist_2 x 20.0
-contact:                          master_blocks block_1 slave_blocks block_2 penalty_parameter 1.0e13
+contact:                          primary_blocks block_1 secondary_blocks block_2 penalty_parameter 1.0e13

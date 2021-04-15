@@ -10,4 +10,4 @@ macroscale block:                 block_2 material_1
 macroscale block:                 block_3 material_1
 macroscale block:                 block_10 material_1
 boundary condition:               initial_velocity nodelist_10 x 20.0
-contact:                          master_blocks block_1 block_2 block_3 slave_blocks block_10 penalty_parameter 1.0e13
+contact:                          primary_blocks block_1 block_2 block_3 secondary_blocks block_10 penalty_parameter 1.0e13

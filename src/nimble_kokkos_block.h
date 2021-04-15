@@ -46,107 +46,104 @@
 
 #include <map>
 #include <vector>
-#include <nimble_element.h>
-#include <nimble_kokkos_defs.h>
-#include <nimble_material.h>
+
+#include "nimble_block_base.h"
+#include "nimble_element.h"
+#include "nimble_kokkos_defs.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <string>
-  #include <vector>
-  #include <memory>
+#include <memory>
+#include <string>
+#include <vector>
 #endif
 
-namespace nimble { struct NGPLAMEData; }
-namespace nimble_kokkos { class MaterialFactory; }
+namespace nimble {
+struct NGPLAMEData;
+}
+
+namespace nimble_kokkos {
+class MaterialFactory;
+}
 
 namespace nimble_kokkos {
 
-  class Block {
+class Block : public nimble::BlockBase
+{
+ public:
+  Block() : BlockBase(), elem_conn_d("element_connectivity_d", 0), element_device_(nullptr), material_device_(nullptr)
+  {
+  }
 
-  public:
+  ~Block() override
+  {
+    /* Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) { */
+    /*     element_device_->~Element(); */
+    /*   }); */
+    if (element_device_ != nullptr) { Kokkos::kokkos_free(element_device_); }
+    if (material_device_ != nullptr) { Kokkos::kokkos_free(material_device_); }
+  }
 
-  Block() : macro_material_parameters_("none"), rve_boundary_condition_strategy_("none"),
-      elem_conn_d("element_connectivity_d", 0), element_device_(0), material_device_(0) {}
+  void
+  Initialize(std::string const& macro_material_parameters, int num_elements, MaterialFactory& factory);
 
-    virtual ~Block() {
-      /* Kokkos::parallel_for(1, KOKKOS_LAMBDA(int) { */
-      /*     element_device_->~Element(); */
-      /*   }); */
-      if (element_device_ != 0) {
-        Kokkos::kokkos_free(element_device_);
-      }
-      if (material_device_ != 0) {
-        Kokkos::kokkos_free(material_device_);
-      }
-    }
+  void
+  InstantiateMaterialModel(int num_material_points, MaterialFactory& factory);
 
-    void Initialize(std::string const & macro_material_parameters,
-                    int num_elements,
-                    MaterialFactory& factory);
+  void
+  InstantiateElement() override;
 
-    void InstantiateMaterialModel(int num_material_points,
-                                  MaterialFactory& factory);
+  std::shared_ptr<nimble::Element>
+  GetHostElement()
+  {
+    return element_;
+  }
 
-    void InstantiateElement();
+  nimble::Element*
+  GetDeviceElement()
+  {
+    return element_device_;
+  }
 
-    double GetDensity() const {
-      return material_host_->GetDensity();
-    }
+  std::shared_ptr<nimble::Material>
+  GetHostMaterialModel()
+  {
+    return material_;
+  }
 
-    double GetBulkModulus() const {
-      return material_host_->GetBulkModulus();
-    }
+  nimble::Material*
+  GetDeviceMaterialModel()
+  {
+    return material_device_;
+  }
 
-    std::shared_ptr<nimble::Element> GetHostElement() { return element_host_; }
+  DeviceElementConnectivityView&
+  GetDeviceElementConnectivityView()
+  {
+    return elem_conn_d;
+  }
 
-    nimble::Element* GetDeviceElement() { return element_device_; }
+  std::shared_ptr<nimble::NGPLAMEData>
+  GetNGPLAMEData()
+  {
+    return ngp_lame_data_;
+  }
 
-    std::shared_ptr<nimble::Material> GetHostMaterialModel() { return material_host_; }
+ private:
+  /// \brief Element connectivity
+  DeviceElementConnectivityView elem_conn_d;
 
-    nimble::Material* GetDeviceMaterialModel() { return material_device_; }
+  /// \brief
+  nimble::Element* element_device_;
 
-    DeviceElementConnectivityView& GetDeviceElementConnectivityView() { return elem_conn_d; }
+  /// \brief
+  nimble::Material* material_device_;
 
-    std::shared_ptr<nimble::NGPLAMEData> GetNGPLAMEData() { return ngp_lame_data_; }
+  /// \brief
+  std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
+};
 
-    double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
-                                   const double * const node_displacements,
-                                   int num_elem,
-                                   const int * const elem_conn) const;
+}  // namespace nimble_kokkos
 
-    template <typename MatT>
-    void ComputeTangentStiffnessMatrix(int num_global_unknowns,
-                                       const double * const reference_coordinates,
-                                       const double * const displacement,
-                                       int num_elem,
-                                       const int * const elem_conn,
-                                       const int * const global_node_ids,
-                                       MatT & tangent_stiffness) const ;
-
-  private:
-
-    std::string macro_material_parameters_;
-    std::map<int, std::string> rve_material_parameters_;
-    std::string rve_boundary_condition_strategy_;
-    std::vector<int> rve_output_global_elem_ids_;
-    // todo: can we avoid carrying the rve_mesh around?
-    //GenesisMesh rve_mesh_;
-
-    // element connectivity
-    DeviceElementConnectivityView elem_conn_d;
-
-    std::shared_ptr<nimble::Element> element_host_ = nullptr;
-    nimble::Element* element_device_;
-
-
-    std::shared_ptr<nimble::Material> material_host_ = nullptr;
-    nimble::Material* material_device_;
-
-    std::shared_ptr<nimble::NGPLAMEData> ngp_lame_data_;
-  };
-
-} // namespace nimble
-
-#endif // NIMBLE_BLOCK_H
+#endif  // NIMBLE_BLOCK_H

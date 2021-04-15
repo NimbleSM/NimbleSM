@@ -44,204 +44,154 @@
 #ifndef NIMBLE_BLOCK_H
 #define NIMBLE_BLOCK_H
 
+#include "nimble_block_base.h"
 #include "nimble_element.h"
-#include "nimble_material.h"
-#include "nimble_genesis_mesh.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <string>
-  #include <vector>
-  #include <memory>
+#include <memory>
+#include <string>
+#include <vector>
 #endif
 
-namespace nimble { class MaterialFactory; }
+namespace nimble {
+class MaterialFactory;
+}
 
 namespace nimble {
 
-  class UqModel;//Forward declaration to avoid circular header inclusion
+class Block : public nimble::BlockBase
+{
+ public:
+  Block()
+      : BlockBase(),
+        vol_ave_volume_offset_(-1)
+  {}
 
-  class Block {
-
-  public:
-
-    Block() :
-      macro_material_parameters_("none"), 
-      vol_ave_volume_offset_(-1), 
-      rve_boundary_condition_strategy_("none") 
-#ifdef NIMBLE_HAVE_UQ
-      ,bulk_modulus_uq_index_(-1)
-      ,shear_modulus_uq_index_(-1)
-#endif
-      {}
-
-    virtual ~Block() { }
+  ~Block() override = default;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    // ar | macro_material_parameters_ | rve_material_parameters_ |
+    // rve_boundary_condition_strategy_ | def_grad_offset_ | stress_offset_ |
+    // state_data_offset_ | vol_ave_volume_offset_ | vol_ave_offsets_ |
+    // vol_ave_index_to_derived_data_index_; ar | rve_output_global_elem_ids_;
 
-      //ar | macro_material_parameters_ | rve_material_parameters_ | rve_boundary_condition_strategy_ | def_grad_offset_ | stress_offset_ | state_data_offset_ | vol_ave_volume_offset_ | vol_ave_offsets_ | vol_ave_index_to_derived_data_index_;
-      //ar | rve_output_global_elem_ids_;
+    ar | macro_material_parameters_;
+    ar | rve_material_parameters_;
+    ar | rve_boundary_condition_strategy_;
+    ar | rve_output_global_elem_ids_;
+    ar | rve_mesh_;
+    // These are set up below
+    // ar | element_;
+    // ar | material_;
+    ar | def_grad_offset_;
+    ar | stress_offset_;
+    ar | state_data_offset_;
+    ar | vol_ave_volume_offset_;
+    ar | vol_ave_offsets_;
+    ar | vol_ave_index_to_derived_data_index_;
 
+    // The purpose for the serialize call can be determined with:
+    // ar.is_sizing()
+    // ar.is_packing()
+    // ar.is_unpacking()
 
-      ar | macro_material_parameters_;
-      ar | rve_material_parameters_;
-      ar | rve_boundary_condition_strategy_;
-      ar | rve_output_global_elem_ids_;
-      ar | rve_mesh_;
-      // These are set up below
-      // ar | element_;
-      // ar | material_;
-      ar | def_grad_offset_;
-      ar | stress_offset_;
-      ar | state_data_offset_;
-      ar | vol_ave_volume_offset_;
-      ar | vol_ave_offsets_;
-      ar | vol_ave_index_to_derived_data_index_;
-  
-      // The purpose for the serialize call can be determined with:
-      // ar.is_sizing()
-      // ar.is_packing()
-      // ar.is_unpacking()
-  
-      if (ar.is_unpacking()) {
-        InstantiateMaterialModel();
-        InstantiateElement();
-      }
+    if (ar.is_unpacking()) {
+      InstantiateMaterialModel();
+      InstantiateElement();
     }
+  }
 #endif
 
-    void Initialize(std::string const & macro_material_parameters,
-                    MaterialFactory& factory);
+  void
+  Initialize(std::string const& macro_material_parameters, MaterialFactory& factory);
 
-    void Initialize(std::string const & macro_material_parameters,
-                    std::map<int, std::string> const & rve_material_parameters,
-                    GenesisMesh const & rve_mesh,
-                    std::string rve_boundary_condition_strategy,
-                    MaterialFactory& factory);
+  void
+  Initialize(
+      std::string const&                macro_material_parameters,
+      std::map<int, std::string> const& rve_material_parameters,
+      GenesisMesh const&                rve_mesh,
+      std::string                       rve_boundary_condition_strategy,
+      MaterialFactory&                  factory);
 
-    void InstantiateMaterialModel(MaterialFactory& factory);
+  void
+  InstantiateMaterialModel(MaterialFactory& factory);
 
-    void InstantiateElement();
+  void
+  InstantiateElement() override;
 
-    void GetDataLabelsAndLengths(std::vector< std::pair<std::string, Length> >& data_labels_and_lengths);
+  void
+  GetDataLabelsAndLengths(std::vector<std::pair<std::string, Length>>& data_labels_and_lengths);
 
-    double GetDensity() const {
-      return material_->GetDensity();
-    }
+  void
+  ComputeLumpedMassMatrix(
+      const double* const reference_coordinates,
+      int                 num_elem,
+      const int* const    elem_conn,
+      double*             lumped_mass) const;
 
-    double GetBulkModulus() const {
-      return material_->GetBulkModulus();
-    }
+  void
+  InitializeElementData(
+      int                             num_elem_in_block,
+      std::vector<int> const&         elem_global_ids_in_block,
+      std::vector<int> const&         rve_output_global_elem_ids,
+      std::vector<std::string> const& elem_data_labels,
+      std::vector<std::string> const& derived_elem_data_labels,
+      std::vector<double>&            elem_data_n,
+      std::vector<double>&            elem_data_np1,
+      MaterialFactory&                material_factory,
+      DataManager&                    data_manager);
 
-    double GetShearModulus() const {
-      return material_->GetShearModulus();
-    }
+  void
+  ComputeInternalForce(
+      const double*                   reference_coordinates,
+      const double*                   displacement,
+      const double*                   velocity,
+      const double*                   rve_macroscale_deformation_gradient,
+      double*                         internal_force,
+      double                          time_previous,
+      double                          time_current,
+      int                             num_elem,
+      const int*                      elem_conn,
+      const int*                      elem_global_ids,
+      std::vector<std::string> const& elem_data_labels,
+      std::vector<double> const&      elem_data_n,
+      std::vector<double>&            elem_data_np1,
+      DataManager&                    data_manager,
+      bool                            is_output_step,
+      bool compute_stress_only = false) const;
 
-    void ComputeLumpedMassMatrix(const double * const reference_coordinates,
-                                 int num_elem,
-                                 const int * const elem_conn,
-                                 double* lumped_mass) const ;
+  void
+  ComputeDerivedElementData(
+      const double* const               reference_coordinates,
+      const double* const               displacement,
+      int                               num_elem,
+      const int* const                  elem_conn,
+      int                               num_elem_data,
+      std::vector<double> const&        elem_data_np1,
+      int                               num_derived_elem_data,
+      std::vector<std::vector<double>>& derived_elem_data);
 
-    double ComputeCriticalTimeStep(const double * const node_reference_coordinates,
-                                   const double * const node_displacements,
-                                   int num_elem,
-                                   const int * const elem_conn) const;
+ protected:
+  void
+  DetermineDataOffsets(
+      std::vector<std::string> const& elem_data_labels,
+      std::vector<std::string> const& derived_elem_data_labels);
 
-    void InitializeElementData(int num_elem_in_block,
-                               std::vector<int> const & elem_global_ids_in_block,
-                               std::vector<int> const & rve_output_global_elem_ids,
-                               std::vector<std::string> const & elem_data_labels,
-                               std::vector<std::string> const & derived_elem_data_labels,
-                               std::vector<double>& elem_data_n,
-                               std::vector<double>& elem_data_np1,
-                               MaterialFactory& material_factory,
-                               DataManager& data_manager);
+  std::vector<int>   def_grad_offset_;
+  std::vector<int>   stress_offset_;
+  std::vector<int>   state_data_offset_;
+  int                vol_ave_volume_offset_;
+  std::vector<int>   vol_ave_offsets_;
+  std::map<int, int> vol_ave_index_to_derived_data_index_;
 
-    void ComputeInternalForce(const double * const reference_coordinates,
-                              const double * const displacement,
-                              const double * const velocity,
-                              const double * const rve_macroscale_deformation_gradient,
-                              double * const internal_force,
-                              double time_previous,
-                              double time_current,
-                              int num_elem,
-                              const int * const elem_conn,
-                              const int * const elem_global_ids,
-                              std::vector<std::string> const & elem_data_labels,
-                              std::vector<double> const & elem_data_n,
-                              std::vector<double> & elem_data_np1,
-                              DataManager& data_manager,
-                              bool is_output_step,
-#ifdef NIMBLE_HAVE_UQ
-                              const bool & is_off_nominal,
-                              std::vector<double> const & uq_params_this_sample, 
-#endif
-                              bool compute_stress_only = false) const ;
+};
 
-    template <typename MatT>
-    void ComputeTangentStiffnessMatrix(int num_global_unknowns,
-                                       const double * const reference_coordinates,
-                                       const double * const displacement,
-                                       int num_elem,
-                                       const int * const elem_conn,
-                                       const int * const global_node_ids,
-                                       MatT & tangent_stiffness) const ;
+}  // namespace nimble
 
-    void ComputeDerivedElementData(const double * const reference_coordinates,
-                                   const double * const displacement,
-                                   int num_elem,
-                                   const int * const elem_conn,
-                                   int num_elem_data,
-                                   std::vector<double> const & elem_data_np1,
-                                   int num_derived_elem_data,
-                                   std::vector< std::vector<double> >& derived_elem_data);
-
-    std::shared_ptr<Material> const GetMaterialPointer() const { return material_; }
-
-    std::shared_ptr<Element> const GetElementPointer() const { return element_; }
-
-#ifdef NIMBLE_HAVE_UQ
-    // HACK specific to elastic models
-    void SetUqParameters(const std::map<std::string,int> & param_indices) {
-      bulk_modulus_uq_index_  = -1;
-      shear_modulus_uq_index_ = -1;
-      for(auto const& it : param_indices) {
-        if(it.first=="bulk_modulus")  { bulk_modulus_uq_index_  = it.second;}
-        if(it.first=="shear_modulus") { shear_modulus_uq_index_ = it.second;}
-      }
-    }
-#endif
-
-  private:
-
-    void DetermineDataOffsets(std::vector<std::string> const & elem_data_labels,
-                              std::vector<std::string> const & derived_elem_data_labels);
-
-    std::string macro_material_parameters_;
-    std::map<int, std::string> rve_material_parameters_;
-    std::string rve_boundary_condition_strategy_;
-    std::vector<int> rve_output_global_elem_ids_;
-    // todo: can we avoid carrying the rve_mesh around?
-    GenesisMesh rve_mesh_;
-    std::shared_ptr<Element> element_ = nullptr;
-    std::shared_ptr<Material> material_ = nullptr;
-    std::vector<int> def_grad_offset_;
-    std::vector<int> stress_offset_;
-    std::vector<int> state_data_offset_;
-    int vol_ave_volume_offset_;
-    std::vector<int> vol_ave_offsets_;
-    std::map<int, int> vol_ave_index_to_derived_data_index_;
-#ifdef NIMBLE_HAVE_UQ
-    // HACK specific to elastic models
-//  std::pair<int, int> range_of_uq_params_;
-    int bulk_modulus_uq_index_;
-    int shear_modulus_uq_index_;
-#endif
-  };
-
-} // namespace nimble
-
-#endif // NIMBLE_BLOCK_H
+#endif  // NIMBLE_BLOCK_H

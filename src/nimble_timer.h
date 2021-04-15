@@ -45,82 +45,103 @@
 #define NIMBLE_TIMER_H
 
 #include <chrono>
-
-#ifdef NIMBLE_HAVE_DARMA
-  #include <darma.h>
-#else
-  #include <string>
-  #include <map>
-#endif
+#include <map>
+#include <string>
 
 namespace nimble {
 
-  class TimeKeeper {
+class TimeKeeper
+{
+ public:
+  TimeKeeper() : total_time_(0.0) {}
 
-  public:
+#ifdef NIMBLE_HAVE_VT
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | total_time_;
+  }
+#endif
 
-    TimeKeeper() : total_time_(0.0) {}
+  inline void
+  Start()
+  {
+    start_time_ = std::chrono::high_resolution_clock::now();
+  }
 
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | total_time_;
-    }
+  inline void
+  Stop()
+  {
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
+    end_time_ = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_increment(0.0);
+    if (end_time_ > start_time_) { time_increment = duration_cast<duration<double>>(end_time_ - start_time_); }
+    total_time_ += time_increment.count();
+  }
 
-    inline void Start() {
-      start_time_ = std::chrono::high_resolution_clock::now();
-    }
+  inline double
+  GetElapsedTime() const
+  {
+    return total_time_;
+  }
 
-    inline void Stop() {
-      using std::chrono::duration;
-      using std::chrono::duration_cast;
-      end_time_ = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time_increment(0.0);
-      if (end_time_ > start_time_) {
-        time_increment = duration_cast<duration<double>>(end_time_ - start_time_);
-      }
-      total_time_ += time_increment.count();
-    }
+ private:
+  std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+  std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
+  double                                                      total_time_;
+};
 
-    inline double GetElapsedTime() const {
-      return total_time_;
-    }
+class Timer
+{
+ public:
+  Timer() = default;
 
-  private:
+  ~Timer() = default;
 
-    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end_time_;
-    double total_time_;
-  };
+#ifdef NIMBLE_HAVE_VT
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | timers_;
+  }
+#endif
 
-  class Timer {
+  inline void
+  Start(const std::string& name)
+  {
+    TimeKeeper& time_keeper = timers_[name];
+    time_keeper.Start();
+  }
 
-  public:
+  inline void
+  Stop(const std::string& name)
+  {
+    TimeKeeper& time_keeper = timers_[name];
+    time_keeper.Stop();
+  }
 
-    Timer()= default;
+  inline double
+  StopReport(const std::string& name)
+  {
+    double      t           = 0.0;
+    TimeKeeper& time_keeper = timers_[name];
+    t -= time_keeper.GetElapsedTime();
+    time_keeper.Stop();
+    t += time_keeper.GetElapsedTime();
+    return t;
+  }
 
-    ~Timer()= default;
+  inline double
+  ElapsedTime(const std::string& name) const
+  {
+    return timers_.at(name).GetElapsedTime();
+  }
 
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | timers_;
-    }
+  std::map<std::string, TimeKeeper> timers_;
+};
+}  // namespace nimble
 
-    inline void Start(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Start();
-    }
-
-    inline void Stop(const std::string& name) {
-      TimeKeeper& time_keeper = timers_[name];
-      time_keeper.Stop();
-    }
-
-    inline double ElapsedTime(const std::string& name) const {
-      return timers_.at(name).GetElapsedTime();
-    }
-
-    std::map<std::string, TimeKeeper> timers_;
-  };
-} // namespace nimble
-
-#endif // NIMBLE_TIMER_H
+#endif  // NIMBLE_TIMER_H

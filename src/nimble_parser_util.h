@@ -45,8 +45,8 @@
 #define SRC_NIMBLE_PARSER_UTIL_H_
 
 #include <iostream>
-#include <sstream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -54,27 +54,27 @@ namespace nimble {
 
 namespace {
 
-inline std::vector<std::string> tokenize_string_with_separator(const std::string &s, const char sep) {
+inline std::vector<std::string>
+tokenize_string_with_separator(const std::string& s, const char sep)
+{
   std::vector<std::string> tokens;
-  std::stringstream ss(s);
-  std::string token;
-  while (std::getline(ss >> std::ws, token, sep)) {
-    tokens.push_back(token);
-  }
+  std::stringstream        ss(s);
+  std::string              token;
+  while (std::getline(ss >> std::ws, token, sep)) { tokens.push_back(token); }
   return tokens;
 }
 
-}
+}  // namespace
 
-inline std::vector<std::string> tokenize_string(const std::string& s) {
+inline std::vector<std::string>
+tokenize_string(const std::string& s)
+{
   std::vector<std::string> tokens;
-  auto quote_delimited_segments = tokenize_string_with_separator(s, '"');
-  auto is_quoted_segment = [](int i) -> bool {
-    return (i % 2) == 1;
-  };
-  auto quote = quote_delimited_segments.begin();
-  auto quote_end = quote_delimited_segments.end();
-  int i = 0;
+  auto                     quote_delimited_segments = tokenize_string_with_separator(s, '"');
+  auto                     is_quoted_segment        = [](int i) -> bool { return (i % 2) == 1; };
+  auto                     quote                    = quote_delimited_segments.begin();
+  auto                     quote_end                = quote_delimited_segments.end();
+  int                      i                        = 0;
   for (; quote != quote_end; ++quote, ++i) {
     if (is_quoted_segment(i)) {
       tokens.push_back(*quote);
@@ -86,7 +86,9 @@ inline std::vector<std::string> tokenize_string(const std::string& s) {
   return tokens;
 }
 
-inline double string_to_double(const std::string& s) {
+inline double
+string_to_double(const std::string& s)
+{
   std::stringstream ss;
   ss << s;
   double val = std::numeric_limits<double>::max();
@@ -94,6 +96,6 @@ inline double string_to_double(const std::string& s) {
   return val;
 }
 
-}
+}  // namespace nimble
 
 #endif /* EXTRAS_SRC_NIMBLE_PARSER_UTIL_H_ */

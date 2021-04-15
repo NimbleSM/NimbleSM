@@ -47,68 +47,73 @@
 #include "nimble_expression_parser.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <vector>
-  #include <map>
-  #include <string>
+#include <map>
+#include <string>
+#include <vector>
 #endif
 
 namespace nimble {
 
-  class BoundaryCondition {
-
-  public:
-
-    enum Boundary_Condition_Type {
-      INITIAL_VELOCITY = 0,
-      PRESCRIBED_VELOCITY = 1,
-      PRESCRIBED_DISPLACEMENT = 2,
-      PERIODIC_RVE = 3,
-      RVE_FIXED_DISPLACEMENT = 4,
-      UNDEFINED = 5
-    };
-
-  BoundaryCondition() : dim_(0), node_set_name_("unknown"), node_set_id_(-1),
-      coordinate_(-1), magnitude_(0.0), bc_type_(UNDEFINED), has_expression_(false) {}
-
-    virtual ~BoundaryCondition() {}
-
-#ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | dim_ | node_set_name_ | node_set_id_ | coordinate_ | magnitude_ | bc_type_ | has_expression_ | expression_string_ | rve_macroscale_deformation_gradient_strings_;
-
-      if (ar.is_unpacking()) {
-        if (has_expression_) {
-          expression_ = ExpressionParsing::BoundaryConditionFunctor(expression_string_);
-        }
-      }
-    }
-#endif
-
-    bool Initialize(int dim,
-                    std::string bc_string,
-                    std::map<int, std::string> const & node_set_names);
-
-    void GetRVEMacroscaleDeformationGradient(double time,
-                                             double* deformation_gradient,
-                                             double x,
-                                             double y,
-                                             double z);
-
-    int dim_;
-    std::string node_set_name_;
-    int node_set_id_;
-    int coordinate_;
-    double magnitude_;
-    Boundary_Condition_Type bc_type_;
-    bool has_expression_;
-    std::string expression_string_;
-    ExpressionParsing::BoundaryConditionFunctor expression_;
-    std::vector<std::string> rve_macroscale_deformation_gradient_strings_;
+class BoundaryCondition
+{
+ public:
+  enum Boundary_Condition_Type
+  {
+    INITIAL_VELOCITY        = 0,
+    PRESCRIBED_VELOCITY     = 1,
+    PRESCRIBED_DISPLACEMENT = 2,
+    PERIODIC_RVE            = 3,
+    RVE_FIXED_DISPLACEMENT  = 4,
+    UNDEFINED               = 5
   };
 
-} // namespace nimble
+  BoundaryCondition()
+      : dim_(0),
+        node_set_name_("unknown"),
+        node_set_id_(-1),
+        coordinate_(-1),
+        magnitude_(0.0),
+        bc_type_(UNDEFINED),
+        has_expression_(false)
+  {
+  }
 
-#endif // NIMBLE_BOUNDARY_CONDITION_H
+  virtual ~BoundaryCondition() {}
+
+#ifdef NIMBLE_HAVE_DARMA
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | dim_ | node_set_name_ | node_set_id_ | coordinate_ | magnitude_ | bc_type_ | has_expression_ |
+        expression_string_ | rve_macroscale_deformation_gradient_strings_;
+
+    if (ar.is_unpacking()) {
+      if (has_expression_) { expression_ = ExpressionParsing::BoundaryConditionFunctor(expression_string_); }
+    }
+  }
+#endif
+
+  bool
+  Initialize(int dim, std::string bc_string, std::map<int, std::string> const& node_set_names);
+
+  void
+  GetRVEMacroscaleDeformationGradient(double time, double* deformation_gradient, double x, double y, double z);
+
+  int                                         dim_;
+  std::string                                 node_set_name_;
+  int                                         node_set_id_;
+  int                                         coordinate_;
+  double                                      magnitude_;
+  Boundary_Condition_Type                     bc_type_;
+  bool                                        has_expression_;
+  std::string                                 expression_string_;
+  ExpressionParsing::BoundaryConditionFunctor expression_;
+  std::vector<std::string>                    rve_macroscale_deformation_gradient_strings_;
+};
+
+}  // namespace nimble
+
+#endif  // NIMBLE_BOUNDARY_CONDITION_H

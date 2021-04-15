@@ -44,203 +44,225 @@
 #ifndef NIMBLE_DATA_MANAGER_H
 #define NIMBLE_DATA_MANAGER_H
 
+#include "nimble_block_material_interface_factory_base.h"
 #include "nimble_data_utils.h"
-#include "nimble_block.h"
+#include "nimble_defs.h"
 #include "nimble_exodus_output.h"
-#include "nimble_linear_solver.h"
+#include "nimble_model_data.h"
 
 #ifdef NIMBLE_HAVE_DARMA
-  #include "darma.h"
+#include "darma.h"
 #else
-  #include <vector>
-  #include <string>
-  #include <map>
+#include <map>
+#include <string>
+#include <vector>
 #endif
 
 namespace nimble {
 
-  class ModelData {
+class BoundaryConditionManager;
+class GenesisMesh;
+class ModelDataBase;
+class Parser;
+class VectorCommunicator;
 
-  public:
-
-    ModelData() : dim_(3), critical_time_step_(0.0) 
-                {}
-
-    virtual ~ModelData() {}
-
-#ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | dim_ | critical_time_step_ | block_ids_ | blocks_ | data_fields_ | node_data_ | output_node_component_labels_ | element_data_fields_ | element_component_labels_ | element_data_n_ | element_data_np1_ | output_element_component_labels_ | derived_output_element_data_labels_ | globally_shared_nodes_ | global_node_id_to_local_node_id_;
-    }
-#endif
-
-    void SetDimension(int dim);
-
-    int GetDimension() const {return dim_; }
-
-    void SetCriticalTimeStep(double time_step) { critical_time_step_ = time_step; }
-
-    double GetCriticalTimeStep() const { return critical_time_step_; }
-
-    int GetFieldId(std::string label);
-
-    Field GetField(int field_id);
-
-    int AllocateNodeData(Length length,
-                         std::string label,
-                         int num_objects);
-
-    double* GetNodeData(int field_id);
-
-    std::vector<std::string> const & GetNodeDataLabelsForOutput() const {
-      return output_node_component_labels_;
-    }
-
-    void GetNodeDataForOutput(std::vector< std::vector<double> >& single_component_arrays);
-
-    void DeclareElementData(int block_id,
-                            std::vector< std::pair<std::string, Length> > const & data_labels_and_lengths);
-
-    void AllocateElementData(std::map<int, int> const & num_integration_points_in_each_block);
-
-    std::vector<double> & GetElementDataOld(int block_id) {
-      return element_data_n_.at(block_id);
-    }
-
-    std::vector<double> & GetElementDataNew(int block_id) {
-      return element_data_np1_.at(block_id);
-    }
-
-    std::map<int, std::vector<std::string> > GetElementDataLabels() {
-      return element_component_labels_;
-    }
-
-    std::map<int, std::vector<std::string> > GetElementDataLabelsForOutput() {
-      return output_element_component_labels_;
-    }
-
-    void GetElementDataForOutput(std::map<int, std::vector< std::vector<double> > >& single_component_arrays);
-
-    void SpecifyOutputFields(std::string output_field_string);
-
-    std::map<int, std::vector<std::string> > GetDerivedElementDataLabelsForOutput() {
-      return derived_output_element_data_labels_;
-    }
-
-    std::map<int, Block>& GetBlocks() { return blocks_; }
-
-    std::map<int, Block> const & GetBlocks() const { return blocks_; }
-
-    std::vector<int>& GetGloballySharedNodes() { return globally_shared_nodes_; }
-
-    std::map<int, int>& GetGlobalNodeIdToLocalNodeIdMap() { return global_node_id_to_local_node_id_; }
-
-    void SwapStates() {
-      element_data_n_.swap(element_data_np1_);
-    }
-
-  protected:
-
-    void AssignFieldId(Field& field);
-
-    void GetNodeDataComponent(int field_id,
-                              int component,
-                              double* const component_data);
-
-    //! Problem dimension, either 2 or 3.
-    int dim_;
-
-    //! Critical time step
-    double critical_time_step_;
-
-    //! Block ids
-    std::vector<int> block_ids_;
-
-    //! Blocks
-    std::map<int, Block> blocks_;
-
-    //! Map key is the field_id, value is the corresponding Field.
-    std::map<int, Field> data_fields_;
-
-    //! Map key is the field_id, vector contains the nested data array for the given nodal field.
-    std::map<int, std::vector<double>> node_data_;
-
-    //! Output labels for node data that will be written to disk
-    std::vector<std::string> output_node_component_labels_;
-
-    //! Map key is the block_id, the vector contains the field ids for the fields on that block.
-    std::map<int, std::vector<int>> element_data_fields_;
-
-    //! Map key is the block_id, vector contains component-wise label for each scalar entry in the data array.
-    std::map<int, std::vector<std::string>> element_component_labels_;
-
-    //! Map key is the block_id, vector contains full data array for that block at step N.
-    std::map<int, std::vector<double> > element_data_n_;
-
-    //! Map key is the block_id, vector contains full data array for that block at step N+1.
-    std::map<int, std::vector<double> > element_data_np1_;
-
-    //! Output labels for element data that will be written to disk.
-    std::map<int, std::vector<std::string> > output_element_component_labels_;
-
-    //! Output labels for derived element data that will be written to disk.
-    std::map<int, std::vector<std::string> > derived_output_element_data_labels_;
-
-    //! List of node ids that are shared across multiple ranks
-    std::vector<int> globally_shared_nodes_;
-
-    //! Map from global node it to local node id
-    std::map<int, int> global_node_id_to_local_node_id_;
-
-  };
-
-  struct RVEData {
-    ModelData model_data_;
-    std::vector<double> residual_vector_;
-    std::vector<double> linear_solver_solution_;
-    CRSMatrixContainer tangent_stiffness_;
-    bool write_exodus_output_;
-    ExodusOutput exodus_output_;
-    std::map<int, std::vector< std::vector<double> > > derived_elem_data_;
+struct RVEData
+{
+  nimble::ModelData                               model_data_;
+  std::vector<double>                             residual_vector_;
+  std::vector<double>                             linear_solver_solution_;
+  CRSMatrixContainer                              tangent_stiffness_;
+  bool                                            write_exodus_output_;
+  ExodusOutput                                    exodus_output_;
+  std::map<int, std::vector<std::vector<double>>> derived_elem_data_;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ | exodus_output_ | derived_elem_data_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ |
+        exodus_output_ | derived_elem_data_;
+  }
 #endif
-  };
+};
 
- class DataManager {
+class DataManager
+{
+ public:
+  /// \brief Constructor
+  ///
+  /// \param parser Reference to parser information
+  /// \param mesh Reference to mesh
+  /// \param rve_mesh Reference to RVE mesh
+  ///
+  /// \note The RVE mesh could be empty.
+  DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh, const nimble::GenesisMesh& rve_mesh);
 
-  public:
-
-    DataManager() {}
-
-    virtual ~DataManager() {}
+  /// \brief Destructor
+  ~DataManager() = default;
 
 #ifdef NIMBLE_HAVE_DARMA
-    template<typename ArchiveType>
-    void serialize(ArchiveType& ar) {
-      ar | macroscale_data_ | rve_data_;
-    }
+  template <typename ArchiveType>
+  void
+  serialize(ArchiveType& ar)
+  {
+    ar | macroscale_data_ | rve_data_;
+  }
 #endif
 
-    ModelData& GetMacroScaleData();
+  /// \brief Allocate RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
+  RVEData&
+  AllocateRVEData(int global_element_id, int integration_point_id);
 
-    RVEData& AllocateRVEData(int global_element_id,
-                             int integration_point_id);
+  /// \brief Get RVE data for an integration point in an element
+  ///
+  /// \param global_element_id Global ID to element
+  /// \param integration_point_id Integration point ID
+  /// \return Reference to RVE data
+  RVEData&
+  GetRVEData(int global_element_id, int integration_point_id);
 
-    RVEData& GetRVEData(int global_element_id,
-                        int integration_point_id);
+  /// \brief Initialize the data for Exodus output
+  ///
+  /// \param filename File name for the output files
+  void
+  InitializeOutput(const std::string& filename);
+
+  /// \brief Return constant reference to parser information
+  ///
+  /// \return Reference to parser information
+  const nimble::Parser&
+  GetParser() const
+  {
+    return parser_;
+  }
+
+  /// \brief Return constant reference to mesh
+  ///
+  /// \return Reference to mesh
+  const nimble::GenesisMesh&
+  GetMesh() const
+  {
+    return mesh_;
+  }
+
+  /// \brief Return constant reference to RVE mesh
+  ///
+  /// \return Reference to RVE mesh
+  const nimble::GenesisMesh&
+  GetRVEMesh() const
+  {
+    return rve_mesh_;
+  }
+
+  /// \brief Return shared pointer to ModelData objet
+  ///
+  /// \return Shared pointer
+  std::shared_ptr<nimble::ModelDataBase>
+  GetMacroScaleData()
+  {
+    return macroscale_data_;
+  }
+
+  /// \brief Return a const reference to the field IDs
+  ///
+  /// \return Field IDs
+  const nimble::FieldIds&
+  GetFieldIDs() const
+  {
+    return field_ids_;
+  }
+
+  /// \brief Return reference to the field IDs
+  ///
+  /// \return Field IDs
+  nimble::FieldIds&
+  GetFieldIDs()
+  {
+    return field_ids_;
+  }
+
+  /// \brief Return shared pointer to VectorCommunicator objet
+  ///
+  /// \return Shared pointer
+  std::shared_ptr<nimble::VectorCommunicator>
+  GetVectorCommunicator()
+  {
+    return vector_communicator_;
+  }
+
+  /// \brief Return reference to RVE-macroscale deformation gradient
+  ///
+  /// \return Reference
+  std::vector<double>&
+  GetRVEDeformationGradient()
+  {
+    return rve_macroscale_deformation_gradient_;
+  }
+
+  /// \brief Write output of simulations
+  ///
+  /// \param[in] time_current Time value
+  void
+  WriteOutput(double time_current);
+
+  std::shared_ptr<nimble::ExodusOutput>
+  GetExodusOutput()
+  {
+    return exodus_output_;
+  }
+
+  /// \brief Set BlockMaterialInterfaceFactoryBase object and initialize
+  ///        block data information.
+  ///
+  void
+  SetBlockMaterialInterfaceFactory(
+      const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& block_material_factory);
+
+  /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
+  ///
+  /// \return Shared pointer
+  const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& 
+  GetBlockMaterialInterfaceFactory() const;
+
+  /// \brief Return shared pointer to BoundaryConditionManager object
+  ///
+  /// \return Shared pointer
+  std::shared_ptr<nimble::BoundaryConditionManager>
+  GetBoundaryConditionManager()
+  {
+    return boundary_condition_;
+  }
 
  protected:
+  /// \brief Initialize data for simulation
+  void
+  Initialize();
 
-    ModelData macroscale_data_;
-    std::map<std::pair<int,int>, RVEData> rve_data_;
- };
+ protected:
+  const nimble::Parser&                  parser_;
+  const nimble::GenesisMesh&             mesh_;
+  const nimble::GenesisMesh&             rve_mesh_;
+  std::shared_ptr<nimble::ModelDataBase> macroscale_data_ = nullptr;
 
-} // namespace nimble
+  std::map<std::pair<int, int>, RVEData> rve_data_;
+  std::vector<double>                    rve_macroscale_deformation_gradient_;
+
+  nimble::FieldIds field_ids_;
+
+  std::shared_ptr<nimble::VectorCommunicator> vector_communicator_ = nullptr;
+  std::shared_ptr<nimble::ExodusOutput>       exodus_output_ = nullptr;
+
+  std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_factory_ = nullptr;
+
+  std::shared_ptr<nimble::BoundaryConditionManager> boundary_condition_ = nullptr;
+};
+
+}  // namespace nimble
 
 #endif
