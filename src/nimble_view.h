@@ -77,13 +77,13 @@ class Viewify
     stride_.fill(0);
   }
 
-  Viewify(Scalar* const data, std::array<int, N> len, std::array<int, N> stride)
+  Viewify(Scalar* data, std::array<int, N> len, std::array<int, N> stride)
       : data_(data), len_(len), stride_(stride)
   {
   }
 
-  template <std::size_t NN = N, typename X = typename std::enable_if<(NN == 1), void>::type>
-  Viewify(Scalar* const data, int len)
+  template <std::size_t NN = N, typename = typename std::enable_if<(NN == 1)>::type >
+  Viewify(Scalar* data, int len)
       : data_(data), len_({len}), stride_({1})
   { }
 
@@ -135,7 +135,7 @@ class Viewify
     return data_;
   }
 
-  template< class T = Scalar, typename X = std::enable_if_t< !std::is_const<T>::value > >
+  template< class T = Scalar, typename = typename std::enable_if< !std::is_const<T>::value >::type >
   Viewify<N, Scalar>&
   operator+=(const details::AXPYResult<N>& rhs);
 
@@ -208,7 +208,7 @@ AXPYResult<N>::assignTo(double destCoef, double rhsCoef, nimble::Viewify<N>& des
 //----------------------------------
 
 template <std::size_t N, class Scalar>
-template <class T, typename X>
+template <class T, typename >
 Viewify<N, Scalar>&
 Viewify<N, Scalar>::operator+=(const details::AXPYResult<N>& rhs)
 {

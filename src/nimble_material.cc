@@ -83,11 +83,11 @@ ElasticMaterial::GetStress(
   double*       stress   = stress_np1;
   const double* def_grad = deformation_gradient_np1;
 
-  nimble::Viewify<1, const double> null_view(nullptr, 0);
+  nimble::Viewify<1, const double> null_view;
 
   for (int pt = 0; pt < num_pts; pt++, def_grad += 9, stress += 6) {
     nimble::Viewify<1, const double> def_grap_np1(def_grad, 9);
-    GetStress(time_previous, time_current, null_view, def_grap_np1, null_view, {stress, {6}, {1}});
+    GetStress(time_previous, time_current, null_view, def_grap_np1, null_view, {stress, 6});
   }
   // TODO rotate stress?
 }
@@ -143,7 +143,7 @@ ElasticMaterial::GetOffNominalStress(
 
   // Cauchy stress
   double*            sig = stress_np1;
-  nimble::Viewify<1, const double> null_view(nullptr, 0);
+  nimble::Viewify<1, const double> null_view;
 
   for (int pt = 0; pt < num_pts; pt++) {
     nimble::Viewify<1, const double> def_grad_view(&deformation_gradient_np1[9 * pt], 9);
@@ -242,7 +242,7 @@ NeohookeanMaterial::GetStress(
   // Cauchy stress
   double* sig = stress_np1;
 
-  nimble::Viewify<1, const double> null_view(nullptr, 0);
+  nimble::Viewify<1, const double> null_view;
   for (int pt = 0; pt < num_pts; pt++) {
     nimble::Viewify<1, const double> def_grad(&deformation_gradient_np1[9 * pt], 9);
     GetStress(time_previous, time_current, null_view, def_grad, null_view, {sig, 6});
@@ -328,7 +328,7 @@ NeohookeanMaterial::GetOffNominalStress(
 
   // Cauchy stress
   double*            sig = stress_np1;
-  nimble::Viewify<1, const double> null_view(nullptr, 0);
+  nimble::Viewify<1, const double> null_view;
 
   for (int pt = 0; pt < num_pts; pt++) {
     nimble::Viewify<1, const double> def_grad_view(&deformation_gradient_np1[9 * pt], 9);
