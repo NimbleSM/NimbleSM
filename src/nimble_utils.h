@@ -52,6 +52,32 @@
 #include <sstream>
 #include <stdexcept>
 
+NIMBLE_INLINE_FUNCTION
+int
+StringLength(const char* str)
+{
+  int len = 0;
+  while (str[len] != '\0') { len++; }
+  return len;
+}
+
+NIMBLE_INLINE_FUNCTION
+bool
+StringsAreEqual(const char* str1, const char* str2)
+{
+  int  len1      = StringLength(str1);
+  int  len2      = StringLength(str2);
+  int  len       = len1 < len2 ? len1 : len2;
+  bool are_equal = true;
+  for (int i = 0; i < len; ++i) {
+    if (str1[i] != str2[i]) {
+      are_equal = false;
+      break;
+    }
+  }
+  return are_equal;
+}
+
 // Need to avoid conflicts with NimbleSMExtras definitions
 #ifndef K_X
 static constexpr int K_X = 0;
