@@ -263,15 +263,24 @@ class Material
       DataManager&  data_manager,
       bool          is_output_step) = 0;
 
+#ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
   virtual void
   GetStress(
-      double                    time_previous,
-      double                    time_current,
-      nimble::Viewify<1, const double>& deformation_gradient_n,
-      nimble::Viewify<1, const double>& deformation_gradient_np1,
-      nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const = 0;
+      double                                              time_previous,
+      double                                              time_current,
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_n,
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_np1,
+      const nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  &stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) const {
+    const int def_g_len = 9, stress_len = 6;
+    nimble::Viewify<1, const double> def_g_n(deformation_gradient_n.data(), def_g_len);
+    nimble::Viewify<1, const double> def_g_np1(deformation_gradient_np1.data(), def_g_len);
+    nimble::Viewify<1, const double> s_n(stress_n.data(), stress_len);
+    nimble::Viewify<1> s_np1(stress_np1.data(), stress_len);
+    GetStress(time_previous, time_current, def_g_n, def_g_np1, s_n, s_np1);
+  }
+#endif
 
   NIMBLE_FUNCTION
   virtual void
@@ -287,6 +296,18 @@ class Material
       const double* deformation_gradient_np1,
       double*       stress_np1) = 0;
 #endif
+
+protected:
+
+  NIMBLE_FUNCTION
+  virtual void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const = 0;
 
 };
 
@@ -367,16 +388,6 @@ class ElasticMaterial : public Material
 
   NIMBLE_FUNCTION
   void
-  GetStress(
-      double                    time_previous,
-      double                    time_current,
-      nimble::Viewify<1, const double>& deformation_gradient_n,
-      nimble::Viewify<1, const double>& deformation_gradient_np1,
-      nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const override;
-
-  NIMBLE_FUNCTION
-  void
   GetTangent(int num_pts, double* material_tangent) const override;
 
 #ifdef NIMBLE_HAVE_UQ
@@ -389,6 +400,18 @@ class ElasticMaterial : public Material
       const double* deformation_gradient_np1,
       double*       stress_np1) override;
 #endif
+
+ protected:
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
 
  private:
   int    num_state_variables_;
@@ -475,16 +498,6 @@ class NeohookeanMaterial : public Material
 
   NIMBLE_FUNCTION
   void
-  GetStress(
-      double                    time_previous,
-      double                    time_current,
-      nimble::Viewify<1, const double>& deformation_gradient_n,
-      nimble::Viewify<1, const double>& deformation_gradient_np1,
-      nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const override;
-
-  NIMBLE_FUNCTION
-  void
   GetTangent(int num_pts, double* material_tangent) const override;
 
 #ifdef NIMBLE_HAVE_UQ
@@ -497,6 +510,18 @@ class NeohookeanMaterial : public Material
       const double* deformation_gradient_np1,
       double*       stress_np1) override;
 #endif
+
+ protected:
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
 
  private:
   int    num_state_variables_;
