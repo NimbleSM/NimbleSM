@@ -134,16 +134,26 @@ class RVE : public Material
       int                 num_pts,
       double              time_previous,
       double              time_current,
-      const double* const deformation_gradient_n,
-      const double* const deformation_gradient_np1,
-      const double* const stress_n,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
       double*             stress_np1,
-      const double* const state_data_n,
+      const double* state_data_n,
       double*             state_data_np1,
       DataManager&        data_manager,
       bool                is_output_step) override;
 
-//#ifdef NIMBLE_HAVE_KOKKOS
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
+
+  //#ifdef NIMBLE_HAVE_KOKKOS
 //  NIMBLE_FUNCTION
 //  void
 //  GetStress(
