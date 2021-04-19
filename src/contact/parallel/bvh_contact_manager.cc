@@ -182,12 +182,12 @@ BvhContactManager::ComputeBoundingVolumes()
   for (auto&& node : contact_nodes_) {
     const double           inflation_length = node.inflation_factor * node.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&node.coord_1_x_);
-    node.kdop_                              = bvh::dop_26d::from_sphere(*v, inflation_length);
+    node.kdop_                              = bvh::bphase_kdop::from_sphere(*v, inflation_length);
   }
   for (auto&& face : contact_faces_) {
     const double           inflation_length = face.inflation_factor * face.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&face.coord_1_x_);
-    face.kdop_                              = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
+    face.kdop_                              = bvh::bphase_kdop::from_vertices(v, v + 3, inflation_length);
   }
 }
 
