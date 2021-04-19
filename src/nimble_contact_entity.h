@@ -57,6 +57,7 @@
 
 #ifdef NIMBLE_HAVE_BVH
 #include <bvh/kdop.hpp>
+#include <bvh/types.hpp>
 #endif
 
 namespace nimble {
@@ -365,7 +366,7 @@ class ContactEntity
   }
 
 #ifdef NIMBLE_HAVE_BVH
-  bvh::dop_26d kdop_;
+  bvh::bphase_kdop kdop_;
 
   void
   RecomputeKdop()
@@ -376,7 +377,7 @@ class ContactEntity
       v[0]  = coord_1_x_;
       v[1]  = coord_1_y_;
       v[2]  = coord_1_z_;
-      kdop_ = bvh::dop_26d::from_vertices(&v, &v + 1, inflation_length);
+      kdop_ = bvh::bphase_kdop::from_vertices(&v, &v + 1, inflation_length);
     } else {
       // entity_type_ == TRIANGLE
       vertex v[3];
@@ -389,11 +390,11 @@ class ContactEntity
       v[2][0] = coord_3_x_;
       v[2][1] = coord_3_y_;
       v[2][2] = coord_3_z_;
-      kdop_   = bvh::dop_26d::from_vertices(v, v + 3, inflation_length);
+      kdop_   = bvh::bphase_kdop::from_vertices(v, v + 3, inflation_length);
     }
   }
 
-  bvh::dop_26<double>
+  bvh::bphase_kdop
   Kdop() const
   {
     return kdop_;
@@ -686,7 +687,7 @@ UnserializeContactFaces(int num_entities, ArgT contact_entities, std::vector<cha
 
 #ifdef NIMBLE_HAVE_BVH
 // Free functions for accessing entity info for bvh
-bvh::dop_26<double>
+bvh::bphase_kdop
 get_entity_kdop(const ContactEntity& _entity);
 std::size_t
 get_entity_global_id(const ContactEntity& _entity);

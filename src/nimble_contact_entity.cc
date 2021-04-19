@@ -123,7 +123,7 @@ ContactEntity::SetBoundingBox()
 
 #ifdef NIMBLE_HAVE_BVH
 // Free functions for accessing entity info for bvh
-bvh::dop_26<double>
+bvh::bphase_kdop
 get_entity_kdop(const ContactEntity& _entity)
 {
   return _entity.Kdop();
