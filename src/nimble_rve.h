@@ -79,7 +79,7 @@ class RVE : public Material
       std::string                       rve_boundary_condition_strategy);
 
   NIMBLE_FUNCTION
-  virtual ~RVE() {}
+  virtual ~RVE() = default;
 
   std::map<std::string, double>
   ParseParametersString(std::string const& material_parameters_string) const;
@@ -134,28 +134,14 @@ class RVE : public Material
       int                 num_pts,
       double              time_previous,
       double              time_current,
-      const double* const deformation_gradient_n,
-      const double* const deformation_gradient_np1,
-      const double* const stress_n,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
       double*             stress_np1,
-      const double* const state_data_n,
+      const double* state_data_n,
       double*             state_data_np1,
       DataManager&        data_manager,
       bool                is_output_step) override;
-
-//#ifdef NIMBLE_HAVE_KOKKOS
-//  NIMBLE_FUNCTION
-//  void
-//  GetStress(
-//      double                                         time_previous,
-//      double                                         time_current,
-//      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_n,
-//      nimble_kokkos::DeviceFullTensorSingleEntryView deformation_gradient_np1,
-//      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_n,
-//      nimble_kokkos::DeviceSymTensorSingleEntryView  stress_np1)
-//  {
-//  }
-//#endif
 
   NIMBLE_FUNCTION
   void
@@ -172,6 +158,18 @@ class RVE : public Material
       double*             stress_np1) override
   {}
 #endif
+
+ protected:
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
 
  private:
   std::map<int, std::string>  material_parameters_string_;

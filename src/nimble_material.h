@@ -50,38 +50,13 @@
 #include "nimble_data_utils.h"
 #include "nimble_defs.h"
 #include "nimble_utils.h"
+#include "nimble_view.h"
 
 namespace nimble {
 
 class DataManager;
 class MaterialFactoryBase;
 class MaterialFactory;
-
-NIMBLE_INLINE_FUNCTION
-int
-StringLength(const char* str)
-{
-  int len = 0;
-  while (str[len] != '\0') { len++; }
-  return len;
-}
-
-NIMBLE_INLINE_FUNCTION
-bool
-StringsAreEqual(const char* str1, const char* str2)
-{
-  int  len1      = StringLength(str1);
-  int  len2      = StringLength(str2);
-  int  len       = len1 < len2 ? len1 : len2;
-  bool are_equal = true;
-  for (int i = 0; i < len; ++i) {
-    if (str1[i] != str2[i]) {
-      are_equal = false;
-      break;
-    }
-  }
-  return are_equal;
-}
 
 class MaterialParameters
 {
@@ -110,7 +85,7 @@ class MaterialParameters
     std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   }
 
-  inline ~MaterialParameters() {}
+  inline ~MaterialParameters() = default;
 
   inline void
   AddParameter(const char* parameter_name, double parameter_value)
@@ -147,13 +122,13 @@ class MaterialParameters
   inline int
   GetNumParameters() const
   {
-    return material_double_parameters_.size();
+    return static_cast<int>(material_double_parameters_.size());
   }
 
   inline int
   GetNumStringParameters() const
   {
-    return material_string_parameters_.size();
+    return static_cast<int>(material_string_parameters_.size());
   }
 
   inline double
@@ -201,12 +176,12 @@ class MaterialParameters
   {
     printf("\n--MaterialParameters\n");
     printf("  material name %s\n", material_name_.c_str());
-    int num_material_double_parameters_ = material_double_parameters_.size();
+    int num_material_double_parameters_ = static_cast<int>(material_double_parameters_.size());
     printf("  number of material double parameters %d\n", num_material_double_parameters_);
-    for (auto p : material_double_parameters_) { printf("  %s %f\n", p.first.c_str(), p.second); }
-    int num_material_string_parameters_ = material_string_parameters_.size();
+    for (const auto& p : material_double_parameters_) { printf("  %s %f\n", p.first.c_str(), p.second); }
+    int num_material_string_parameters_ = static_cast<int>(material_string_parameters_.size());
     printf("  number of material string parameters %d\n", num_material_string_parameters_);
-    for (auto p : material_string_parameters_) { printf("  %s %s\n", p.first.c_str(), p.second.c_str()); }
+    for (const auto& p : material_string_parameters_) { printf("  %s %s\n", p.first.c_str(), p.second.c_str()); }
   }
 
  private:
@@ -222,13 +197,13 @@ class Material
 {
  public:
   NIMBLE_FUNCTION
-  Material() {}
+  Material() = default;
 
   NIMBLE_FUNCTION
   Material(const Material& mat) = default;
 
   NIMBLE_FUNCTION
-  virtual ~Material() {}
+  virtual ~Material() = default;
 
   NIMBLE_FUNCTION
   virtual bool
@@ -275,18 +250,18 @@ class Material
   NIMBLE_FUNCTION
   virtual void
   GetStress(
-      int                 elem_id,
-      int                 num_pts,
-      double              time_previous,
-      double              time_current,
-      const double* const deformation_gradient_n,
-      const double* const deformation_gradient_np1,
-      const double* const stress_n,
-      double*             stress_np1,
-      const double* const state_data_n,
-      double*             state_data_np1,
-      DataManager&        data_manager,
-      bool                is_output_step) = 0;
+      int           elem_id,
+      int           num_pts,
+      double        time_previous,
+      double        time_current,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
+      double*       stress_np1,
+      const double* state_data_n,
+      double*       state_data_np1,
+      DataManager&  data_manager,
+      bool          is_output_step) = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -294,11 +269,19 @@ class Material
   GetStress(
       double                                              time_previous,
       double                                              time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) = 0;
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_n,
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_np1,
+      const nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  &stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) const {
+    const int def_g_len = 9, stress_len = 6;
+    nimble::Viewify<1, const double> def_g_n(deformation_gradient_n.data(), def_g_len);
+    nimble::Viewify<1, const double> def_g_np1(deformation_gradient_np1.data(), def_g_len);
+    nimble::Viewify<1, const double> s_n(stress_n.data(), stress_len);
+    nimble::Viewify<1> s_np1(stress_np1.data(), stress_len);
+    GetStress(time_previous, time_current, def_g_n, def_g_np1, s_n, s_np1);
+  }
 #endif
+
   NIMBLE_FUNCTION
   virtual void
   GetTangent(int num_pts, double* material_tangent) const = 0;
@@ -307,33 +290,25 @@ class Material
   NIMBLE_FUNCTION
   virtual void
   GetOffNominalStress(
-      const double&       bulk_mod,
-      const double&       shear_mod,
-      int                 num_pts,
-      const double* const deformation_gradient_np1,
-      double*             stress_np1) = 0;
+      const double& bulk_mod,
+      const double& shear_mod,
+      int           num_pts,
+      const double* deformation_gradient_np1,
+      double*       stress_np1) = 0;
 #endif
 
- protected:
-  const int K_S_XX_ = 0;
-  const int K_S_YY_ = 1;
-  const int K_S_ZZ_ = 2;
-  const int K_S_XY_ = 3;
-  const int K_S_YZ_ = 4;
-  const int K_S_ZX_ = 5;
-  const int K_S_YX_ = 3;
-  const int K_S_ZY_ = 4;
-  const int K_S_XZ_ = 5;
+protected:
 
-  const int K_F_XX_ = 0;
-  const int K_F_YY_ = 1;
-  const int K_F_ZZ_ = 2;
-  const int K_F_XY_ = 3;
-  const int K_F_YZ_ = 4;
-  const int K_F_ZX_ = 5;
-  const int K_F_YX_ = 6;
-  const int K_F_ZY_ = 7;
-  const int K_F_XZ_ = 8;
+  NIMBLE_FUNCTION
+  virtual void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const = 0;
+
 };
 
 class ElasticMaterial : public Material
@@ -398,30 +373,18 @@ class ElasticMaterial : public Material
   NIMBLE_FUNCTION
   void
   GetStress(
-      int                 elem_id,
-      int                 num_pts,
-      double              time_previous,
-      double              time_current,
-      const double* const deformation_gradient_n,
-      const double* const deformation_gradient_np1,
-      const double* const stress_n,
-      double*             stress_np1,
-      const double* const state_data_n,
-      double*             state_data_np1,
-      DataManager&        data_manager,
-      bool                is_output_step) override;
-
-#ifdef NIMBLE_HAVE_KOKKOS
-  NIMBLE_INLINE_FUNCTION
-  void
-  GetStress(
-      double                                              time_previous,
-      double                                              time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) override;
-#endif
+      int           elem_id,
+      int           num_pts,
+      double        time_previous,
+      double        time_current,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
+      double*       stress_np1,
+      const double* state_data_n,
+      double*       state_data_np1,
+      DataManager&  data_manager,
+      bool          is_output_step) override;
 
   NIMBLE_FUNCTION
   void
@@ -431,12 +394,24 @@ class ElasticMaterial : public Material
   NIMBLE_FUNCTION
   void
   GetOffNominalStress(
-      const double&       bulk_mod,
-      const double&       shear_mod,
-      int                 num_pts,
-      const double* const deformation_gradient_np1,
-      double*             stress_np1) override;
+      const double& bulk_mod,
+      const double& shear_mod,
+      int           num_pts,
+      const double* deformation_gradient_np1,
+      double*       stress_np1) override;
 #endif
+
+ protected:
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
 
  private:
   int    num_state_variables_;
@@ -508,30 +483,18 @@ class NeohookeanMaterial : public Material
   NIMBLE_FUNCTION
   void
   GetStress(
-      int                 elem_id,
-      int                 num_pts,
-      double              time_previous,
-      double              time_current,
-      const double* const deformation_gradient_n,
-      const double* const deformation_gradient_np1,
-      const double* const stress_n,
-      double*             stress_np1,
-      const double* const state_data_n,
-      double*             state_data_np1,
-      DataManager&        data_manager,
-      bool                is_output_step) override;
-
-#ifdef NIMBLE_HAVE_KOKKOS
-  NIMBLE_INLINE_FUNCTION
-  void
-  GetStress(
-      double                                              time_previous,
-      double                                              time_current,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-      nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) override;
-#endif
+      int           elem_id,
+      int           num_pts,
+      double        time_previous,
+      double        time_current,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
+      double*       stress_np1,
+      const double* state_data_n,
+      double*       state_data_np1,
+      DataManager&  data_manager,
+      bool          is_output_step) override;
 
   NIMBLE_FUNCTION
   void
@@ -541,12 +504,24 @@ class NeohookeanMaterial : public Material
   NIMBLE_FUNCTION
   void
   GetOffNominalStress(
-      const double&       bulk_mod,
-      const double&       shear_mod,
-      int                 num_pts,
-      const double* const deformation_gradient_np1,
-      double*             stress_np1) override;
+      const double& bulk_mod,
+      const double& shear_mod,
+      int           num_pts,
+      const double* deformation_gradient_np1,
+      double*       stress_np1) override;
 #endif
+
+ protected:
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                    time_previous,
+      double                    time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>        stress_np1) const override;
 
  private:
   int    num_state_variables_;
@@ -555,110 +530,6 @@ class NeohookeanMaterial : public Material
   double bulk_modulus_;
   double shear_modulus_;
 };
-
-#ifdef NIMBLE_HAVE_KOKKOS
-NIMBLE_FUNCTION
-void
-ElasticMaterial::GetStress(
-    double                                              time_previous,
-    double                                              time_current,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1)
-{
-  nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& def_grad = deformation_gradient_np1;
-  nimble_kokkos::DeviceSymTensorIntPtSingleEntryView&  stress   = stress_np1;
-  double                                               strain[6];
-  double                                               trace_strain;
-
-  double two_mu = 2.0 * shear_modulus_;
-  double lambda = bulk_modulus_ - 2.0 * shear_modulus_ / 3.0;
-
-  strain[K_S_XX_] = def_grad[K_F_XX_] - 1.0;
-  strain[K_S_YY_] = def_grad[K_F_YY_] - 1.0;
-  strain[K_S_ZZ_] = def_grad[K_F_ZZ_] - 1.0;
-  strain[K_S_XY_] = 0.5 * (def_grad[K_F_XY_] + def_grad[K_F_YX_]);
-  strain[K_S_YZ_] = 0.5 * (def_grad[K_F_YZ_] + def_grad[K_F_ZY_]);
-  strain[K_S_ZX_] = 0.5 * (def_grad[K_F_ZX_] + def_grad[K_F_XZ_]);
-
-  trace_strain = strain[K_S_XX_] + strain[K_S_YY_] + strain[K_S_ZZ_];
-
-  stress[K_S_XX_] = two_mu * strain[K_S_XX_] + lambda * trace_strain;
-  stress[K_S_YY_] = two_mu * strain[K_S_YY_] + lambda * trace_strain;
-  stress[K_S_ZZ_] = two_mu * strain[K_S_ZZ_] + lambda * trace_strain;
-  stress[K_S_XY_] = two_mu * strain[K_S_XY_];
-  stress[K_S_YZ_] = two_mu * strain[K_S_YZ_];
-  stress[K_S_ZX_] = two_mu * strain[K_S_ZX_];
-
-  // TODO rotate stress?
-}
-
-NIMBLE_FUNCTION
-void
-NeohookeanMaterial::GetStress(
-    double                                              time_previous,
-    double                                              time_current,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_n,
-    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView deformation_gradient_np1,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_n,
-    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1)
-{
-  double xj, fac, pressure, bxx, byy, bzz, bxy, byz, bzx, trace;
-  double sxx, syy, szz, sxy, syz, szx, syx, szy, sxz;
-
-  // deformation gradient, left stretch, and rotation
-  double def_grad[9], v[6], r[9];
-  for (int i = 0; i < 9; i++) { def_grad[i] = deformation_gradient_np1[i]; }
-
-  Polar_Decomp(def_grad, v, r);
-
-  CheckVectorSanity(9, def_grad, "neohookean deformation_gradient_np1");
-  CheckVectorSanity(6, v, "neohookean v");
-  CheckVectorSanity(9, r, "neohookean r");
-
-  xj = v[K_S_XX_] * v[K_S_YY_] * v[K_S_ZZ_] + 2.0 * v[K_S_XY_] * v[K_S_YZ_] * v[K_S_ZX_] -
-       v[K_S_XX_] * v[K_S_YZ_] * v[K_S_YZ_] - v[K_S_YY_] * v[K_S_ZX_] * v[K_S_ZX_] -
-       v[K_S_ZZ_] * v[K_S_XY_] * v[K_S_XY_];
-
-  double cbrt_xj = std::cbrt(xj);
-  fac            = 1.0 / (cbrt_xj * cbrt_xj);
-
-  pressure = 0.5 * bulk_modulus_ * (xj - 1.0 / xj);
-
-  bxx = v[K_S_XX_] * v[K_S_XX_] + v[K_S_XY_] * v[K_S_YX_] + v[K_S_XZ_] * v[K_S_ZX_];
-
-  byy = v[K_S_YX_] * v[K_S_XY_] + v[K_S_YY_] * v[K_S_YY_] + v[K_S_YZ_] * v[K_S_ZY_];
-
-  bzz = v[K_S_ZX_] * v[K_S_XZ_] + v[K_S_ZY_] * v[K_S_YZ_] + v[K_S_ZZ_] * v[K_S_ZZ_];
-
-  bxy = v[K_S_XX_] * v[K_S_XY_] + v[K_S_XY_] * v[K_S_YY_] + v[K_S_XZ_] * v[K_S_ZY_];
-
-  byz = v[K_S_YX_] * v[K_S_XZ_] + v[K_S_YY_] * v[K_S_YZ_] + v[K_S_YZ_] * v[K_S_ZZ_];
-
-  bzx = v[K_S_ZX_] * v[K_S_XX_] + v[K_S_ZY_] * v[K_S_YX_] + v[K_S_ZZ_] * v[K_S_ZX_];
-
-  bxx = fac * bxx;
-  byy = fac * byy;
-  bzz = fac * bzz;
-  bxy = fac * bxy;
-  byz = fac * byz;
-  bzx = fac * bzx;
-
-  trace = bxx + byy + bzz;
-
-  bxx = bxx - trace / 3.0;
-  byy = byy - trace / 3.0;
-  bzz = bzz - trace / 3.0;
-
-  stress_np1(K_S_XX_) = pressure + shear_modulus_ * bxx / xj;
-  stress_np1(K_S_YY_) = pressure + shear_modulus_ * byy / xj;
-  stress_np1(K_S_ZZ_) = pressure + shear_modulus_ * bzz / xj;
-  stress_np1(K_S_XY_) = shear_modulus_ * bxy / xj;
-  stress_np1(K_S_YZ_) = shear_modulus_ * byz / xj;
-  stress_np1(K_S_ZX_) = shear_modulus_ * bzx / xj;
-}
-#endif
 
 }  // namespace nimble
 

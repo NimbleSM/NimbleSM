@@ -67,7 +67,7 @@ class AXPYResult;
 
 }
 
-template <std::size_t N = 2>
+template <std::size_t N = 2, class Scalar = double>
 class Viewify
 {
  public:
@@ -77,34 +77,39 @@ class Viewify
     stride_.fill(0);
   }
 
-  Viewify(double* const data, std::array<int, N> len, std::array<int, N> stride)
+  Viewify(Scalar* data, std::array<int, N> len, std::array<int, N> stride)
       : data_(data), len_(len), stride_(stride)
   {
   }
 
+  template <std::size_t NN = N, typename = typename std::enable_if<(NN == 1)>::type >
+  Viewify(Scalar* data, int len)
+      : data_(data), len_({len}), stride_({1})
+  { }
+
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), double>::type&
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), Scalar>::type&
   operator()(int i)
   {
     return data_[i];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), const double>::type
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 1), const Scalar>::type
   operator()(int i) const
   {
     return data_[i];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), double>::type&
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), Scalar>::type&
   operator()(int i, int j)
   {
     return data_[i * stride_[0] + j * stride_[1]];
   }
 
   template <std::size_t NN = N>
-  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), const double>::type
+  NIMBLE_INLINE_FUNCTION typename std::enable_if<(NN == 2), const Scalar>::type
   operator()(int i, int j) const
   {
     return data_[i * stride_[0] + j * stride_[1]];
@@ -114,7 +119,7 @@ class Viewify
   zero()
   {
     int mySize = stride_[0] * len_[0];
-    for (int ii = 0; ii < mySize; ++ii) data_[ii] = 0.0;
+    for (int ii = 0; ii < mySize; ++ii) data_[ii] = (Scalar)(0);
   }
 
   void
@@ -124,13 +129,14 @@ class Viewify
     for (int ii = 0; ii < mySize; ++ii) data_[ii] = ref.data_[ii];
   }
 
-  double*
+  Scalar*
   data() const
   {
     return data_;
   }
 
-  Viewify<N>&
+  template< class T = Scalar, typename = typename std::enable_if< !std::is_const<T>::value >::type >
+  Viewify<N, Scalar>&
   operator+=(const details::AXPYResult<N>& rhs);
 
   std::array<int, N>
@@ -146,7 +152,7 @@ class Viewify
   }
 
  protected:
-  double*            data_;
+  Scalar*            data_;
   std::array<int, N> len_;
   std::array<int, N> stride_;
 };
@@ -201,9 +207,10 @@ AXPYResult<N>::assignTo(double destCoef, double rhsCoef, nimble::Viewify<N>& des
 
 //----------------------------------
 
-template <std::size_t N>
-Viewify<N>&
-Viewify<N>::operator+=(const details::AXPYResult<N>& rhs)
+template <std::size_t N, class Scalar>
+template <class T, typename >
+Viewify<N, Scalar>&
+Viewify<N, Scalar>::operator+=(const details::AXPYResult<N>& rhs)
 {
   rhs.assignTo(1.0, 1.0, *this);
   return *this;
