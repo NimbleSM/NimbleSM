@@ -117,7 +117,9 @@ class ModelData : public ModelDataBase
   /// \param field_id
   /// \return Viewify<2> object for vector quantity
   nimble::Viewify<2>
-  GetVectorNodeData(const std::string& label) override;
+  GetVectorNodeData(int field_id) override;
+
+  using ModelDataBase::GetVectorNodeData;
 
   void
   ComputeLumpedMass(nimble::DataManager& data_manager) override;

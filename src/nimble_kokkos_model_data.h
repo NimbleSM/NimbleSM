@@ -117,12 +117,13 @@ class ModelData : public nimble::ModelDataBase
   nimble::Viewify<1>
   GetScalarNodeData(const std::string& label) override;
 
+  using ModelDataBase::GetVectorNodeData;
   /// \brief Get view of vector quantity defined on nodes
   ///
   /// \param field_id
   /// \return Viewify<2> object for vector quantity
   nimble::Viewify<2>
-  GetVectorNodeData(const std::string& label) override;
+  GetVectorNodeData(int field_id) override;
 
   void
   ComputeLumpedMass(nimble::DataManager& data_manager) override;

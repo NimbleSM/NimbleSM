@@ -553,13 +553,8 @@ ModelData::GetScalarNodeData(const std::string& label)
 }
 
 nimble::Viewify<2>
-ModelData::GetVectorNodeData(const std::string& label)
+ModelData::GetVectorNodeData(int field_id)
 {
-  const auto field_id = GetFieldId(label);
-  if (field_id < 0) {
-    std::string code = " Field " + label + " Not Allocated ";
-    throw std::runtime_error(code);
-  }
   auto& field_vector = node_data_.at(field_id);
   auto  isize        = static_cast<int>(field_vector.size()) / 3;
   return {field_vector.data(), {isize, 3}, {3, 1}};
