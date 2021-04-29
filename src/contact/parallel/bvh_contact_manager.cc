@@ -200,7 +200,7 @@ BvhContactManager::ComputeParallelContactForce(int step,
   
   auto model_ptr = data_manager_.GetMacroScaleData().get();
   auto displacement_v = model_ptr->GetVectorNodeData("displacement");
-  this->ApplyDisplacement(displacement_v.data());
+  this->ApplyDisplacements(displacement_v.data());
   
   total_search_time.Start();
   m_world.start_iteration();
