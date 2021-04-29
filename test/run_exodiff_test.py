@@ -41,6 +41,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
         log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"
     if "use_kokkos" in cli_flag:
         log_file_name = base_name + ".kokkos.np" + str(num_ranks) + ".log"
+    if "use_vt" in cli_flag:
+        log_file_name = base_name + ".vt.np" + str(num_ranks) + ".log"
     if "use_tpetra" in cli_flag:
         log_file_name = base_name + ".tpetra.np" + str(num_ranks) + ".log"
     if num_ranks > 1:
