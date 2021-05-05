@@ -975,13 +975,8 @@ ModelData::UpdateStates(const nimble::DataManager& data_manager)
 }
 
 nimble::Viewify<1>
-ModelData::GetScalarNodeData(const std::string& label)
+ModelData::GetScalarNodeData(int field_id)
 {
-  auto field_id = GetFieldId(label);
-  if (field_id < 0) {
-    std::string code = " Field " + label + " Not Allocated ";
-    throw std::runtime_error(code);
-  }
   auto field_view   = GetHostScalarNodeData(field_id);
   auto field_size   = static_cast<int>(field_view.extent(0));
   auto field_stride = static_cast<int>(field_view.stride_0());

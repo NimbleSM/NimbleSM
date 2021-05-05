@@ -540,13 +540,8 @@ ModelData::ComputeLumpedMass(nimble::DataManager& data_manager)
 }
 
 nimble::Viewify<1>
-ModelData::GetScalarNodeData(const std::string& label)
+ModelData::GetScalarNodeData(int field_id)
 {
-  const auto field_id = GetFieldId(label);
-  if (field_id < 0) {
-    std::string code = " Field " + label + " Not Allocated ";
-    throw std::runtime_error(code);
-  }
   auto& field_vector = node_data_.at(field_id);
   auto  isize        = static_cast<int>(field_vector.size());
   return {field_vector.data(), {isize}, {1}};

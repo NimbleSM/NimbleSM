@@ -110,17 +110,19 @@ class ModelData : public nimble::ModelDataBase
   void
   UpdateStates(const nimble::DataManager& data_manager) override;
 
+  using ModelDataBase::GetScalarNodeData;
+  using ModelDataBase::GetVectorNodeData;
+
   /// \brief Get view of scalar quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
   /// \return Viewify<1> object for scalar quantity
   nimble::Viewify<1>
-  GetScalarNodeData(const std::string& label) override;
+  GetScalarNodeData(int field_id) override;
 
-  using ModelDataBase::GetVectorNodeData;
   /// \brief Get view of vector quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
   /// \return Viewify<2> object for vector quantity
   nimble::Viewify<2>
   GetVectorNodeData(int field_id) override;

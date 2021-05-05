@@ -133,20 +133,33 @@ class ModelDataBase
 
   /// \brief Get view of scalar quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param label the data label
+  /// \return Viewify<1> object for scalar quantity
+  nimble::Viewify<1>
+  GetScalarNodeData(const std::string& label) {
+    return GetScalarNodeData( GetFieldIdChecked(label) );
+  };
+
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
   /// \return Viewify<1> object for scalar quantity
   virtual nimble::Viewify<1>
-  GetScalarNodeData(const std::string& label) = 0;
+  GetScalarNodeData(int field_id) = 0;
 
   /// \brief Get view of vector quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param label the data label
   /// \return Viewify<2> object for vector quantity
   nimble::Viewify<2>
   GetVectorNodeData(const std::string& label) {
     return GetVectorNodeData(GetFieldIdChecked(label));
   }
 
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
+  /// \return Viewify<2> object for vector quantity
   virtual nimble::Viewify<2>
   GetVectorNodeData(int field_id) = 0;
 
