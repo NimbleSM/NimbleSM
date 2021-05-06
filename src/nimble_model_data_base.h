@@ -47,6 +47,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
@@ -97,6 +98,17 @@ class ModelDataBase
   virtual int
   AllocateNodeData(Length length, std::string label, int num_objects) = 0;
 
+  int
+  GetFieldIdChecked(const std::string& field_label) const {
+    int id = GetFieldId(field_label);
+    if (id < 0) {
+      std::ostringstream errc;
+      errc << "Field \"" << field_label << "\" not allocated";
+      throw std::runtime_error(errc.str());
+    }
+    return id;
+  }
+
   /// \brief Returns the field ID for a specific label
   ///
   /// \param field_label Label for a stored quantity
@@ -121,17 +133,35 @@ class ModelDataBase
 
   /// \brief Get view of scalar quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param label the data label
+  /// \return Viewify<1> object for scalar quantity
+  nimble::Viewify<1>
+  GetScalarNodeData(const std::string& label) {
+    return GetScalarNodeData( GetFieldIdChecked(label) );
+  };
+
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
   /// \return Viewify<1> object for scalar quantity
   virtual nimble::Viewify<1>
-  GetScalarNodeData(const std::string& label) = 0;
+  GetScalarNodeData(int field_id) = 0;
 
   /// \brief Get view of vector quantity defined on nodes
   ///
-  /// \param field_id
+  /// \param label the data label
+  /// \return Viewify<2> object for vector quantity
+  nimble::Viewify<2>
+  GetVectorNodeData(const std::string& label) {
+    return GetVectorNodeData(GetFieldIdChecked(label));
+  }
+
+  /// \brief Get view of scalar quantity defined on nodes
+  ///
+  /// \param field_id the field id (see DataManager::GetFieldIDs())
   /// \return Viewify<2> object for vector quantity
   virtual nimble::Viewify<2>
-  GetVectorNodeData(const std::string& label) = 0;
+  GetVectorNodeData(int field_id) = 0;
 
   /// \brief Compute the lumped mass
   ///

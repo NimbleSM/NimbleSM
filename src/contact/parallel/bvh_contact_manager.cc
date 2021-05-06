@@ -42,6 +42,9 @@
 */
 
 #include "bvh_contact_manager.h"
+#include "nimble_data_manager.h"
+#include "nimble_model_data.h"
+#include "nimble_vector_communicator.h"
 
 #include <vt/transport.h>
 
@@ -195,6 +198,12 @@ void
 BvhContactManager::ComputeParallelContactForce(int step, 
     bool debug_output, nimble::Viewify<2> contact_force)
 {
+  auto model_ptr = this->data_manager_.GetMacroScaleData();
+
+  auto field_ids      = this->data_manager_.GetFieldIDs();
+  auto displacement = model_ptr->GetVectorNodeData(field_ids.displacement);
+  this->ApplyDisplacements(displacement.data());
+
   total_search_time.Start();
   m_world.start_iteration();
 
@@ -241,6 +250,12 @@ BvhContactManager::ComputeParallelContactForce(int step,
 
   total_num_contacts += m_last_results.size();
   total_enforcement_time.Stop();
+
+  this->GetForces(contact_force.data());
+
+  constexpr int vector_dim           = 3;
+  auto          myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
+  myVectorCommunicator->VectorReduction(vector_dim, contact_force.data());
 }
 
 namespace {

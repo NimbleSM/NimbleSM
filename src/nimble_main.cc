@@ -181,6 +181,9 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 #endif
       continue;
     }
+
+    if ( my_arg.substr( 0, 4 ) == "--vt" )
+      continue;
     //
     parser.SetInputFilename(std::string(my_arg));
   }
