@@ -269,7 +269,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_o
 
   //--- Set vector to store force
   this->startTimer("Contact:ResetData");
-  ContactManager::zeroContactForce();
+  ContactManager::ZeroContactForce();
 
   //--- Reset the contact_status flags
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
