@@ -1648,10 +1648,9 @@ ContactManager::Projection(
 }
 
 void
-ContactManager::zeroContactForce()
+ContactManager::ZeroContactForce()
 {
   for (auto& fval : force_) fval = 0.0;
-  if (!data_manager_.GetParser().UseKokkos()) return;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::deep_copy(force_d_, 0.0);
