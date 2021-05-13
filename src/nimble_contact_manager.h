@@ -411,7 +411,7 @@ class ContactManager
 
   /// \brief Zero the contact forces
   void
-  zeroContactForce();
+  ZeroContactForce();
 
   template <typename VecType>
   void

@@ -61,66 +61,8 @@
 #include <random>
 #include <vector>
 
-namespace ArborX {
-template <>
-struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
-{
-  // size returns the number of elements in the View
-  static std::size_t
-  size(nimble_kokkos::DeviceContactEntityArrayView const& v)
-  {
-    return v.size();
-  }
+#include "contact/arborx_utils.h"
 
-  /// Returns an ArborX::Box for each contact entity within the nimble view
-  ///
-  /// \param v
-  /// \param i
-  /// \return ArborX::Box
-  KOKKOS_FUNCTION static ArborX::Box
-  get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
-  {
-    nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
-
-    return box;
-  }
-  using memory_space = nimble_kokkos::kokkos_device_memory_space;
-};
-
-template <>
-struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
-{
-  static std::size_t
-  size(nimble_kokkos::DeviceContactEntityArrayView const& v)
-  {
-    return v.size();
-  }
-
-  KOKKOS_FUNCTION static auto
-  get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
-  {
-    nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
-
-    //
-    // What does Intersects returns, how is it used afterwards?
-    // The intent with the "unspecified" return type in the doc
-    // (https://github.com/arborx/ArborX/wiki/ArborX%3A%3Aintersects)
-    // is to consider the return type as an implementation detail.
-    //
-    // If needed, `decltype(ArborX::intersects(ArborX::Box{}))` spells out the
-    // type.
-    //
-    return intersects(box);
-  }
-  using memory_space = nimble_kokkos::kokkos_device_memory_space;
-};
-}  // namespace ArborX
 
 namespace nimble {
 
@@ -213,7 +155,7 @@ ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_outpu
   this->stopTimer("ArborX::Search");
 
   //--- Set vector to store force
-  ContactManager::zeroContactForce();
+  ContactManager::ZeroContactForce();
 
   // Reset the contact_status flags
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).set_contact_status(false);
