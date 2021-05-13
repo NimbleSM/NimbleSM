@@ -72,6 +72,10 @@ class ArborXSerialContactManager : public SerialContactManager
   ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
 
  private:
+
+  template <typename ContactManagerType>
+  friend struct ArborXCallback;
+
   void
   updateCollisionData(
       Kokkos::View<int*, nimble_kokkos::kokkos_device>& indices,
