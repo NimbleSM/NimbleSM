@@ -151,11 +151,16 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 
 #ifdef NIMBLE_HAVE_ARBORX
   if (data_manager.GetParser().UseKokkos()) {
+    if (data_manager.GetParser().GetNumRanks() == 1) {
+      return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
+    }
+    else {
 #ifdef NIMBLE_HAVE_MPI
-    return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
+      return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
 #else
-    return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
+      return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
 #endif
+    }
   }
 #endif
 
