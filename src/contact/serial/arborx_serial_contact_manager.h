@@ -65,13 +65,6 @@ class ArborXSerialContactManager : public SerialContactManager
  public:
   ArborXSerialContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
   ArborXSerialContactManager(const ArborXSerialContactManager&)     = delete;
-  ArborXSerialContactManager(ArborXSerialContactManager&&) noexcept = default;
-
-  //    ArborXSerialContactManager &operator=( const ArborXSerialContactManager
-  //    &) = delete;
-
-  ArborXSerialContactManager&
-  operator=(ArborXSerialContactManager&&) noexcept = default;
 
   ~ArborXSerialContactManager() override = default;
 
