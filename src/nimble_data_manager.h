@@ -227,7 +227,7 @@ class DataManager
   /// \brief Return shared pointer to BlockMaterialInterfaceFactoryBase object
   ///
   /// \return Shared pointer
-  const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>& 
+  const std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase>&
   GetBlockMaterialInterfaceFactory() const;
 
   /// \brief Return shared pointer to BoundaryConditionManager object
@@ -256,7 +256,7 @@ class DataManager
   nimble::FieldIds field_ids_;
 
   std::shared_ptr<nimble::VectorCommunicator> vector_communicator_ = nullptr;
-  std::shared_ptr<nimble::ExodusOutput>       exodus_output_ = nullptr;
+  std::shared_ptr<nimble::ExodusOutput>       exodus_output_       = nullptr;
 
   std::shared_ptr<nimble::BlockMaterialInterfaceFactoryBase> block_material_factory_ = nullptr;
 

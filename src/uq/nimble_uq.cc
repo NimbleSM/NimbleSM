@@ -119,17 +119,13 @@ UqModel::ParseConfiguration(std::string const& line)
     std::string key = items.front();
     if (key == "linear") {
       items.pop_front();
-    }
-    else {
+    } else {
       try {
         nexact_samples_ = std::stoi(items.front());
-      }
-      catch (const std::invalid_argument & e) {
+      } catch (const std::invalid_argument& e) {
         throw;
-      }
-      catch (...) {
-        std::cerr << " !! Error when parsing UQ parameters : " << items.front()
-                  << " !! \n";
+      } catch (...) {
+        std::cerr << " !! Error when parsing UQ parameters : " << items.front() << " !! \n";
       }
       items.pop_front();
     }
@@ -172,7 +168,7 @@ UqModel::ParseBlockInput(
     std::string const&                                  nominal_params_string,
     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory,
     bool                                                block_id_present,
-    std::map<int, std::shared_ptr< nimble::Block > >&   blocks)
+    std::map<int, std::shared_ptr<nimble::Block>>&      blocks)
 {
   if (line == "none")
     throw std::logic_error(
@@ -225,7 +221,7 @@ UqModel::ParseBlockInput(
   block_last_param_index_[block_id]  = nparameters_ - 1;
   // let block know if block id is present on this rank
   if (block_id_present) {
-    auto uq_block_ptr = dynamic_cast< nimble_uq::Block* >(blocks[block_id].get());
+    auto uq_block_ptr = dynamic_cast<nimble_uq::Block*>(blocks[block_id].get());
     uq_block_ptr->SetUqParameters(indices);
   }
 }
@@ -583,19 +579,19 @@ UqModel::WriteQoIs()
 //===========================================================================
 void
 UqModel::PerformAnalyses(
-    const double* const reference_coordinates,
-    int                 num_elem,
-    const int* const    elem_conn,
-    int                 block_id,
-    std::shared_ptr< nimble::Block> &block)
+    const double* const             reference_coordinates,
+    int                             num_elem,
+    const int* const                elem_conn,
+    int                             block_id,
+    std::shared_ptr<nimble::Block>& block)
 {
   // called per block
   if (!analyze_data_) { return; }
   if (!initialized_) { return; }
-  auto elem_ptr = block->GetElementPointer();
-  int dim                 = elem_ptr->Dim();
-  int num_node_per_elem   = elem_ptr->NumNodesPerElement();
-  int num_int_pt_per_elem = elem_ptr->NumIntegrationPointsPerElement();
+  auto elem_ptr            = block->GetElementPointer();
+  int  dim                 = elem_ptr->Dim();
+  int  num_node_per_elem   = elem_ptr->NumNodesPerElement();
+  int  num_int_pt_per_elem = elem_ptr->NumIntegrationPointsPerElement();
 
   int vector_size      = LengthToInt(VECTOR, dim);
   int full_tensor_size = LengthToInt(FULL_TENSOR, dim);
@@ -649,8 +645,7 @@ UqModel::PerformAnalyses(
           def_grad,
           cauchy_stress);
 
-      elem_ptr->ComputeVolumeAverage(
-          cur_coord, sym_tensor_size, cauchy_stress, volume, vol_ave_stress);
+      elem_ptr->ComputeVolumeAverage(cur_coord, sym_tensor_size, cauchy_stress, volume, vol_ave_stress);
 
       double max_elem_stress = 0.0;
 
@@ -709,7 +704,7 @@ UqModel::Write(int step)
   int ns      = GetNumSamples();
   int nexacts = GetNumExactSamples();
 
-  auto &blocks = data_->GetBlocks();
+  auto&                                  blocks = data_->GetBlocks();
   std::map<int, nimble::Block>::iterator block_it;
 
   std::string fname;
@@ -728,12 +723,12 @@ UqModel::Write(int step)
     fclose(fp);
     fname = "stress" + std::to_string(idx) + "_" + std::to_string(step) + ".dat";
     fp    = fopen(fname.c_str(), "w");
-    for (auto &block_it : blocks) {
-      int            block_id            = block_it.first;
-      auto &block = block_it.second;
-      int            num_elem            = mesh_->GetNumElementsInBlock(block_id);
-      int            num_node_per_elem   = block->GetElementPointer()->NumNodesPerElement();
-      int            num_int_pt_per_elem = block->GetElementPointer()->NumIntegrationPointsPerElement();
+    for (auto& block_it : blocks) {
+      int   block_id            = block_it.first;
+      auto& block               = block_it.second;
+      int   num_elem            = mesh_->GetNumElementsInBlock(block_id);
+      int   num_node_per_elem   = block->GetElementPointer()->NumNodesPerElement();
+      int   num_int_pt_per_elem = block->GetElementPointer()->NumIntegrationPointsPerElement();
       // scratch
       double ref_coord[vector_size * num_node_per_elem];
       double cur_coord[vector_size * num_node_per_elem];

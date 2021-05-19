@@ -94,12 +94,12 @@ ElasticMaterial::GetStress(
 
 void
 ElasticMaterial::GetStress(
-    double                    time_previous,
-    double                    time_current,
+    double                            time_previous,
+    double                            time_current,
     nimble::Viewify<1, const double>& deformation_gradient_n,
     nimble::Viewify<1, const double>& deformation_gradient_np1,
     nimble::Viewify<1, const double>& stress_n,
-    nimble::Viewify<1>        stress_np1) const
+    nimble::Viewify<1>                stress_np1) const
 {
   auto   def_grad = deformation_gradient_np1.data();
   double strain[6];
@@ -135,14 +135,14 @@ ElasticMaterial::GetOffNominalStress(
     double*             stress_np1)
 {
   //--- Copy current values for bulk and shear moduli
-  double old_bulk = bulk_modulus_;
+  double old_bulk  = bulk_modulus_;
   double old_shear = shear_modulus_;
 
-  bulk_modulus_ = bulk_mod;
+  bulk_modulus_  = bulk_mod;
   shear_modulus_ = shear_mod;
 
   // Cauchy stress
-  double*            sig = stress_np1;
+  double*                          sig = stress_np1;
   nimble::Viewify<1, const double> null_view;
 
   for (int pt = 0; pt < num_pts; pt++) {
@@ -152,9 +152,8 @@ ElasticMaterial::GetOffNominalStress(
   }
 
   //--- Reset bulk and shear moduli
-  bulk_modulus_ = old_bulk;
+  bulk_modulus_  = old_bulk;
   shear_modulus_ = old_shear;
-
 }
 #endif
 
@@ -252,12 +251,12 @@ NeohookeanMaterial::GetStress(
 
 void
 NeohookeanMaterial::GetStress(
-    double                    time_previous,
-    double                    time_current,
+    double                            time_previous,
+    double                            time_current,
     nimble::Viewify<1, const double>& deformation_gradient_n,
     nimble::Viewify<1, const double>& deformation_gradient_np1,
     nimble::Viewify<1, const double>& stress_n,
-    nimble::Viewify<1>        stress_np1) const
+    nimble::Viewify<1>                stress_np1) const
 {
   double xj, fac, pressure, bxx, byy, bzz, bxy, byz, bzx, trace;
 
@@ -320,14 +319,14 @@ NeohookeanMaterial::GetOffNominalStress(
     double*       stress_np1)
 {
   //--- Copy current values for bulk and shear moduli
-  double old_bulk = bulk_modulus_;
+  double old_bulk  = bulk_modulus_;
   double old_shear = shear_modulus_;
 
-  bulk_modulus_ = bulk_mod;
+  bulk_modulus_  = bulk_mod;
   shear_modulus_ = shear_mod;
 
   // Cauchy stress
-  double*            sig = stress_np1;
+  double*                          sig = stress_np1;
   nimble::Viewify<1, const double> null_view;
 
   for (int pt = 0; pt < num_pts; pt++) {
@@ -337,9 +336,8 @@ NeohookeanMaterial::GetOffNominalStress(
   }
 
   //--- Reset bulk and shear moduli
-  bulk_modulus_ = old_bulk;
+  bulk_modulus_  = old_bulk;
   shear_modulus_ = old_shear;
-
 }
 #endif
 

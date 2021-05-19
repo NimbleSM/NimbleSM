@@ -42,9 +42,6 @@
 */
 
 #include "bvh_contact_manager.h"
-#include "nimble_data_manager.h"
-#include "nimble_model_data.h"
-#include "nimble_vector_communicator.h"
 
 #include <vt/transport.h>
 
@@ -52,6 +49,9 @@
 #include <iomanip>
 
 #include "bvh/collision_object.hpp"
+#include "nimble_data_manager.h"
+#include "nimble_model_data.h"
+#include "nimble_vector_communicator.h"
 #ifdef NIMBLE_HAVE_KOKKOS
 #include <bvh/narrowphase/kokkos.hpp>
 #endif
@@ -59,9 +59,9 @@
 #ifdef NIMBLE_HAVE_ARBORX
 #include <ArborX.hpp>
 #include <Kokkos_Core.hpp>
+
 #include "contact/arborx_utils.h"
 #endif
-
 
 namespace nimble {
 
@@ -118,13 +118,15 @@ struct NarrowphaseFunc
     auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
     auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
 
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_faces = nimble_kokkos::DeviceContactEntityArrayView("d_contact_faces", _a.elements.size());
+    nimble_kokkos::DeviceContactEntityArrayView d_contact_faces =
+        nimble_kokkos::DeviceContactEntityArrayView("d_contact_faces", _a.elements.size());
     for (size_t ii = 0; ii < _a.elements.size(); ++ii) {
       d_contact_faces(ii) = _a.elements[ii];
       d_contact_faces(ii).ResetContactData();
     }
- 
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes = nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
+
+    nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
+        nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
     for (size_t ii = 0; ii < _b.elements.size(); ++ii) {
       d_contact_nodes(ii) = _b.elements[ii];
       d_contact_nodes(ii).ResetContactData();
@@ -154,15 +156,15 @@ struct NarrowphaseFunc
     // Number of queries, n = size of contact_nodes_d
     // Size of offset = n + 1
     a_bvh.query(nimble_kokkos::kokkos_device_execution_space{}, d_contact_nodes, indices, offset);
-    // 
+    //
     // The next loop does not track which node is in contact with which face
     // In theory, we could simply loop on the entries in indices.
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     resa_vec.reserve(indices.extent(0));
     resb_vec.reserve(indices.extent(0));
-    double normal[3]            = {0., 0., 0.};
-    bool   inside               = false;
+    double normal[3] = {0., 0., 0.};
+    bool   inside    = false;
     //
     for (size_t inode = 0; inode < d_contact_nodes.extent(0); ++inode) {
       auto& myNode = d_contact_nodes(inode);
@@ -174,12 +176,12 @@ struct NarrowphaseFunc
         if (inside) {
           details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, normal, entry.contact_force);
           //
-          entry.local_index              = myFace.local_id();
-          entry.node                     = false;
+          entry.local_index = myFace.local_id();
+          entry.node        = false;
           resa_vec.push_back(entry);
           //
-          entry.local_index              = myNode.local_id();
-          entry.node                     = true;
+          entry.local_index = myNode.local_id();
+          entry.node        = true;
           resb_vec.push_back(entry);
           //
         }
@@ -206,9 +208,10 @@ struct NarrowphaseFunc
   BvhContactManager* contact_manager;
 };
 
-BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface, 
-    nimble::DataManager &data_manager,
-    std::size_t _overdecomposition)
+BvhContactManager::BvhContactManager(
+    std::shared_ptr<ContactInterface> interface,
+    nimble::DataManager&              data_manager,
+    std::size_t                       _overdecomposition)
     : ParallelContactManager(interface, data_manager),
       m_world{_overdecomposition},
       m_nodes{&m_world.create_collision_object()},
@@ -233,12 +236,11 @@ BvhContactManager::ComputeBoundingVolumes()
 }
 
 void
-BvhContactManager::ComputeParallelContactForce(int step, 
-    bool debug_output, nimble::Viewify<2> contact_force)
+BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   auto model_ptr = this->data_manager_.GetMacroScaleData();
 
-  auto field_ids      = this->data_manager_.GetFieldIDs();
+  auto field_ids    = this->data_manager_.GetFieldIDs();
   auto displacement = model_ptr->GetVectorNodeData(field_ids.displacement);
   this->ApplyDisplacements(displacement.data());
 

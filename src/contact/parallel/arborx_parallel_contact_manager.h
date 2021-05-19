@@ -65,7 +65,7 @@ class ArborXParallelContactManager : public ParallelContactManager
 {
  public:
   ArborXParallelContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
-  ArborXParallelContactManager(const ArborXParallelContactManager&)     = delete;
+  ArborXParallelContactManager(const ArborXParallelContactManager&) = delete;
 
   ~ArborXParallelContactManager() override = default;
 

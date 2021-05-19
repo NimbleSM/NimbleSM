@@ -64,21 +64,13 @@ class BoundaryCondition
     INITIAL_VELOCITY        = 0,
     PRESCRIBED_VELOCITY     = 1,
     PRESCRIBED_DISPLACEMENT = 2,
-    PERIODIC_RVE            = 3,
-    RVE_FIXED_DISPLACEMENT  = 4,
-    UNDEFINED               = 5
+    PRESCRIBED_TRACTION     = 3,
+    PERIODIC_RVE            = 4,
+    RVE_FIXED_DISPLACEMENT  = 5,
+    UNDEFINED               = 6
   };
 
-  BoundaryCondition()
-      : dim_(0),
-        node_set_name_("unknown"),
-        node_set_id_(-1),
-        coordinate_(-1),
-        magnitude_(0.0),
-        bc_type_(UNDEFINED),
-        has_expression_(false)
-  {
-  }
+  BoundaryCondition() {}
 
   virtual ~BoundaryCondition() {}
 
@@ -102,14 +94,14 @@ class BoundaryCondition
   void
   GetRVEMacroscaleDeformationGradient(double time, double* deformation_gradient, double x, double y, double z);
 
-  int                                         dim_;
-  std::string                                 node_set_name_;
-  int                                         node_set_id_;
-  int                                         coordinate_;
-  double                                      magnitude_;
-  Boundary_Condition_Type                     bc_type_;
-  bool                                        has_expression_;
-  std::string                                 expression_string_;
+  int                                         dim_{0};
+  std::string                                 node_set_name_{"unknown"};
+  int                                         node_set_id_{-1};
+  int                                         coordinate_{-1};
+  double                                      magnitude_{0.0};
+  Boundary_Condition_Type                     bc_type_{UNDEFINED};
+  bool                                        has_expression_{false};
+  std::string                                 expression_string_{""};
   ExpressionParsing::BoundaryConditionFunctor expression_;
   std::vector<std::string>                    rve_macroscale_deformation_gradient_strings_;
 };

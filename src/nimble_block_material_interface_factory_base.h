@@ -48,7 +48,6 @@
 #include <memory>
 #include <vector>
 
-
 namespace nimble {
 
 class BlockData;
@@ -69,7 +68,7 @@ class BlockMaterialInterfaceFactoryBase
       double                                time_np1,
       const nimble::FieldIds&               field_ids,
       const std::vector<nimble::BlockData>& blocks,
-      nimble::ModelDataBase *               model_data_ptr) const = 0;
+      nimble::ModelDataBase*                model_data_ptr) const = 0;
 };
 
 }  // namespace nimble

@@ -64,10 +64,7 @@ namespace nimble {
 class Block : public nimble::BlockBase
 {
  public:
-  Block()
-      : BlockBase(),
-        vol_ave_volume_offset_(-1)
-  {}
+  Block() : BlockBase(), vol_ave_volume_offset_(-1) {}
 
   ~Block() override = default;
 
@@ -164,7 +161,7 @@ class Block : public nimble::BlockBase
       std::vector<double>&            elem_data_np1,
       DataManager&                    data_manager,
       bool                            is_output_step,
-      bool compute_stress_only = false) const;
+      bool                            compute_stress_only = false) const;
 
   void
   ComputeDerivedElementData(
@@ -189,7 +186,6 @@ class Block : public nimble::BlockBase
   int                vol_ave_volume_offset_;
   std::vector<int>   vol_ave_offsets_;
   std::map<int, int> vol_ave_index_to_derived_data_index_;
-
 };
 
 }  // namespace nimble

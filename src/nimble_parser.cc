@@ -338,13 +338,12 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
     boundary_condition_strings_.push_back(value);
   } else if (key == "output fields") {
     output_field_string_ = value;
-  }
-  else if (key == "contact dicing") {
+  } else if (key == "contact dicing") {
     int tmp = std::atoi(value.c_str());
 #ifdef NIMBLE_HAVE_BVH
     contact_dicing_ = tmp;
 #else
-    std::cout << " **** Parser::ReadFile(), skipping key " + key + "\n";  
+    std::cout << " **** Parser::ReadFile(), skipping key " + key + "\n";
 #endif
   }
 #ifdef NIMBLE_HAVE_UQ

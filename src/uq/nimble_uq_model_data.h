@@ -57,7 +57,7 @@ class UqModel;
 class DataManager;
 class MaterialFactoryBase;
 
-}
+}  // namespace nimble
 
 namespace nimble_uq {
 
@@ -73,8 +73,9 @@ class ModelData : public nimble::ModelData
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
-      override;
+  InitializeBlocks(
+      nimble::DataManager&                                data_manager,
+      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base) override;
 
   /// \brief Compute the internal force
   ///
@@ -84,12 +85,14 @@ class ModelData : public nimble::ModelData
   /// \param[in] is_output_step
   /// \param[in] displacement
   /// \param[out] internal_force  Output for internal force
-  void ComputeInternalForce(nimble::DataManager &data_manager,
-                            double time_previous,
-                            double time_current,
-                            bool is_output_step,
-                            const nimble::Viewify<2> &displacement,
-                            nimble::Viewify<2> &force) override;
+  void
+  ComputeInternalForce(
+      nimble::DataManager&      data_manager,
+      double                    time_previous,
+      double                    time_current,
+      bool                      is_output_step,
+      const nimble::Viewify<2>& displacement,
+      nimble::Viewify<2>&       force) override;
 
   /// \brief Write output of simulation in Exodus format
   ///
@@ -103,9 +106,8 @@ class ModelData : public nimble::ModelData
   ApplyInitialConditions(nimble::DataManager& data_manager) override;
 
   /// \brief Apply kinematic conditions
-  void ApplyKinematicConditions(nimble::DataManager &data_manager,
-                                double time_current,
-                                double time_previous) override;
+  void
+  ApplyKinematicConditions(nimble::DataManager& data_manager, double time_current, double time_previous) override;
 
   /// \brief Update model with new velocity
   ///
@@ -128,10 +130,8 @@ class ModelData : public nimble::ModelData
   UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt) override;
 
  protected:
-
-  std::shared_ptr< nimble::UqModel > uq_model_;
-  std::vector< nimble::Viewify<2> > bc_offnom_velocity_views_;
-
+  std::shared_ptr<nimble::UqModel> uq_model_;
+  std::vector<nimble::Viewify<2>>  bc_offnom_velocity_views_;
 };
 
 }  // namespace nimble_uq

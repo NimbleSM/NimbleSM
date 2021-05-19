@@ -93,8 +93,9 @@ class ModelData : public ModelDataBase
   /// \param data_manager Reference to the data manager
   /// \param material_factory_base Shared pointer to the material factory
   void
-  InitializeBlocks(nimble::DataManager& data_manager, const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
-      override;
+  InitializeBlocks(
+      nimble::DataManager&                                data_manager,
+      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base) override;
 
   /// \brief Copy time state (n+1) into time state (n)
   ///
@@ -206,15 +207,15 @@ class ModelData : public ModelDataBase
   GetElementDataForOutput(std::map<int, std::vector<std::vector<double>>>& single_component_arrays);
 
   void
-  SpecifyOutputFields(const std::string &output_field_string);
+  SpecifyOutputFields(const std::string& output_field_string);
 
-  std::map<int, std::shared_ptr< nimble::Block> >&
+  std::map<int, std::shared_ptr<nimble::Block>>&
   GetBlocks()
   {
     return blocks_;
   }
 
-  std::map<int, std::shared_ptr< nimble::Block> > const&
+  std::map<int, std::shared_ptr<nimble::Block>> const&
   GetBlocks() const
   {
     return blocks_;
@@ -242,19 +243,23 @@ class ModelData : public ModelDataBase
   double*
   GetNodeData(const std::string& label);
 
-  template< typename TBlock >
-  void EmplaceBlocks(nimble::DataManager& data_manager,
-                     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
+  template <typename TBlock>
+  void
+  EmplaceBlocks(
+      nimble::DataManager&                                data_manager,
+      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
 
-  void AllocateInitializeElementData(nimble::DataManager&                                data_manager,
-                                     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
+  void
+  AllocateInitializeElementData(
+      nimble::DataManager&                                data_manager,
+      const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base);
 
  protected:
   //! Block ids
   std::vector<int> block_ids_;
 
   //! Blocks
-  std::map<int, std::shared_ptr<nimble::Block> > blocks_;
+  std::map<int, std::shared_ptr<nimble::Block>> blocks_;
 
   //! Map key is the field_id, value is the corresponding Field.
   std::map<int, Field> data_fields_;

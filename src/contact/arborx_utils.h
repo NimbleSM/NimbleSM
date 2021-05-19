@@ -120,5 +120,3 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
 #endif  // #ifdef NIMBLE_HAVE_ARBORX
 
 #endif  // NIMBLESM_ARBORX_UTILS_H
-
-

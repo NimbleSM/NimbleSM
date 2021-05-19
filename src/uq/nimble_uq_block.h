@@ -101,7 +101,7 @@ class Block : public nimble::Block
  protected:
   // HACK specific to elastic models
   //  std::pair<int, int> range_of_uq_params_;
-  int bulk_modulus_uq_index_ = -1;
+  int bulk_modulus_uq_index_  = -1;
   int shear_modulus_uq_index_ = -1;
 };
 

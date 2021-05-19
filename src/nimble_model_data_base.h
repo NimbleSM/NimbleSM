@@ -45,9 +45,9 @@
 #define NIMBLE_MODEL_DATA_BASE_H
 
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "nimble_block.h"
 #include "nimble_data_utils.h"
@@ -99,7 +99,8 @@ class ModelDataBase
   AllocateNodeData(Length length, std::string label, int num_objects) = 0;
 
   int
-  GetFieldIdChecked(const std::string& field_label) const {
+  GetFieldIdChecked(const std::string& field_label) const
+  {
     int id = GetFieldId(field_label);
     if (id < 0) {
       std::ostringstream errc;
@@ -122,7 +123,7 @@ class ModelDataBase
   /// \param material_factory_base Shared pointer to the material factory
   virtual void
   InitializeBlocks(
-      nimble::DataManager&                        data_manager,
+      nimble::DataManager&                                data_manager,
       const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base) = 0;
 
   /// \brief Copy time state (n+1) into time state (n)
@@ -136,8 +137,9 @@ class ModelDataBase
   /// \param label the data label
   /// \return Viewify<1> object for scalar quantity
   nimble::Viewify<1>
-  GetScalarNodeData(const std::string& label) {
-    return GetScalarNodeData( GetFieldIdChecked(label) );
+  GetScalarNodeData(const std::string& label)
+  {
+    return GetScalarNodeData(GetFieldIdChecked(label));
   };
 
   /// \brief Get view of scalar quantity defined on nodes
@@ -152,7 +154,8 @@ class ModelDataBase
   /// \param label the data label
   /// \return Viewify<2> object for vector quantity
   nimble::Viewify<2>
-  GetVectorNodeData(const std::string& label) {
+  GetVectorNodeData(const std::string& label)
+  {
     return GetVectorNodeData(GetFieldIdChecked(label));
   }
 

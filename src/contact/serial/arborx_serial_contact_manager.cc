@@ -63,7 +63,6 @@
 
 #include "contact/arborx_utils.h"
 
-
 namespace nimble {
 
 using memory_space = nimble_kokkos::kokkos_device_memory_space;
@@ -118,29 +117,29 @@ ArborXSerialContactManager::updateCollisionData(
 }
 
 template <typename ContactManagerType>
-struct ArborXCallback {
+struct ArborXCallback
+{
   ContactManagerType contact_manager_;
 
   template <typename Query>
-  KOKKOS_FUNCTION void operator()(Query const &query, int j) const {
-    auto &myNode =
-        contact_manager_.contact_nodes_d_(ArborX::getData(query));
-    auto &myFace = contact_manager_.contact_faces_d_(j);
+  KOKKOS_FUNCTION void
+  operator()(Query const& query, int j) const
+  {
+    auto& myNode = contact_manager_.contact_nodes_d_(ArborX::getData(query));
+    auto& myFace = contact_manager_.contact_faces_d_(j);
 
-    double gap = 0.0;
-    double normal[3] = {0., 0., 0.};
-    bool inside = false;
+    double gap                  = 0.0;
+    double normal[3]            = {0., 0., 0.};
+    bool   inside               = false;
     double facet_coordinates[3] = {0., 0., 0.};
 
     //--- Determine whether the node is projected inside the triangular face
-    ContactManager::Projection(myNode, myFace, inside, gap, &normal[0],
-                               &facet_coordinates[0]);
+    ContactManager::Projection(myNode, myFace, inside, gap, &normal[0], &facet_coordinates[0]);
     if (inside) {
       myFace.set_contact_status(true);
       myNode.set_contact_status(true);
       contact_manager_.EnforceNodeFaceInteraction(
-          myNode, myFace, gap, normal, facet_coordinates,
-          contact_manager_.force_d_);
+          myNode, myFace, gap, normal, facet_coordinates, contact_manager_.force_d_);
     }
   }
 };
@@ -178,26 +177,24 @@ ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_outpu
   ContactManager::ZeroContactForce();
 
   // Reset the contact_status flags
-  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj)
-    contact_faces_d_(jj).set_contact_status(false);
+  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).set_contact_status(false);
 
-  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj)
-    contact_nodes_d_(jj).set_contact_status(false);
+  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).set_contact_status(false);
 
   //--- Update the geometric collision information
   this->startTimer("Contact::EnforceInteraction");
   this->startTimer("ArborX::Search");
-  arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{},
-                 contact_faces_d_};
-  auto &contact_manager = *this;
-  bvh.query(nimble_kokkos::kokkos_device_execution_space{}, contact_nodes_d_,
-            ArborXCallback<decltype(contact_manager)>{contact_manager});
+  arborx_bvh bvh{nimble_kokkos::kokkos_device_execution_space{}, contact_faces_d_};
+  auto&      contact_manager = *this;
+  bvh.query(
+      nimble_kokkos::kokkos_device_execution_space{},
+      contact_nodes_d_,
+      ArborXCallback<decltype(contact_manager)>{contact_manager});
   this->stopTimer("ArborX::Search");
   this->stopTimer("Contact::EnforceInteraction");
 
   this->GetForces(contact_force_d);
   Kokkos::deep_copy(contact_force_h, contact_force_d);
-
 }
 
 }  // namespace nimble

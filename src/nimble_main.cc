@@ -170,8 +170,7 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
     //
     // Skip flags for Kokkos, Tpetra, and VT as they have already been processed
     //
-    if ((my_arg == "--use_kokkos") || (my_arg == "--use_kokkos") || (my_arg == "--use_vt"))
-      continue;
+    if ((my_arg == "--use_kokkos") || (my_arg == "--use_kokkos") || (my_arg == "--use_vt")) continue;
     //
     if (my_arg == "--use_uq") {
 #ifdef NIMBLE_HAVE_UQ
@@ -182,8 +181,7 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
       continue;
     }
 
-    if ( my_arg.substr( 0, 4 ) == "--vt" )
-      continue;
+    if (my_arg.substr(0, 4) == "--vt") continue;
     //
     parser.SetInputFilename(std::string(my_arg));
   }
@@ -259,7 +257,7 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
 #ifdef NIMBLE_HAVE_VT
   if (parser.UseVT() == true) {
     MPI_Comm vt_comm = MPI_COMM_WORLD;
-    vt_rt = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
+    vt_rt            = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
     //
     // Check whether we need the next line
     //
@@ -293,7 +291,7 @@ NimbleMain(
     if (rve_genesis_file_name != "none") { rve_mesh.ReadFile(rve_genesis_file_name); }
   }
 
-  std::string tag = "out";
+  std::string tag                = "out";
   std::string output_exodus_name = nimble::IOFileName(parser.ExodusFileName(), "e", tag, my_rank, num_ranks);
 
   int dim       = mesh.GetDim();
@@ -338,11 +336,10 @@ NimbleMain(
 }
 
 void
-NimbleFinalize(const nimble::EnvironmentFlags &env_flags)
+NimbleFinalize(const nimble::EnvironmentFlags& env_flags)
 {
 #ifdef NIMBLE_HAVE_VT
-  if (env_flags.use_vt_)
-    ::vt::finalize( std::move( vt_rt ) );
+  if (env_flags.use_vt_) ::vt::finalize(std::move(vt_rt));
 #endif
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -778,7 +775,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   std::vector<double> rve_center;
   if (bc.IsPeriodicRVEProblem()) { rve_center = mesh.BoundingBoxCenter(); }
 
-  auto &blocks = model_data.GetBlocks();
+  auto& blocks = model_data.GetBlocks();
 
   data_manager.WriteOutput(time_current);
 
@@ -832,10 +829,10 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
 //      tpetra_container.TangentStiffnessMatrixSetScalar(0.0);
 #endif
       for (auto& block_it : blocks) {
-        int            block_id          = block_it.first;
-        int            num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
-        int const*     elem_conn         = mesh.GetConnectivity(block_id);
-        auto &block             = block_it.second;
+        int        block_id          = block_it.first;
+        int        num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
+        int const* elem_conn         = mesh.GetConnectivity(block_id);
+        auto&      block             = block_it.second;
         block->ComputeTangentStiffnessMatrix(
             linear_system_num_unknowns,
             reference_coordinate.data(),

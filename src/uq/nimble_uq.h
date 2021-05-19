@@ -76,7 +76,7 @@ class UqModel
       std::string const&                                  nominal_params_string,
       const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory,
       bool                                                block_id_present,
-      std::map<int, std::shared_ptr< nimble::Block > >&   blocks);
+      std::map<int, std::shared_ptr<nimble::Block>>&      blocks);
 
   // pre time integration
   void

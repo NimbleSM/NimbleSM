@@ -69,11 +69,11 @@ using kokkos_host = Kokkos::Device<kokkos_host_execution_space, kokkos_host_mirr
 using kokkos_device_execution_space = Kokkos::Qthreads::execution_space;
 using kokkos_device_memory_space    = Kokkos::Qthreads::memory_space;
 #elif defined(KOKKOS_ENABLE_CUDA_UVM)
-using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
-using kokkos_device_memory_space    = Kokkos::CudaUVMSpace::memory_space;
+using kokkos_device_execution_space   = Kokkos::Cuda::execution_space;
+using kokkos_device_memory_space      = Kokkos::CudaUVMSpace::memory_space;
 #elif defined(KOKKOS_ENABLE_CUDA)
-using kokkos_device_execution_space = Kokkos::Cuda::execution_space;
-using kokkos_device_memory_space    = Kokkos::Cuda::memory_space;
+using kokkos_device_execution_space   = Kokkos::Cuda::execution_space;
+using kokkos_device_memory_space      = Kokkos::Cuda::memory_space;
 #elif defined(KOKKOS_ENABLE_OPENMP)
 using kokkos_device_execution_space = Kokkos::OpenMP::execution_space;
 using kokkos_device_memory_space    = Kokkos::OpenMP::memory_space;
