@@ -53,7 +53,9 @@ namespace {
 int
 find_name_id(std::map<int, std::string> const& names_map, std::string const& name)
 {
-  for (auto const& [id, map_name] : names_map) {
+  for (auto const& kv : names_map) {
+    auto const id       = kv.first;
+    auto const map_name = kv.second;
     if (map_name == name) return id;
   }
   return -1;
