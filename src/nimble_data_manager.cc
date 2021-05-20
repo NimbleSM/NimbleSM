@@ -132,9 +132,12 @@ DataManager::Initialize()
 
   std::map<int, std::string> const&      node_set_names          = mesh_.GetNodeSetNames();
   std::map<int, std::vector<int>> const& node_sets               = mesh_.GetNodeSets();
+  std::map<int, std::string> const&      side_set_names          = mesh_.GetSideSetNames();
+  std::map<int, std::vector<int>> const& side_sets               = mesh_.GetSideSets();
   std::vector<std::string> const&        bc_strings              = parser_.GetBoundaryConditionStrings();
   std::string                            time_integration_scheme = parser_.TimeIntegrationScheme();
-  boundary_condition_->Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+  boundary_condition_->Initialize(
+      node_set_names, node_sets, side_set_names, side_sets, bc_strings, dim, time_integration_scheme);
 
   //
   // Initialize vectors for storing fields

@@ -79,8 +79,8 @@ class BoundaryCondition
   void
   serialize(ArchiveType& ar)
   {
-    ar | dim_ | node_set_name_ | node_set_id_ | coordinate_ | magnitude_ | bc_type_ | has_expression_ |
-        expression_string_ | rve_macroscale_deformation_gradient_strings_;
+    ar | dim_ | node_set_name_ | node_set_id_ | side_set_name_ | side_set_id_ | coordinate_ | magnitude_ | bc_type_ |
+        has_expression_ | expression_string_ | rve_macroscale_deformation_gradient_strings_;
 
     if (ar.is_unpacking()) {
       if (has_expression_) { expression_ = ExpressionParsing::BoundaryConditionFunctor(expression_string_); }
@@ -89,7 +89,11 @@ class BoundaryCondition
 #endif
 
   bool
-  Initialize(int dim, std::string bc_string, std::map<int, std::string> const& node_set_names);
+  Initialize(
+      int                               dim,
+      std::string                       bc_string,
+      std::map<int, std::string> const& node_set_names,
+      std::map<int, std::string> const& side_set_names);
 
   void
   GetRVEMacroscaleDeformationGradient(double time, double* deformation_gradient, double x, double y, double z);
@@ -97,6 +101,8 @@ class BoundaryCondition
   int                                         dim_{0};
   std::string                                 node_set_name_{"unknown"};
   int                                         node_set_id_{-1};
+  std::string                                 side_set_name_{"unknown"};
+  int                                         side_set_id_{-1};
   int                                         coordinate_{-1};
   double                                      magnitude_{0.0};
   Boundary_Condition_Type                     bc_type_{UNDEFINED};

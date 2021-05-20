@@ -49,8 +49,23 @@
 
 namespace nimble {
 
+namespace {
+int
+find_name_id(std::map<int, std::string> const& names_map, std::string const& name)
+{
+  for (auto const& [id, map_name] : names_map) {
+    if (map_name == name) return id;
+  }
+  return -1;
+}
+}  // namespace
+
 bool
-BoundaryCondition::Initialize(int dim, std::string bc_string, std::map<int, std::string> const& node_set_names)
+BoundaryCondition::Initialize(
+    int                               dim,
+    std::string                       bc_string,
+    std::map<int, std::string> const& node_set_names,
+    std::map<int, std::string> const& side_set_names)
 {
   bool is_valid = true;
 
@@ -66,6 +81,8 @@ BoundaryCondition::Initialize(int dim, std::string bc_string, std::map<int, std:
     bc_type_ = PRESCRIBED_VELOCITY;
   } else if (bc_type_string == "prescribed_displacement") {
     bc_type_ = PRESCRIBED_DISPLACEMENT;
+  } else if (bc_type_string == "prescribed_traction") {
+    bc_type_ = PRESCRIBED_TRACTION;
   } else if (bc_type_string == "periodic_rve") {
     bc_type_ = PERIODIC_RVE;
     rve_macroscale_deformation_gradient_strings_.resize(dim_ * dim_);
@@ -89,7 +106,13 @@ BoundaryCondition::Initialize(int dim, std::string bc_string, std::map<int, std:
         bc_type_string);
   }
 
-  ss >> node_set_name_;
+  bool const is_neumann_bc = bc_type_ == PRESCRIBED_TRACTION;
+
+  if (is_neumann_bc == true) {
+    ss >> side_set_name_;
+  } else {
+    ss >> node_set_name_;
+  }
   ss >> coordinate_string;
 
   // figure out if magnitude is a double or an expression (check for quotes)
@@ -110,18 +133,15 @@ BoundaryCondition::Initialize(int dim, std::string bc_string, std::map<int, std:
   std::transform(bc_type_string.begin(), bc_type_string.end(), bc_type_string.begin(), ::tolower);
   std::transform(coordinate_string.begin(), coordinate_string.end(), coordinate_string.begin(), ::tolower);
 
-  // Find the node set id for the given node set name
-  node_set_id_ = -1;
-  for (std::map<int, std::string>::const_iterator it = node_set_names.begin(); it != node_set_names.end(); it++) {
-    if (it->second == node_set_name_) {
-      node_set_id_ = it->first;
-      break;
-    }
-  }
-  if (node_set_id_ == -1) {
-    // Either 1) no nodes on this processor belong to the node set, or 2) the
-    // node set doesn't exist at all.
-    is_valid = false;
+  // If id is -1, then either
+  // 1) no nodes/sides on this processor belong to the node/side set, or
+  // 2) the node/side set doesn't exist at all.
+  if (is_neumann_bc == true) {
+    side_set_id_ = find_name_id(side_set_names, side_set_name_);
+    if (side_set_id_ == -1) is_valid = false;
+  } else {
+    node_set_id_ = find_name_id(node_set_names, node_set_name_);
+    if (node_set_id_ == -1) is_valid = false;
   }
 
   if (coordinate_string == "x") {

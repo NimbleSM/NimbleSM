@@ -66,12 +66,14 @@ class BoundaryConditionManager
     UNDEFINED   = 2
   };
 
-  BoundaryConditionManager() : dim_(0), time_integration_scheme_(UNDEFINED) {}
+  BoundaryConditionManager() {}
 
   void
   Initialize(
       std::map<int, std::string> const&      node_set_names,
       std::map<int, std::vector<int>> const& node_sets,
+      std::map<int, std::string> const&      side_set_names,
+      std::map<int, std::vector<int>> const& side_sets,
       std::vector<std::string> const&        bc_strings,
       int                                    dim,
       std::string                            time_integration_scheme);
@@ -83,7 +85,8 @@ class BoundaryConditionManager
   void
   serialize(ArchiveType& ar)
   {
-    ar | node_set_names_ | node_sets_ | boundary_conditions_ | dim_ | time_integration_scheme_;
+    ar | node_set_names_ | node_sets_ | side_set_names_ | side_sets_ | boundary_conditions_ | dim_ |
+        time_integration_scheme_;
   }
 #endif
 
@@ -241,9 +244,11 @@ class BoundaryConditionManager
  private:
   std::map<int, std::string>      node_set_names_;
   std::map<int, std::vector<int>> node_sets_;
+  std::map<int, std::string>      side_set_names_;
+  std::map<int, std::vector<int>> side_sets_;
   std::vector<BoundaryCondition>  boundary_conditions_;
-  int                             dim_;
-  Time_Integration_Scheme         time_integration_scheme_;
+  int                             dim_{0};
+  Time_Integration_Scheme         time_integration_scheme_{UNDEFINED};
 };
 
 }  // namespace nimble

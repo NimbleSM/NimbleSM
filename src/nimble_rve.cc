@@ -243,13 +243,15 @@ RVE::InitializeRVE(
 
   std::map<int, std::string> const&      node_set_names = rve_mesh_.GetNodeSetNames();
   std::map<int, std::vector<int>> const& node_sets      = rve_mesh_.GetNodeSets();
+  std::map<int, std::string> const&      side_set_names = rve_mesh_.GetSideSetNames();
+  std::map<int, std::vector<int>> const& side_sets      = rve_mesh_.GetSideSets();
   std::vector<std::string>               bc_strings;
   bc_strings.push_back("periodic_rve");
   std::string time_integration_scheme = "quasistatic";
   bc_                                 = BoundaryConditionManager();
   linear_system_node_ids_             = std::vector<int>();
   map_from_linear_system_             = std::map<int, std::vector<int>>();
-  bc_.Initialize(node_set_names, node_sets, bc_strings, dim, time_integration_scheme);
+  bc_.Initialize(node_set_names, node_sets, side_set_names, side_sets, bc_strings, dim, time_integration_scheme);
 
   const int* const global_node_ids = rve_mesh_.GetNodeGlobalIds();
   if (boundary_condition_strategy_ == PERIODIC_BC) {

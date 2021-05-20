@@ -181,7 +181,7 @@ ExodusOutput::InitializeDatabase(
     std::vector<int>                   node_set_ids            = genesis_mesh.GetNodeSetIds();
     std::map<int, std::string>         node_set_names          = genesis_mesh.GetNodeSetNames();
     std::map<int, std::vector<int>>    node_sets               = genesis_mesh.GetNodeSets();
-    std::map<int, std::vector<double>> ns_distribution_factors = genesis_mesh.GetDistributionFactors();
+    std::map<int, std::vector<double>> ns_distribution_factors = genesis_mesh.GetNodeSetDistributionFactors();
     std::vector<int>                   num_nodes_per_set(num_node_sets_);
     std::vector<int>                   num_ns_distribution_factors_per_set(num_node_sets_);
     int                                total_num_node(0);
