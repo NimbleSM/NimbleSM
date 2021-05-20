@@ -42,6 +42,7 @@
 */
 
 #include "nimble_block_base.h"
+
 #include "nimble_element.h"
 #include "nimble_linear_solver.h"
 

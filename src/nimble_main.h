@@ -56,11 +56,12 @@ class ContactInterface;
 class MaterialFactoryBase;
 class Parser;
 
-struct EnvironmentFlags {
+struct EnvironmentFlags
+{
   bool use_kokkos_ = false;
   bool use_tpetra_ = false;
-  bool use_vt_ = false;
-  bool env_set_ = false;
+  bool use_vt_     = false;
+  bool env_set_    = false;
 };
 
 /// \brief Routine to parse command-line input parameters
@@ -102,7 +103,7 @@ NimbleMain(
     const nimble::Parser&                                             parser);
 
 void
-NimbleFinalize(const nimble::EnvironmentFlags &env_flags);
+NimbleFinalize(const nimble::EnvironmentFlags& env_flags);
 
 }  // namespace nimble
 

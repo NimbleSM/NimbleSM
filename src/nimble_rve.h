@@ -130,18 +130,18 @@ class RVE : public Material
   NIMBLE_FUNCTION
   void
   GetStress(
-      int                 elem_id,
-      int                 num_pts,
-      double              time_previous,
-      double              time_current,
+      int           elem_id,
+      int           num_pts,
+      double        time_previous,
+      double        time_current,
       const double* deformation_gradient_n,
       const double* deformation_gradient_np1,
       const double* stress_n,
-      double*             stress_np1,
+      double*       stress_np1,
       const double* state_data_n,
-      double*             state_data_np1,
-      DataManager&        data_manager,
-      bool                is_output_step) override;
+      double*       state_data_np1,
+      DataManager&  data_manager,
+      bool          is_output_step) override;
 
   NIMBLE_FUNCTION
   void
@@ -156,20 +156,20 @@ class RVE : public Material
       int                 num_pts,
       const double* const deformation_gradient_np1,
       double*             stress_np1) override
-  {}
+  {
+  }
 #endif
 
  protected:
-
   NIMBLE_FUNCTION
   void
   GetStress(
-      double                    time_previous,
-      double                    time_current,
+      double                            time_previous,
+      double                            time_current,
       nimble::Viewify<1, const double>& deformation_gradient_n,
       nimble::Viewify<1, const double>& deformation_gradient_np1,
       nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const override;
+      nimble::Viewify<1>                stress_np1) const override;
 
  private:
   std::map<int, std::string>  material_parameters_string_;

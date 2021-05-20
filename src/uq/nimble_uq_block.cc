@@ -43,13 +43,14 @@
 
 #ifdef NIMBLE_HAVE_UQ
 
-#include "nimble_data_manager.h"
-#include "nimble_element.h"
 #include "nimble_uq_block.h"
 
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "nimble_data_manager.h"
+#include "nimble_element.h"
 
 namespace nimble_uq {
 
@@ -170,9 +171,9 @@ Block::ComputeInternalForce(
       }
     }
 
-  } // for (int elem = 0; elem < num_elem; elem++)
+  }  // for (int elem = 0; elem < num_elem; elem++)
 }
 
-}
+}  // namespace nimble_uq
 
 #endif

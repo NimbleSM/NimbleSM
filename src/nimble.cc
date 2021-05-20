@@ -106,23 +106,19 @@ main(int argc, char* argv[])
 
     if (myFlags.use_vt_) {
 #ifdef NIMBLE_HAVE_VT
-      vt::runInEpochCollective( [&](){
-        nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
-        } );
+      vt::runInEpochCollective(
+          [&]() { nimble::NimbleMain(material_factory, contact_interface, block_material, myParser); });
 #else
       // This situation should never occur.
       throw std::invalid_argument(" Flag 'use_vt_' set in wrong environment ");
 #endif
-    }
-    else {
+    } else {
       nimble::NimbleMain(material_factory, contact_interface, block_material, myParser);
     }
 
-  } 
-  catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << "Standard exception: " << e.what() << std::endl;
-  } 
-  catch (...) {
+  } catch (...) {
     std::cerr << "\n !!! NimbleSM Simulation did not end correctly !!!\n\n";
   }
 

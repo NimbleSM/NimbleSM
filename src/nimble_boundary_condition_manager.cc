@@ -51,12 +51,16 @@ void
 BoundaryConditionManager::Initialize(
     std::map<int, std::string> const&      node_set_names,
     std::map<int, std::vector<int>> const& node_sets,
+    std::map<int, std::string> const&      side_set_names,
+    std::map<int, std::vector<int>> const& side_sets,
     std::vector<std::string> const&        bc_strings,
     int                                    dim,
     std::string                            time_integration_scheme)
 {
   node_set_names_ = node_set_names;
   node_sets_      = node_sets;
+  side_set_names_ = side_set_names;
+  side_sets_      = side_sets;
   dim_            = dim;
 
   if (time_integration_scheme == "explicit") {
@@ -67,7 +71,7 @@ BoundaryConditionManager::Initialize(
 
   for (int i = 0; i < bc_strings.size(); i++) {
     BoundaryCondition bc;
-    bool              is_valid = bc.Initialize(dim_, bc_strings[i], node_set_names);
+    bool              is_valid = bc.Initialize(dim_, bc_strings[i], node_set_names, side_set_names);
     if (is_valid) { boundary_conditions_.push_back(bc); }
   }
 }
@@ -155,6 +159,7 @@ BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(int corner_nod
   int                        new_node_set_id   = max_node_set_id + 1;
   std::string                new_node_set_name = "nodelist_" + std::to_string(new_node_set_id);
   std::map<int, std::string> new_node_set_names;
+  std::map<int, std::string> new_side_set_names;
   new_node_set_names[new_node_set_id] = new_node_set_name;
   std::vector<int> new_node_set_node_ids;
   new_node_set_node_ids.push_back(corner_node_id);
@@ -164,15 +169,15 @@ BoundaryConditionManager::CreateRVEFixedCornersBoundaryConditions(int corner_nod
   // Create fixed-displacement BCs
   std::string       bc_x_string = "rve_fixed_displacement " + new_node_set_name + " x 0.0";
   BoundaryCondition bc_x;
-  bc_x.Initialize(dim_, bc_x_string, new_node_set_names);
+  bc_x.Initialize(dim_, bc_x_string, new_node_set_names, new_side_set_names);
   boundary_conditions_.push_back(bc_x);
   std::string       bc_y_string = "rve_fixed_displacement " + new_node_set_name + " y 0.0";
   BoundaryCondition bc_y;
-  bc_y.Initialize(dim_, bc_y_string, new_node_set_names);
+  bc_y.Initialize(dim_, bc_y_string, new_node_set_names, new_side_set_names);
   boundary_conditions_.push_back(bc_y);
   std::string       bc_z_string = "rve_fixed_displacement " + new_node_set_name + " z 0.0";
   BoundaryCondition bc_z;
-  bc_z.Initialize(dim_, bc_z_string, new_node_set_names);
+  bc_z.Initialize(dim_, bc_z_string, new_node_set_names, new_side_set_names);
   boundary_conditions_.push_back(bc_z);
 }
 

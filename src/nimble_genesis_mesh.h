@@ -252,9 +252,39 @@ class GenesisMesh
   }
 
   std::map<int, std::vector<double>>
-  GetDistributionFactors() const
+  GetNodeSetDistributionFactors() const
   {
     return ns_distribution_factors_;
+  }
+
+  int
+  GetNumSideSets() const
+  {
+    return static_cast<int>(side_set_ids_.size());
+  }
+
+  std::vector<int>
+  GetSideSetIds() const
+  {
+    return side_set_ids_;
+  }
+
+  std::map<int, std::string>
+  GetSideSetNames() const
+  {
+    return side_set_names_;
+  }
+
+  std::map<int, std::vector<int>>
+  GetSideSets() const
+  {
+    return side_sets_;
+  }
+
+  std::map<int, std::vector<double>>
+  GetSideSetDistributionFactors() const
+  {
+    return ss_distribution_factors_;
   }
 
   void

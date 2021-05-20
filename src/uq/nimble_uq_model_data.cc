@@ -43,17 +43,18 @@
 
 #ifdef NIMBLE_HAVE_UQ
 
-#include<map>
+#include "nimble_uq_model_data.h"
+
+#include <map>
 
 #include "nimble_boundary_condition_manager.h"
 #include "nimble_data_manager.h"
-#include "nimble_material_factory.h"
 #include "nimble_genesis_mesh.h"
+#include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_parser.h"
 #include "nimble_uq.h"
 #include "nimble_uq_block.h"
-#include "nimble_uq_model_data.h"
 #include "nimble_vector_communicator.h"
 #include "nimble_view.h"
 
@@ -65,23 +66,23 @@ ModelData::InitializeBlocks(
     const std::shared_ptr<nimble::MaterialFactoryBase>& material_factory_base)
 {
   //
-  const auto& mesh_     = data_manager.GetMesh();
-  const auto& parser_   = data_manager.GetParser();
+  const auto& mesh_   = data_manager.GetMesh();
+  const auto& parser_ = data_manager.GetParser();
 
-  nimble::ModelData::EmplaceBlocks< nimble_uq::Block >(data_manager, material_factory_base);
+  nimble::ModelData::EmplaceBlocks<nimble_uq::Block>(data_manager, material_factory_base);
 
   std::vector<int> block_ids = mesh_.GetBlockIds();
-  uq_model_ = std::shared_ptr<nimble::UqModel>(new nimble::UqModel(dim_, &mesh_, this));
+  uq_model_                  = std::shared_ptr<nimble::UqModel>(new nimble::UqModel(dim_, &mesh_, this));
   uq_model_->ParseConfiguration(parser_.UqModelString());
   std::map<std::string, std::string> lines = parser_.UqParamsStrings();
-  for (auto & line : lines) {
-    std::string material_key            = line.first;
-    int         block_id                = parser_.GetBlockIdFromMaterial(material_key);
-    std::string uq_params_this_material = line.second;
-    std::string const & nominal_params_string = parser_.GetMacroscaleMaterialParameters(block_id);
-    bool block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end() ;
-    uq_model_->ParseBlockInput( uq_params_this_material, block_id, nominal_params_string,
-                               material_factory_base, block_id_present, blocks_ );
+  for (auto& line : lines) {
+    std::string        material_key            = line.first;
+    int                block_id                = parser_.GetBlockIdFromMaterial(material_key);
+    std::string        uq_params_this_material = line.second;
+    std::string const& nominal_params_string   = parser_.GetMacroscaleMaterialParameters(block_id);
+    bool               block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end();
+    uq_model_->ParseBlockInput(
+        uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
   }
   //
   uq_model_->Initialize();
@@ -107,17 +108,17 @@ ModelData::WriteExodusOutput(nimble::DataManager& data_manager, double time_curr
 
   if (!uq_model_->Initialized()) return;
 
-  const auto& mesh_     = data_manager.GetMesh();
-  auto reference_coordinate = GetVectorNodeData("reference_coordinate");
+  const auto& mesh_                = data_manager.GetMesh();
+  auto        reference_coordinate = GetVectorNodeData("reference_coordinate");
   for (auto block_it : blocks_) {
-    int            block_id          = block_it.first;
-    int            num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
-    int const*     elem_conn         = mesh_.GetConnectivity(block_id);
-    auto &block = block_it.second;
+    int        block_id          = block_it.first;
+    int        num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
+    int const* elem_conn         = mesh_.GetConnectivity(block_id);
+    auto&      block             = block_it.second;
     uq_model_->PerformAnalyses(reference_coordinate.data(), num_elem_in_block, elem_conn, block_id, block);
   }
   // UH -- DEBUG TO FIX
-  //uq_model_->Write(step);
+  // uq_model_->Write(step);
 }
 
 void
@@ -166,8 +167,8 @@ ModelData::ComputeInternalForce(
     std::vector<double> const& elem_data_n       = GetElementDataOld(block_id);
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     bool                       is_off_nominal    = false;  // HACK
-    auto block = dynamic_cast< nimble_uq::Block* >( block_it.second.get() );
-    std::vector<double>        uq_params_this_sample;      // HACK
+    auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
+    std::vector<double>        uq_params_this_sample;  // HACK
     block->ComputeInternalForce(
         reference_coord,
         displacement.data(),
@@ -184,9 +185,9 @@ ModelData::ComputeInternalForce(
         elem_data_np1,
         data_manager,
         is_output_step,
-        is_off_nominal,         // UQ
+        is_off_nominal,        // UQ
         uq_params_this_sample  // UQ
-        );
+    );
   }
 
   // Perform a vector reduction on internal force.  This is a vector nodal

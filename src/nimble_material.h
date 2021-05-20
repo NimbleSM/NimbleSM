@@ -267,17 +267,18 @@ class Material
   NIMBLE_FUNCTION
   virtual void
   GetStress(
-      double                                              time_previous,
-      double                                              time_current,
-      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_n,
-      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView &deformation_gradient_np1,
-      const nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  &stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView  stress_np1) const {
-    const int def_g_len = 9, stress_len = 6;
+      double                                                     time_previous,
+      double                                                     time_current,
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& deformation_gradient_n,
+      const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& deformation_gradient_np1,
+      const nimble_kokkos::DeviceSymTensorIntPtSingleEntryView&  stress_n,
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView         stress_np1) const
+  {
+    const int                        def_g_len = 9, stress_len = 6;
     nimble::Viewify<1, const double> def_g_n(deformation_gradient_n.data(), def_g_len);
     nimble::Viewify<1, const double> def_g_np1(deformation_gradient_np1.data(), def_g_len);
     nimble::Viewify<1, const double> s_n(stress_n.data(), stress_len);
-    nimble::Viewify<1> s_np1(stress_np1.data(), stress_len);
+    nimble::Viewify<1>               s_np1(stress_np1.data(), stress_len);
     GetStress(time_previous, time_current, def_g_n, def_g_np1, s_n, s_np1);
   }
 #endif
@@ -297,18 +298,16 @@ class Material
       double*       stress_np1) = 0;
 #endif
 
-protected:
-
+ protected:
   NIMBLE_FUNCTION
   virtual void
   GetStress(
-      double                    time_previous,
-      double                    time_current,
+      double                            time_previous,
+      double                            time_current,
       nimble::Viewify<1, const double>& deformation_gradient_n,
       nimble::Viewify<1, const double>& deformation_gradient_np1,
       nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const = 0;
-
+      nimble::Viewify<1>                stress_np1) const = 0;
 };
 
 class ElasticMaterial : public Material
@@ -402,16 +401,15 @@ class ElasticMaterial : public Material
 #endif
 
  protected:
-
   NIMBLE_FUNCTION
   void
   GetStress(
-      double                    time_previous,
-      double                    time_current,
+      double                            time_previous,
+      double                            time_current,
       nimble::Viewify<1, const double>& deformation_gradient_n,
       nimble::Viewify<1, const double>& deformation_gradient_np1,
       nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const override;
+      nimble::Viewify<1>                stress_np1) const override;
 
  private:
   int    num_state_variables_;
@@ -512,16 +510,15 @@ class NeohookeanMaterial : public Material
 #endif
 
  protected:
-
   NIMBLE_FUNCTION
   void
   GetStress(
-      double                    time_previous,
-      double                    time_current,
+      double                            time_previous,
+      double                            time_current,
       nimble::Viewify<1, const double>& deformation_gradient_n,
       nimble::Viewify<1, const double>& deformation_gradient_np1,
       nimble::Viewify<1, const double>& stress_n,
-      nimble::Viewify<1>        stress_np1) const override;
+      nimble::Viewify<1>                stress_np1) const override;
 
  private:
   int    num_state_variables_;

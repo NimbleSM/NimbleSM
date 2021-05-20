@@ -74,7 +74,7 @@ class BvhContactManager : public ParallelContactManager
       std::size_t                       _overdecomposition);
 
   BvhContactManager(const BvhContactManager&) = delete;
-  BvhContactManager(BvhContactManager&&) = delete;
+  BvhContactManager(BvhContactManager&&)      = delete;
 
   BvhContactManager&
   operator=(const BvhContactManager&) = delete;
@@ -86,13 +86,13 @@ class BvhContactManager : public ParallelContactManager
   void
   ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
 
-private:
+ private:
+  void
+  ComputeBoundingVolumes();
 
-  void ComputeBoundingVolumes();
-
-  bvh::collision_world m_world;
-  bvh::collision_object *m_nodes;
-  bvh::collision_object *m_faces;
+  bvh::collision_world   m_world;
+  bvh::collision_object* m_nodes;
+  bvh::collision_object* m_faces;
 
   std::vector<NarrowphaseResult> m_last_results;
 };
