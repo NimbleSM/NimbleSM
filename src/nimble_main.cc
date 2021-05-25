@@ -159,7 +159,6 @@ ComputeQuasistaticResidual(
     const nimble::Viewify<2>&         displacement,
     nimble::Viewify<2>&               internal_force,
     double*                           residual_vector,
-    double const*                     rve_macroscale_deformation_gradient,
     bool                              is_output_step);
 
 int
@@ -283,12 +282,9 @@ NimbleMain(
 
   // Read the mesh
   nimble::GenesisMesh mesh;
-  nimble::GenesisMesh rve_mesh;
   {
-    std::string genesis_file_name     = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_rank, num_ranks);
-    std::string rve_genesis_file_name = nimble::IOFileName(parser.RVEGenesisFileName(), "g");
+    std::string genesis_file_name = nimble::IOFileName(parser.GenesisFileName(), "g", "", my_rank, num_ranks);
     mesh.ReadFile(genesis_file_name);
-    if (rve_genesis_file_name != "none") { rve_mesh.ReadFile(rve_genesis_file_name); }
   }
 
   std::string tag                = "out";
@@ -297,7 +293,7 @@ NimbleMain(
   int dim       = mesh.GetDim();
   int num_nodes = static_cast<int>(mesh.GetNumNodes());
 
-  nimble::DataManager data_manager(parser, mesh, rve_mesh);
+  nimble::DataManager data_manager(parser, mesh);
   data_manager.SetBlockMaterialInterfaceFactory(block_material);
 
   if (my_rank == 0) {
@@ -474,11 +470,6 @@ ExplicitTimeIntegrator(
   model_data.ApplyInitialConditions(data_manager);
   model_data.ApplyKinematicConditions(data_manager, 0.0, 0.0);
   watch_simulation.pop_region_and_report_time();
-
-  // For explicit dynamics, the macroscale model is never treated as an RVE
-  // so rve_macroscale_deformation_gradient will always be the identity matrix
-  std::vector<double> rve_macroscale_deformation_gradient(dim * dim, 0.0);
-  for (int i = 0; i < dim; i++) { rve_macroscale_deformation_gradient[i] = 1.0; }
 
   data_manager.WriteOutput(time_current);
 
@@ -680,22 +671,13 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   auto& bc = *(data_manager.GetBoundaryConditionManager());
 
   // Store various mappings from global to local node ids
-  // Things get a bit tricky for periodic boundary conditions,
-  // where dof are condensed out of the linear system
   std::vector<int>                linear_system_global_node_ids;
   std::map<int, std::vector<int>> map_from_linear_system;
-  if (bc.IsPeriodicRVEProblem()) {
-    int rve_corner_node_id(-1);
-    mesh.CreatePeriodicRVELinearSystemMap(
-        global_node_ids, linear_system_global_node_ids, map_from_linear_system, rve_corner_node_id);
-    bc.CreateRVEFixedCornersBoundaryConditions(rve_corner_node_id);
-  } else {
-    for (int n = 0; n < num_nodes; ++n) {
-      int global_node_id = global_node_ids[n];
-      linear_system_global_node_ids.push_back(global_node_id);
-      map_from_linear_system[global_node_id] = std::vector<int>();
-      map_from_linear_system[global_node_id].push_back(n);
-    }
+  for (int n = 0; n < num_nodes; ++n) {
+    int global_node_id = global_node_ids[n];
+    linear_system_global_node_ids.push_back(global_node_id);
+    map_from_linear_system[global_node_id] = std::vector<int>();
+    map_from_linear_system[global_node_id].push_back(n);
   }
   int linear_system_num_nodes    = static_cast<int>(map_from_linear_system.size());
   int linear_system_num_unknowns = linear_system_num_nodes * dim;
@@ -724,12 +706,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   std::vector<double> linear_solver_solution(linear_system_num_unknowns, 0.0);
 
   nimble::Viewify<2> displacement = physical_displacement;
-  if (bc.IsPeriodicRVEProblem()) {
-    std::cout << " periodic RVE problem ... displacement is set to "
-                 "displacement_fluctuation \n";
-    displacement = displacement_fluctuation;
-    model_data.SetUseDisplacementFluctuations();
-  }
 
   nimble::CRSMatrixContainer tangent_stiffness;
   nimble::CGScratchSpace     cg_scratch;
@@ -772,16 +748,12 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
 
   std::vector<double> identity(dim * dim, 0.0);
   for (int i = 0; i < dim; i++) { identity[i] = 1.0; }
-  std::vector<double> rve_center;
-  if (bc.IsPeriodicRVEProblem()) { rve_center = mesh.BoundingBoxCenter(); }
 
   auto& blocks = model_data.GetBlocks();
 
   data_manager.WriteOutput(time_current);
 
   if (my_rank == 0) { std::cout << "Beginning quasistatic time integration:" << std::endl; }
-
-  auto& rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
 
   for (int step = 0; step < num_load_steps; step++) {
     time_previous = time_current;
@@ -794,8 +766,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
     }
 
     model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
-
-    bc.GetRVEMacroscaleDeformationGradient(time_current, rve_macroscale_deformation_gradient.data());
 
     // Compute the residual, which is a norm of the (rearranged) nodal force
     // vector, with the dof associated with kinematic BC removed.
@@ -810,7 +780,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         displacement,
         internal_force,
         residual_vector.data(),
-        rve_macroscale_deformation_gradient.data(),
         is_output_step);
 
     int    iteration(0);
@@ -890,7 +859,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
           trial_displacement,
           trial_internal_force,
           trial_residual_vector.data(),
-          rve_macroscale_deformation_gradient.data(),
           is_output_step);
 
       //
@@ -926,7 +894,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
           displacement,
           internal_force,
           residual_vector.data(),
-          rve_macroscale_deformation_gradient.data(),
           is_output_step);
 
       // if the alpha = 1.0 result was better, use alpha = 1.0
@@ -935,35 +902,6 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         displacement.copy(trial_displacement);
         internal_force.copy(trial_internal_force);
         for (int i = 0; i < linear_system_num_unknowns; i++) { residual_vector[i] = trial_residual_vector[i]; }
-      }
-
-      // if we are solving a standard problem, then displacement is the
-      // physical_displacement if we are solving a periodic RVE problem, then
-      // displacement is the displacement_fluctuation, and we need to set
-      // physical_displacement manually and include the macroscale deformation
-      // gradient
-      if (bc.IsPeriodicRVEProblem()) {
-        for (int n = 0; n < linear_system_num_nodes; n++) {
-          std::vector<int> const& node_ids = map_from_linear_system[n];
-          for (auto const& node_id : node_ids) {
-            std::vector<double> const& F = rve_macroscale_deformation_gradient;
-            physical_displacement(node_id, 0) =
-                displacement(node_id, 0) +
-                (F[K_F_XX] - identity[K_F_XX]) * (reference_coordinate(node_id, 0) - rve_center.at(0)) +
-                (F[K_F_XY] - identity[K_F_XY]) * (reference_coordinate(node_id, 1) - rve_center.at(1)) +
-                (F[K_F_XZ] - identity[K_F_XZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
-            physical_displacement(node_id, 1) =
-                displacement(node_id, 1) +
-                (F[K_F_YX] - identity[K_F_YX]) * (reference_coordinate(node_id, 0) - rve_center.at(0)) +
-                (F[K_F_YY] - identity[K_F_YY]) * (reference_coordinate(node_id, 1) - rve_center.at(1)) +
-                (F[K_F_YZ] - identity[K_F_YZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
-            physical_displacement(node_id, 2) =
-                displacement(node_id, 2) +
-                (F[K_F_ZX] - identity[K_F_ZX]) * (reference_coordinate(node_id, 0) - rve_center.at(0)) +
-                (F[K_F_ZY] - identity[K_F_ZY]) * (reference_coordinate(node_id, 1) - rve_center.at(1)) +
-                (F[K_F_ZZ] - identity[K_F_ZZ]) * (reference_coordinate(node_id, 2) - rve_center.at(2));
-          }
-        }
       }
 
       iteration += 1;
@@ -1011,7 +949,6 @@ ComputeQuasistaticResidual(
     const nimble::Viewify<2>&         displacement,
     nimble::Viewify<2>&               internal_force,
     double*                           residual_vector,
-    double const*                     rve_macroscale_deformation_gradient,
     bool                              is_output_step)
 {
   const int dim          = mesh.GetDim();

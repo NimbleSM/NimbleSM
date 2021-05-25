@@ -90,9 +90,6 @@ class BoundaryConditionManager
   }
 #endif
 
-  bool
-  IsPeriodicRVEProblem() const;
-
   template <typename ViewT>
   void
   ApplyInitialConditions(const ViewT reference_coordinates, ViewT velocity, std::vector<ViewT>& offnom_velocities)
@@ -229,17 +226,6 @@ class BoundaryConditionManager
 
   void
   ModifyRHSForKinematicBC(const int* global_node_ids, double* rhs) const;
-
-  void
-  CreateRVEFixedCornersBoundaryConditions(int corner_node_id);
-
-  void
-  GetRVEMacroscaleDeformationGradient(
-      double  time,
-      double* deformation_gradient,
-      double  x = 0.0,
-      double  y = 0.0,
-      double  z = 0.0);
 
  private:
   std::map<int, std::string>      node_set_names_;

@@ -52,10 +52,6 @@
 #include <utility>
 #include <vector>
 
-#ifndef NIMBLE_HAVE_KOKKOS
-#include "nimble_rve.h"
-#endif
-
 namespace nimble {
 
 void
@@ -67,39 +63,11 @@ Block::Initialize(std::string const& macro_material_parameters, MaterialFactory&
 }
 
 void
-Block::Initialize(
-    std::string const&                macro_material_parameters,
-    std::map<int, std::string> const& rve_material_parameters,
-    GenesisMesh const&                rve_mesh,
-    std::string                       rve_boundary_condition_strategy,
-    MaterialFactory&                  factory)
-{
-  macro_material_parameters_ = macro_material_parameters;
-  if (macro_material_parameters_ == "none") {
-    rve_material_parameters_         = rve_material_parameters;
-    rve_mesh_                        = rve_mesh;
-    rve_boundary_condition_strategy_ = rve_boundary_condition_strategy;
-  }
-  InstantiateMaterialModel(factory);
-  InstantiateElement();
-}
-
-void
 Block::InstantiateMaterialModel(MaterialFactory& factory)
 {
-  if (macro_material_parameters_ != "none" && rve_material_parameters_.size() == 0) {
+  if (macro_material_parameters_ != "none") {
     factory.parse_and_create(macro_material_parameters_);
     material_ = factory.get_material();
-  }
-#ifndef NIMBLE_HAVE_KOKKOS
-  else if (macro_material_parameters_ == "none" && rve_material_parameters_.size() != 0) {
-    material_ = std::make_shared<RVE>(rve_material_parameters_, rve_mesh_, rve_boundary_condition_strategy_);
-  }
-#endif
-  else if (macro_material_parameters_ != "none" && rve_material_parameters_.size() != 0) {
-    throw std::logic_error(
-        "\nError:  Assigning both a macroscale material and an RVE material to "
-        "the same block is currently not supported.\n");
   } else {
     throw std::logic_error(
         "\nError in Block::InstantiateMaterialModel(), invalid material "
@@ -181,7 +149,6 @@ void
 Block::InitializeElementData(
     int                             num_elem_in_block,
     std::vector<int> const&         elem_global_ids_in_block,
-    std::vector<int> const&         rve_output_global_elem_ids,
     std::vector<std::string> const& elem_data_labels,
     std::vector<std::string> const& derived_elem_data_labels,
     std::vector<double>&            elem_data_n,
@@ -192,15 +159,7 @@ Block::InitializeElementData(
   int num_int_pts = element_->NumIntegrationPointsPerElement();
 #ifndef NIMBLE_HAVE_KOKKOS
   for (int i_elem = 0; i_elem < num_elem_in_block; ++i_elem) {
-    int  elem_global_id    = elem_global_ids_in_block.at(i_elem);
-    bool rve_exodus_output = false;
-    if (std::find(rve_output_global_elem_ids.begin(), rve_output_global_elem_ids.end(), elem_global_id) !=
-        rve_output_global_elem_ids.end()) {
-      rve_exodus_output = true;
-    }
-    for (int i_ipt = 0; i_ipt < num_int_pts; ++i_ipt) {
-      material_->InitializeRVE(elem_global_id, i_ipt + 1, data_manager, rve_exodus_output, material_factory);
-    }
+    int elem_global_id = elem_global_ids_in_block.at(i_elem);
   }
 #endif
 
@@ -252,7 +211,6 @@ Block::ComputeInternalForce(
     const double*                   reference_coordinates,
     const double*                   displacement,
     const double*                   velocity,
-    const double*                   rve_macroscale_deformation_gradient,
     double*                         internal_force,
     double                          time_previous,
     double                          time_current,
@@ -309,15 +267,6 @@ Block::ComputeInternalForce(
     }
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
-
-    // Add in the macroscale displacement gradient (nonzero only for multiscale
-    // RVE problems)
-    for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {
-      for (int i_component = 0; i_component < full_tensor_size; i_component++) {
-        def_grad_np1[i_ipt * full_tensor_size + i_component] +=
-            rve_macroscale_deformation_gradient[i_component] - identity[i_component];
-      }
-    }
 
     // Copy data from the global data containers
     for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {

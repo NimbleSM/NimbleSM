@@ -52,7 +52,6 @@
 #include "nimble_genesis_mesh.h"
 #include "nimble_material_factory.h"
 #include "nimble_parser.h"
-#include "nimble_rve.h"
 #include "nimble_vector_communicator.h"
 #include "nimble_view.h"
 
@@ -427,16 +426,9 @@ ModelData::EmplaceBlocks(
 
   const std::vector<int>& block_ids = mesh_.GetBlockIds();
   for (int block_id : block_ids) {
-    std::string const&                macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
-    std::map<int, std::string> const& rve_material_parameters   = parser_.GetMicroscaleMaterialParameters();
-    std::string                       rve_bc_strategy           = parser_.GetMicroscaleBoundaryConditionStrategy();
-    auto                              block_ptr                 = std::shared_ptr<nimble::Block>(new TBlock());
-    block_ptr->Initialize(
-        macro_material_parameters,
-        rve_material_parameters,
-        data_manager.GetRVEMesh(),
-        rve_bc_strategy,
-        *material_factory_ptr);
+    std::string const& macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
+    auto               block_ptr                 = std::shared_ptr<nimble::Block>(new TBlock());
+    block_ptr->Initialize(macro_material_parameters, *material_factory_ptr);
     std::vector<std::pair<std::string, nimble::Length>> data_labels_and_lengths;
     block_ptr->GetDataLabelsAndLengths(data_labels_and_lengths);
     DeclareElementData(block_id, data_labels_and_lengths);
@@ -473,7 +465,6 @@ ModelData::AllocateInitializeElementData(
   std::map<int, std::vector<std::string>> const& derived_elem_data_labels = GetDerivedElementDataLabelsForOutput();
 
   // Initialize the element data
-  std::vector<int> rve_output_elem_ids = parser_.MicroscaleOutputElementIds();
   for (auto& block_it : blocks_) {
     int                     block_id          = block_it.first;
     int                     num_elem_in_block = mesh_.GetNumElementsInBlock(block_id);
@@ -484,7 +475,6 @@ ModelData::AllocateInitializeElementData(
     block->InitializeElementData(
         num_elem_in_block,
         elem_global_ids,
-        rve_output_elem_ids,
         elem_data_labels.at(block_id),
         derived_elem_data_labels.at(block_id),
         elem_data_n,
@@ -645,8 +635,6 @@ ModelData::ComputeInternalForce(
   auto reference_coord = GetNodeData("reference_coordinate");
   auto velocity        = GetNodeData("velocity");
 
-  auto& rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
-
   for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
     int                        num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -659,7 +647,6 @@ ModelData::ComputeInternalForce(
         reference_coord,
         displacement.data(),
         velocity,
-        rve_macroscale_deformation_gradient.data(),
         force.data(),
         time_previous,
         time_current,
