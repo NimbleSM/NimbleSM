@@ -65,6 +65,50 @@
 
 namespace nimble {
 
+namespace details {
+
+#ifdef NIMBLE_HAVE_ARBORX
+struct ArborXCallback
+{
+  nimble_kokkos::DeviceContactEntityArrayView d_contact_faces;
+  nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes;
+
+  double enforcement_penalty;
+
+  std::vector<NarrowphaseResult> &resa_vec;
+  std::vector<NarrowphaseResult> &resb_vec;
+
+  template <typename Query>
+  KOKKOS_FUNCTION void
+  operator()(Query const& query, int j) const
+  {
+    auto& myNode = d_contact_nodes(ArborX::getData(query));
+    auto& myFace = d_contact_faces(j);
+
+    bool   inside               = false;
+    double normal[3] = {0.0, 0.0, 0.0};
+
+    //--- Determine whether the node is projected inside the triangular face
+    //--- Determine whether the node is projected inside the triangular face
+    NarrowphaseResult entry;
+    ContactManager::Projection(myNode, myFace, inside, entry.gap, &normal[0], entry.bary);
+    if (inside) {
+      details::getContactForce(enforcement_penalty, entry.gap, normal, entry.contact_force);
+      //
+      entry.local_index = myFace.local_id();
+      entry.node        = false;
+      resa_vec.push_back(entry);
+      //
+      entry.local_index = myNode.local_id();
+      entry.node        = true;
+      resb_vec.push_back(entry);
+    }
+  }
+};
+#endif
+
+}
+
 struct NarrowphaseFunc
 {
   explicit NarrowphaseFunc(BvhContactManager* cm) : contact_manager{cm} {}
@@ -155,42 +199,15 @@ struct NarrowphaseFunc
     //
     // Number of queries, n = size of contact_nodes_d
     // Size of offset = n + 1
-    a_bvh.query(nimble_kokkos::kokkos_device_execution_space{}, d_contact_nodes, indices, offset);
-    //
-    // The next loop does not track which node is in contact with which face
-    // In theory, we could simply loop on the entries in indices.
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
-    resa_vec.reserve(indices.extent(0));
-    resb_vec.reserve(indices.extent(0));
-    double normal[3] = {0., 0., 0.};
-    bool   inside    = false;
     //
-    for (size_t inode = 0; inode < d_contact_nodes.extent(0); ++inode) {
-      auto& myNode = d_contact_nodes(inode);
-      for (int j = offset(inode); j < offset(inode + 1); ++j) {
-        auto& myFace = d_contact_faces(indices(j));
-        //--- Determine whether the node is projected inside the triangular face
-        NarrowphaseResult entry;
-        ContactManager::Projection(myNode, myFace, inside, entry.gap, &normal[0], entry.bary);
-        if (inside) {
-          details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, normal, entry.contact_force);
-          //
-          entry.local_index = myFace.local_id();
-          entry.node        = false;
-          resa_vec.push_back(entry);
-          //
-          entry.local_index = myNode.local_id();
-          entry.node        = true;
-          resb_vec.push_back(entry);
-          //
-        }
-      }
-    }
+    a_bvh.query(nimble_kokkos::kokkos_device_execution_space{}, d_contact_nodes,
+              details::ArborXCallback{d_contact_faces, d_contact_nodes, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
-
+    
     /*
     static int iter_count = 0;
 
