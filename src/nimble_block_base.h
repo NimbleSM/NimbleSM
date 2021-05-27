@@ -113,15 +113,9 @@ class BlockBase
       MatT&               tangent_stiffness) const;
 
  protected:
-  std::string                macro_material_parameters_ = "none";
-  std::map<int, std::string> rve_material_parameters_;
-  std::string                rve_boundary_condition_strategy_ = "none";
-  std::vector<int>           rve_output_global_elem_ids_;
-  // todo: can we avoid carrying the rve_mesh around?
-  GenesisMesh rve_mesh_;
-
-  std::shared_ptr<Element>  element_  = nullptr;
-  std::shared_ptr<Material> material_ = nullptr;
+  std::string               macro_material_parameters_ = "none";
+  std::shared_ptr<Element>  element_                   = nullptr;
+  std::shared_ptr<Material> material_                  = nullptr;
 };
 
 }  // namespace nimble

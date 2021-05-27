@@ -66,15 +66,10 @@
 
 namespace nimble {
 
-DataManager::DataManager(
-    const nimble::Parser&      parser,
-    const nimble::GenesisMesh& mesh,
-    const nimble::GenesisMesh& rve_mesh)
+DataManager::DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh)
     : parser_(parser),
       mesh_(mesh),
-      rve_mesh_(rve_mesh),
       macroscale_data_(),
-      rve_data_(),
       field_ids_(),
       vector_communicator_(nullptr),
       boundary_condition_(new nimble::BoundaryConditionManager())
@@ -168,37 +163,6 @@ DataManager::Initialize()
   }
 
   macroscale_data_->SetReferenceCoordinates(mesh_);
-
-  //
-  // Initialization of RVE data
-  //
-  rve_macroscale_deformation_gradient_.resize(dim * dim, 0.0);
-  if (parser_.TimeIntegrationScheme() == "explicit") {
-    for (int i = 0; i < dim; i++) rve_macroscale_deformation_gradient_[i] = 1.0;
-  }
-}
-
-RVEData&
-DataManager::AllocateRVEData(int global_element_id, int integration_point_id)
-{
-  std::pair<int, int> id_pair(global_element_id, integration_point_id);
-  if (rve_data_.find(id_pair) != rve_data_.end()) {
-    throw std::logic_error(
-        "\n****Error in DataManager::AllocateRVEData, requested "
-        "global_element_id and integration_point_id have already been "
-        "allocated.\n");
-  }
-  rve_data_[id_pair] = RVEData();
-  RVEData& rve_data  = rve_data_[id_pair];
-  return rve_data;
-}
-
-RVEData&
-DataManager::GetRVEData(int global_element_id, int integration_point_id)
-{
-  std::pair<int, int> id_pair(global_element_id, integration_point_id);
-  RVEData&            rve_data = rve_data_.at(id_pair);
-  return rve_data;
 }
 
 void

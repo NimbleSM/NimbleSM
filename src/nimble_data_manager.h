@@ -66,27 +66,6 @@ class ModelDataBase;
 class Parser;
 class VectorCommunicator;
 
-struct RVEData
-{
-  nimble::ModelData                               model_data_;
-  std::vector<double>                             residual_vector_;
-  std::vector<double>                             linear_solver_solution_;
-  CRSMatrixContainer                              tangent_stiffness_;
-  bool                                            write_exodus_output_;
-  ExodusOutput                                    exodus_output_;
-  std::map<int, std::vector<std::vector<double>>> derived_elem_data_;
-
-#ifdef NIMBLE_HAVE_DARMA
-  template <typename ArchiveType>
-  void
-  serialize(ArchiveType& ar)
-  {
-    ar | model_data_ | residual_vector_ | linear_solver_solution_ | tangent_stiffness_ | write_exodus_output_ |
-        exodus_output_ | derived_elem_data_;
-  }
-#endif
-};
-
 class DataManager
 {
  public:
@@ -94,10 +73,8 @@ class DataManager
   ///
   /// \param parser Reference to parser information
   /// \param mesh Reference to mesh
-  /// \param rve_mesh Reference to RVE mesh
   ///
-  /// \note The RVE mesh could be empty.
-  DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh, const nimble::GenesisMesh& rve_mesh);
+  DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh);
 
   /// \brief Destructor
   ~DataManager() = default;
@@ -107,25 +84,9 @@ class DataManager
   void
   serialize(ArchiveType& ar)
   {
-    ar | macroscale_data_ | rve_data_;
+    ar | macroscale_data_;
   }
 #endif
-
-  /// \brief Allocate RVE data for an integration point in an element
-  ///
-  /// \param global_element_id Global ID to element
-  /// \param integration_point_id Integration point ID
-  /// \return Reference to RVE data
-  RVEData&
-  AllocateRVEData(int global_element_id, int integration_point_id);
-
-  /// \brief Get RVE data for an integration point in an element
-  ///
-  /// \param global_element_id Global ID to element
-  /// \param integration_point_id Integration point ID
-  /// \return Reference to RVE data
-  RVEData&
-  GetRVEData(int global_element_id, int integration_point_id);
 
   /// \brief Initialize the data for Exodus output
   ///
@@ -149,15 +110,6 @@ class DataManager
   GetMesh() const
   {
     return mesh_;
-  }
-
-  /// \brief Return constant reference to RVE mesh
-  ///
-  /// \return Reference to RVE mesh
-  const nimble::GenesisMesh&
-  GetRVEMesh() const
-  {
-    return rve_mesh_;
   }
 
   /// \brief Return shared pointer to ModelData objet
@@ -194,15 +146,6 @@ class DataManager
   GetVectorCommunicator()
   {
     return vector_communicator_;
-  }
-
-  /// \brief Return reference to RVE-macroscale deformation gradient
-  ///
-  /// \return Reference
-  std::vector<double>&
-  GetRVEDeformationGradient()
-  {
-    return rve_macroscale_deformation_gradient_;
   }
 
   /// \brief Write output of simulations
@@ -247,11 +190,7 @@ class DataManager
  protected:
   const nimble::Parser&                  parser_;
   const nimble::GenesisMesh&             mesh_;
-  const nimble::GenesisMesh&             rve_mesh_;
   std::shared_ptr<nimble::ModelDataBase> macroscale_data_ = nullptr;
-
-  std::map<std::pair<int, int>, RVEData> rve_data_;
-  std::vector<double>                    rve_macroscale_deformation_gradient_;
 
   nimble::FieldIds field_ids_;
 

@@ -73,19 +73,7 @@ class Block : public nimble::BlockBase
   void
   serialize(ArchiveType& ar)
   {
-    // ar | macro_material_parameters_ | rve_material_parameters_ |
-    // rve_boundary_condition_strategy_ | def_grad_offset_ | stress_offset_ |
-    // state_data_offset_ | vol_ave_volume_offset_ | vol_ave_offsets_ |
-    // vol_ave_index_to_derived_data_index_; ar | rve_output_global_elem_ids_;
-
     ar | macro_material_parameters_;
-    ar | rve_material_parameters_;
-    ar | rve_boundary_condition_strategy_;
-    ar | rve_output_global_elem_ids_;
-    ar | rve_mesh_;
-    // These are set up below
-    // ar | element_;
-    // ar | material_;
     ar | def_grad_offset_;
     ar | stress_offset_;
     ar | state_data_offset_;
@@ -109,14 +97,6 @@ class Block : public nimble::BlockBase
   Initialize(std::string const& macro_material_parameters, MaterialFactory& factory);
 
   void
-  Initialize(
-      std::string const&                macro_material_parameters,
-      std::map<int, std::string> const& rve_material_parameters,
-      GenesisMesh const&                rve_mesh,
-      std::string                       rve_boundary_condition_strategy,
-      MaterialFactory&                  factory);
-
-  void
   InstantiateMaterialModel(MaterialFactory& factory);
 
   void
@@ -136,7 +116,6 @@ class Block : public nimble::BlockBase
   InitializeElementData(
       int                             num_elem_in_block,
       std::vector<int> const&         elem_global_ids_in_block,
-      std::vector<int> const&         rve_output_global_elem_ids,
       std::vector<std::string> const& elem_data_labels,
       std::vector<std::string> const& derived_elem_data_labels,
       std::vector<double>&            elem_data_n,
@@ -149,7 +128,6 @@ class Block : public nimble::BlockBase
       const double*                   reference_coordinates,
       const double*                   displacement,
       const double*                   velocity,
-      const double*                   rve_macroscale_deformation_gradient,
       double*                         internal_force,
       double                          time_previous,
       double                          time_current,

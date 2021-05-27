@@ -85,22 +85,6 @@ BoundaryCondition::Initialize(
     bc_type_ = PRESCRIBED_DISPLACEMENT;
   } else if (bc_type_string == "prescribed_traction") {
     bc_type_ = PRESCRIBED_TRACTION;
-  } else if (bc_type_string == "periodic_rve") {
-    bc_type_ = PERIODIC_RVE;
-    rve_macroscale_deformation_gradient_strings_.resize(dim_ * dim_);
-    for (int i = 0; i < dim_ * dim_; i++) {
-      std::string def_grad_component_string;
-      ss >> def_grad_component_string;
-      size_t first_pos = def_grad_component_string.find('"');
-      size_t last_pos  = def_grad_component_string.rfind('"');
-      rve_macroscale_deformation_gradient_strings_[i] =
-          def_grad_component_string.substr(first_pos + 1, last_pos - first_pos - 1);
-    }
-    // the periodic rve boundary conditions does not have a node set,
-    // coordinate, magnitude, etc.
-    return is_valid;
-  } else if (bc_type_string == "rve_fixed_displacement") {
-    bc_type_ = RVE_FIXED_DISPLACEMENT;
   } else {
     throw std::logic_error(
         "Error processing boundary condition, unknown boundary condition "
@@ -157,30 +141,6 @@ BoundaryCondition::Initialize(
   }
 
   return is_valid;
-}
-
-void
-BoundaryCondition::GetRVEMacroscaleDeformationGradient(
-    double  time,
-    double* deformation_gradient,
-    double  x,
-    double  y,
-    double  z)
-{
-  for (int i = 0; i < dim_ * dim_; i++) { deformation_gradient[i] = 0.0; }
-  for (int i = 0; i < dim_; i++) { deformation_gradient[i] = 1.0; }
-
-  if (rve_macroscale_deformation_gradient_strings_.size() == static_cast<unsigned int>(dim_ * dim_)) {
-    for (int i = 0; i < dim_ * dim_; i++) {
-      ExpressionParsing::BoundaryConditionFunctor expression(rve_macroscale_deformation_gradient_strings_[i]);
-      expression.x = x;
-      expression.y = y;
-      expression.z = 0.0;
-      if (dim_ == 3) { expression.z = z; }
-      expression.t            = time;
-      deformation_gradient[i] = expression.eval();
-    }
-  }
 }
 
 }  // namespace nimble
