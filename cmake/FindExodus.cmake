@@ -24,6 +24,8 @@ endif()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Exodus REQUIRED_VARS exodus_LIBRARY exodus_INCLUDE_DIR VERSION_VAR Exodus_VERSION)
 
+message(STATUS "exodus libraries: ${SEACASExodus_TPL_LIBRARIES}")
+
 if (Exodus_FOUND)
   set(Exodus_INCLUDE_DIRS "${exodus_INCLUDE_DIR}")
   set(Exodus_LIBRARIES "${exodus_LIBRARY}")
@@ -32,8 +34,8 @@ if (Exodus_FOUND)
     add_library(Exodus::ExodusII UNKNOWN IMPORTED)
     set_target_properties(Exodus::ExodusII PROPERTIES
       IMPORTED_LOCATION "${exodus_LIBRARY}"
-      INTERFACE_INCLUDE_DIRECTORIES "${exodus_INCLUDE_DIR};${SEACASExodus_TPL_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${SEACASExodus_TPL_LIBRARIES}"
+      INTERFACE_INCLUDE_DIRECTORIES "${exodus_INCLUDE_DIR}"#;${SEACASExodus_TPL_INCLUDE_DIRS}"
+      #INTERFACE_LINK_LIBRARIES "${SEACASExodus_TPL_LIBRARIES}"
     )
   endif()
 endif()

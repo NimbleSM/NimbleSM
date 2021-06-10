@@ -5,7 +5,7 @@
 message("CMakeLists.txt - NimbleSM")
 
 cmake_minimum_required(VERSION 3.12)
-project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
+project(NimbleSM VERSION 0.1.0)# LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -58,7 +58,7 @@ endif()
 # Optional dependency for pure MPI build (no Trilinos)
 if (USE_PURE_MPI)
   set(NIMBLE_HAVE_MPI TRUE)
-    message(STATUS "Compiling with MPI")
+  message(STATUS "Compiling with MPI")
   find_package(MPI REQUIRED)
   target_link_libraries(nimble PUBLIC MPI::MPI_CXX)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
@@ -168,9 +168,6 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
   set(NIMBLE_HAVE_EXODUS TRUE)
   target_compile_definitions(nimble PRIVATE NIMBLE_HAVE_EXODUS)
   target_link_libraries(nimble PRIVATE Exodus::ExodusII)
-  if(CRAY)
-    target_link_libraries(nimble PRIVATE hdf5_hl hdf5 z)
-  endif()
 endif()
 
 # Optional ArborX dependency
