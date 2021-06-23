@@ -209,7 +209,7 @@ struct NarrowphaseFunc
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     ArborX::Experimental::TraversalPolicy policy;
-    policy._sort_predicates = false;
+    policy.setPredicateSorting(false);
     //
     a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
                 details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
