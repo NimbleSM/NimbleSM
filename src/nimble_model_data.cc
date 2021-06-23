@@ -615,8 +615,8 @@ ModelData::ComputeExternalForce(
     double               time_current,
     bool                 is_output_step)
 {
-  auto internal_force = GetVectorNodeData("external_force");
-  internal_force.zero();
+  auto force = GetVectorNodeData("external_force");
+  force.zero();
 }
 
 void

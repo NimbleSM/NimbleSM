@@ -296,20 +296,20 @@ ContactManager::CreateContactEntities(
   for (auto& face : secondary_skin_faces) {
     int num_nodes_in_face = static_cast<int>(face.size());
     // determine a characteristic length based on max edge length
-    double max_edge_length = std::numeric_limits<double>::lowest();
+    double max_edge_length_square= std::numeric_limits<double>::lowest();
     for (int i = 0; i < num_nodes_in_face; ++i) {
       int node_id_1 = face[i];
       int node_id_2 = face[0];
       if (i + 1 < num_nodes_in_face) { node_id_2 = face[i + 1]; }
-      double edge_length = sqrt(
+      double edge_length_square = 
           (coord_[3 * node_id_2] - coord_[3 * node_id_1]) * (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
           (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
           (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]) *
-              (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]));
-      if (edge_length > max_edge_length) { max_edge_length = edge_length; }
+              (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]);
+      if (edge_length_square > max_edge_length_square) { max_edge_length_square = edge_length_square; }
     }
-    double characteristic_length = max_edge_length;
+    double characteristic_length = sqrt( max_edge_length_square );
     for (int i_node = 0; i_node < num_nodes_in_face; i_node++) {
       int node_id = face[i_node];
       // omit ghosted nodes
@@ -365,23 +365,28 @@ ContactManager::CreateContactEntities(
     Kokkos::deep_copy(model_coord_d_, model_coord_h);
     Kokkos::deep_copy(coord_d_, model_coord_h);
     Kokkos::deep_copy(force_d_, 0.0);
-
-    Kokkos::resize(contact_nodes_h_, secondary_node_ids.size());
-    Kokkos::resize(contact_faces_h_, 4 * primary_skin_faces.size());
-    CreateContactNodesAndFaces(
-        primary_skin_faces,
-        primary_skin_entity_ids,
-        secondary_node_ids,
-        secondary_node_entity_ids,
-        secondary_node_char_lens,
-        contact_nodes_h_,
-        contact_faces_h_);
-
-    Kokkos::resize(contact_nodes_d_, secondary_node_ids.size());
-    Kokkos::resize(contact_faces_d_, 4 * primary_skin_faces.size());
-    Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
-    Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
   }
+
+  //
+  // Create Kokkos::View objects for contact nodes and faces
+  //
+
+  Kokkos::resize(contact_nodes_h_, secondary_node_ids.size());
+  Kokkos::resize(contact_faces_h_, 4 * primary_skin_faces.size());
+  CreateContactNodesAndFaces(
+      primary_skin_faces,
+      primary_skin_entity_ids,
+      secondary_node_ids,
+      secondary_node_entity_ids,
+      secondary_node_char_lens,
+      contact_nodes_h_,
+      contact_faces_h_);
+
+  Kokkos::resize(contact_nodes_d_, secondary_node_ids.size());
+  Kokkos::resize(contact_faces_d_, 4 * primary_skin_faces.size());
+  Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
+  Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
+
 #endif
 
   int num_contact_faces = contact_faces_.size();

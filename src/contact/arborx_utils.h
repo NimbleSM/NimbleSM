@@ -51,6 +51,14 @@
 
 #include <ArborX.hpp>
 
+namespace nimble_kokkos {
+
+using HostContactEntityUnmanagedConstView =
+    Kokkos::View<const nimble::ContactEntity*, nimble_kokkos::kokkos_host, Kokkos::MemoryTraits< Kokkos::Unmanaged > >;
+
+}
+
+
 //
 // Need to specialize AccessTrait< ..., {PrimitivesTag, PredicatesTag} >
 // Here the first template parameter is a container of nimble::ContactEntity
@@ -58,6 +66,7 @@
 // See https://github.com/arborx/ArborX/wiki/ArborX%3A%3AAccessTraits
 //
 namespace ArborX {
+
 template <>
 struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
 {
@@ -115,6 +124,69 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
 };
+
+
+//
+// Specialization for HostContactEntityUnmanagedConstView
+//
+
+
+template <>
+struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, PrimitivesTag>
+{
+  // size returns the number of elements in the View
+  static std::size_t
+  size(nimble_kokkos::HostContactEntityUnmanagedConstView const& v)
+  {
+    return v.size();
+  }
+
+  /// Returns an ArborX::Box for each contact entity within the nimble view
+  ///
+  /// \param v
+  /// \param i
+  /// \return ArborX::Box
+  KOKKOS_FUNCTION static ArborX::Box
+  get(nimble_kokkos::HostContactEntityUnmanagedConstView const& v, std::size_t i)
+  {
+    const nimble::ContactEntity& e = v(i);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
+    return box;
+  }
+  using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
+};
+
+template <>
+struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, PredicatesTag>
+{
+  static std::size_t
+  size(nimble_kokkos::HostContactEntityUnmanagedConstView const& v)
+  {
+    return v.size();
+  }
+
+  KOKKOS_FUNCTION static auto
+  get(nimble_kokkos::HostContactEntityUnmanagedConstView const& v, std::size_t i)
+  {
+    const nimble::ContactEntity& e = v(i);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
+    //
+    // What does Intersects returns, how is it used afterwards?
+    // The intent with the "unspecified" return type in the doc
+    // (https://github.com/arborx/ArborX/wiki/ArborX%3A%3Aintersects)
+    // is to consider the return type as an implementation detail.
+    //
+    // If needed, `decltype(ArborX::intersects(ArborX::Box{}))` spells out the type.
+    //
+    return ArborX::attach(intersects(box), (int)i);
+  }
+  using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
+};
+
 }  // namespace ArborX
 
 #endif  // #ifdef NIMBLE_HAVE_ARBORX

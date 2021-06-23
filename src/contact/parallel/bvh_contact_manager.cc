@@ -73,6 +73,9 @@ struct ArborXCallback
   nimble_kokkos::DeviceContactEntityArrayView d_contact_faces;
   nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes;
 
+  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_faces;
+  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_nodes;
+
   double enforcement_penalty;
 
   std::vector<NarrowphaseResult> &resa_vec;
@@ -82,8 +85,8 @@ struct ArborXCallback
   KOKKOS_FUNCTION void
   operator()(Query const& query, int j) const
   {
-    auto& myNode = d_contact_nodes(ArborX::getData(query));
-    auto& myFace = d_contact_faces(j);
+    const auto& myNode = d_contact_nodes(ArborX::getData(query));
+    const auto& myFace = d_contact_faces(j);
 
     bool   inside               = false;
     double normal[3] = {0.0, 0.0, 0.0};
@@ -168,6 +171,8 @@ struct NarrowphaseFunc
       d_contact_faces(ii) = _a.elements[ii];
       d_contact_faces(ii).ResetContactData();
     }
+    auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView( _a.elements.data(), _a.elements.size() );
+    auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView( _b.elements.data(), _b.elements.size() );
 
     nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
         nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
@@ -181,6 +186,8 @@ struct NarrowphaseFunc
     //
     using memory_space = nimble_kokkos::kokkos_device_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_device_execution_space{}, d_contact_faces};
+    using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
+    ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
     //
     // indices : position of the primitives that satisfy the predicates.
     // offsets : predicate offsets in indices.
@@ -201,9 +208,12 @@ struct NarrowphaseFunc
     // Size of offset = n + 1
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
+    ArborX::Experimental::TraversalPolicy policy;
+    policy._sort_predicates = false;
     //
-    a_bvh.query(nimble_kokkos::kokkos_device_execution_space{}, d_contact_nodes,
-              details::ArborXCallback{d_contact_faces, d_contact_nodes, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
+                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
+                policy);
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
