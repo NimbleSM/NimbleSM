@@ -70,8 +70,8 @@ namespace details {
 #ifdef NIMBLE_HAVE_ARBORX
 struct ArborXCallback
 {
-  nimble_kokkos::DeviceContactEntityArrayView d_contact_faces;
-  nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes;
+  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_faces;
+  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_nodes;
 
   double enforcement_penalty;
 
@@ -82,8 +82,8 @@ struct ArborXCallback
   KOKKOS_FUNCTION void
   operator()(Query const& query, int j) const
   {
-    auto& myNode = d_contact_nodes(ArborX::getData(query));
-    auto& myFace = d_contact_faces(j);
+    const auto& myNode = d_contact_nodes(ArborX::getData(query));
+    const auto& myFace = d_contact_faces(j);
 
     bool   inside               = false;
     double normal[3] = {0.0, 0.0, 0.0};
@@ -168,6 +168,8 @@ struct NarrowphaseFunc
       d_contact_faces(ii) = _a.elements[ii];
       d_contact_faces(ii).ResetContactData();
     }
+    auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView( _a.elements.data(), _a.elements.size() );
+    auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView( _b.elements.data(), _b.elements.size() );
 
     nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
         nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
@@ -176,34 +178,20 @@ struct NarrowphaseFunc
       d_contact_nodes(ii).ResetContactData();
     }
     //
-    Kokkos::View<int*, nimble_kokkos::kokkos_device> indices("indices", 0);
-    Kokkos::View<int*, nimble_kokkos::kokkos_device> offset("offset", 0);
-    //
-    using memory_space = nimble_kokkos::kokkos_device_memory_space;
-    ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_device_execution_space{}, d_contact_faces};
-    //
-    // indices : position of the primitives that satisfy the predicates.
-    // offsets : predicate offsets in indices.
-    //
-    // indices stores the indices of the objects that satisfy the predicates.
-    // offset stores the locations in the indices view that start a predicate,
-    // that is, predicates(q) is satisfied by indices(o) for primitives(q) <= o <
-    // primitives(q+1).
-    //
-    // Following the usual convention, offset(n) = nnz, where n is the number of
-    // queries that were performed and nnz is the total number of collisions.
-    //
-    // (From
-    // https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery
-    // )
-    //
-    // Number of queries, n = size of contact_nodes_d
-    // Size of offset = n + 1
+    using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
+    ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     //
-    a_bvh.query(nimble_kokkos::kokkos_device_execution_space{}, d_contact_nodes,
-              details::ArborXCallback{d_contact_faces, d_contact_nodes, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    // ArborX has the option to turning off/on a sorting of the predicates (= contact nodes)
+    // It has also the option to provide an estimate of the number of resulting contact to speed up the query.
+    // For these two features, a `TraversalPolicy` variable has to be specified as an input
+    // parameter for the query.
+    //
+    // ArborX::Experimental::TraversalPolicy policy;
+    //
+    a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
+                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
