@@ -182,12 +182,16 @@ struct NarrowphaseFunc
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
-    ArborX::Experimental::TraversalPolicy policy;
-    policy.setPredicateSorting(false);
+    //
+    // ArborX has the option to turning off/on a sorting of the predicates (= contact nodes)
+    // It has also the option to provide an estimate of the number of resulting contact to speed up the query.
+    // For these two features, a `TraversalPolicy` variable has to be specified as an input
+    // parameter for the query.
+    //
+    // ArborX::Experimental::TraversalPolicy policy;
     //
     a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
-                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
-                policy);
+                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
