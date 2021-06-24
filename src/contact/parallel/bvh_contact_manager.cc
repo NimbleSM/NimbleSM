@@ -70,9 +70,6 @@ namespace details {
 #ifdef NIMBLE_HAVE_ARBORX
 struct ArborXCallback
 {
-  nimble_kokkos::DeviceContactEntityArrayView d_contact_faces;
-  nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes;
-
   const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_faces;
   const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_nodes;
 
@@ -181,31 +178,8 @@ struct NarrowphaseFunc
       d_contact_nodes(ii).ResetContactData();
     }
     //
-    Kokkos::View<int*, nimble_kokkos::kokkos_device> indices("indices", 0);
-    Kokkos::View<int*, nimble_kokkos::kokkos_device> offset("offset", 0);
-    //
-    using memory_space = nimble_kokkos::kokkos_device_memory_space;
-    ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_device_execution_space{}, d_contact_faces};
     using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
-    //
-    // indices : position of the primitives that satisfy the predicates.
-    // offsets : predicate offsets in indices.
-    //
-    // indices stores the indices of the objects that satisfy the predicates.
-    // offset stores the locations in the indices view that start a predicate,
-    // that is, predicates(q) is satisfied by indices(o) for primitives(q) <= o <
-    // primitives(q+1).
-    //
-    // Following the usual convention, offset(n) = nnz, where n is the number of
-    // queries that were performed and nnz is the total number of collisions.
-    //
-    // (From
-    // https://github.com/arborx/ArborX/wiki/ArborX%3A%3ABoundingVolumeHierarchy%3A%3Aquery
-    // )
-    //
-    // Number of queries, n = size of contact_nodes_d
-    // Size of offset = n + 1
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     ArborX::Experimental::TraversalPolicy policy;
