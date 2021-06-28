@@ -47,7 +47,9 @@ jobs:
              git clone https://github.com/arborx/arborx.git
              cd arborx
              mkdir build && cd build
-             cmake .. -DCMAKE_BUILD_TYPE=Release -DARBORX_ENABLE_MPI=ON -DKokkos_ENABLE_OPENMP=ON -DCMAKE_INSTALL_PREFIX="/usr/"
+             cmake .. -DCMAKE_BUILD_TYPE=Release \
+                      -DARBORX_ENABLE_MPI=ON -DKokkos_ENABLE_OPENMP=ON \
+                      -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
       - name: cmake
         shell: bash
