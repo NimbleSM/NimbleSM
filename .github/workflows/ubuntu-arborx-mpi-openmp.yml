@@ -6,11 +6,13 @@ on:
     branches:
       - master
       - develop
+      - feature/ci-open-mp
   pull_request:
     branches:
       - develop-refactor
       - master
       - develop
+      - feature/ci-open-mp
 
   workflow_dispatch:
 
