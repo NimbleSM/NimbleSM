@@ -30,7 +30,6 @@ jobs:
              sudo apt-get update -y -qq
              sudo apt-get install -y libblas-dev liblapack-dev
              sudo apt-get install -y libmetis-dev
-             sudo apt-get install -y openmpi-bin libopenmpi-dev
              sudo apt-get install -y netcdf-bin libnetcdf-dev
              sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
              sudo add-apt-repository ppa:nschloe/seacas-nightly
@@ -48,7 +47,7 @@ jobs:
              cd arborx
              mkdir build && cd build
              cmake .. -DCMAKE_BUILD_TYPE=Release \
-                      -DARBORX_ENABLE_MPI=ON -DKokkos_ENABLE_OPENMP=ON \
+                      -DKokkos_ENABLE_OPENMP=ON \
                       -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
       - name: cmake
@@ -58,7 +57,7 @@ jobs:
            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=ON \
+                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON \
                  -DNIMBLE_ENABLE_UNIT_TESTS=ON \
                  ..
       - name: compile
