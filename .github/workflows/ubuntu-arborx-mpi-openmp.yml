@@ -1,5 +1,5 @@
 name: ubuntu-arborx-mpi-openmp
-  
+#
 # Trigger the workflow on push or pull request
 on:
   push:
