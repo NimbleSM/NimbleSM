@@ -61,29 +61,43 @@
 #endif
 
 #ifdef NIMBLE_HAVE_ARBORX
-#include "contact/serial/arborx_serial_contact_manager.h"
-#ifdef NIMBLE_HAVE_MPI
-#include "contact/parallel/arborx_parallel_contact_manager.h"
+#include "ArborX_Config.hpp"
+//----
+#if defined(ARBORX_ENABLE_MPI) && !defined(NIMBLE_HAVE_MPI)
+#error "This configuration (ArborX MPI, NimbleSM Serial) is not supported."
 #endif
+//----
+#if !defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+#error "This configuration (ArborX Serial, NimbleSM MPI) is not supported."
+#endif
+//----
+#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+#include "contact/parallel/arborx_parallel_contact_manager.h"
+#else
+#include "contact/serial/arborx_serial_contact_manager.h"
+#endif
+//---
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
 #include "contact/parallel/bvh_contact_manager.h"
-//
 #include <bvh/kdop.hpp>
 #include <bvh/patch.hpp>
 #include <bvh/perf/instrument.hpp>
 #include <bvh/tree.hpp>
+//---
 #ifdef BVH_ENABLE_VT
 #include <bvh/vt/collection.hpp>
 #include <bvh/vt/collision_world.hpp>
 #include <bvh/vt/helpers.hpp>
 #endif
+//---
 #endif
 
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <type_traits>
 #include <utility>
 
 namespace nimble {
@@ -149,17 +163,13 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 {
   if (!data_manager.GetParser().HasContact()) return nullptr;
 
-#ifdef NIMBLE_HAVE_ARBORX
+#if defined(NIMBLE_HAVE_ARBORX)
   if (data_manager.GetParser().UseKokkos()) {
-    if (data_manager.GetParser().GetNumRanks() == 1) {
-      return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
-    } else {
-#ifdef NIMBLE_HAVE_MPI
-      return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
+#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+    return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
 #else
-      return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
+    return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
 #endif
-    }
   }
 #endif
 
