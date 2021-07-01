@@ -167,11 +167,8 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
   if (data_manager.GetParser().UseKokkos()) {
 #if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
     return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
-//#elif !defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
 #else
     return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
-//#else
-//#error "\n Contact Configuration Not Implemented Yet !!! \n\n"
 #endif
   }
 #endif
