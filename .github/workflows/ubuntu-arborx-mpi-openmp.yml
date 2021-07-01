@@ -69,7 +69,7 @@ jobs:
         run: |
            cd build
            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
-           make test
+           make -j4 test
       - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
