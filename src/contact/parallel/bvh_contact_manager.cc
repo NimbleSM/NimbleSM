@@ -243,7 +243,7 @@ BvhContactManager::ComputeParallelContactForce(int step,
     std::size_t nc = 0;
     m_contact_log >> nc;
     if ( nc != m_last_results.size() ) {
-      std::cout << "mismatched num contacts for step " << step - 1 << ": " << nc << " != ref " << m_last_results.size() << '\n';
+      std::cout << "mismatched num contacts for step " << step - 1 << ": " << m_last_results.size() << " != ref " << nc << '\n';
       throw std::logic_error( "invalid contact" );
     }
   } else if (check_mode::write == m_mode) {
