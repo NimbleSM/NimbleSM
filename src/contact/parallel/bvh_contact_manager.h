@@ -46,6 +46,7 @@
 
 #include <bvh/collision_world.hpp>
 #include <memory>
+#include <fstream>
 
 #include "parallel_contact_manager.h"
 
@@ -68,10 +69,19 @@ struct NarrowphaseResult
 class BvhContactManager : public ParallelContactManager
 {
  public:
+
+  enum class check_mode
+  {
+    none,
+    read,
+    write
+  };
+
   BvhContactManager(
       std::shared_ptr<ContactInterface> interface,
       nimble::DataManager&              data_manager,
-      std::size_t                       _overdecomposition);
+      std::size_t                       _overdecomposition,
+      check_mode mode );
 
   BvhContactManager(const BvhContactManager&) = delete;
   BvhContactManager(BvhContactManager&&) = delete;
@@ -95,6 +105,9 @@ private:
   bvh::collision_object *m_faces;
 
   std::vector<NarrowphaseResult> m_last_results;
+
+  check_mode m_mode;
+  std::fstream m_contact_log;
 };
 }  // namespace nimble
 

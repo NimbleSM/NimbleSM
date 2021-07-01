@@ -170,13 +170,23 @@ struct NarrowphaseFunc
 
 BvhContactManager::BvhContactManager(std::shared_ptr<ContactInterface> interface, 
     nimble::DataManager &data_manager,
-    std::size_t _overdecomposition)
+    std::size_t _overdecomposition,
+    check_mode mode )
     : ParallelContactManager(interface, data_manager),
       m_world{_overdecomposition},
       m_nodes{&m_world.create_collision_object()},
-      m_faces{&m_world.create_collision_object()}
+      m_faces{&m_world.create_collision_object()},
+      m_mode{mode}
 {
   m_world.set_narrowphase_functor<ContactEntity>(NarrowphaseFunc{this});
+
+  std::stringstream ss;
+  ss << "contact_log." << m_num_ranks << '.' << m_rank << ".out";
+
+  if ( check_mode::read == m_mode )
+    m_contact_log.open(ss.str(), std::ios::in);
+  else if ( check_mode::write == m_mode )
+    m_contact_log.open(ss.str(), std::ios::out);
 }
 
 void
@@ -228,6 +238,17 @@ BvhContactManager::ComputeParallelContactForce(int step,
   // theTrace()->addUserBracketedNote(start, stop, “my node”, event)
   total_enforcement_time.Start();
   for (auto& f : force_) f = 0.0;
+
+  if (check_mode::read == m_mode) {
+    std::size_t nc = 0;
+    m_contact_log >> nc;
+    if ( nc != m_last_results.size() ) {
+      std::cout << "mismatched num contacts for step " << step - 1 << ": " << nc << " != ref " << m_last_results.size() << '\n';
+      throw std::logic_error( "invalid contact" );
+    }
+  } else if (check_mode::write == m_mode) {
+    m_contact_log << m_last_results.size() << std::endl;
+  }
 
   // Update contact entities
   for (auto&& r : m_last_results) {

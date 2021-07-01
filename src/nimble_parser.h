@@ -435,6 +435,16 @@ class Parser
   {
     return contact_dicing_;
   }
+
+  void SetMode( int mode ) noexcept
+  {
+    mode_ = mode;
+  }
+
+  int GetMode() const noexcept
+  {
+    return mode_;
+  }
 #endif
 
 #ifdef NIMBLE_HAVE_UQ
@@ -493,6 +503,7 @@ class Parser
 
 #ifdef NIMBLE_HAVE_BVH
   int contact_dicing_ = 1;
+  int mode_ = 0;
 #endif
 
 #ifdef NIMBLE_HAVE_UQ

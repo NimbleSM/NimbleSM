@@ -145,7 +145,7 @@ ParseContactCommand(
 }
 
 std::shared_ptr<nimble::ContactManager>
-GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager)
+GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager, int mode)
 {
   if (!data_manager.GetParser().HasContact()) return nullptr;
 
@@ -162,7 +162,7 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 #ifdef NIMBLE_HAVE_BVH
   if (data_manager.GetParser().UseVT()) {
     return std::make_shared<nimble::BvhContactManager>(
-        interface, data_manager, data_manager.GetParser().ContactDicing());
+        interface, data_manager, data_manager.GetParser().ContactDicing(), static_cast< nimble::BvhContactManager::check_mode >(mode));
   }
 #endif
 

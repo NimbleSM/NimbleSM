@@ -184,6 +184,19 @@ parseCommandLine(int argc, char** argv, nimble::Parser& parser)
 
     if ( my_arg.substr( 0, 4 ) == "--vt" )
       continue;
+
+    if ( my_arg == "--check-contact" ) {
+      parser.SetMode( 1 );
+      std::cout << "Contact will be checked.\n";
+      continue;
+    }
+
+    if ( my_arg == "--write-contact" ) {
+      parser.SetMode( 2 );
+      std::cout << "Contact status will be recorded for checking.\n";
+      continue;
+    }
+
     //
     parser.SetInputFilename(std::string(my_arg));
   }
@@ -378,7 +391,7 @@ ExplicitTimeIntegrator(
   const int  num_ranks    = parser.GetNumRanks();
   const long num_unknowns = num_nodes * mesh.GetDim();
 
-  auto contact_manager = nimble::GetContactManager(contact_interface, data_manager);
+  auto contact_manager = nimble::GetContactManager(contact_interface, data_manager, parser.GetMode());
 
   bool contact_enabled       = parser.HasContact();
   bool contact_visualization = parser.ContactVisualization();

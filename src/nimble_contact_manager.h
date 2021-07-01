@@ -496,7 +496,7 @@ class ContactManager
 };
 
 std::shared_ptr<nimble::ContactManager>
-GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager);
+GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManager& data_manager, int mode=0);
 
 }  // namespace nimble
 
