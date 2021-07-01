@@ -64,11 +64,11 @@
 #include "ArborX_Config.hpp"
 //----
 #if defined(ARBORX_ENABLE_MPI) && !defined(NIMBLE_HAVE_MPI)
-#error "This configuration is not supported."
+#error "This configuration (ArborX MPI, NimbleSM Serial) is not supported."
 #endif
 //----
 #if !defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
-#error "This configuration is not supported."
+#error "This configuration (ArborX Serial, NimbleSM MPI) is not supported."
 #endif
 //----
 #if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)

@@ -21,7 +21,7 @@ jobs:
   setup:
     runs-on: ubuntu-18.04
     env:
-      OMP_NUM_THREADS: 8
+      OMP_NUM_THREADS: 4
       CMAKE_BUILD_TYPE: Release
     steps:
       - uses: actions/checkout@v1
