@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       OMP_NUM_THREADS: 8
-      CMAKE_BUILD_TYPE: release
+      CMAKE_BUILD_TYPE: Release
     steps:
       - uses: actions/checkout@v1
       - name: install dependencies
@@ -31,6 +31,7 @@ jobs:
              sudo apt-get update -y -qq
              sudo apt-get install -y libblas-dev liblapack-dev
              sudo apt-get install -y libmetis-dev
+             sudo apt-get install -y openmpi-bin libopenmpi-dev
              sudo apt-get install -y netcdf-bin libnetcdf-dev
              sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
              sudo add-apt-repository ppa:nschloe/seacas-nightly
@@ -49,6 +50,7 @@ jobs:
              mkdir build && cd build
              cmake .. -DCMAKE_BUILD_TYPE=Release \
                       -DKokkos_ENABLE_OPENMP=ON \
+                      -DARBORX_ENABLE_MPI=ON \
                       -DCMAKE_INSTALL_PREFIX="/usr/"
              make && sudo make install
       - name: cmake
@@ -58,7 +60,7 @@ jobs:
            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON \
+                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=ON \
                  -DNIMBLE_ENABLE_UNIT_TESTS=ON \
                  ..
       - name: compile
