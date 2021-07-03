@@ -50,13 +50,17 @@
 #include "nimble_model_data_base.h"
 #include "nimble_vector_communicator.h"
 
+#include "contact/arborx_utils.h"
+
 #ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_model_data.h"
 #endif
 
 #include <mpi.h>
 
-#include <ArborX.hpp>
+#include "ArborX.hpp"
+#include "ArborX_Config.hpp"
+
 #include <Kokkos_Core.hpp>
 #include <iostream>
 #include <random>
@@ -179,32 +183,6 @@ struct ContactCallback
 }  // namespace nimble
 
 namespace ArborX {
-template <>
-struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PrimitivesTag>
-{
-  // size returns the number of elements in the View
-  static std::size_t
-  size(nimble_kokkos::DeviceContactEntityArrayView const& v)
-  {
-    return v.size();
-  }
-
-  /// Returns an ArborX::Box for each contact entity within the nimble view
-  ///
-  /// \param v
-  /// \param i
-  /// \return ArborX::Box
-  KOKKOS_FUNCTION static ArborX::Box
-  get(nimble_kokkos::DeviceContactEntityArrayView const& v, std::size_t i)
-  {
-    nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
-    return box;
-  }
-  using memory_space = nimble_kokkos::kokkos_device_memory_space;
-};
 
 template <>
 struct AccessTraits<nimble::details::PredicateTypeNodesRank, PredicatesTag>
