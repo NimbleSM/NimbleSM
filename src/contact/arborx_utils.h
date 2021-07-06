@@ -77,6 +77,12 @@ struct PredicateTypeNodesRank
   int                                         rank_;
 };
 
+struct PredicateTypeNodesRank_Host
+{
+  HostContactEntityUnmanagedConstView nodes_;
+  int                                         rank_;
+};
+
 } // namespace details
 
 #endif
@@ -242,6 +248,31 @@ struct AccessTraits<nimble_kokkos::details::PredicateTypeNodesRank, PredicatesTa
             static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
+};
+
+template <>
+struct AccessTraits<nimble_kokkos::details::PredicateTypeNodesRank_Host, PredicatesTag>
+{
+  static std::size_t
+  size(nimble_kokkos::details::PredicateTypeNodesRank_Host const& v)
+  {
+    return v.nodes_.extent(0);
+  }
+
+  KOKKOS_FUNCTION static auto
+  get(nimble_kokkos::details::PredicateTypeNodesRank_Host const& v, std::size_t i)
+  {
+    const nimble::ContactEntity &e = v.nodes_(i);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
+    //
+    return attach(
+        intersects(box),
+        nimble_kokkos::details::OutputData<>{
+            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
+  }
+  using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
 };
 
 #endif

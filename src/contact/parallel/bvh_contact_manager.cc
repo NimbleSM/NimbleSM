@@ -68,6 +68,29 @@ namespace nimble {
 namespace details {
 
 #ifdef NIMBLE_HAVE_ARBORX
+
+struct ArborX_PairData
+{
+  int pred_rank_  = 0;
+  int pred_index_ = -1;
+  int prim_rank_  = 0;
+  int prim_index_ = -1;
+  //
+  ArborX_PairData(int r_, int i_, int f_r_, int f_i_) : pred_rank_(r_), pred_index_(i_), prim_rank_(f_r_), prim_index_(f_i_) {}
+  //
+  ArborX_PairData() = default;
+  //
+  ~ArborX_PairData() = default;
+  //
+  bool
+  operator<(const ArborX_PairData& rhs) const
+  {
+    return (
+        std::tie(pred_rank_, pred_index_, prim_rank_, prim_index_) <
+        std::tie(rhs.pred_rank_, rhs.pred_index_, rhs.prim_rank_, rhs.prim_index_));
+  }
+};
+
 struct ArborXCallback
 {
   const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_faces;
@@ -162,22 +185,9 @@ struct NarrowphaseFunc
     auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
     auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
 
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_faces =
-        nimble_kokkos::DeviceContactEntityArrayView("d_contact_faces", _a.elements.size());
-    for (size_t ii = 0; ii < _a.elements.size(); ++ii) {
-      d_contact_faces(ii) = _a.elements[ii];
-      d_contact_faces(ii).ResetContactData();
-    }
     auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView( _a.elements.data(), _a.elements.size() );
     auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView( _b.elements.data(), _b.elements.size() );
 
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
-        nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
-    for (size_t ii = 0; ii < _b.elements.size(); ++ii) {
-      d_contact_nodes(ii) = _b.elements[ii];
-      d_contact_nodes(ii).ResetContactData();
-    }
-    //
     using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
     //
@@ -192,6 +202,16 @@ struct NarrowphaseFunc
     //
     a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
                 details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    //
+    //    ArborX::DistributedTree<memory_space> dtree(MPI_COMM_SELF, nimble_kokkos::kokkos_host_execution_space{}, view_a);
+//    Kokkos::View<nimble_kokkos::details::OutputData<>*, kokkos_host> results("results", 0);
+//    Kokkos::View<int*, kokkos_host>                 offset("offset", 0);
+//    a_bvh.query(
+//        nimble_kokkos::kokkos_host_execution_space{},
+//        nimble_kokkos::details::PredicateTypeNodesRank_Host{view_b, 0},
+//        details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
+//        results,
+//        offset);
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
