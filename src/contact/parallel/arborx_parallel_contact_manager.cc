@@ -59,13 +59,9 @@
 #include <mpi.h>
 
 #include "ArborX.hpp"
-#include "ArborX_Config.hpp"
 
 #include <Kokkos_Core.hpp>
-#include <iostream>
-#include <random>
 #include <set>
-#include <vector>
 
 #if defined(KOKKOS_ENABLE_OPENMP)
 #include <omp.h>
@@ -73,24 +69,9 @@
 
 namespace nimble {
 
-namespace details {
-
 constexpr int dim = 3;
 
-struct PredicateTypeNodesRank
-{
-  nimble_kokkos::DeviceContactEntityArrayView nodes_;
-  int                                         rank_;
-};
-
-struct OutputData
-{
-  int    index_;
-  int    rank_;
-  double coord_[dim];
-  bool   has_force_;
-  double force_node_[dim];
-};
+namespace details {
 
 struct PairData
 {
@@ -125,7 +106,7 @@ struct ContactCallback
   KOKKOS_FUNCTION void
   operator()(Predicate const& pred, int f_primitive, OutputFunctor const& out) const
   {
-    auto const& p_data     = getData(pred);      // <- type OutputData
+    auto const& p_data     = getData(pred);      // <- type nimble_kokkos::details::OutputData
     auto const& p_geometry = getGeometry(pred);  // <- type Box
     //
     //--- Define copy contact entity
@@ -182,34 +163,6 @@ struct ContactCallback
 }  // namespace details
 }  // namespace nimble
 
-namespace ArborX {
-
-template <>
-struct AccessTraits<nimble::details::PredicateTypeNodesRank, PredicatesTag>
-{
-  static std::size_t
-  size(nimble::details::PredicateTypeNodesRank const& v)
-  {
-    return v.nodes_.extent(0);
-  }
-
-  KOKKOS_FUNCTION static auto
-  get(nimble::details::PredicateTypeNodesRank const& v, std::size_t i)
-  {
-    nimble::ContactEntity& e = v.nodes_(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
-    //
-    return attach(
-        intersects(box),
-        nimble::details::OutputData{
-            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
-  }
-  using memory_space = nimble_kokkos::kokkos_device_memory_space;
-};
-}  // namespace ArborX
-
 namespace nimble {
 
 using memory_space = nimble_kokkos::kokkos_device_memory_space;
@@ -260,7 +213,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_o
     throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
   }
 
-  Kokkos::View<details::OutputData*, kokkos_device> results("results", 0);
+  Kokkos::View<nimble_kokkos::details::OutputData<>*, kokkos_device> results("results", 0);
   Kokkos::View<int*, kokkos_device>                 offset("offset", 0);
   std::set<details::PairData>                       list_;
   auto                                              comm = MPI_COMM_WORLD;
@@ -272,7 +225,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_o
   this->startTimer("ArborX::Search::Query");
   dtree.query(
       kokkos_device::execution_space{},
-      details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
+      nimble_kokkos::details::PredicateTypeNodesRank{contact_nodes_d_, m_rank},
       details::ContactCallback{m_rank, contact_faces_d_, penalty_parameter_, list_},
       results,
       offset);

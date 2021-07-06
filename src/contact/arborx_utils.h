@@ -56,8 +56,32 @@ namespace nimble_kokkos {
 using HostContactEntityUnmanagedConstView =
     Kokkos::View<const nimble::ContactEntity*, nimble_kokkos::kokkos_host, Kokkos::MemoryTraits< Kokkos::Unmanaged > >;
 
-}
 
+#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+
+namespace details {
+
+template <int dim_ = 3>
+struct OutputData
+{
+  int    index_;
+  int    rank_;
+  double coord_[dim_];
+  bool   has_force_;
+  double force_node_[dim_];
+};
+
+struct PredicateTypeNodesRank
+{
+  nimble_kokkos::DeviceContactEntityArrayView nodes_;
+  int                                         rank_;
+};
+
+} // namespace details
+
+#endif
+
+} // namespace nimble_kokkos
 
 //
 // Need to specialize AccessTrait< ..., {PrimitivesTag, PredicatesTag} >
@@ -186,6 +210,41 @@ struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, Predicat
   }
   using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
 };
+
+
+#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+
+//
+// Specialization for HostContactEntityUnmanagedConstView
+// Used in nimble::ArborXParallelContactManager
+//
+
+template <>
+struct AccessTraits<nimble_kokkos::details::PredicateTypeNodesRank, PredicatesTag>
+{
+  static std::size_t
+  size(nimble_kokkos::details::PredicateTypeNodesRank const& v)
+  {
+    return v.nodes_.extent(0);
+  }
+
+  KOKKOS_FUNCTION static auto
+  get(nimble_kokkos::details::PredicateTypeNodesRank const& v, std::size_t i)
+  {
+    nimble::ContactEntity& e = v.nodes_(i);
+    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box            box(point1, point2);
+    //
+    return attach(
+        intersects(box),
+        nimble_kokkos::details::OutputData<>{
+            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
+  }
+  using memory_space = nimble_kokkos::kokkos_device_memory_space;
+};
+
+#endif
 
 }  // namespace ArborX
 
