@@ -56,7 +56,6 @@ namespace nimble_kokkos {
 using HostContactEntityUnmanagedConstView =
     Kokkos::View<const nimble::ContactEntity*, nimble_kokkos::kokkos_host, Kokkos::MemoryTraits< Kokkos::Unmanaged > >;
 
-
 #if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
 
 namespace details {
@@ -217,7 +216,6 @@ struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, Predicat
   using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
 };
 
-
 #if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
 
 //
@@ -245,7 +243,7 @@ struct AccessTraits<nimble_kokkos::details::PredicateTypeNodesRank, PredicatesTa
     return attach(
         intersects(box),
         nimble_kokkos::details::OutputData<>{
-            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
+            static_cast<int>(e.local_id_), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
   }
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
 };
@@ -270,7 +268,7 @@ struct AccessTraits<nimble_kokkos::details::PredicateTypeNodesRank_Host, Predica
     return attach(
         intersects(box),
         nimble_kokkos::details::OutputData<>{
-            static_cast<int>(i), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
+            static_cast<int>(e.local_id_), v.rank_, {e.coord_1_x_, e.coord_1_y_, e.coord_1_z_}, false, {0, 0, 0}});
   }
   using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
 };

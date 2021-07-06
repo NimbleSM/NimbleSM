@@ -127,6 +127,37 @@ struct ArborXCallback
       resb_vec.push_back(entry);
     }
   }
+  //
+  template <typename Predicate, typename OutputFunctor>
+  KOKKOS_FUNCTION void
+  operator()(Predicate const& pred, int f_primitive, OutputFunctor const& out) const
+  {
+    //
+    const auto& myFace = d_contact_faces(f_primitive);
+    //
+    auto const& p_data     = ArborX::getData(pred); // <- type nimble_kokkos::details::OutputData
+    auto const& p_geometry = ArborX::getGeometry(pred);  // <- type Box
+    ContactEntity myNode(ContactEntity::ContactEntityType::NODE, 0, p_data.coord_, 0.0, 0);
+    //
+    bool   inside               = false;
+    double normal[3] = {0.0, 0.0, 0.0};
+    //
+    //--- Determine whether the node is projected inside the triangular face
+    //
+    NarrowphaseResult entry;
+    ContactManager::Projection(myNode, myFace, inside, entry.gap, &normal[0], entry.bary);
+    if (inside) {
+      details::getContactForce(enforcement_penalty, entry.gap, normal, entry.contact_force);
+      //
+      entry.local_index = myFace.local_id();
+      entry.node        = false;
+      resa_vec.push_back(entry);
+      //
+      entry.local_index = p_data.index_;
+      entry.node        = true;
+      resb_vec.push_back(entry);
+    }
+  }
 };
 #endif
 
@@ -187,11 +218,9 @@ struct NarrowphaseFunc
 
     auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView( _a.elements.data(), _a.elements.size() );
     auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView( _b.elements.data(), _b.elements.size() );
-
-    using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
-    ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
-    //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
+    using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
+    //ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
     //
     // ArborX has the option to turning off/on a sorting of the predicates (= contact nodes)
     // It has also the option to provide an estimate of the number of resulting contact to speed up the query.
@@ -200,31 +229,32 @@ struct NarrowphaseFunc
     //
     // ArborX::Experimental::TraversalPolicy policy;
     //
-    a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
-                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    //a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
+    //            details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
     //
-    //    ArborX::DistributedTree<memory_space> dtree(MPI_COMM_SELF, nimble_kokkos::kokkos_host_execution_space{}, view_a);
-//    Kokkos::View<nimble_kokkos::details::OutputData<>*, kokkos_host> results("results", 0);
-//    Kokkos::View<int*, kokkos_host>                 offset("offset", 0);
-//    a_bvh.query(
-//        nimble_kokkos::kokkos_host_execution_space{},
-//        nimble_kokkos::details::PredicateTypeNodesRank_Host{view_b, 0},
-//        details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
-//        results,
-//        offset);
+    ArborX::DistributedTree<memory_space> a_bvh(MPI_COMM_SELF, nimble_kokkos::kokkos_host_execution_space{}, view_a);
+    Kokkos::View<nimble_kokkos::details::OutputData<>*, nimble_kokkos::kokkos_host> results("results", 0);
+    Kokkos::View<int*, nimble_kokkos::kokkos_host>                 offset("offset", 0);
+    a_bvh.query(
+        nimble_kokkos::kokkos_host_execution_space{},
+        nimble_kokkos::details::PredicateTypeNodesRank_Host{view_b, 0},
+        details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec},
+        results,
+        offset);
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
     
+    //-----------------
     /*
     static int iter_count = 0;
-
     if ( resa.size() > 0 )
       std::cout << iter_count << ". resa = " << resa.size() << "\n";
     if ( resb.size() > 0 )
       std::cout << iter_count << ". resb = " << resb.size() << "\n";
     ++iter_count;
-     */
+    */
+    //-----------------
 
     return {resa, resb};
   }
