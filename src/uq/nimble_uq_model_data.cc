@@ -157,8 +157,6 @@ ModelData::ComputeInternalForce(
   auto reference_coord = GetNodeData("reference_coordinate");
   auto velocity        = GetNodeData("velocity");
 
-  auto& rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
-
   for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
     int                        num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -173,7 +171,6 @@ ModelData::ComputeInternalForce(
         reference_coord,
         displacement.data(),
         velocity,
-        rve_macroscale_deformation_gradient.data(),
         force.data(),
         time_previous,
         time_current,

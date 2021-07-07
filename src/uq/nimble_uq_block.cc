@@ -59,7 +59,6 @@ Block::ComputeInternalForce(
     const double*                   reference_coordinates,
     const double*                   displacement,
     const double*                   velocity,
-    const double*                   rve_macroscale_deformation_gradient,
     double*                         internal_force,
     double                          time_previous,
     double                          time_current,
@@ -80,7 +79,6 @@ Block::ComputeInternalForce(
         reference_coordinates,
         displacement,
         velocity,
-        rve_macroscale_deformation_gradient,
         internal_force,
         time_previous,
         time_current,
@@ -141,15 +139,6 @@ Block::ComputeInternalForce(
     }
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
-
-    // Add in the macroscale displacement gradient (nonzero only for multiscale
-    // RVE problems)
-    for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {
-      for (int i_component = 0; i_component < full_tensor_size; i_component++) {
-        def_grad_np1[i_ipt * full_tensor_size + i_component] +=
-            rve_macroscale_deformation_gradient[i_component] - identity[i_component];
-      }
-    }
 
     material_->GetOffNominalStress(
         uq_params_this_sample[bulk_modulus_uq_index_],

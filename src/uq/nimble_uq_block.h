@@ -70,7 +70,6 @@ class Block : public nimble::Block
       const double*                   reference_coordinates,
       const double*                   displacement,
       const double*                   velocity,
-      const double*                   rve_macroscale_deformation_gradient,
       double*                         internal_force,
       double                          time_previous,
       double                          time_current,
