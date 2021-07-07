@@ -326,7 +326,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
     std::string material_key        = value.substr(0, space_pos);
     std::string material_props      = value.substr(space_pos + 1, value.size());
     material_strings_[material_key] = material_props;
-  } else if (key == "macroscale block") {
+  } else if (key == "element block") {
     BlockProperties block_props(value);
     macroscale_blocks_[block_props.block_id_] = block_props;
   } else if (key == "microscale block") {

@@ -5,7 +5,7 @@ final time:                       1.0e-8
 number of load steps:             10000
 output frequency:                 1000
 material parameters:              material_1 neohookean density 7800.0 shear_modulus 80.0e9 bulk_modulus 160.0e9
-macroscale block:                 block_1 material_1
+element block:                 block_1 material_1
 boundary condition:    prescribed_velocity nodelist_1 x  25.0
 boundary condition:    prescribed_velocity nodelist_1 y -25.0
 boundary condition:    prescribed_velocity nodelist_1 z  25.0
