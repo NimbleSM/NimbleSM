@@ -254,7 +254,7 @@ void
 ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   if (model_data == nullptr) {
-    auto model_ptr = this->data_manager_.GetMacroScaleData().get();
+    auto model_ptr = this->data_manager_.GetModelData().get();
     model_data     = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr);
   }
 

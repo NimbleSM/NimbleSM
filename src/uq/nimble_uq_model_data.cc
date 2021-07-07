@@ -79,7 +79,7 @@ ModelData::InitializeBlocks(
     std::string        material_key            = line.first;
     int                block_id                = parser_.GetBlockIdFromMaterial(material_key);
     std::string        uq_params_this_material = line.second;
-    std::string const& nominal_params_string   = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::string const& nominal_params_string   = parser_.GetModelMaterialParameters(block_id);
     bool               block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end();
     uq_model_->ParseBlockInput(
         uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
@@ -157,8 +157,6 @@ ModelData::ComputeInternalForce(
   auto reference_coord = GetNodeData("reference_coordinate");
   auto velocity        = GetNodeData("velocity");
 
-  auto& rve_macroscale_deformation_gradient = data_manager.GetRVEDeformationGradient();
-
   for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
     int                        num_elem_in_block = mesh.GetNumElementsInBlock(block_id);
@@ -173,7 +171,6 @@ ModelData::ComputeInternalForce(
         reference_coord,
         displacement.data(),
         velocity,
-        rve_macroscale_deformation_gradient.data(),
         force.data(),
         time_previous,
         time_current,

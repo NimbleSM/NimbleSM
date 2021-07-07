@@ -5,5 +5,5 @@ number of load steps:             10000
 output frequency:                 1000
 output fields:                    volume lumped_mass displacement velocity internal_force ipt01_deformation_gradient ipt02_deformation_gradient ipt03_deformation_gradient ipt04_deformation_gradient ipt05_deformation_gradient ipt06_deformation_gradient ipt07_deformation_gradient ipt08_deformation_gradient
 material parameters:              material_1 neohookean density 7800.0 shear_modulus 80.0e9 bulk_modulus 160.0e9
-macroscale block:                 block_1 material_1
+element block:                 block_1 material_1
 boundary condition:               initial_velocity nodelist_5 x 50.0

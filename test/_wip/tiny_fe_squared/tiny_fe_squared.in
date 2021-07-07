@@ -10,7 +10,7 @@ output frequency:                 20
 output fields:                    volume internal_force displacement velocity stress
 material parameters:              material_1 neohookean density 1.03e-9 bulk_modulus 8.800e3 shear_modulus 9.103e2
 material parameters:              material_2 neohookean density 1.76e-9 bulk_modulus 1.563e5 shear_modulus 8.929e4
-macroscale block:                 block_1 rve
+element block:                 block_1 rve
 microscale block:                 block_1 material_1
 microscale block:                 block_2 material_2
 boundary condition:               prescribed_displacement nodelist_1  x  "-0.0635 * (-0.5*cos(t*3.141592653589793/2.0e-4) + 0.5)"

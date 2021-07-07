@@ -153,7 +153,7 @@ ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_outpu
   }
 
   if (model_data == nullptr) {
-    auto model_ptr = data_manager_.GetMacroScaleData().get();
+    auto model_ptr = data_manager_.GetModelData().get();
     model_data     = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr);
   }
 

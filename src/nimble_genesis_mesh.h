@@ -301,13 +301,6 @@ class GenesisMesh
       std::map<int, int>& global_node_id_secondary_to_primary) const;
 
   void
-  CreatePeriodicRVELinearSystemMap(
-      const int*                       global_node_ids,
-      std::vector<int>&                linear_system_node_ids,
-      std::map<int, std::vector<int>>& map_from_linear_system,
-      int&                             corner_node_id) const;
-
-  void
   Print(bool verbose = false, int my_rank = 0) const;
 
   void

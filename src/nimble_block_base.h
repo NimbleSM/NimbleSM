@@ -113,7 +113,7 @@ class BlockBase
       MatT&               tangent_stiffness) const;
 
  protected:
-  std::string               macro_material_parameters_ = "none";
+  std::string               model_material_parameters_ = "none";
   std::shared_ptr<Element>  element_                   = nullptr;
   std::shared_ptr<Material> material_                  = nullptr;
 };

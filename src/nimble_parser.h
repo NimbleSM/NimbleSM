@@ -113,14 +113,14 @@ class Parser
   void
   serialize(ArchiveType& ar)
   {
-    ar | file_name_ | genesis_file_name_ | rve_genesis_file_name_;
+    ar | file_name_ | genesis_file_name_;
     ar | exodus_file_name_ | use_two_level_mesh_decomposition_;
     ar | write_timing_data_file_ | time_integration_scheme_;
     ar | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_;
     ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
     ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
-    ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
-    ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
+    ar | contact_visualization_file_name_ | material_strings_;
+    ar | model_blocks_;
     ar | boundary_condition_strings_ | output_field_string_;
     ar | file_name_;
     ar | env_set_ | use_kokkos_ | use_tpetra_ | use_vt_;
@@ -135,12 +135,6 @@ class Parser
   GenesisFileName() const
   {
     return genesis_file_name_;
-  }
-
-  std::string
-  RVEGenesisFileName() const
-  {
-    return rve_genesis_file_name_;
   }
 
   std::string
@@ -235,20 +229,14 @@ class Parser
     return contact_string_;
   }
 
-  std::vector<int>
-  MicroscaleOutputElementIds() const
-  {
-    return microscale_output_element_ids_;
-  }
-
   std::string
-  GetMacroscaleMaterialParameters(int block_id) const
+  GetModelMaterialParameters(int block_id) const
   {
-    if (macroscale_blocks_.find(block_id) == macroscale_blocks_.end()) {
+    if (model_blocks_.find(block_id) == model_blocks_.end()) {
       std::string none_str("none");
       return none_str;
     }
-    BlockProperties const& block          = macroscale_blocks_.at(block_id);
+    BlockProperties const& block          = model_blocks_.at(block_id);
     std::string const&     material_key   = block.material_key_;
     std::string const&     material_props = material_strings_.at(material_key);
     return material_props;
@@ -259,9 +247,9 @@ class Parser
   {
     int block_id = -1;
     // std::map<int, BlockProperties>::iterator it;
-    // for(it = macroscale_blocks_.begin(); it != macroscale_blocks_.end();
+    // for(it = model_blocks_.begin(); it != model_blocks_.end();
     // it++){
-    for (auto const& entry : macroscale_blocks_) {
+    for (auto const& entry : model_blocks_) {
       BlockProperties const& block_props = entry.second;  // it->second;
       if (material_key == block_props.material_key_) {
         block_id = entry.first;  // it->first; //Found the block id with the
@@ -270,25 +258,6 @@ class Parser
       }
     }
     return block_id;
-  }
-
-  std::map<int, std::string>
-  GetMicroscaleMaterialParameters() const
-  {
-    std::map<int, std::string> block_id_to_microscale_props_map;
-    for (auto const& entry : microscale_blocks_) {
-      int                    block_id            = entry.first;
-      BlockProperties const& block_props         = entry.second;
-      std::string const&     material_props      = material_strings_.at(block_props.material_key_);
-      block_id_to_microscale_props_map[block_id] = material_props;
-    }
-    return block_id_to_microscale_props_map;
-  }
-
-  std::string
-  GetMicroscaleBoundaryConditionStrategy() const
-  {
-    return microscale_boundary_condition_strategy_;
   }
 
   std::vector<std::string> const&
@@ -464,7 +433,6 @@ class Parser
   ReadFile();
 
   std::string                        genesis_file_name_;
-  std::string                        rve_genesis_file_name_;
   std::string                        exodus_file_name_;
   bool                               use_two_level_mesh_decomposition_;
   bool                               write_timing_data_file_;
@@ -480,11 +448,8 @@ class Parser
   bool                               visualize_contact_entities_;
   bool                               visualize_contact_bounding_boxes_;
   std::string                        contact_visualization_file_name_;
-  std::vector<int>                   microscale_output_element_ids_;
   std::map<std::string, std::string> material_strings_;
-  std::map<int, BlockProperties>     macroscale_blocks_;
-  std::map<int, BlockProperties>     microscale_blocks_;
-  std::string                        microscale_boundary_condition_strategy_;
+  std::map<int, BlockProperties>     model_blocks_;
   std::vector<std::string>           boundary_condition_strings_;
   std::string                        output_field_string_;
 

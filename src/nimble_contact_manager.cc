@@ -80,11 +80,12 @@
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
-#include "contact/parallel/bvh_contact_manager.h"
 #include <bvh/kdop.hpp>
 #include <bvh/patch.hpp>
 #include <bvh/perf/instrument.hpp>
 #include <bvh/tree.hpp>
+
+#include "contact/parallel/bvh_contact_manager.h"
 //---
 #ifdef BVH_ENABLE_VT
 #include <bvh/vt/collection.hpp>
@@ -306,12 +307,12 @@ ContactManager::CreateContactEntities(
   for (auto& face : secondary_skin_faces) {
     int num_nodes_in_face = static_cast<int>(face.size());
     // determine a characteristic length based on max edge length
-    double max_edge_length_square= std::numeric_limits<double>::lowest();
+    double max_edge_length_square = std::numeric_limits<double>::lowest();
     for (int i = 0; i < num_nodes_in_face; ++i) {
       int node_id_1 = face[i];
       int node_id_2 = face[0];
       if (i + 1 < num_nodes_in_face) { node_id_2 = face[i + 1]; }
-      double edge_length_square = 
+      double edge_length_square =
           (coord_[3 * node_id_2] - coord_[3 * node_id_1]) * (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
           (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
@@ -319,7 +320,7 @@ ContactManager::CreateContactEntities(
               (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]);
       if (edge_length_square > max_edge_length_square) { max_edge_length_square = edge_length_square; }
     }
-    double characteristic_length = sqrt( max_edge_length_square );
+    double characteristic_length = sqrt(max_edge_length_square);
     for (int i_node = 0; i_node < num_nodes_in_face; i_node++) {
       int node_id = face[i_node];
       // omit ghosted nodes
@@ -428,7 +429,7 @@ ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify
   if (parser.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
     std::cout << " Enter if section .. ComputeContactForce \n";
-    auto model_ptr       = data_manager_.GetMacroScaleData();
+    auto model_ptr       = data_manager_.GetModelData();
     auto model_data      = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
     auto field_ids       = data_manager_.GetFieldIDs();
     auto displacement_d  = model_data->GetDeviceVectorNodeData(field_ids.displacement);
@@ -452,7 +453,7 @@ ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify
 #endif
   }
 
-  auto model_data   = data_manager_.GetMacroScaleData();
+  auto model_data   = data_manager_.GetModelData();
   auto displacement = model_data->GetVectorNodeData("displacement");
   ApplyDisplacements(displacement.data());
 

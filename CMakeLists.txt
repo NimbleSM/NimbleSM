@@ -199,7 +199,6 @@ include_directories(src)
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(examples)
 
 if(NIMBLE_ENABLE_UNIT_TESTS)
   add_subdirectory(unit_tests)

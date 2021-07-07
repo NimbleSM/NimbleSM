@@ -54,10 +54,9 @@
 namespace nimble_kokkos {
 
 using HostContactEntityUnmanagedConstView =
-    Kokkos::View<const nimble::ContactEntity*, nimble_kokkos::kokkos_host, Kokkos::MemoryTraits< Kokkos::Unmanaged > >;
+    Kokkos::View<const nimble::ContactEntity*, nimble_kokkos::kokkos_host, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
 }
-
 
 //
 // Need to specialize AccessTrait< ..., {PrimitivesTag, PredicatesTag} >
@@ -125,11 +124,9 @@ struct AccessTraits<nimble_kokkos::DeviceContactEntityArrayView, PredicatesTag>
   using memory_space = nimble_kokkos::kokkos_device_memory_space;
 };
 
-
 //
 // Specialization for HostContactEntityUnmanagedConstView
 //
-
 
 template <>
 struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, PrimitivesTag>
@@ -150,9 +147,9 @@ struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, Primitiv
   get(nimble_kokkos::HostContactEntityUnmanagedConstView const& v, std::size_t i)
   {
     const nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
+    ArborX::Point                point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point                point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box                  box(point1, point2);
     return box;
   }
   using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
@@ -171,9 +168,9 @@ struct AccessTraits<nimble_kokkos::HostContactEntityUnmanagedConstView, Predicat
   get(nimble_kokkos::HostContactEntityUnmanagedConstView const& v, std::size_t i)
   {
     const nimble::ContactEntity& e = v(i);
-    ArborX::Point          point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
-    ArborX::Point          point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
-    ArborX::Box            box(point1, point2);
+    ArborX::Point                point1(e.bounding_box_x_min_, e.bounding_box_y_min_, e.bounding_box_z_min_);
+    ArborX::Point                point2(e.bounding_box_x_max_, e.bounding_box_y_max_, e.bounding_box_z_max_);
+    ArborX::Box                  box(point1, point2);
     //
     // What does Intersects returns, how is it used afterwards?
     // The intent with the "unspecified" return type in the doc
