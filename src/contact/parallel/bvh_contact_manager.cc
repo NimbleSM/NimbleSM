@@ -97,11 +97,17 @@ struct ArborXCallback
       //
       entry.local_index = myFace.local_id();
       entry.node        = false;
-      resa_vec.push_back(entry);
+#pragma omp critical
+      {
+        resa_vec.push_back(entry);
+      }  
       //
       entry.local_index = myNode.local_id();
       entry.node        = true;
-      resb_vec.push_back(entry);
+#pragma omp critical
+      {
+        resb_vec.push_back(entry);
+      }
     }
   }
 };
@@ -161,22 +167,9 @@ struct NarrowphaseFunc
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
     auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
-
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_faces =
-        nimble_kokkos::DeviceContactEntityArrayView("d_contact_faces", _a.elements.size());
-    for (size_t ii = 0; ii < _a.elements.size(); ++ii) {
-      d_contact_faces(ii) = _a.elements[ii];
-      d_contact_faces(ii).ResetContactData();
-    }
+    //
     auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView(_a.elements.data(), _a.elements.size());
     auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView(_b.elements.data(), _b.elements.size());
-
-    nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
-        nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
-    for (size_t ii = 0; ii < _b.elements.size(); ++ii) {
-      d_contact_nodes(ii) = _b.elements[ii];
-      d_contact_nodes(ii).ResetContactData();
-    }
     //
     using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
