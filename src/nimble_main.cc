@@ -311,8 +311,8 @@ NimbleMain(
     std::cout << "\n";
   }
 
-  auto macroscale_data = data_manager.GetModelData();
-  macroscale_data->InitializeBlocks(data_manager, material_factory_base);
+  auto model_data = data_manager.GetModelData();
+  model_data->InitializeBlocks(data_manager, material_factory_base);
 
   //
   // Initialize the output file

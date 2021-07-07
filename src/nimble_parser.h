@@ -120,7 +120,7 @@ class Parser
     ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
     ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
     ar | contact_visualization_file_name_ | microscale_output_element_ids_ | material_strings_;
-    ar | macroscale_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
+    ar | model_blocks_ | microscale_blocks_ | microscale_boundary_condition_strategy_;
     ar | boundary_condition_strings_ | output_field_string_;
     ar | file_name_;
     ar | env_set_ | use_kokkos_ | use_tpetra_ | use_vt_;
@@ -244,11 +244,11 @@ class Parser
   std::string
   GetModelMaterialParameters(int block_id) const
   {
-    if (macroscale_blocks_.find(block_id) == macroscale_blocks_.end()) {
+    if (model_blocks_.find(block_id) == model_blocks_.end()) {
       std::string none_str("none");
       return none_str;
     }
-    BlockProperties const& block          = macroscale_blocks_.at(block_id);
+    BlockProperties const& block          = model_blocks_.at(block_id);
     std::string const&     material_key   = block.material_key_;
     std::string const&     material_props = material_strings_.at(material_key);
     return material_props;
@@ -259,9 +259,9 @@ class Parser
   {
     int block_id = -1;
     // std::map<int, BlockProperties>::iterator it;
-    // for(it = macroscale_blocks_.begin(); it != macroscale_blocks_.end();
+    // for(it = model_blocks_.begin(); it != model_blocks_.end();
     // it++){
-    for (auto const& entry : macroscale_blocks_) {
+    for (auto const& entry : model_blocks_) {
       BlockProperties const& block_props = entry.second;  // it->second;
       if (material_key == block_props.material_key_) {
         block_id = entry.first;  // it->first; //Found the block id with the
@@ -482,7 +482,7 @@ class Parser
   std::string                        contact_visualization_file_name_;
   std::vector<int>                   microscale_output_element_ids_;
   std::map<std::string, std::string> material_strings_;
-  std::map<int, BlockProperties>     macroscale_blocks_;
+  std::map<int, BlockProperties>     model_blocks_;
   std::map<int, BlockProperties>     microscale_blocks_;
   std::string                        microscale_boundary_condition_strategy_;
   std::vector<std::string>           boundary_condition_strings_;
