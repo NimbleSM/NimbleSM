@@ -311,7 +311,7 @@ NimbleMain(
     std::cout << "\n";
   }
 
-  auto macroscale_data = data_manager.GetMacroScaleData();
+  auto macroscale_data = data_manager.GetModelData();
   macroscale_data->InitializeBlocks(data_manager, material_factory_base);
 
   //
@@ -424,7 +424,7 @@ ExplicitTimeIntegrator(
     }
   }
 
-  auto& model_data = *(data_manager.GetMacroScaleData());
+  auto& model_data = *(data_manager.GetModelData());
 
   int status = 0;
 
@@ -684,7 +684,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
 
   std::vector<double> global_data;
 
-  auto* model_data_ptr = dynamic_cast<nimble::ModelData*>(data_manager.GetMacroScaleData().get());
+  auto* model_data_ptr = dynamic_cast<nimble::ModelData*>(data_manager.GetModelData().get());
   if (model_data_ptr == nullptr) { throw std::runtime_error(" Incompatible Model Data \n"); }
   nimble::ModelData& model_data = *model_data_ptr;
 
@@ -955,7 +955,7 @@ ComputeQuasistaticResidual(
   const int num_nodes    = static_cast<int>(mesh.GetNumNodes());
   const int num_unknowns = num_nodes * mesh.GetDim();
 
-  auto model_data = data_manager.GetMacroScaleData();
+  auto model_data = data_manager.GetModelData();
 
   model_data->ComputeInternalForce(
       data_manager, time_previous, time_current, is_output_step, displacement, internal_force);

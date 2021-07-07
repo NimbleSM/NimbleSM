@@ -426,7 +426,7 @@ ModelData::EmplaceBlocks(
 
   const std::vector<int>& block_ids = mesh_.GetBlockIds();
   for (int block_id : block_ids) {
-    std::string const& macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::string const& macro_material_parameters = parser_.GetModelMaterialParameters(block_id);
     auto               block_ptr                 = std::shared_ptr<nimble::Block>(new TBlock());
     block_ptr->Initialize(macro_material_parameters, *material_factory_ptr);
     std::vector<std::pair<std::string, nimble::Length>> data_labels_and_lengths;

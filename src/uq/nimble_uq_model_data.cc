@@ -79,7 +79,7 @@ ModelData::InitializeBlocks(
     std::string        material_key            = line.first;
     int                block_id                = parser_.GetBlockIdFromMaterial(material_key);
     std::string        uq_params_this_material = line.second;
-    std::string const& nominal_params_string   = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::string const& nominal_params_string   = parser_.GetModelMaterialParameters(block_id);
     bool               block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end();
     uq_model_->ParseBlockInput(
         uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);

@@ -242,7 +242,7 @@ class Parser
   }
 
   std::string
-  GetMacroscaleMaterialParameters(int block_id) const
+  GetModelMaterialParameters(int block_id) const
   {
     if (macroscale_blocks_.find(block_id) == macroscale_blocks_.end()) {
       std::string none_str("none");

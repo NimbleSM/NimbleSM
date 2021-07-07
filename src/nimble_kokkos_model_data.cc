@@ -910,7 +910,7 @@ ModelData::InitializeBlocks(
   std::vector<int> block_ids = mesh_.GetBlockIds();
   for (int i = 0; i < num_blocks; i++) {
     int                               block_id                  = block_ids.at(i);
-    std::string const&                macro_material_parameters = parser_.GetMacroscaleMaterialParameters(block_id);
+    std::string const&                macro_material_parameters = parser_.GetModelMaterialParameters(block_id);
     std::map<int, std::string> const& rve_material_parameters   = parser_.GetMicroscaleMaterialParameters();
     std::string                       rve_bc_strategy           = parser_.GetMicroscaleBoundaryConditionStrategy();
     int                               num_elements_in_block     = mesh_.GetNumElementsInBlock(block_id);

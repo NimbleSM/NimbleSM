@@ -245,7 +245,7 @@ BvhContactManager::ComputeBoundingVolumes()
 void
 BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
-  auto model_ptr = this->data_manager_.GetMacroScaleData();
+  auto model_ptr = this->data_manager_.GetModelData();
 
   auto field_ids    = this->data_manager_.GetFieldIDs();
   auto displacement = model_ptr->GetVectorNodeData(field_ids.displacement);

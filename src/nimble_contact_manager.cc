@@ -429,7 +429,7 @@ ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify
   if (parser.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
     std::cout << " Enter if section .. ComputeContactForce \n";
-    auto model_ptr       = data_manager_.GetMacroScaleData();
+    auto model_ptr       = data_manager_.GetModelData();
     auto model_data      = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
     auto field_ids       = data_manager_.GetFieldIDs();
     auto displacement_d  = model_data->GetDeviceVectorNodeData(field_ids.displacement);
@@ -453,7 +453,7 @@ ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify
 #endif
   }
 
-  auto model_data   = data_manager_.GetMacroScaleData();
+  auto model_data   = data_manager_.GetModelData();
   auto displacement = model_data->GetVectorNodeData("displacement");
   ApplyDisplacements(displacement.data());
 

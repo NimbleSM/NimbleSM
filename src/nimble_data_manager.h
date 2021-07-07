@@ -116,7 +116,7 @@ class DataManager
   ///
   /// \return Shared pointer
   std::shared_ptr<nimble::ModelDataBase>
-  GetMacroScaleData()
+  GetModelData()
   {
     return model_data_;
   }
