@@ -84,7 +84,7 @@ class DataManager
   void
   serialize(ArchiveType& ar)
   {
-    ar | macroscale_data_;
+    ar | model_data_;
   }
 #endif
 
@@ -118,7 +118,7 @@ class DataManager
   std::shared_ptr<nimble::ModelDataBase>
   GetMacroScaleData()
   {
-    return macroscale_data_;
+    return model_data_;
   }
 
   /// \brief Return a const reference to the field IDs
@@ -190,7 +190,7 @@ class DataManager
  protected:
   const nimble::Parser&                  parser_;
   const nimble::GenesisMesh&             mesh_;
-  std::shared_ptr<nimble::ModelDataBase> macroscale_data_ = nullptr;
+  std::shared_ptr<nimble::ModelDataBase> model_data_ = nullptr;
 
   nimble::FieldIds field_ids_;
 

@@ -80,11 +80,12 @@
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
-#include "contact/parallel/bvh_contact_manager.h"
 #include <bvh/kdop.hpp>
 #include <bvh/patch.hpp>
 #include <bvh/perf/instrument.hpp>
 #include <bvh/tree.hpp>
+
+#include "contact/parallel/bvh_contact_manager.h"
 //---
 #ifdef BVH_ENABLE_VT
 #include <bvh/vt/collection.hpp>
@@ -306,12 +307,12 @@ ContactManager::CreateContactEntities(
   for (auto& face : secondary_skin_faces) {
     int num_nodes_in_face = static_cast<int>(face.size());
     // determine a characteristic length based on max edge length
-    double max_edge_length_square= std::numeric_limits<double>::lowest();
+    double max_edge_length_square = std::numeric_limits<double>::lowest();
     for (int i = 0; i < num_nodes_in_face; ++i) {
       int node_id_1 = face[i];
       int node_id_2 = face[0];
       if (i + 1 < num_nodes_in_face) { node_id_2 = face[i + 1]; }
-      double edge_length_square = 
+      double edge_length_square =
           (coord_[3 * node_id_2] - coord_[3 * node_id_1]) * (coord_[3 * node_id_2] - coord_[3 * node_id_1]) +
           (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) *
               (coord_[3 * node_id_2 + 1] - coord_[3 * node_id_1 + 1]) +
@@ -319,7 +320,7 @@ ContactManager::CreateContactEntities(
               (coord_[3 * node_id_2 + 2] - coord_[3 * node_id_1 + 2]);
       if (edge_length_square > max_edge_length_square) { max_edge_length_square = edge_length_square; }
     }
-    double characteristic_length = sqrt( max_edge_length_square );
+    double characteristic_length = sqrt(max_edge_length_square);
     for (int i_node = 0; i_node < num_nodes_in_face; i_node++) {
       int node_id = face[i_node];
       // omit ghosted nodes

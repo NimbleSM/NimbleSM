@@ -69,7 +69,7 @@ namespace nimble {
 DataManager::DataManager(const nimble::Parser& parser, const nimble::GenesisMesh& mesh)
     : parser_(parser),
       mesh_(mesh),
-      macroscale_data_(),
+      model_data_(),
       field_ids_(),
       vector_communicator_(nullptr),
       boundary_condition_(new nimble::BoundaryConditionManager())
@@ -105,21 +105,21 @@ DataManager::Initialize()
   //--- Create ModelData
   if (parser_.UseUQ()) {
 #ifdef NIMBLE_HAVE_UQ
-    macroscale_data_ = std::make_shared<nimble_uq::ModelData>();
+    model_data_ = std::make_shared<nimble_uq::ModelData>();
 #else
     throw std::runtime_error(" Wrong environment !\n");
 #endif
   } else if (parser_.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
-    macroscale_data_ = std::make_shared<nimble_kokkos::ModelData>();
+    model_data_ = std::make_shared<nimble_kokkos::ModelData>();
 #else
     throw std::runtime_error(" Wrong environment !\n");
 #endif
   } else {
-    macroscale_data_ = std::make_shared<nimble::ModelData>();
+    model_data_ = std::make_shared<nimble::ModelData>();
   }
 
-  macroscale_data_->SetDimension(dim);
+  model_data_->SetDimension(dim);
 
   //
   // Initialize the boundary condition manager
@@ -139,30 +139,29 @@ DataManager::Initialize()
   //
 
   if (time_integration_scheme == "explicit")
-    field_ids_.lumped_mass = macroscale_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
+    field_ids_.lumped_mass = model_data_->AllocateNodeData(nimble::SCALAR, "lumped_mass", num_nodes);
 
-  field_ids_.reference_coordinates =
-      macroscale_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
-  field_ids_.displacement = macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
-  field_ids_.velocity     = macroscale_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
-  field_ids_.acceleration = macroscale_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
+  field_ids_.reference_coordinates = model_data_->AllocateNodeData(nimble::VECTOR, "reference_coordinate", num_nodes);
+  field_ids_.displacement          = model_data_->AllocateNodeData(nimble::VECTOR, "displacement", num_nodes);
+  field_ids_.velocity              = model_data_->AllocateNodeData(nimble::VECTOR, "velocity", num_nodes);
+  field_ids_.acceleration          = model_data_->AllocateNodeData(nimble::VECTOR, "acceleration", num_nodes);
 
-  field_ids_.internal_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
-  field_ids_.external_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
+  field_ids_.internal_force = model_data_->AllocateNodeData(nimble::VECTOR, "internal_force", num_nodes);
+  field_ids_.external_force = model_data_->AllocateNodeData(nimble::VECTOR, "external_force", num_nodes);
 
-  field_ids_.contact_force = macroscale_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
+  field_ids_.contact_force = model_data_->AllocateNodeData(nimble::VECTOR, "contact_force", num_nodes);
 
   if (time_integration_scheme == "quasistatic") {
     //
     // These variables are used in the "quasi-static" simulations
     //
-    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
-    macroscale_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
-    macroscale_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
-    macroscale_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
+    model_data_->AllocateNodeData(nimble::VECTOR, "trial_displacement", num_nodes);
+    model_data_->AllocateNodeData(nimble::VECTOR, "displacement_fluctuation", num_nodes);
+    model_data_->AllocateNodeData(nimble::VECTOR, "trial_internal_force", num_nodes);
+    model_data_->AllocateNodeData(nimble::SCALAR, "skin_node", num_nodes);
   }
 
-  macroscale_data_->SetReferenceCoordinates(mesh_);
+  model_data_->SetReferenceCoordinates(mesh_);
 }
 
 void
@@ -173,11 +172,11 @@ DataManager::InitializeOutput(const std::string& filename)
   exodus_output_ = std::shared_ptr<nimble::ExodusOutput>(new nimble::ExodusOutput);
   exodus_output_->Initialize(filename, mesh_);
 
-  auto& node_data_labels_for_output = macroscale_data_->GetNodeDataLabelsForOutput();
-  auto& elem_data_labels_for_output = macroscale_data_->GetElementDataLabelsForOutput();
-  auto& derived_elem_data_labels    = macroscale_data_->GetDerivedElementDataLabelsForOutput();
+  auto& node_data_labels_for_output = model_data_->GetNodeDataLabelsForOutput();
+  auto& elem_data_labels_for_output = model_data_->GetElementDataLabelsForOutput();
+  auto& derived_elem_data_labels    = model_data_->GetDerivedElementDataLabelsForOutput();
 
-  macroscale_data_->InitializeExodusOutput(*this);
+  model_data_->InitializeExodusOutput(*this);
 
   exodus_output_->InitializeDatabase(
       mesh_, global_data_labels, node_data_labels_for_output, elem_data_labels_for_output, derived_elem_data_labels);
@@ -186,7 +185,7 @@ DataManager::InitializeOutput(const std::string& filename)
 void
 DataManager::WriteOutput(double time_current)
 {
-  macroscale_data_->WriteExodusOutput(*this, time_current);
+  model_data_->WriteExodusOutput(*this, time_current);
 }
 
 void

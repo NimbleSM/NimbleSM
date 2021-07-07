@@ -70,13 +70,13 @@ namespace details {
 #ifdef NIMBLE_HAVE_ARBORX
 struct ArborXCallback
 {
-  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_faces;
-  const nimble_kokkos::HostContactEntityUnmanagedConstView &d_contact_nodes;
+  const nimble_kokkos::HostContactEntityUnmanagedConstView& d_contact_faces;
+  const nimble_kokkos::HostContactEntityUnmanagedConstView& d_contact_nodes;
 
   double enforcement_penalty;
 
-  std::vector<NarrowphaseResult> &resa_vec;
-  std::vector<NarrowphaseResult> &resb_vec;
+  std::vector<NarrowphaseResult>& resa_vec;
+  std::vector<NarrowphaseResult>& resb_vec;
 
   template <typename Query>
   KOKKOS_FUNCTION void
@@ -85,7 +85,7 @@ struct ArborXCallback
     const auto& myNode = d_contact_nodes(ArborX::getData(query));
     const auto& myFace = d_contact_faces(j);
 
-    bool   inside               = false;
+    bool   inside    = false;
     double normal[3] = {0.0, 0.0, 0.0};
 
     //--- Determine whether the node is projected inside the triangular face
@@ -107,7 +107,7 @@ struct ArborXCallback
 };
 #endif
 
-}
+}  // namespace details
 
 struct NarrowphaseFunc
 {
@@ -168,8 +168,8 @@ struct NarrowphaseFunc
       d_contact_faces(ii) = _a.elements[ii];
       d_contact_faces(ii).ResetContactData();
     }
-    auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView( _a.elements.data(), _a.elements.size() );
-    auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView( _b.elements.data(), _b.elements.size() );
+    auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView(_a.elements.data(), _a.elements.size());
+    auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView(_b.elements.data(), _b.elements.size());
 
     nimble_kokkos::DeviceContactEntityArrayView d_contact_nodes =
         nimble_kokkos::DeviceContactEntityArrayView("d_contact_nodes", _b.elements.size());
@@ -190,12 +190,14 @@ struct NarrowphaseFunc
     //
     // ArborX::Experimental::TraversalPolicy policy;
     //
-    a_bvh.query(nimble_kokkos::kokkos_host_execution_space{}, view_b,
-                details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    a_bvh.query(
+        nimble_kokkos::kokkos_host_execution_space{},
+        view_b,
+        details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
-    
+
     /*
     static int iter_count = 0;
 
