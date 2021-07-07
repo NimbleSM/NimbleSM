@@ -261,30 +261,39 @@ class ContactEntity
   ScatterForceToContactManagerForceVector(ArgT& force) const
   {
     int n = 3 * node_id_for_node_1_;
+#ifdef NIMBLE_HAVE_KOKKOS
+    Kokkos::atomic_add(&force[n], force_1_x_);
+    Kokkos::atomic_add(&force[n + 1], force_1_y_);
+    Kokkos::atomic_add(&force[n + 2], force_1_z_);
+#else
     force[n] += force_1_x_;
     force[n + 1] += force_1_y_;
     force[n + 2] += force_1_z_;
+#endif
     if (entity_type_ == TRIANGLE) {
       n = 3 * node_id_for_node_2_;
+#ifdef NIMBLE_HAVE_KOKKOS
+      Kokkos::atomic_add(&force[n], force_2_x_);
+      Kokkos::atomic_add(&force[n + 1], force_2_y_);
+      Kokkos::atomic_add(&force[n + 2], force_2_z_);
+#else
       force[n] += force_2_x_;
       force[n + 1] += force_2_y_;
       force[n + 2] += force_2_z_;
-      n = 3 * node_id_1_for_fictitious_node_;
-      force[n] += force_3_x_ / 4.0;
-      force[n + 1] += force_3_y_ / 4.0;
-      force[n + 2] += force_3_z_ / 4.0;
-      n = 3 * node_id_2_for_fictitious_node_;
-      force[n] += force_3_x_ / 4.0;
-      force[n + 1] += force_3_y_ / 4.0;
-      force[n + 2] += force_3_z_ / 4.0;
-      n = 3 * node_id_3_for_fictitious_node_;
-      force[n] += force_3_x_ / 4.0;
-      force[n + 1] += force_3_y_ / 4.0;
-      force[n + 2] += force_3_z_ / 4.0;
-      n = 3 * node_id_4_for_fictitious_node_;
-      force[n] += force_3_x_ / 4.0;
-      force[n + 1] += force_3_y_ / 4.0;
-      force[n + 2] += force_3_z_ / 4.0;
+#endif
+      std::vector< int > list{3 * node_id_1_for_fictitious_node_, 3 * node_id_2_for_fictitious_node_,
+                              3 * node_id_3_for_fictitious_node_, 3 * node_id_4_for_fictitious_node_};
+      for (const auto n : list) {
+#ifdef NIMBLE_HAVE_KOKKOS
+        Kokkos::atomic_add(&force[n], force_3_x_ / 4.0);
+        Kokkos::atomic_add(&force[n + 1], force_3_y_ / 4.0);
+        Kokkos::atomic_add(&force[n + 2], force_3_z_ / 4.0);
+#else
+        force[n] += force_3_x_ / 4.0;
+        force[n + 1] += force_3_y_ / 4.0;
+        force[n + 2] += force_3_z_ / 4.0;
+#endif
+      }
     }
   }
 
@@ -362,7 +371,11 @@ class ContactEntity
   void
   set_contact_status(bool status) noexcept
   {
+#ifdef NIMBLE_HAVE_KOKKOS
+    Kokkos::atomic_assign(&contact_status_, status);
+#else
     contact_status_ = status;
+#endif
   }
 
 #ifdef NIMBLE_HAVE_BVH
