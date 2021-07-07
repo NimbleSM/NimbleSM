@@ -171,7 +171,6 @@ Parser::Parser()
     : genesis_file_name_("none"),
       use_two_level_mesh_decomposition_(false),
       write_timing_data_file_(false),
-      rve_genesis_file_name_("none"),
       exodus_file_name_("none"),
       time_integration_scheme_("explicit"),
       nonlinear_solver_relative_tolerance_(1.0e-6),
@@ -182,10 +181,9 @@ Parser::Parser()
       output_frequency_(1),
       visualize_contact_entities_(false),
       visualize_contact_bounding_boxes_(false),
-      contact_visualization_file_name_("none"),
-      microscale_boundary_condition_strategy_("periodic bc")
+      contact_visualization_file_name_("none")
+
 {
-  material_strings_["rve"] = "none";
 }
 
 void
@@ -241,8 +239,6 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
 {
   if (key == "genesis input file") {
     genesis_file_name_ = value;
-  } else if (key == "rve genesis input file") {
-    rve_genesis_file_name_ = value;
   } else if (key == "exodus output file") {
     exodus_file_name_ = value;
   } else if (key == "use two level mesh decomposition") {
@@ -317,10 +313,6 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
     if (vals[3] == "on") { visualize_contact_bounding_boxes_ = true; }
 
     contact_visualization_file_name_ = vals[5];
-  } else if (key == "microscale output element ids") {
-    std::stringstream ss(value);
-    int               global_id;
-    while (ss >> global_id) { microscale_output_element_ids_.push_back(global_id); }
   } else if (key == "material parameters") {
     size_t      space_pos           = value.find(" ");
     std::string material_key        = value.substr(0, space_pos);
@@ -329,11 +321,6 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
   } else if (key == "element block") {
     BlockProperties block_props(value);
     model_blocks_[block_props.block_id_] = block_props;
-  } else if (key == "microscale block") {
-    BlockProperties block_props(value);
-    microscale_blocks_[block_props.block_id_] = block_props;
-  } else if (key == "microscale boundary condition strategy") {
-    microscale_boundary_condition_strategy_ = value;
   } else if (key == "boundary condition") {
     boundary_condition_strings_.push_back(value);
   } else if (key == "output fields") {
