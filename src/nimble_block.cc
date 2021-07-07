@@ -55,9 +55,9 @@
 namespace nimble {
 
 void
-Block::Initialize(std::string const& macro_material_parameters, MaterialFactory& factory)
+Block::Initialize(std::string const& model_material_parameters, MaterialFactory& factory)
 {
-  macro_material_parameters_ = macro_material_parameters;
+  model_material_parameters_ = model_material_parameters;
   InstantiateMaterialModel(factory);
   InstantiateElement();
 }
@@ -65,8 +65,8 @@ Block::Initialize(std::string const& macro_material_parameters, MaterialFactory&
 void
 Block::InstantiateMaterialModel(MaterialFactory& factory)
 {
-  if (macro_material_parameters_ != "none") {
-    factory.parse_and_create(macro_material_parameters_);
+  if (model_material_parameters_ != "none") {
+    factory.parse_and_create(model_material_parameters_);
     material_ = factory.get_material();
   } else {
     throw std::logic_error(

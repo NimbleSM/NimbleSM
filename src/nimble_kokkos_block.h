@@ -86,7 +86,7 @@ class Block : public nimble::BlockBase
   }
 
   void
-  Initialize(std::string const& macro_material_parameters, int num_elements, MaterialFactory& factory);
+  Initialize(std::string const& model_material_parameters, int num_elements, MaterialFactory& factory);
 
   void
   InstantiateMaterialModel(int num_material_points, MaterialFactory& factory);

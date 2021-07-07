@@ -73,7 +73,7 @@ class Block : public nimble::BlockBase
   void
   serialize(ArchiveType& ar)
   {
-    ar | macro_material_parameters_;
+    ar | model_material_parameters_;
     ar | def_grad_offset_;
     ar | stress_offset_;
     ar | state_data_offset_;
@@ -94,7 +94,7 @@ class Block : public nimble::BlockBase
 #endif
 
   void
-  Initialize(std::string const& macro_material_parameters, MaterialFactory& factory);
+  Initialize(std::string const& model_material_parameters, MaterialFactory& factory);
 
   void
   InstantiateMaterialModel(MaterialFactory& factory);
