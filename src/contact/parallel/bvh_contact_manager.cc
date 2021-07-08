@@ -66,6 +66,7 @@ struct NarrowphaseFunc
   bvh::narrowphase_result_pair
   operator()(const bvh::broadphase_collision<ContactEntity>& _a, const bvh::broadphase_collision<ContactEntity>& _b)
   {
+    int rank = contact_manager->Rank();
     auto res   = bvh::narrowphase_result_pair();
     res.a      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
@@ -74,8 +75,9 @@ struct NarrowphaseFunc
     auto  tree = build_snapshot_tree_top_down(_a.elements);
 
     std::size_t j = 0;
+    std::size_t count = 0, nohit = 0;
     for (auto&& elb : _b.elements) {
-      query_tree_local(tree, elb, [&_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
+      query_tree_local(tree, elb, [rank, &nohit, &count, &_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
         const auto&       face = _a.elements[_i];
         const auto&       node = elb;
         NarrowphaseResult entry;
@@ -84,7 +86,7 @@ struct NarrowphaseFunc
         double norm[3];
         ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary);
 
-        if (hit) {
+        if (true) {
           details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
 
           entry.local_index = face.local_id();
@@ -94,10 +96,31 @@ struct NarrowphaseFunc
           entry.local_index = node.local_id();
           entry.node        = true;
           resb.emplace_back(entry);
+          ++count;
+        } else {
+          ++nohit;
+          //std::cout << rank << ": no hit: left kdop: " << face.Kdop() << " right kdop " << node.Kdop() << " gap: " << entry.gap << '\n';
         }
       });
       ++j;
     }
+
+# if 0
+    if ( count == 0 )
+    {
+      for (auto &&ela : _a.elements)
+      {
+        std::cout << rank << ": left kdop: " << ela.Kdop() << '\n';
+        //std::cout << "centroid: (" << ela.centroid()[0] << ", " << ela.centroid()[1] << ", " << ela.centroid()[2] << ")\n";
+      }
+      for (auto &&elb : _b.elements)
+      {
+        std::cout << rank << ": right kdop: " << elb.Kdop() << '\n';
+        //std::cout << "centroid: (" << elb.centroid()[0] << ", " << elb.centroid()[1] << ", " << elb.centroid()[2] << ")\n";
+      }
+    }
+#endif
+   // std::cout << rank << ": narrowphase functor -- hits: " << count << "  nohits: " << nohit << '\n';
 
     return {resa, resb};
   }
@@ -243,7 +266,7 @@ BvhContactManager::ComputeParallelContactForce(int step,
     std::size_t nc = 0;
     m_contact_log >> nc;
     if ( nc != m_last_results.size() ) {
-      std::cout << "mismatched num contacts for step " << step - 1 << ": " << m_last_results.size() << " != ref " << nc << '\n';
+      std::cout << m_rank << ": mismatched num contacts for step " << step - 1 << ": " << m_last_results.size() << " != ref " << nc << '\n';
       throw std::logic_error( "invalid contact" );
     }
   } else if (check_mode::write == m_mode) {
@@ -251,6 +274,7 @@ BvhContactManager::ComputeParallelContactForce(int step,
   }
 
   // Update contact entities
+  #if 0
   for (auto&& r : m_last_results) {
     if (r.node) {
       if (r.local_index >= contact_nodes_.size())
@@ -268,6 +292,7 @@ BvhContactManager::ComputeParallelContactForce(int step,
       face.ScatterForceToContactManagerForceVector(force_);
     }
   }
+#endif
 
   total_num_contacts += m_last_results.size();
   total_enforcement_time.Stop();
