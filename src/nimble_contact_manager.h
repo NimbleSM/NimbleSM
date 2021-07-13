@@ -93,21 +93,37 @@ struct PenaltyContactEnforcement
   template <typename VecType>
   NIMBLE_INLINE_FUNCTION void
   EnforceContact(
-      ContactEntity& node,
+      const ContactEntity &node,
       ContactEntity& face,
       const double   gap,
       const double   normal[3],
       const double   barycentric_coordinates[3],
       VecType&       full_contact_force) const
   {
-    double contact_force[3]{};
+    constexpr int dim_vec = 3;
+    double contact_force[dim_vec]{};
     details::getContactForce(penalty, gap, normal, contact_force);
     //
-    face.SetNodalContactForces(contact_force, barycentric_coordinates);
-    node.SetNodalContactForces(contact_force);
+    //--- Create a local dummy copy of 'face' to avoid "critical" section
     //
-    node.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
-    face.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
+    ContactEntity tmp_face;
+    tmp_face.entity_type_ = face.entity_type_;
+    tmp_face.node_id_for_node_1_ = face.node_id_for_node_1_;
+    tmp_face.node_id_for_node_2_ = face.node_id_for_node_2_;
+    tmp_face.node_id_1_for_fictitious_node_ = face.node_id_1_for_fictitious_node_;
+    tmp_face.node_id_2_for_fictitious_node_ = face.node_id_2_for_fictitious_node_;
+    tmp_face.node_id_3_for_fictitious_node_ = face.node_id_3_for_fictitious_node_;
+    tmp_face.node_id_4_for_fictitious_node_ = face.node_id_4_for_fictitious_node_;
+    tmp_face.SetNodalContactForces(contact_force, barycentric_coordinates);
+    tmp_face.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
+    //
+    //--- Create a local dummy copy of 'node' to avoid "critical" section
+    //
+    ContactEntity tmp_node;
+    tmp_node.entity_type_ = ContactEntity::NODE;
+    tmp_node.node_id_for_node_1_ = node.node_id_for_node_1_;
+    tmp_node.SetNodalContactForces(contact_force);
+    tmp_node.ScatterForceToContactManagerForceVector<VecType>(full_contact_force);
   }
 
   double penalty;
