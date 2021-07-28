@@ -281,8 +281,11 @@ class ContactEntity
       force[n + 1] += force_2_y_;
       force[n + 2] += force_2_z_;
 #endif
-      std::vector< int > list{3 * node_id_1_for_fictitious_node_, 3 * node_id_2_for_fictitious_node_,
-                              3 * node_id_3_for_fictitious_node_, 3 * node_id_4_for_fictitious_node_};
+      std::vector<int> list{
+          3 * node_id_1_for_fictitious_node_,
+          3 * node_id_2_for_fictitious_node_,
+          3 * node_id_3_for_fictitious_node_,
+          3 * node_id_4_for_fictitious_node_};
       for (const auto n : list) {
 #ifdef NIMBLE_HAVE_KOKKOS
         Kokkos::atomic_add(&force[n], force_3_x_ / 4.0);
