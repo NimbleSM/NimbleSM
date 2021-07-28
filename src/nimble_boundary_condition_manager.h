@@ -92,7 +92,7 @@ class BoundaryConditionManager
 
   template <typename ViewT>
   void
-  ApplyInitialConditions(const ViewT reference_coordinates, ViewT velocity, std::vector<ViewT>& offnom_velocities)
+  ApplyInitialConditions(const ViewT reference_coordinates, ViewT velocity)
   {
     for (auto& bc : boundary_conditions_) {
       if (bc.bc_type_ == BoundaryCondition::INITIAL_VELOCITY) {
@@ -102,12 +102,7 @@ class BoundaryConditionManager
         std::vector<int> const& node_set       = node_sets_[node_set_id];
         if (!has_expression) {
           double magnitude = bc.magnitude_;
-          for (int n : node_set) {
-            velocity(n, coordinate) = magnitude;
-            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](n, coordinate) = magnitude;
-            }
-          }
+          for (int n : node_set) { velocity(n, coordinate) = magnitude; }
         } else {
           for (int n : node_set) {
             bc.expression_.x = reference_coordinates(n, 0);
@@ -116,21 +111,10 @@ class BoundaryConditionManager
             if (dim_ == 3) { bc.expression_.z = reference_coordinates(n, 2); }
             bc.expression_.t        = 0.0;
             velocity(n, coordinate) = bc.expression_.eval();
-            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
-              offnom_velocities[nuq](n, coordinate) = bc.expression_.eval();
-            }
           }
         }
       }
     }
-  }
-
-  template <typename ViewT>
-  void
-  ApplyInitialConditions(const ViewT reference_coordinates, ViewT velocity)
-  {
-    std::vector<ViewT> empty;
-    ApplyInitialConditions<ViewT>(reference_coordinates, velocity, empty);
   }
 
   template <typename ViewT>
