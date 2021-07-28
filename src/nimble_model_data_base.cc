@@ -95,13 +95,7 @@ ModelDataBase::ApplyKinematicConditions(nimble::DataManager& data_manager, doubl
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto velocity             = GetVectorNodeData("velocity");
-
-  nimble::Viewify<2> displacement;
-  if (use_displacement_fluctuations_)
-    displacement = GetVectorNodeData("displacement_fluctuation");
-  else
-    displacement = GetVectorNodeData("displacement");
-
+  auto displacement         = GetVectorNodeData("displacement");
   bc->ApplyKinematicBC(time_current, time_previous, reference_coordinate, displacement, velocity);
 }
 
