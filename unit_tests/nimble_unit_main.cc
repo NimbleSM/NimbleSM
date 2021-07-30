@@ -45,8 +45,9 @@
 #include <Kokkos_Core.hpp>
 #endif
 
-int main(int argc, char** argv) {
-
+int
+main(int argc, char** argv)
+{
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif

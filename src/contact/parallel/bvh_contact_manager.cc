@@ -100,7 +100,7 @@ struct ArborXCallback
 #pragma omp critical
       {
         resa_vec.push_back(entry);
-      }  
+      }
       //
       entry.local_index = myNode.local_id();
       entry.node        = true;
