@@ -207,8 +207,8 @@ Block::InitializeElementData(
   DetermineDataOffsets(elem_data_labels, derived_elem_data_labels);
 }
 
-struct ComputeInternalForceFunctor
-{
+struct ComputeInternalForceFunctor {
+
   std::shared_ptr<Element>  element_;
   std::shared_ptr<Material> material_;
 
@@ -233,52 +233,38 @@ struct ComputeInternalForceFunctor
   bool          compute_stress_only;
 
   ComputeInternalForceFunctor(
-      std::shared_ptr<Element>  element,
-      std::shared_ptr<Material> material,
-      const std::vector<int>&   def_grad_offset,
-      const std::vector<int>&   stress_offset,
-      const std::vector<int>&   state_data_offset,
-      const double*             reference_coordinates_,
-      const double*             displacement_,
-      const double*             velocity_,
-      double*                   internal_force_,
-      double                    time_previous_,
-      double                    time_current_,
-      int                       num_elem_,
-      const int*                elem_conn_,
-      const int*                elem_global_ids_,
-      int                       num_element_data_,
-      const double*             elem_data_n_,
-      double*                   elem_data_np1_,
-      DataManager&              data_manager_,
-      bool                      is_output_step_,
-      bool                      compute_stress_only_)
-      : element_(element),
-        material_(material),
-        def_grad_offset_(def_grad_offset),
-        stress_offset_(stress_offset),
-        state_data_offset_(state_data_offset),
-        reference_coordinates(reference_coordinates_),
-        displacement(displacement_),
-        velocity(velocity_),
-        internal_force(internal_force_),
-        time_previous(time_previous_),
-        time_current(time_current_),
-        num_elem(num_elem_),
-        elem_conn(elem_conn_),
-        elem_global_ids(elem_global_ids_),
-        num_element_data(num_element_data_),
-        elem_data_n(elem_data_n_),
-        elem_data_np1(elem_data_np1_),
-        data_manager(data_manager_),
-        is_output_step(is_output_step_),
-        compute_stress_only(compute_stress_only_)
-  {
-  }
+    std::shared_ptr<Element>  element,
+    std::shared_ptr<Material> material,
+    const std::vector<int>& def_grad_offset,
+    const std::vector<int>& stress_offset,
+    const std::vector<int>& state_data_offset,
+    const double*                   reference_coordinates_,
+    const double*                   displacement_,
+    const double*                   velocity_,
+    double*                         internal_force_,
+    double                          time_previous_,
+    double                          time_current_,
+    int                             num_elem_,
+    const int*                      elem_conn_,
+    const int*                      elem_global_ids_,
+    int                             num_element_data_,
+    const double*                   elem_data_n_,
+    double*                         elem_data_np1_,
+    DataManager&                    data_manager_,
+    bool                            is_output_step_,
+    bool                            compute_stress_only_
+  ) : element_(element), material_(material),
+      def_grad_offset_(def_grad_offset), stress_offset_(stress_offset), state_data_offset_(state_data_offset),
+      reference_coordinates(reference_coordinates_),
+      displacement(displacement_), velocity(velocity_), internal_force(internal_force_),
+      time_previous(time_previous_), time_current(time_current_), num_elem(num_elem_),
+      elem_conn(elem_conn_), elem_global_ids(elem_global_ids_),
+      num_element_data(num_element_data_), elem_data_n(elem_data_n_),
+      elem_data_np1(elem_data_np1_), data_manager(data_manager_),
+      is_output_step(is_output_step_), compute_stress_only(compute_stress_only_)
+  {}
 
-  void
-  operator()(int elem) const
-  {
+  void operator()(int elem) const {
     int dim                 = element_->Dim();
     int num_node_per_elem   = element_->NumNodesPerElement();
     int num_int_pt_per_elem = element_->NumIntegrationPointsPerElement();
@@ -301,10 +287,10 @@ struct ComputeInternalForceFunctor
     std::vector<double> state_data_np1_vec;
     int                 num_state_data = material_->NumStateVariables();
     if (num_state_data > 0) {
-      state_data_n_vec.resize(num_state_data * num_int_pt_per_elem);
-      state_data_np1_vec.resize(num_state_data * num_int_pt_per_elem);
-      state_data_n   = state_data_n_vec.data();
-      state_data_np1 = state_data_np1_vec.data();
+    state_data_n_vec.resize(num_state_data * num_int_pt_per_elem);
+    state_data_np1_vec.resize(num_state_data * num_int_pt_per_elem);
+    state_data_n   = state_data_n_vec.data();
+    state_data_np1 = state_data_np1_vec.data();
     }
 
     for (int node = 0; node < num_node_per_elem; node++) {
@@ -312,14 +298,14 @@ struct ComputeInternalForceFunctor
       for (int i = 0; i < vector_size; i++) {
         ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i];
         cur_coord[node * vector_size + i] =
-            reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
+          reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
       }
     }
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
 
-    const double* my_elem_data_n   = &elem_data_n[elem * num_element_data];
-    double*       my_elem_data_np1 = &elem_data_np1[elem * num_element_data];
+    const double *my_elem_data_n = &elem_data_n[elem * num_element_data];
+    double *my_elem_data_np1 = &elem_data_np1[elem * num_element_data];
 
     // Copy data from the global data containers
     for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {
@@ -338,8 +324,7 @@ struct ComputeInternalForceFunctor
     }
 
     // DJL todo properly handle state data
-    material_->GetStress(
-        elem_global_ids[elem],
+    material_->GetStress(elem_global_ids[elem],
         num_int_pt_per_elem,
         time_previous,
         time_current,
@@ -355,15 +340,15 @@ struct ComputeInternalForceFunctor
     // Copy data to the global containers
     for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {
       for (int i_component = 0; i_component < full_tensor_size; i_component++) {
-        int def_grad_offset               = def_grad_offset_.at(i_ipt * full_tensor_size + i_component);
+        int def_grad_offset = def_grad_offset_.at(i_ipt * full_tensor_size + i_component);
         my_elem_data_np1[def_grad_offset] = def_grad_np1[i_ipt * full_tensor_size + i_component];
       }
       for (int i_component = 0; i_component < sym_tensor_size; i_component++) {
-        int stress_offset               = stress_offset_.at(i_ipt * sym_tensor_size + i_component);
+        int stress_offset = stress_offset_.at(i_ipt * sym_tensor_size + i_component);
         my_elem_data_np1[stress_offset] = cauchy_stress_np1[i_ipt * sym_tensor_size + i_component];
       }
       for (int i_component = 0; i_component < num_state_data; i_component++) {
-        int state_data_offset               = state_data_offset_.at(i_ipt * num_state_data + i_component);
+        int state_data_offset = state_data_offset_.at(i_ipt * num_state_data + i_component);
         my_elem_data_np1[state_data_offset] = state_data_np1[i_ipt * num_state_data + i_component];
       }
     }
@@ -383,7 +368,9 @@ struct ComputeInternalForceFunctor
         }
       }
     }
+
   }
+
 };
 
 void
@@ -404,36 +391,26 @@ Block::ComputeInternalForce(
     bool                            is_output_step,
     bool                            compute_stress_only) const
 {
-  double* elem_data_np1_ptr = elem_data_np1.data();
-  int     num_element_data  = static_cast<int>(elem_data_labels.size());
 
-  ComputeInternalForceFunctor functor(
-      element_,
-      material_,
-      def_grad_offset_,
-      stress_offset_,
-      state_data_offset_,
-      reference_coordinates,
-      displacement,
-      velocity,
-      internal_force,
-      time_previous,
-      time_current,
-      num_elem,
-      elem_conn,
-      elem_global_ids,
-      num_element_data,
-      &elem_data_n[0],
-      elem_data_np1_ptr,
-      data_manager,
-      is_output_step,
-      compute_stress_only);
+  double *elem_data_np1_ptr = elem_data_np1.data();
+  int num_element_data    = static_cast<int>(elem_data_labels.size());
+
+  ComputeInternalForceFunctor functor(element_, material_, 
+      def_grad_offset_, stress_offset_, state_data_offset_,
+      reference_coordinates, displacement,
+      velocity, internal_force, time_previous, time_current, num_elem,
+      elem_conn, elem_global_ids, num_element_data, 
+      &elem_data_n[0], elem_data_np1_ptr,
+      data_manager, is_output_step, compute_stress_only);
 
 #ifdef NIMBLE_HAVE_KOKKOS
   Kokkos::parallel_for(num_elem, functor);
 #else
-  for (int elem = 0; elem < num_elem; elem++) { functor(elem); }  // for (int elem = 0; elem < num_elem; elem++)
+  for (int elem = 0; elem < num_elem; elem++) {
+    functor(elem);
+  }  // for (int elem = 0; elem < num_elem; elem++)
 #endif
+
 }
 
 void

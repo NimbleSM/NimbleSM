@@ -45,34 +45,36 @@
  * projection_node_to_face.cc
  */
 
-#include <gtest/gtest.h>
-#include <nimble_contact_entity.h>
-#include <nimble_contact_manager.h>
-
 #include <iostream>
 #include <string>
 
+#include <gtest/gtest.h>
+
+#include <nimble_contact_entity.h>
+#include <nimble_contact_manager.h>
+
 // Testing ContactManager::SimpleClosestPointProjectionSingle
 
-TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
-{
+TEST(projection_node_to_face, SimpleClosestPointProjectionSingle) {
+
   using namespace nimble;
 
-  double        nCoord[3] = {0.123, 0.456, 0.789};
+  double nCoord[3] = {0.123, 0.456, 0.789};
   ContactEntity node(ContactEntity::NODE, 10, nCoord, 0.0001, 0);
 
-  double coord[9]     = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
-  int    dummy_map[4] = {2, 2, 2, 2};
+  double coord[9] = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+  int dummy_map[4] = {2, 2, 2, 2};
 
   ContactEntity face(ContactEntity::TRIANGLE, 0, coord, 1.0, 0, 1, dummy_map);
 
   ContactManager::PROJECTION_TYPE flag = ContactManager::PROJECTION_TYPE::UNKNOWN;
-  ContactEntity::vertex           projectedPoint;
-  double                          gap       = 0.0;
-  double                          normal[3] = {0.0, 0.0, 0.0};
+  ContactEntity::vertex projectedPoint;
+  double gap = 0.0;
+  double normal[3] = {0.0, 0.0, 0.0};
 
   double tol = 1.0e-08;
-  ContactManager::SimpleClosestPointProjectionSingle(node, face, &flag, &projectedPoint, gap, normal, tol);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
 
   EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
 
@@ -84,11 +86,10 @@ TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
 
   //----
 
-  nCoord[0] = 1.0;
-  nCoord[1] = 0.0;
-  nCoord[2] = -1.23;
+  nCoord[0] = 1.0; nCoord[1] = 0.0; nCoord[2] = -1.23;
   node.SetCoordinates(nCoord);
-  ContactManager::SimpleClosestPointProjectionSingle(node, face, &flag, &projectedPoint, gap, normal, tol);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
 
   EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
 
@@ -100,11 +101,10 @@ TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
 
   //----
 
-  nCoord[0] = 1.0;
-  nCoord[1] = 0.5 * tol;
-  nCoord[2] = 0.777;
+  nCoord[0] = 1.0; nCoord[1] = 0.5 * tol; nCoord[2] = 0.777;
   node.SetCoordinates(nCoord);
-  ContactManager::SimpleClosestPointProjectionSingle(node, face, &flag, &projectedPoint, gap, normal, tol);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
 
   EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::FACE);
 
@@ -116,14 +116,16 @@ TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
 
   //----
 
-  nCoord[0] = 1.0;
-  nCoord[1] = 1.11;
-  nCoord[2] = -1.23;
+  nCoord[0] = 1.0; nCoord[1] = 1.11; nCoord[2] = -1.23;
   node.SetCoordinates(nCoord);
-  ContactManager::SimpleClosestPointProjectionSingle(node, face, &flag, &projectedPoint, gap, normal, tol);
+  ContactManager::SimpleClosestPointProjectionSingle(node, face,
+     &flag, &projectedPoint, gap, normal, tol);
 
   EXPECT_EQ(flag, ContactManager::PROJECTION_TYPE::UNKNOWN);
+
 }
+
+
 
 // Testing ContactManager::Projection
 
@@ -139,9 +141,9 @@ TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
 /////
 ///// \note Only the coordinates of ContactEntity node are accessed.
 /////
-// void
+//void
 //    double tol) {
-// ContactManager::Projection(
+//ContactManager::Projection(
 //    const ContactEntity &node,
 //    const ContactEntity &tri,
 //    bool   &in,
@@ -149,30 +151,31 @@ TEST(projection_node_to_face, SimpleClosestPointProjectionSingle)
 //    double *normal,
 //    double *barycentric_coordinates,
 
-TEST(projection_node_to_face, Projection)
-{
+
+TEST(projection_node_to_face, Projection) {
+
   using namespace nimble;
 
   // TEST 1 - Simple projection
 
   // Inputs:
   //  - node
-  double        nCoord[3] = {0.123, 0.456, 0.789};
+  double nCoord[3] = {0.123, 0.456, 0.789};
   ContactEntity node(ContactEntity::NODE, 10, nCoord, 0.0001, 0);
 
   //  - face
-  double        coord[9]     = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
-  int           dummy_map[4] = {2, 2, 2, 2};
+  double coord[9] = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+  int dummy_map[4] = {2, 2, 2, 2};
   ContactEntity face(ContactEntity::TRIANGLE, 0, coord, 1.0, 0, 1, dummy_map);
 
   //  - tolerance
   double tol = 1.0e-08;
 
   // Outputs:
-  // ContactEntity::vertex projectedPoint;
-  bool   in                         = false;
-  double gap                        = 0.0;
-  double normal[3]                  = {0.0, 0.0, 0.0};
+  //ContactEntity::vertex projectedPoint;
+  bool in = false;
+  double gap = 0.0;
+  double normal[3] = {0.0, 0.0, 0.0};
   double barycentric_coordinates[3] = {0.0, 0.0, 0.0};
 
   // Launch function
@@ -195,12 +198,11 @@ TEST(projection_node_to_face, Projection)
 
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
 
+
   // TEST 2 - Negative gap
 
   // Change node coordinates
-  nCoord[0] = 1.0;
-  nCoord[1] = 0.0;
-  nCoord[2] = -1.23;
+  nCoord[0] = 1.0; nCoord[1] = 0.0; nCoord[2] = -1.23;
   node.SetCoordinates(nCoord);
 
   // Launch function
@@ -226,9 +228,7 @@ TEST(projection_node_to_face, Projection)
   // Test 3 - Near tolerance
 
   // Change node coordinates
-  nCoord[0] = 1.0;
-  nCoord[1] = 0.5 * tol;
-  nCoord[2] = 0.777;
+  nCoord[0] = 1.0; nCoord[1] = 0.5 * tol; nCoord[2] = 0.777;
   node.SetCoordinates(nCoord);
 
   // Launch function
@@ -245,18 +245,16 @@ TEST(projection_node_to_face, Projection)
   EXPECT_NEAR(barycentric_coordinates[1], 1, tol);
   EXPECT_NEAR(barycentric_coordinates[2], 0, tol);
 
-  //  EXPECT_DOUBLE_EQ(barycentric_coordinates[0], 0);
-  //  EXPECT_DOUBLE_EQ(barycentric_coordinates[1], 1);
-  //  EXPECT_DOUBLE_EQ(barycentric_coordinates[2], 0);
+//  EXPECT_DOUBLE_EQ(barycentric_coordinates[0], 0);
+//  EXPECT_DOUBLE_EQ(barycentric_coordinates[1], 1);
+//  EXPECT_DOUBLE_EQ(barycentric_coordinates[2], 0);
 
   EXPECT_DOUBLE_EQ(gap, nCoord[2]);
 
   // Test 4 - inside the face but not through (in = true)
 
   // Change node coordinates
-  nCoord[0] = 0;
-  nCoord[1] = 0;
-  nCoord[2] = -0.5;
+  nCoord[0] = 0; nCoord[1] = 0; nCoord[2] = -0.5;
   node.SetCoordinates(nCoord);
 
   // Launch function
@@ -266,9 +264,7 @@ TEST(projection_node_to_face, Projection)
   EXPECT_EQ(in, true);
 
   // Change node coordinates
-  nCoord[0] = 0;
-  nCoord[1] = 0;
-  nCoord[2] = -1.5;
+  nCoord[0] = 0; nCoord[1] = 0; nCoord[2] = -1.5;
   node.SetCoordinates(nCoord);
 
   // Launch function
@@ -276,4 +272,8 @@ TEST(projection_node_to_face, Projection)
 
   // Tests:
   EXPECT_EQ(in, false);
+
+
+
 }
+

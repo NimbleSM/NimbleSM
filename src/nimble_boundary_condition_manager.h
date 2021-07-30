@@ -120,11 +120,12 @@ class BoundaryConditionManager
   template <typename ViewT>
   void
   ApplyKinematicBC(
-      double      time_current,
-      double      time_previous,
-      const ViewT reference_coordinates,
-      ViewT       displacement,
-      ViewT       velocity)
+      double              time_current,
+      double              time_previous,
+      const ViewT         reference_coordinates,
+      ViewT               displacement,
+      ViewT               velocity,
+      std::vector<ViewT>& offnom_velocities)
   {
     double delta_t = time_current - time_previous;
 
@@ -139,6 +140,9 @@ class BoundaryConditionManager
           double velocity_magnitude = bc.magnitude_;
           for (int n : node_set) {
             velocity(n, coordinate) = velocity_magnitude;
+            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
+              offnom_velocities[nuq](n, coordinate) = velocity_magnitude;
+            }
             if (time_integration_scheme_ == QUASISTATIC) {
               displacement(n, coordinate) += velocity_magnitude * delta_t;
             }
@@ -152,6 +156,9 @@ class BoundaryConditionManager
             bc.expression_.t          = time_current;
             double velocity_magnitude = bc.expression_.eval();
             velocity(n, coordinate)   = velocity_magnitude;
+            for (int nuq = 0; nuq < offnom_velocities.size(); nuq++) {
+              offnom_velocities[nuq](n, coordinate) = velocity_magnitude;
+            }
             if (time_integration_scheme_ == QUASISTATIC) {
               displacement(n, coordinate) += velocity_magnitude * delta_t;
             }
@@ -178,6 +185,19 @@ class BoundaryConditionManager
         }
       }
     }
+  }
+
+  template <typename ViewT>
+  void
+  ApplyKinematicBC(
+      double      time_current,
+      double      time_previous,
+      const ViewT reference_coordinates,
+      ViewT       displacement,
+      ViewT       velocity)
+  {
+    std::vector<ViewT> empty;
+    ApplyKinematicBC(time_current, time_previous, reference_coordinates, displacement, velocity, empty);
   }
 
   template <typename MatT>
