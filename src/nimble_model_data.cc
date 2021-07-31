@@ -563,9 +563,7 @@ ModelData::WriteExodusOutput(nimble::DataManager& data_manager, double time_curr
   std::vector<double> global_data;
 
   auto reference_coord_ = GetNodeData("reference_coordinate");
-
-  auto displacement = GetNodeData("displacement");
-  if (this->use_displacement_fluctuations_) displacement = GetNodeData("displacement_fluctuation");
+  auto displacement     = GetNodeData("displacement");
 
   for (auto& block_it : blocks_) {
     int         block_id          = block_it.first;

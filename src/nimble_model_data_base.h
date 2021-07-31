@@ -317,14 +317,6 @@ class ModelDataBase
     return derived_output_element_data_labels_;
   }
 
-  /// \brief Set the use of displacement fluctuations instead of displacement.
-  ///
-  void
-  SetUseDisplacementFluctuations()
-  {
-    use_displacement_fluctuations_ = true;
-  }
-
  protected:
   //! Problem dimension, either 2 or 3.
   int dim_ = 3;
@@ -344,9 +336,6 @@ class ModelDataBase
 
   //! Output labels for derived element data that will be written to disk.
   std::map<int, std::vector<std::string>> derived_output_element_data_labels_;
-
-  //! Flag to use displacement fluctuations
-  bool use_displacement_fluctuations_ = false;
 };
 
 }  // namespace nimble

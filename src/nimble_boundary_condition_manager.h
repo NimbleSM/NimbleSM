@@ -227,6 +227,25 @@ class BoundaryConditionManager
   void
   ModifyRHSForKinematicBC(const int* global_node_ids, double* rhs) const;
 
+  template <typename ViewT>
+  void
+  ApplyTractionBC(double time_current, const ViewT reference_coordinates, ViewT internal_force)
+  {
+    for (auto& bc : boundary_conditions_) {
+      int                     side_set_id    = bc.side_set_id_;
+      int                     coordinate     = bc.coordinate_;
+      bool                    has_expression = bc.has_expression_;
+      std::vector<int> const& side_set       = side_sets_[side_set_id];
+      if (bc.bc_type_ == BoundaryCondition::PRESCRIBED_TRACTION) {
+        if (has_expression == true) {
+          for (int ss : side_set) {}
+        } else {
+          for (int ss : side_set) {}
+        }
+      }
+    }
+  }
+
  private:
   std::map<int, std::string>      node_set_names_;
   std::map<int, std::vector<int>> node_sets_;
