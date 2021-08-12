@@ -90,16 +90,9 @@ class UqModel
   // pre ComputeInternalForce
   void
   Setup();
+  // constructure approx_forces from the exact samples
   void
-  Prep();
-  // trajectories
-  void
-  UpdateVelocity(double dt);
-  void
-  UpdateDisplacement(double dt);
-  void
-  ApplyClosure(const double* nominal_internal_force);  // Do the exact_forces --> approx_forces map
-  //  void ApplyBoundaryConditions();
+  ApplyClosure();
 
   // accessors
   int
@@ -200,25 +193,18 @@ class UqModel
     return parameter_differences_;
   }
 
-  // Routines for in-situ/in-line analyses over UQ trajectories
-  void
-  InitializeAnalyses();
-
   // Routine to perform in-situ processing over sample trajectories
   void
   PerformAnalyses(
-      const double*                   reference_coordinates,
-      int                             num_elem,
-      const int*                      elem_conn,
-      int                             block_id,
-      std::shared_ptr<nimble::Block>& block);
-  // write current QoIs
-  void
-  WriteQoIs();
+    const double*                   reference_coordinates,
+    int                             num_elem,
+    const int*                      elem_conn,
+    int                             block_id,
+    std::shared_ptr<nimble::Block>& block) {};
 
   // write data
   void
-  Write(int step);
+  Write(double time) {};
 
  private:
   int ndims_;    // from mesh
@@ -247,16 +233,13 @@ class UqModel
 
   std::vector<std::vector<double>> interpolation_coefficients_;  // napprox_smpls X np
 
+// NOTE right type? ASK ULRICH
+  double* nominal_force_;
   std::vector<double*> offnominal_displacements_;
   std::vector<double*> offnominal_velocities_;
   std::vector<double*> offnominal_forces_;
 
-  // FIX THIS: Currently hardcoding for a specific analyses; Generalize this
-  std::vector<double> max_V_stress_, max_T_stress_;
-
   bool initialized_;
-  bool analyze_data_;
-  bool write_text_data;
 };
 
 }  // namespace nimble

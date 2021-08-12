@@ -79,9 +79,7 @@ UqModel::UqModel(int ndims, const GenesisMesh* mesh, ModelData* data)
       mesh_(mesh),
       data_(data),
       nexact_samples_(0),
-      seed_(0),
-      analyze_data_(false),
-      write_text_data(false)
+      seed_(0)
 {
   nunknowns_ = ndims_ * nnodes_;
   names_.clear();
@@ -111,7 +109,7 @@ UqModel::ParseConfiguration(std::string const& line)
     samples_fname_ = items.front();
     items.pop_front();
     samples_from_file_ = true;
-  } else {
+  } else { // NOTE REMOVE
     //    throw std::logic_error("\nUQ: unsupported !!\n");
     nsamples_ = std::stoi(items.front());
     items.pop_front();
@@ -149,11 +147,6 @@ UqModel::ParseConfiguration(std::string const& line)
     if (nexact_samples_ > nsamples_) {
       throw std::logic_error("\nUQ: Error. Specified num_exact_samples to be greater than num_all_samples !!!\n");
     }
-  }
-
-  if (items.size() > 0) {
-    write_text_data = true;
-    printf("WARNING: UQ will write text files\n");
   }
 }
 //===========================================================================
@@ -361,13 +354,12 @@ UqModel::Initialize()
   if (samples_from_file_) {
     ReadSamples();
     ScaleParameters();  // PARMETERS IN FILE ARE in -1.0 : 1.0 RANGE
-  } else {
+  } else { // NOTE REMOVE THIS
     SampleParameters();  // NEED TO DO THIS ONLY IF THEY HAVENT BEEN READ FROM FILE
     CenterParameters();
     WriteSamples();
   }
   Allocate();
-  InitializeAnalyses();
   initialized_ = true;
 }
 //===========================================================================
@@ -380,8 +372,9 @@ UqModel::Finalize()
 void
 UqModel::Allocate()
 {
+  nominal_force_ = data_->GetVectorNodeData("internal_force").data(); // NOTE
   int n = GetNumSamples();
-  int offnominal_displacement_ids[n],  // tmp?
+  int offnominal_displacement_ids[n],  // tmp? NOTE
       offnominal_internal_force_ids[n], offnominal_velocity_ids[n];
   for (int nuq = 0; nuq < n; nuq++) {
     offnominal_displacement_ids[nuq] =
@@ -416,45 +409,7 @@ UqModel::Setup()
 }
 //===========================================================================
 void
-UqModel::UpdateVelocity(double dt)
-{
-  if (!initialized_) { return; }
-  int n = GetNumSamples();
-  for (int s = 0; s < n; ++s) {
-    double* f = offnominal_forces_[s];
-    double* v = offnominal_velocities_[s];
-    for (int i = 0; i < nunknowns_; ++i) {
-      double m = mass_[i / 3];
-      double a = (1.0 / m) * f[i];
-      v[i] += dt * a;
-    }
-  }
-}
-//===========================================================================
-void
-UqModel::UpdateDisplacement(double dt)
-{
-  if (!initialized_) { return; }
-  int n = GetNumSamples();
-  for (int s = 0; s < n; ++s) {
-    double* u = offnominal_displacements_[s];
-    double* v = offnominal_velocities_[s];
-    for (int i = 0; i < nunknowns_; ++i) { u[i] += dt * v[i]; }
-  }
-}
-//===========================================================================
-void
-UqModel::Prep()
-{
-  if (!initialized_) { return; }
-  for (int s = 0; s < nsamples_; ++s) {
-    double* f = offnominal_forces_[s];
-    for (int i = 0; i < nunknowns_; ++i) { f[i] = 0.0; }
-  }
-}
-//===========================================================================
-void
-UqModel::ApplyClosure(const double* const nominal_internal_force)
+UqModel::ApplyClosure()
 {
   if (!initialized_) { return; }
   // TO DO: THIS NEEDS TO BE FLESHED OUT
@@ -468,7 +423,7 @@ UqModel::ApplyClosure(const double* const nominal_internal_force)
     double* f = offnominal_forces_[s + nexacts];  // The approx samples come after the exact
     // Loop over each node
     for (int i = 0; i < nunknowns_; ++i) {
-      f[i] = nominal_internal_force[i] * interpolation_coefficients_[s][0];  // 0.0;
+      f[i] = nominal_force_[i] * interpolation_coefficients_[s][0];  // 0.0;
       for (int k = 0; k < nexacts; k++) {
         double* f_exact = offnominal_forces_[k];
         f[i] += f_exact[i] * interpolation_coefficients_[s][k + 1];
@@ -542,244 +497,6 @@ UqModel::SampleParameters()
       for (int s = 0; s < nsamples_; s++) { parameter_samples_[s].push_back(nominal_parameter_values_[p]); }
     }
   }
-}
-//===========================================================================
-void
-UqModel::InitializeAnalyses()
-{
-  if (!analyze_data_) { return; }
-  if (!initialized_) { return; }
-  int ns = GetNumSamples();
-  max_V_stress_.reserve(ns);
-  max_T_stress_.reserve(ns);
-  std::fill(max_V_stress_.begin(), max_V_stress_.end(), 0.0);  // Initialize to 0.0
-  std::fill(max_T_stress_.begin(), max_T_stress_.end(), 0.0);  // Initialize to 0.0
-  FILE* fp;
-  fp = fopen("QoIs.dat", "w");
-  fclose(fp);
-}
-//===========================================================================
-void
-UqModel::WriteQoIs()
-{  // currently not called
-  if (!analyze_data_) { return; }
-  if (!initialized_) { return; }
-  int   ns              = GetNumSamples();
-  int   nexacts         = GetNumExactSamples();
-  int   napprox_samples = ns - nexacts;
-  FILE* fp;
-  fp = fopen("QoIs.dat", "w+");
-  for (int nsmpl = 0; nsmpl < ns; nsmpl++) {
-    for (int np = 0; np < nparameters_; np++) { fprintf(fp, "%e ", parameter_samples_[nsmpl][np]); }
-    fprintf(fp, "%e %e %e %e \n", max_V_stress_[nsmpl], max_T_stress_[nsmpl], 0.0, 0.0);
-  }
-  fprintf(fp, "\n\n");
-  fclose(fp);
-}
-//===========================================================================
-void
-UqModel::PerformAnalyses(
-    const double* const             reference_coordinates,
-    int                             num_elem,
-    const int* const                elem_conn,
-    int                             block_id,
-    std::shared_ptr<nimble::Block>& block)
-{
-  // called per block
-  if (!analyze_data_) { return; }
-  if (!initialized_) { return; }
-  auto elem_ptr            = block->GetElementPointer();
-  int  dim                 = elem_ptr->Dim();
-  int  num_node_per_elem   = elem_ptr->NumNodesPerElement();
-  int  num_int_pt_per_elem = elem_ptr->NumIntegrationPointsPerElement();
-
-  int vector_size      = LengthToInt(VECTOR, dim);
-  int full_tensor_size = LengthToInt(FULL_TENSOR, dim);
-  int sym_tensor_size  = LengthToInt(SYMMETRIC_TENSOR, dim);
-
-  double ref_coord[vector_size * num_node_per_elem];
-  double cur_coord[vector_size * num_node_per_elem];
-  double def_grad[full_tensor_size * num_int_pt_per_elem];
-  double cauchy_stress[sym_tensor_size * num_int_pt_per_elem];
-
-  double vol_ave_stress[sym_tensor_size];
-  double volume;
-
-  // Find the indices of bulk_modulus and shear_modulus for this block from the parameters list
-  // The parameters names span all blocks, so the names "bulk_modulus" could repeat across blocks
-  int                                first_param = block_first_param_index_[block_id];
-  int                                last_param  = block_last_param_index_[block_id];
-  std::vector<std::string>::iterator first, last, found;
-  first = names_.begin() + first_param;
-  last  = names_.begin() + last_param + 1;
-
-  found              = std::find(first, last, "bulk_modulus");
-  int bulk_mod_index = std::distance(names_.begin(), found);
-
-  found               = std::find(first, last, "shear_modulus");
-  int shear_mod_index = std::distance(names_.begin(), found);
-
-  int ns      = GetNumSamples();
-  int nexacts = GetNumExactSamples();
-  for (int sample_to_analyse = nexacts; sample_to_analyse < ns;
-       sample_to_analyse++) {  // TESTING ON LAST EXACT SAMPLE TRAJECTORY
-    double*             displacement    = offnominal_displacements_[sample_to_analyse];
-    std::vector<double> material_params = parameter_samples_[sample_to_analyse];
-
-    for (int elem = 0; elem < num_elem; elem++) {
-      for (int node = 0; node < num_node_per_elem; node++) {
-        int node_id = elem_conn[elem * num_node_per_elem + node];
-        for (int i = 0; i < vector_size; i++) {
-          ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i];
-          cur_coord[node * vector_size + i] =
-              reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
-        }
-      }
-
-      elem_ptr->ComputeDeformationGradients(ref_coord, cur_coord, def_grad);
-
-      block->GetMaterialPointer()->GetOffNominalStress(
-          material_params[bulk_mod_index],
-          material_params[shear_mod_index],
-          num_int_pt_per_elem,
-          def_grad,
-          cauchy_stress);
-
-      elem_ptr->ComputeVolumeAverage(cur_coord, sym_tensor_size, cauchy_stress, volume, vol_ave_stress);
-
-      double max_elem_stress = 0.0;
-
-      double evec1[3] = {0.0, 0.0, 0.0};  // Eigen vectors of cauchy stress
-      double evec2[3] = {0.0, 0.0, 0.0};
-      double evec3[3] = {0.0, 0.0, 0.0};
-
-      double eval[3] = {0.0, 0.0, 0.0};  // Eigen values of cauchy stress
-
-      Eigen_Sym33_NonUnit(vol_ave_stress, eval[0], eval[1], eval[2], evec1, evec2, evec3);
-
-      double eigen_stress = 0.0;
-      if (block_id == 1) {  // Von Mises stress
-        eigen_stress = (eval[0] - eval[1]) * (eval[0] - eval[1]);
-        eigen_stress += (eval[1] - eval[2]) * (eval[1] - eval[2]);
-        eigen_stress += (eval[2] - eval[0]) * (eval[2] - eval[0]);
-
-        eigen_stress = sqrt(eigen_stress);
-      } else if (block_id == 2) {  // Tensile stress
-        eigen_stress = *std::max_element(eval, eval + 3);
-      } else {
-        throw std::logic_error("\nUQ: Error unknown block id " + std::to_string(block_id) + " in UQ analyses !!!\n");
-      }
-
-      // Set the max stress in this elem
-      max_elem_stress = std::max(eigen_stress, max_elem_stress);
-
-      // Set the runnimg max over all elements for this uq sample
-      if (block_id == 1) {  // Von Mises stress
-        max_V_stress_[sample_to_analyse] = std::max(max_elem_stress, max_V_stress_[sample_to_analyse]);
-      } else if (block_id == 2) {  // Tensile stress
-        max_T_stress_[sample_to_analyse] = std::max(max_elem_stress, max_T_stress_[sample_to_analyse]);
-      }
-
-    }  // End loop over elem
-
-  }  // End loop over samples_to_analyse
-
-  // HKprintf("Max stress in block %d this step is %e\n", block_id, (block_id==1) ? max_V_stress_[sample_to_analyse] :
-  // max_T_stress_[sample_to_analyse] );
-}
-//===========================================================================
-void
-UqModel::Write(int step)
-{
-  if (!initialized_) { return; }
-  if (!write_text_data) { return; }
-  int vector_size                   = LengthToInt(VECTOR, ndims_);
-  int full_tensor_size              = LengthToInt(FULL_TENSOR, ndims_);
-  int sym_tensor_size               = LengthToInt(SYMMETRIC_TENSOR, ndims_);
-  int reference_coordinate_field_id = data_->GetFieldId("reference_coordinate");
-
-  FILE*   fp;
-  double* reference_coordinates = data_->GetNodeData(reference_coordinate_field_id);
-
-  int ns      = GetNumSamples();
-  int nexacts = GetNumExactSamples();
-
-  auto&                                  blocks = data_->GetBlocks();
-  std::map<int, nimble::Block>::iterator block_it;
-
-  std::string fname;
-  for (int sample_to_analyse = nexacts; sample_to_analyse < ns; sample_to_analyse++) {
-    int                 idx             = sample_to_analyse - nexacts;
-    double*             displacement    = offnominal_displacements_[sample_to_analyse];
-    std::vector<double> material_params = parameter_samples_[sample_to_analyse];
-    fname                               = "displacement" + std::to_string(idx) + "_" + std::to_string(step) + ".dat";
-    fp                                  = fopen(fname.c_str(), "w");
-    for (int i = 0; i < nnodes_; i++) {
-      int    ii = vector_size * i;
-      double ux = displacement[ii];
-      double uy = displacement[ii + 1];
-      fprintf(fp, "%e %e\n", ux, uy);  // 2D
-    }
-    fclose(fp);
-    fname = "stress" + std::to_string(idx) + "_" + std::to_string(step) + ".dat";
-    fp    = fopen(fname.c_str(), "w");
-    for (auto& block_it : blocks) {
-      int   block_id            = block_it.first;
-      auto& block               = block_it.second;
-      int   num_elem            = mesh_->GetNumElementsInBlock(block_id);
-      int   num_node_per_elem   = block->GetElementPointer()->NumNodesPerElement();
-      int   num_int_pt_per_elem = block->GetElementPointer()->NumIntegrationPointsPerElement();
-      // scratch
-      double ref_coord[vector_size * num_node_per_elem];
-      double cur_coord[vector_size * num_node_per_elem];
-      double def_grad[full_tensor_size * num_int_pt_per_elem];
-      double cauchy_stress[sym_tensor_size * num_int_pt_per_elem];
-      double vol_ave_stress[sym_tensor_size];
-      double volume;
-      // material parameters
-      int                                first_param = block_first_param_index_[block_id];
-      int                                last_param  = block_last_param_index_[block_id];
-      std::vector<std::string>::iterator first, last, found;
-      first = names_.begin() + first_param;
-      last  = names_.begin() + last_param + 1;
-      // Find the indices of bulk_modulus and shear_modulus for this block from the parameters list
-      // The parameters names span all blocks, so the names "bulk_modulus" could repeat across blocks
-      found               = std::find(first, last, "bulk_modulus");
-      int bulk_mod_index  = std::distance(names_.begin(), found);
-      found               = std::find(first, last, "shear_modulus");
-      int shear_mod_index = std::distance(names_.begin(), found);
-
-      int const* elem_conn = mesh_->GetConnectivity(block_id);
-      for (int elem = 0; elem < num_elem; elem++) {
-        for (int node = 0; node < num_node_per_elem; node++) {
-          int node_id = elem_conn[elem * num_node_per_elem + node];
-          for (int i = 0; i < vector_size; i++) {
-            ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i];
-            cur_coord[node * vector_size + i] =
-                reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
-          }
-        }
-
-        block->GetElementPointer()->ComputeDeformationGradients(ref_coord, cur_coord, def_grad);
-
-        block->GetMaterialPointer()->GetOffNominalStress(
-            material_params[bulk_mod_index],
-            material_params[shear_mod_index],
-            num_int_pt_per_elem,
-            def_grad,
-            cauchy_stress);
-
-        block->GetElementPointer()->ComputeVolumeAverage(
-            cur_coord, sym_tensor_size, cauchy_stress, volume, vol_ave_stress);
-        double sxx = vol_ave_stress[K_S_XX];
-        double syy = vol_ave_stress[K_S_YY];
-        double sxy = vol_ave_stress[K_S_XY];
-        fprintf(fp, "%e %e %e\n", sxx, syy, sxy);  // 2D
-
-      }  // End loop over elem
-    }    // End loop over blocks
-    fclose(fp);
-  }  // End loop over samples_to_analyse
 }
 //===========================================================================
 }  // namespace nimble

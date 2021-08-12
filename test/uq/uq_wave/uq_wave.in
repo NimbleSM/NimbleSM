@@ -3,7 +3,7 @@ exodus output file:               uq_wave.e
 final time:                       1.0e-5
 number of load steps:             10000
 output frequency:                 100
-output fields:                    displacement velocity deformation_gradient stress off_nom_displacement_0 off_nom_displacement_1 off_nom_displacement_2 off_nom_displacement_3 off_nom_displacement_4 off_nom_displacement_5 off_nom_displacement_6 off_nom_displacement_7 off_nom_displacement_8 off_nom_displacement_9
+output fields:                    displacement velocity deformation_gradient stress internal_force off_nom_displacement_0 off_nom_displacement_1 off_nom_displacement_2 off_nom_displacement_3 off_nom_displacement_4 off_nom_displacement_5 off_nom_displacement_6 off_nom_displacement_7 off_nom_displacement_8 off_nom_displacement_9 off_nom_internal_force_0 off_nom_internal_force_1 off_nom_internal_force_2 off_nom_internal_force_3 off_nom_internal_force_4 off_nom_internal_force_5 off_nom_internal_force_6 off_nom_internal_force_7 off_nom_internal_force_8
 material parameters:              material_1 neohookean density 7.8 shear_modulus 1.5e12 bulk_modulus 1.0e12
 uq parameters:              material_1 shear_modulus gaussian 1.0e9 
 uq model:                   quadature/samples 10 linear seed 1234
