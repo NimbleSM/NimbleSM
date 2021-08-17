@@ -159,7 +159,6 @@ Block::ComputeInternalForce(
         }
       }
     }
-
   }  // for (int elem = 0; elem < num_elem; elem++)
 }
 

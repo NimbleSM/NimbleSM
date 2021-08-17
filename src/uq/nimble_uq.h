@@ -57,10 +57,9 @@ class Block;
 class MaterialFactory;
 class MaterialFactoryBase;
 
-//========================================================================
 class UqModel
-{  // model
-   //========================================================================
+{ 
+  
 
  public:
   UqModel(int ndim, const GenesisMesh* mesh, ModelData* data);
@@ -139,36 +138,26 @@ class UqModel
   std::vector<double*>&
   Displacements()
   {
-    return offnominal_displacements_;
+    return sample_displacements_;
   }
   std::vector<double*>&
   Velocities()
   {
-    return offnominal_velocities_;
+    return sample_velocities_;
   }
   std::vector<double*>&
   Forces()
   {
-    return offnominal_forces_;
+    return sample_forces_;
   }
 
   // initialization
-  // - sample given distributions
-  void
-  SampleParameters();
-  // - read samples
-  void
-  ReadParameters(const std::string& filename){};  // NOT IMPLEMENTED YET
-  // - center parameter values on nominal
-  void
-  CenterParameters();
-  // - input
   void
   ReadSamples();
   // - scale input
   void
   ScaleParameters();
-  // - output
+  // - write scaled parameters
   void
   WriteSamples();
   // accessors
@@ -183,14 +172,8 @@ class UqModel
     return parameter_samples_;
   }
   std::vector<double>&
-  GetRanges()
-  {
+  GetRanges() {
     return ranges_;
-  }
-  std::vector<std::vector<double>>
-  GetParameterDifferences()
-  {
-    return parameter_differences_;
   }
 
   // Routine to perform in-situ processing over sample trajectories
@@ -212,22 +195,18 @@ class UqModel
   int nblocks_;  // from mesh
   int nunknowns_;
   // parameter data
-  std::string                      sampling_strategy_;
-  bool                             samples_from_file_;
-  int                              seed_;
   int                              nsamples_;        // number of _requested_ samples not necessarily all
   int                              nexact_samples_;  // Subset of nsamples_ for which exact trajectories are computed
+  int                              napprox_samples_;  // Subset of nsamples_ for which approximate trajectories are computed
   int                              nparameters_;
   const GenesisMesh*               mesh_;
   ModelData*                       data_;
-  const double*                    mass_;
   std::string                      samples_fname_;
   std::vector<std::string>         names_;
   std::vector<std::string>         distributions_;             // independent distributions
   std::vector<double>              ranges_;                    // width
   std::vector<double>              nominal_parameter_values_;  // NOTE 1 nominal trajectory
   std::vector<std::vector<double>> parameter_samples_;         // ns X np
-  std::vector<std::vector<double>> parameter_differences_;     // ns X np
   std::map<int, int>               block_first_param_index_;
   std::map<int, int>               block_last_param_index_;
 
@@ -235,9 +214,9 @@ class UqModel
 
 // NOTE right type? ASK ULRICH
   double* nominal_force_;
-  std::vector<double*> offnominal_displacements_;
-  std::vector<double*> offnominal_velocities_;
-  std::vector<double*> offnominal_forces_;
+  std::vector<double*> sample_displacements_;
+  std::vector<double*> sample_velocities_;
+  std::vector<double*> sample_forces_;
 
   bool initialized_;
 };

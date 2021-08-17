@@ -81,13 +81,14 @@ ModelData::InitializeBlocks(
     std::string        uq_params_this_material = line.second;
     std::string const& nominal_params_string   = parser_.GetModelMaterialParameters(block_id);
     bool               block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end();
-    uq_model_->ParseBlockInput(
-        uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
+    uq_model_->ParseBlockInput(uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
   }
   //
   uq_model_->Initialize();
   //
+  std::cout << "START with AllocateInitializeElementData\n" << std::flush;
   AllocateInitializeElementData(data_manager, material_factory_base);
+  std::cout << "DONE with AllocateInitializeElementData\n" << std::flush;
   //
   uq_model_->Setup();
   int num_samples = uq_model_->GetNumSamples();
@@ -172,9 +173,10 @@ ModelData::ComputeInternalForce(
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
 //  std::vector<double> const parameters();
-    for(int i=0; i <= num_exact_samples; i++){
+    for(int i=0; i < num_exact_samples; i++){
       int ii = i-1;
       bool is_off_nominal = (i > 0);
+      is_off_nominal = false; // HACK <<<<<<
       auto u = displacement;
       auto v = velocity;
       auto f = force;
@@ -217,7 +219,7 @@ ModelData::ComputeInternalForce(
   }
 
   // Now apply closure to estimate approximate forces from the exact samples
-//uq_model_->ApplyClosure();  HACK
+  uq_model_->ApplyClosure();  
 }
 
 // NOTE need data manager?

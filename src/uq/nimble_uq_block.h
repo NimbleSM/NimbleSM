@@ -92,7 +92,7 @@ class Block : public nimble::Block
     bulk_modulus_uq_index_  = -1;
     shear_modulus_uq_index_ = -1;
     for (auto const& it : param_indices) {
-      if (it.first == "bulk_modulus") { bulk_modulus_uq_index_ = it.second; }
+      if (it.first == "bulk_modulus")  { bulk_modulus_uq_index_ = it.second; }
       if (it.first == "shear_modulus") { shear_modulus_uq_index_ = it.second; }
     }
   }
