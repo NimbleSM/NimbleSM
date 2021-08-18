@@ -252,6 +252,19 @@ UqModel::ScaleParameters()
       parameters_[block_id].push_back(itr->second);
     }
   }
+  // scale samples with uncertainities to vary uncertain parameters
+  //  input file order determines how xis are mapped to physical parameters
+  for (int i = 0 ; i < nparameters_ ; i++) {
+    int block_id     = parameter_order_[i].first;
+    std::string name = parameter_order_[i].second;
+    for (int s = 0 ; s < nsamples_ ; s++) {
+      double p0 = parameters_[block_id][s][name];
+      double dpdxi = parameter_uncertainties_[block_id][name];
+      double dxi = parameter_samples_[s][i];
+      double p = p0 + dpdxi*dxi;
+      parameters_[block_id][s][name] = p;
+    }  
+  }
 // parameter file order blockid & pameter name from input file
 // NOTE make per block id
   //--Parameter values are in  -1.0:1.0 range
