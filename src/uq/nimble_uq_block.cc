@@ -70,7 +70,7 @@ Block::ComputeInternalForce(
     std::vector<double>&            elem_data_np1,
     nimble::DataManager&            data_manager,
     bool                            is_output_step,
-    const bool&                     is_off_nominal,
+    bool                            is_off_nominal,
     std::vector<double> const&      uq_params_this_sample,
     bool                            compute_stress_only) const
 {
@@ -132,17 +132,18 @@ Block::ComputeInternalForce(
     for (int node = 0; node < num_node_per_elem; node++) {
       int node_id = elem_conn[elem * num_node_per_elem + node];
       for (int i = 0; i < vector_size; i++) {
-        ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i];
-        cur_coord[node * vector_size + i] =
-            reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
+        ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i]; // HACK/NOTE compute idx and reuse
+        cur_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
       }
     }
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
 
+    double K = uq_params_this_sample[bulk_modulus_uq_index_];
+    double G = uq_params_this_sample[shear_modulus_uq_index_];
+    std::cout << " p " << K << " " << G << "\n";
     material_->GetOffNominalStress(
-        uq_params_this_sample[bulk_modulus_uq_index_],
-        uq_params_this_sample[shear_modulus_uq_index_],
+        K,G,
         num_int_pt_per_elem,
         def_grad_np1,
         cauchy_stress_np1);

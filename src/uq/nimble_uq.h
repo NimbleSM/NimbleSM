@@ -51,7 +51,6 @@
 
 namespace nimble {
 class GenesisMesh;
-;
 class ModelData;
 class Block;
 class MaterialFactory;
@@ -89,7 +88,7 @@ class UqModel
   // pre ComputeInternalForce
   void
   Setup();
-  // constructure approx_forces from the exact samples
+  // construct approx_forces from the exact samples
   void
   ApplyClosure();
 
@@ -138,17 +137,17 @@ class UqModel
   std::vector<double*>&
   Displacements()
   {
-    return sample_displacements_;
+    return displacements_;
   }
   std::vector<double*>&
   Velocities()
   {
-    return sample_velocities_;
+    return velocities_;
   }
   std::vector<double*>&
   Forces()
   {
-    return sample_forces_;
+    return forces_;
   }
 
   // initialization
@@ -161,20 +160,27 @@ class UqModel
   void
   WriteSamples();
   // accessors
-  std::vector<double>&
-  GetNominalParameters()
-  {
-    return nominal_parameter_values_;
-  }  // NOTE 1 nominal trajectory
   std::vector<std::vector<double>>&
-  GetParameterSamples()
+  GetParameterSamples() // REPLACE
   {
     return parameter_samples_;
   }
+  std::map<std::string,double>
+  Parameters(int block_id, int sample_i) 
+  {
+    return parameters_[block_id][sample_i];
+  }
+#if 0
   std::vector<double>&
-  GetRanges() {
+  GetNominalParameters() // OMIT
+  {
+    return nominal_parameter_values_;
+  }  // NOTE 1 nominal trajectory
+  std::vector<double>&
+  GetRanges() { //OaIMT
     return ranges_;
   }
+#endif
 
   // Routine to perform in-situ processing over sample trajectories
   void
@@ -184,7 +190,6 @@ class UqModel
     const int*                      elem_conn,
     int                             block_id,
     std::shared_ptr<nimble::Block>& block) {};
-
   // write data
   void
   Write(double time) {};
@@ -195,29 +200,32 @@ class UqModel
   int nblocks_;  // from mesh
   int nunknowns_;
   // parameter data
-  int                              nsamples_;        // number of _requested_ samples not necessarily all
-  int                              nexact_samples_;  // Subset of nsamples_ for which exact trajectories are computed
-  int                              napprox_samples_;  // Subset of nsamples_ for which approximate trajectories are computed
+  int                              nsamples_;        // total additional 
+  int                              nexact_samples_;  
+  int                              napprox_samples_; 
   int                              nparameters_;
   const GenesisMesh*               mesh_;
   ModelData*                       data_;
-  std::string                      samples_fname_;
-  std::vector<std::string>         names_;
-  std::vector<std::string>         distributions_;             // independent distributions
-  std::vector<double>              ranges_;                    // width
-  std::vector<double>              nominal_parameter_values_;  // NOTE 1 nominal trajectory
-  std::vector<std::vector<double>> parameter_samples_;         // ns X np
-  std::map<int, int>               block_first_param_index_;
-  std::map<int, int>               block_last_param_index_;
 
+  std::vector<std::string>         names_; // BLOCK
+  std::vector<double>              ranges_;  // half width
+  std::vector<double>              nominal_parameter_values_;  // OMIT
+  std::map<int, int>               block_first_param_index_; // OMIT
+  std::map<int, int>               block_last_param_index_; // OMIT
+
+
+  std::string                      samples_file_name_;
+  std::map<int,std::map<std::string,double>> nominal_parameters_; 
+  std::map<int,std::map<std::string,double>> parameter_uncertainties_; 
+  std::vector<std::pair<int,std::string>> parameter_order_;
+  std::vector<std::vector<double>> parameter_samples_;  // nsamples X np
   std::vector<std::vector<double>> interpolation_coefficients_;  // napprox_smpls X np
-
-// NOTE right type? ASK ULRICH
+// HACK? NOTE right type? ASK ULRICH
   double* nominal_force_;
-  std::vector<double*> sample_displacements_;
-  std::vector<double*> sample_velocities_;
-  std::vector<double*> sample_forces_;
-
+  std::vector<double*> displacements_;
+  std::vector<double*> velocities_;
+  std::vector<double*> forces_;
+  std::map<int,std::vector<std::map<std::string,double>>> parameters_;
   bool initialized_;
 };
 

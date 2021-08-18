@@ -81,7 +81,7 @@ class Block : public nimble::Block
       std::vector<double>&            elem_data_np1,
       nimble::DataManager&            data_manager,
       bool                            is_output_step,
-      const bool&                     is_off_nominal,
+      bool                            is_off_nominal,
       std::vector<double> const&      uq_params_this_sample,
       bool                            compute_stress_only = false) const;
 
@@ -92,7 +92,7 @@ class Block : public nimble::Block
     bulk_modulus_uq_index_  = -1;
     shear_modulus_uq_index_ = -1;
     for (auto const& it : param_indices) {
-      if (it.first == "bulk_modulus")  { bulk_modulus_uq_index_ = it.second; }
+      if (it.first == "bulk_modulus")  { bulk_modulus_uq_index_  = it.second; }
       if (it.first == "shear_modulus") { shear_modulus_uq_index_ = it.second; }
     }
   }

@@ -83,7 +83,6 @@ UqModel::UqModel(int ndims, const GenesisMesh* mesh, ModelData* data)
 {
   nunknowns_ = ndims_ * nnodes_;
   names_.clear();
-  distributions_.clear();
   ranges_.clear();
   nominal_parameter_values_.clear();
   parameter_samples_.clear();
@@ -100,12 +99,11 @@ UqModel::ParseConfiguration(std::string const& line)
   std::string sampling = items.front();
   items.pop_front();
   if (sampling == "file") {
-    samples_fname_ = items.front();
+    samples_file_name_ = items.front();
     items.pop_front();
   } else { 
     std::cerr << " !! Error when parsing UQ parameters : !! \n";
   }
-//std::cout << " reading samples from " << samples_fname_ << "\n";
 }
 //===========================================================================
 // parses: 
@@ -121,35 +119,39 @@ UqModel::ParseBlockInput(
     bool                                                block_id_present,
     std::map<int, std::shared_ptr<nimble::Block>>&      blocks)
 {
-  std::cout << "START ParseBlockInput\n" << std::flush;
+//std::cout << " START ParseBlockInput\n" << std::flush;
   if (line == "none")
-    throw std::logic_error(
-        "\nError: NIMBLE_DO_UQ is defined but no uq parameters are specified for material corresponding to block id " +
-        std::to_string(block_id) + "\n");
-  int                    start_idx = GetNumParameters();
+    throw std::logic_error( "\nError: NIMBLE_DO_UQ is defined but no uq parameters are specified for material corresponding to block id " + std::to_string(block_id) + "\n");
+  int  start_idx = GetNumParameters(); // number of parameter from previous blocks
+  // collect ranges of the uncertain parameters
   std::list<std::string> items     = split(line);
   while (items.size() > 0) {
       std::string pname = items.front();
       items.pop_front();
       double range = std::stod(items.front());
       items.pop_front();
+      parameter_uncertainties_[block_id][pname] = range;
+      std::pair <int,std::string> p(block_id,pname);
+      parameter_order_.push_back(p);
+
       names_.push_back(pname);
       ranges_.push_back(range);
       nparameters_++;
   }
 
-  std::map<std::string, double> nominal_material_params =
-      material_factory->parse_material_params_string(nominal_params_string);
+  // get nominal parameters
+  std::map<std::string, double> parameters = material_factory->parse_material_params_string(nominal_params_string);
+  nominal_parameters_[block_id] = parameters;
+  std::cout << " K  " << parameters["bulk_modulus"];
+  std::cout << " G  " << parameters["shear_modulus"];
+
+
   std::map<std::string, int> indices;
   for (int idx = start_idx; idx < nparameters_; idx++) {
     std::string pname = names_[idx];
     indices[pname]    = idx;
-    if (pname == "density") {
-      nominal_parameter_values_.push_back(nominal_material_params[pname]);  // HK( block.GetDensity() );
-    } else if (pname == "bulk_modulus") {
-      nominal_parameter_values_.push_back(nominal_material_params[pname]);  // HK( block.GetBulkModulus() ); <<<<?????
-    } else if (pname == "shear_modulus") {
-      nominal_parameter_values_.push_back(nominal_material_params[pname]);  // HK( block.GetShearModulus() );
+    if (pname == "density" || pname == "bulk_modulus" || pname == "shear_modulus") {
+      nominal_parameter_values_.push_back(parameters[pname]);  
     } else {
       throw std::logic_error("\nError: uq parameter " + pname + " is unrecognised or not currently supported\n");
     }
@@ -161,14 +163,13 @@ UqModel::ParseBlockInput(
     auto uq_block_ptr = dynamic_cast<nimble_uq::Block*>(blocks[block_id].get());
     uq_block_ptr->SetUqParameters(indices);
   }
-  std::cout << "FINISH ParseBlockInput\n" << std::flush;
+//std::cout << " FINISH ParseBlockInput\n" << std::flush;
 }
 //===========================================================================
 void
 UqModel::ReadSamples()
 {
-//std::cout << " start samples from " << samples_fname_ << "\n";
-  std::ifstream          f(samples_fname_);
+  std::ifstream          f(samples_file_name_);
   std::string            line;
   std::list<std::string> items;
 
@@ -194,7 +195,7 @@ UqModel::ReadSamples()
     items.clear();
     items = split(line);
     if (items.size() != nparameters_) {
-      throw std::logic_error("\nError: UQ file " + samples_fname_ + " has not enough exact sample parameters on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + " found " + std::to_string(items.size()) + "\n");
+      throw std::logic_error("\nError: UQ file " + samples_file_name_ + " has not enough exact sample parameters on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + " found " + std::to_string(items.size()) + "\n");
     }
     for (int n = 0; n < nparameters_; n++) {
       std::string item = items.front();
@@ -202,7 +203,7 @@ UqModel::ReadSamples()
       parameter_samples_[nsmpl].push_back(std::stod(item));  // exact samples come before the approx samples
     }
   }
-  std::cout << " read " << nexact_samples_ << " exact samples\n";
+//std::cout << " read " << nexact_samples_ << " exact samples\n";
   //-- (B) the approximate samples, and interpolation coefficients
   //--{approx_smpl_1_P1} {approx_smpl_1_P2} : {interp_coeff_1} {interp_coeff_2}
   //--{approx_smpl_2_P1} {approx_smpl_2_P2} : {interp_coeff_1} {interp_coeff_2}
@@ -211,14 +212,14 @@ UqModel::ReadSamples()
     getline(f, line); linenumber++;
     size_t colon_pos = line.find(":");
     if (colon_pos == std::string::npos) {
-      throw std::logic_error( "\nError: UQ file " + samples_fname_ + " has wrong format (no colon) on line " + std::to_string(linenumber) + "\n");
+      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has wrong format (no colon) on line " + std::to_string(linenumber) + "\n");
     }
     std::string params_string = line.substr(0, colon_pos);
     std::string coeffs_string = line.substr(colon_pos + 1, line.size());
     items.clear();
     items = split(params_string);
     if (items.size() != nparameters_) {
-      throw std::logic_error( "\nError: UQ file " + samples_fname_ + " has " + std::to_string(items.size()) +" parameters (preceding :) on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + "\n");
+      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) +" parameters (preceding :) on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + "\n");
     }
     for (int n = 0; n < nparameters_; n++) {
       std::string item = items.front();
@@ -228,7 +229,7 @@ UqModel::ReadSamples()
     items.clear();
     items = split(coeffs_string);
     if (items.size() != ncoeff) {
-      throw std::logic_error( "\nError: UQ file " + samples_fname_ + " has " + std::to_string(items.size()) + " coefficients on line " + std::to_string(linenumber) + " expecting " + std::to_string(ncoeff) + "\n");
+      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) + " coefficients on line " + std::to_string(linenumber) + " expecting " + std::to_string(ncoeff) + "\n");
     }
 
     for (int n = 0; n < ncoeff; n++) {
@@ -237,12 +238,22 @@ UqModel::ReadSamples()
       interpolation_coefficients_[nsmpl].push_back(std::stod(item));
     }
   }
-  std::cout << " read " << napprox_samples_ << " approximate samples\n";
+//std::cout << " read " << napprox_samples_ << " approximate samples\n";
 }
 //===========================================================================
 void
 UqModel::ScaleParameters()
 {
+  // initialize sample parameters
+  std::map<int,std::map<std::string, double>>::iterator itr;
+  for (itr = nominal_parameters_.begin() ; itr != nominal_parameters_.end(); itr++ ) { 
+    int block_id = itr->first;
+    for (int i = 0 ; i < nsamples_ ; i++) {
+      parameters_[block_id].push_back(itr->second);
+    }
+  }
+// parameter file order blockid & pameter name from input file
+// NOTE make per block id
   //--Parameter values are in  -1.0:1.0 range
   //--Scaling them to physical units 
   //             -1.0 ==> nominal - range
@@ -251,16 +262,16 @@ UqModel::ScaleParameters()
     double slope = ranges_[p];
     double shift = nominal_parameter_values_[p];
     for (int s = 0; s < nsamples_; s++) {
-      parameter_samples_[p][s] *= slope;
-      parameter_samples_[p][s] += shift;
+      parameter_samples_[s][p] *= slope;
+      parameter_samples_[s][p] += shift;
     }
   }
-//std::cout << "done with ScaleParameters\n" << std::flush;
 }
 //===========================================================================
 void
 UqModel::WriteSamples()
 {
+// HACK only do if rank == 0
   std::ofstream f("parameter_samples.dat");
   f << "# ";
   for (int p = 0; p < nparameters_; p++) { f << names_[p] << " "; }
@@ -270,7 +281,6 @@ UqModel::WriteSamples()
     f << "\n";
   }
   f.close();
-//std::cout << "done with WriteSamples\n" << std::flush;
 }
 //===========================================================================
 void
@@ -281,42 +291,53 @@ UqModel::Initialize()
   WriteSamples();
   Allocate();
   initialized_ = true;
-  std::cout << "done with Initialize\n" << std::flush;
+//std::cout << " DONE Initialize\n" << std::flush;
 }
 //===========================================================================
 void
 UqModel::Allocate()
 {
   nominal_force_ = data_->GetVectorNodeData("internal_force").data(); 
-  for (int i = 0; i < nsamples_; i++) {
+  std::string prefix = "exact";
+  for (int i = 0; i < nexact_samples_; i++) {
     std::string tag = std::to_string(i+1);
-    data_->AllocateNodeData(nimble::VECTOR, "sample_displacement_" + tag, nnodes_);
-    data_->AllocateNodeData(nimble::VECTOR, "sample_velocity_" + tag, nnodes_);
-    data_->AllocateNodeData(nimble::VECTOR, "sample_force_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_displacement_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_velocity_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_force_" + tag, nnodes_);
   }
-  // for time averages
-  data_->AllocateNodeData(nimble::VECTOR, "sum_displacement", nnodes_);
-  data_->AllocateNodeData(nimble::VECTOR, "sum2_displacement", nnodes_);
-  data_->AllocateNodeData(nimble::VECTOR, "min_displacement", nnodes_);
-  data_->AllocateNodeData(nimble::VECTOR, "max_displacement", nnodes_);
+ prefix = "sample";
+  for (int i = 0; i < napprox_samples_; i++) {
+    std::string tag = std::to_string(i+1);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_displacement_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_velocity_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_force_" + tag, nnodes_);
+  }
+//std::cout << " DONE Allocate\n" << std::flush;
 }
 //===========================================================================
 void
 UqModel::Setup()
 {
-  std::cout << "start with Setup\n" << std::flush;
+//std::cout << " START Setup\n" << std::flush;
   if (!initialized_) { return; }
-  sample_displacements_.clear();
-  sample_velocities_.clear();
-  sample_forces_.clear();
-// NOTE split into exact and samples?
-  for (int i = 0; i < nsamples_; i++) {
+  displacements_.clear();
+  velocities_.clear();
+  forces_.clear();
+  std::string prefix = "exact";
+  for (int i = 0; i < nexact_samples_; i++) {
     std::string tag = std::to_string(i+1);
-    sample_displacements_.push_back( data_->GetNodeData(data_->GetFieldId("sample_displacement_" + tag)));
-    sample_velocities_.push_back(    data_->GetNodeData(data_->GetFieldId("sample_velocity_"     + tag)));
-    sample_forces_.push_back(        data_->GetNodeData(data_->GetFieldId("sample_force_"        + tag)));
+    displacements_.push_back( data_->GetNodeData(data_->GetFieldId(prefix+"_displacement_" + tag)));
+    velocities_.push_back(    data_->GetNodeData(data_->GetFieldId(prefix+"_velocity_"     + tag)));
+    forces_.push_back(        data_->GetNodeData(data_->GetFieldId(prefix+"_force_"        + tag)));
   }
-  std::cout << "done with Setup\n" << std::flush;
+  prefix = "sample";
+  for (int i = 0; i < napprox_samples_; i++) {
+    std::string tag = std::to_string(i+1);
+    displacements_.push_back( data_->GetNodeData(data_->GetFieldId(prefix+"_displacement_" + tag)));
+    velocities_.push_back(    data_->GetNodeData(data_->GetFieldId(prefix+"_velocity_"     + tag)));
+    forces_.push_back(        data_->GetNodeData(data_->GetFieldId(prefix+"_force_"        + tag)));
+  }
+//std::cout << " DONE Setup\n" << std::flush;
 }
 //===========================================================================
 void
@@ -325,16 +346,18 @@ UqModel::ApplyClosure()
   if (!initialized_) { return; }
   // Now loop over the approximate samples, and apply the interpolation
   for (int s = 0; s < napprox_samples_; s++) {
-    double* f = sample_forces_[s + nexact_samples_]; // approx after exact
+    double* f = forces_[s + nexact_samples_]; // approx after exact
     // Loop over each node
     for (int i = 0; i < nunknowns_; ++i) {
       f[i] = nominal_force_[i] * interpolation_coefficients_[s][0];  
       for (int k = 0; k < nexact_samples_; k++) {
-        double* f_exact = sample_forces_[k];
+        double* f_exact = forces_[k];
         f[i] += f_exact[i] * interpolation_coefficients_[s][k + 1];
       }
+//std::cout << s << " | " << i << ", " << nominal_force_[i] << " / " << f[i] << "\n";
     }
   }
+//std::cout << " DONE ApplyClosure\n" << std::flush;
 }
 //===========================================================================
 }  // namespace nimble

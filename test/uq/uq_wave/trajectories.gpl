@@ -1,0 +1,67 @@
+#!/usr/bin/env gnuplot
+set macros
+! ./reduce.py uq_wave.out.e > reduce.stdout
+data="uq_wave.dat"
+
+nexact = system("grep -h 'trajectories' ".data." | awk '{print $4}'")
+ntrajs = system("grep -h 'trajectories' ".data." | awk '{print $2}'")
+nsteps = system("grep -h 'steps'        ".data." | awk '{print $2}'")
+
+print "ntrajectories ",nexact," ",ntrajs
+print "nsteps        ",nsteps
+
+m = 5
+m= (nsteps > m) ? m : nsteps
+ds = floor(nsteps/m)
+print "increment ",ds
+
+set term png ; set output "sample_displacement.png"
+unset xtics
+unset ytics
+set yrange [-0.0025:0.0025]
+set multiplot layout m,1
+do for [i=1:m] {
+set xzeroaxis
+plot             data u 1:2             index (ds*i-1) w lp lt -1 t "", \
+for [j=1:ntrajs] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
+}
+unset multiplot
+
+set term png ; set output "exact_displacement.png"
+unset xtics
+unset ytics
+set yrange [-0.0025:0.0025]
+set multiplot layout m,1
+do for [i=1:m] {
+set xzeroaxis
+plot             data u 1:2             index (ds*i-1) w lp lt -1 t "", \
+for [j=1:nexact] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
+}
+unset multiplot
+
+
+set term png ; set output "sample_force.png"
+unset xtics
+unset ytics
+set yrange [*:*]
+#set yrange [-0.0025:0.0025]
+set multiplot layout m,1
+do for [i=1:m] {
+set xzeroaxis
+plot             data u 1:3                    index (ds*i-1) w lp lt -1 t "", \
+for [j=1:ntrajs] data u 1:(column(3+j+ntrajs)) index (ds*i-1) w lp t ""
+}
+unset multiplot
+
+set term png ; set output "exact_force.png"
+unset xtics
+unset ytics
+set yrange [*:*]
+#set yrange [-0.0025:0.0025]
+set multiplot layout m,1
+do for [i=1:m] {
+set xzeroaxis
+plot             data u 1:3                    index (ds*i-1) w lp lt -1 t "", \
+for [j=1:ntrajs] data u 1:(column(3+j+ntrajs)) index (ds*i-1) w lp t ""
+}
+unset multiplot

@@ -86,9 +86,7 @@ ModelData::InitializeBlocks(
   //
   uq_model_->Initialize();
   //
-  std::cout << "START with AllocateInitializeElementData\n" << std::flush;
   AllocateInitializeElementData(data_manager, material_factory_base);
-  std::cout << "DONE with AllocateInitializeElementData\n" << std::flush;
   //
   uq_model_->Setup();
   int num_samples = uq_model_->GetNumSamples();
@@ -97,11 +95,11 @@ ModelData::InitializeBlocks(
     double* v = uq_model_->Velocities()[i];
     double* f = uq_model_->Forces()[i];
     //
-    // We should replace {0, 3} with {length, 3} ASK ULRICH
+    // We should replace {0, 3} with {length, 3}  <<< HACK? ASK ULRICH
     //
-    offnom_displacement_views_.push_back(nimble::Viewify<2>(u, {0, 3}, {3, 1}));
-    offnom_velocity_views_.    push_back(nimble::Viewify<2>(v, {0, 3}, {3, 1}));
-    offnom_force_views_.       push_back(nimble::Viewify<2>(f, {0, 3}, {3, 1}));
+    displacement_views_.push_back(nimble::Viewify<2>(u, {0, 3}, {3, 1}));
+    velocity_views_.    push_back(nimble::Viewify<2>(v, {0, 3}, {3, 1}));
+    force_views_.       push_back(nimble::Viewify<2>(f, {0, 3}, {3, 1}));
   }
 }
 
@@ -131,7 +129,7 @@ ModelData::ApplyInitialConditions(nimble::DataManager& data_manager)
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto velocity             = GetVectorNodeData("velocity");
-  bc->ApplyInitialConditions(reference_coordinate, velocity, offnom_velocity_views_); // applied to all
+  bc->ApplyInitialConditions(reference_coordinate, velocity, velocity_views_); // applied to all
 }
 
 void
@@ -142,7 +140,7 @@ ModelData::ApplyKinematicConditions(nimble::DataManager& data_manager, double ti
   auto displacement         = GetVectorNodeData("displacement");
   auto velocity             = GetVectorNodeData("velocity");
   bc->ApplyKinematicBC(
-      time_current, time_previous, reference_coordinate, displacement, velocity, offnom_velocity_views_); // applied to all
+      time_current, time_previous, reference_coordinate, displacement, velocity, velocity_views_); // applied to all
 }
 
 void
@@ -159,7 +157,7 @@ ModelData::ComputeInternalForce(
   int num_exact_samples = uq_model_->GetNumExactSamples();
 
   force.zero();
-  for(int i=0; i < num_samples; i++){ offnom_force_views_[i].zero(); }
+  for(int i=0; i < num_samples; i++){ force_views_[i].zero(); }
 
   auto reference_coord = GetNodeData("reference_coordinate");
   auto velocity        = GetNodeData("velocity"); // ASK double * not View?
@@ -176,18 +174,18 @@ ModelData::ComputeInternalForce(
     for(int i=0; i < num_exact_samples; i++){
       int ii = i-1;
       bool is_off_nominal = (i > 0);
-      is_off_nominal = false; // HACK <<<<<<
       auto u = displacement;
       auto v = velocity;
       auto f = force;
+      std::vector<double> parameters;
       if (is_off_nominal) {
-        u  = offnom_displacement_views_[ii];
+        u  = displacement_views_[ii];
         v  = uq_model_->Velocities()[ii];
-        f  = offnom_force_views_[ii];
-//      parameters  = uq_model_->GetParameters(ii); 
+        f  = force_views_[ii];
+        parameters  = uq_model_->GetParameters(ii); 
+        uq_model_->Parameters(block_id,ii);
+// NOTE index blcok_id, sample
       }
-      ii = (ii > -1) ? ii : 0; // HACK
-      std::vector<double> const parameters  = uq_model_->GetParameters(ii);  // HACK ii = -1 for nominal
       block->ComputeInternalForce(
         reference_coord,
         u.data(),
@@ -215,7 +213,7 @@ ModelData::ComputeInternalForce(
   vector_comm->VectorReduction(vector_dimension, force.data());
   int num_exact_trajectories = uq_model_->GetNumExactSamples();
   for(int i=0; i <= num_exact_trajectories; i++){
-    vector_comm->VectorReduction(vector_dimension,offnom_force_views_[i].data());
+    vector_comm->VectorReduction(vector_dimension,force_views_[i].data());
   }
 
   // Now apply closure to estimate approximate forces from the exact samples
