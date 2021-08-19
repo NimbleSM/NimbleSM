@@ -4,10 +4,11 @@ set macros
 data="uq_wave.dat"
 
 nexact = system("grep -h 'trajectories' ".data." | awk '{print $4}'")
-ntrajs = system("grep -h 'trajectories' ".data." | awk '{print $2}'")
+napprx = system("grep -h 'trajectories' ".data." | awk '{print $2}'")
+ntrajs = nexact+napprx
 nsteps = system("grep -h 'steps'        ".data." | awk '{print $2}'")
 
-print "ntrajectories ",nexact," ",ntrajs
+print "ntrajectories ",nexact," ",napprx
 print "nsteps        ",nsteps
 
 m = 5
@@ -15,6 +16,55 @@ m= (nsteps > m) ? m : nsteps
 ds = floor(nsteps/m)
 print "increment ",ds
 
+unset xtics
+unset ytics
+
+
+###############################################################################
+k = 3+ntrajs
+set yrange [*:*]
+#set yrange [-0.0025:0.0025]
+do for [i=1:m] {
+set xzeroaxis
+plot \
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+                 data u 1:3             index (ds*i-1) w l lt -1 t ""
+pause -1 "xF".i
+}
+
+k = 3+nexact+ntrajs
+set yrange [*:*]
+do for [i=1:m] {
+set xzeroaxis
+plot \
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+                 data u 1:3             index (ds*i-1) w l lt -1 t ""
+pause -1 "aF".i
+}
+
+###############################################################################
+k = 2
+set yrange [-0.0035:0.0035]
+do for [i=1:m] {
+set xzeroaxis
+plot \
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+                 data u 1:2             index (ds*i-1) w l lt -1 t ""
+pause -1 "xU".i
+}
+
+k = 2+nexact
+set yrange [-0.0035:0.0035]
+do for [i=1:m] {
+set xzeroaxis
+plot \
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+                 data u 1:2             index (ds*i-1) w l lt -1 t ""
+pause -1 "aU".i
+}
+
+###############################################################################
+m = 2+nexact
 set term png ; set output "sample_displacement.png"
 unset xtics
 unset ytics
@@ -23,10 +73,11 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot             data u 1:2             index (ds*i-1) w lp lt -1 t "", \
-for [j=1:ntrajs] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
+for [j=1:napprx] data u 1:(column(m+j)) index (ds*i-1) w lp t ""
 }
 unset multiplot
 
+m = 2
 set term png ; set output "exact_displacement.png"
 unset xtics
 unset ytics
@@ -35,11 +86,13 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot             data u 1:2             index (ds*i-1) w lp lt -1 t "", \
-for [j=1:nexact] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
+for [j=1:nexact] data u 1:(column(m+j)) index (ds*i-1) w lp t ""
 }
 unset multiplot
 
 
+###############################################################################
+m = 3+nexact+ntrajs
 set term png ; set output "sample_force.png"
 unset xtics
 unset ytics
@@ -48,11 +101,12 @@ set yrange [*:*]
 set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
-plot             data u 1:3                    index (ds*i-1) w lp lt -1 t "", \
-for [j=1:ntrajs] data u 1:(column(3+j+ntrajs)) index (ds*i-1) w lp t ""
+plot             data u 1:3             index (ds*i-1) w lp lt -1 t "", \
+for [j=1:napprx] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
 }
 unset multiplot
 
+m = 3+n+ntrajs
 set term png ; set output "exact_force.png"
 unset xtics
 unset ytics
@@ -61,7 +115,7 @@ set yrange [*:*]
 set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
-plot             data u 1:3                    index (ds*i-1) w lp lt -1 t "", \
-for [j=1:ntrajs] data u 1:(column(3+j+ntrajs)) index (ds*i-1) w lp t ""
+plot             data u 1:3             index (ds*i-1) w lp lt -1 t "", \
+for [j=1:nexact] data u 1:(column(m+j)) index (ds*i-1) w lp t ""
 }
 unset multiplot

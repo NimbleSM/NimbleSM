@@ -90,16 +90,14 @@ ModelData::InitializeBlocks(
   //
   uq_model_->Setup();
   int num_samples = uq_model_->GetNumSamples();
+  int nnodes = mesh_.GetNumNodes();
   for (int i = 0; i < num_samples; i++) {
     double* u = uq_model_->Displacements()[i];
     double* v = uq_model_->Velocities()[i];
     double* f = uq_model_->Forces()[i];
-    //
-    // We should replace {0, 3} with {length, 3}  <<< HACK? ASK ULRICH / is the the problem?
-    //
-    displacement_views_.push_back(nimble::Viewify<2>(u, {0, 3}, {3, 1}));
-    velocity_views_.    push_back(nimble::Viewify<2>(v, {0, 3}, {3, 1}));
-    force_views_.       push_back(nimble::Viewify<2>(f, {0, 3}, {3, 1}));
+    displacement_views_.push_back(nimble::Viewify<2>(u, {nnodes, 3}, {3, 1}));
+    velocity_views_.    push_back(nimble::Viewify<2>(v, {nnodes, 3}, {3, 1}));
+    force_views_.       push_back(nimble::Viewify<2>(f, {nnodes, 3}, {3, 1}));
   }
 }
 
@@ -139,8 +137,7 @@ ModelData::ApplyKinematicConditions(nimble::DataManager& data_manager, double ti
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto displacement         = GetVectorNodeData("displacement");
   auto velocity             = GetVectorNodeData("velocity");
-  bc->ApplyKinematicBC(
-      time_current, time_previous, reference_coordinate, displacement, velocity, velocity_views_); // applied to all
+  bc->ApplyKinematicBC( time_current, time_previous, reference_coordinate, displacement, velocity, velocity_views_); // applied to all 
 }
 
 void
@@ -171,7 +168,7 @@ ModelData::ComputeInternalForce(
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
 //  std::vector<double> const parameters();
-    for(int i=0; i < num_exact_samples; i++){
+    for(int i=0; i < num_exact_samples+1; i++){
       int ii = i-1;
       bool is_off_nominal = (i > 0);
       auto u = displacement;
@@ -183,9 +180,9 @@ ModelData::ComputeInternalForce(
         v  = uq_model_->Velocities()[ii];
         f  = force_views_[ii];
         parameters = uq_model_->Parameters(block_id,ii);
-        continue; // HACK
+//      continue; // HACK
       }
-      is_off_nominal = false; // HACK
+//    is_off_nominal = false; // HACK
       block->ComputeInternalForce(
         reference_coord,
         u.data(),
@@ -205,6 +202,7 @@ ModelData::ComputeInternalForce(
       );
     }
   }
+//for(int i=0; i < num_exact_samples; i++){ force_views_[i] = force; } // HACK
 
   // Perform a vector reduction on internal force.  This is a vector nodal
   // quantity.
