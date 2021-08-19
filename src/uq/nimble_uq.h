@@ -91,28 +91,28 @@ class UqModel
   // construct approx_forces from the exact samples
   void
   ApplyClosure();
+  // initialization
+  void
+  ReadSamples();
+  // - scale input
+  void
+  ScaleParameters();
+  // - write scaled parameters
+  void
+  WriteSamples();
+  // Routine to perform in-situ processing over sample trajectories
+  void
+  PerformAnalyses(
+    const double*                   reference_coordinates,
+    int                             num_elem,
+    const int*                      elem_conn,
+    int                             block_id,
+    std::shared_ptr<nimble::Block>& block) {};
+  // write data
+  void
+  Write(double time) {};
 
   // accessors
-  int
-  GetNumNodes() const
-  {
-    return nnodes_;
-  }
-  int
-  GetNumDims() const
-  {
-    return ndims_;
-  }
-  std::vector<std::string> const&
-  GetParameterNames() const
-  {
-    return names_;
-  }
-  std::vector<double> const&
-  GetParameters(const int& sample_id) const
-  {
-    return parameter_samples_[sample_id];
-  }
   int
   GetNumSamples() const
   {
@@ -121,14 +121,13 @@ class UqModel
   int
   GetNumParameters() const
   {
-    return nominal_parameter_values_.size();
+    return parameter_order_.size();
   }
   int
   GetNumExactSamples() const
   {
     return nexact_samples_;
   }
-  // - pass throughs
   bool
   Initialized() const
   {
@@ -149,56 +148,17 @@ class UqModel
   {
     return forces_;
   }
-
-  // initialization
-  void
-  ReadSamples();
-  // - scale input
-  void
-  ScaleParameters();
-  // - write scaled parameters
-  void
-  WriteSamples();
-  // accessors
-  std::vector<std::vector<double>>&
-  GetParameterSamples() // REPLACE
-  {
-    return parameter_samples_;
-  }
   std::map<std::string,double>
   Parameters(int block_id, int sample_i) 
   {
     return parameters_[block_id][sample_i];
   }
-#if 0
-  std::vector<double>&
-  GetNominalParameters() // OMIT
-  {
-    return nominal_parameter_values_;
-  }  // NOTE 1 nominal trajectory
-  std::vector<double>&
-  GetRanges() { //OaIMT
-    return ranges_;
-  }
-#endif
-
-  // Routine to perform in-situ processing over sample trajectories
-  void
-  PerformAnalyses(
-    const double*                   reference_coordinates,
-    int                             num_elem,
-    const int*                      elem_conn,
-    int                             block_id,
-    std::shared_ptr<nimble::Block>& block) {};
-  // write data
-  void
-  Write(double time) {};
 
  private:
   int ndims_;    // from mesh
   int nnodes_;   // from mesh
   int nblocks_;  // from mesh
-  int nunknowns_;
+  int nunknowns_; // nnodes*ndof
   // parameter data
   int                              nsamples_;        // total additional 
   int                              nexact_samples_;  
@@ -207,20 +167,13 @@ class UqModel
   const GenesisMesh*               mesh_;
   ModelData*                       data_;
 
-  std::vector<std::string>         names_; // BLOCK
-  std::vector<double>              ranges_;  // half width
-  std::vector<double>              nominal_parameter_values_;  // OMIT
-  std::map<int, int>               block_first_param_index_; // OMIT
-  std::map<int, int>               block_last_param_index_; // OMIT
-
-
   std::string                      samples_file_name_;
   std::map<int,std::map<std::string,double>> nominal_parameters_; 
   std::map<int,std::map<std::string,double>> parameter_uncertainties_; 
   std::vector<std::pair<int,std::string>> parameter_order_;
-  std::vector<std::vector<double>> parameter_samples_;  // nsamples X np
-  std::vector<std::vector<double>> interpolation_coefficients_;  // napprox_smpls X np
-// HACK? NOTE right type? ASK ULRICH
+  std::vector<std::vector<double>> parameter_samples_;  // ns,np
+  std::vector<std::vector<double>> interpolation_coefficients_;  // na,np
+// HACK? NOTE is double* right type? ASK ULRICH
   double* nominal_force_;
   std::vector<double*> displacements_;
   std::vector<double*> velocities_;

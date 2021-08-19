@@ -86,7 +86,7 @@ class exoreader:
       for j,w in enumerate(self.weights): ss[j] *= w
       o.write("# time {0:12.9f}\n".format(time))
       for j in range(0,self.nnodes,4):
-        o.write("{0:9.6f} {1:9.6f} {2:9.6f} ".format(self.xs[j],us[j],fs[j]))
+        o.write("{0:7.4f} {1:9.6f} {2:9.6f} ".format(self.xs[j],us[j],fs[j]))
         for ws in wxs: o.write("{0:9.6f} ".format(ws[j]))
         for fs in fxs: o.write("{0:9.6f} ".format(fs[j]))
         for ws in wws: o.write("{0:9.6f} ".format(ws[j]))

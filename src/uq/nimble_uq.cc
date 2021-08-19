@@ -82,9 +82,6 @@ UqModel::UqModel(int ndims, const GenesisMesh* mesh, ModelData* data)
       nexact_samples_(0)
 {
   nunknowns_ = ndims_ * nnodes_;
-  names_.clear();
-  ranges_.clear();
-  nominal_parameter_values_.clear();
   parameter_samples_.clear();
   interpolation_coefficients_.clear();
   initialized_       = false;
@@ -133,36 +130,15 @@ UqModel::ParseBlockInput(
       parameter_uncertainties_[block_id][pname] = range;
       std::pair <int,std::string> p(block_id,pname);
       parameter_order_.push_back(p);
-
-      names_.push_back(pname);
-      ranges_.push_back(range);
       nparameters_++;
   }
 
   // get nominal parameters
   std::map<std::string, double> parameters = material_factory->parse_material_params_string(nominal_params_string);
   nominal_parameters_[block_id] = parameters;
-  std::cout << " K  " << parameters["bulk_modulus"];
-  std::cout << " G  " << parameters["shear_modulus"];
+//std::cout << " K  " << parameters["bulk_modulus"];
+//std::cout << " G  " << parameters["shear_modulus"];
 
-
-  std::map<std::string, int> indices;
-  for (int idx = start_idx; idx < nparameters_; idx++) {
-    std::string pname = names_[idx];
-    indices[pname]    = idx;
-    if (pname == "density" || pname == "bulk_modulus" || pname == "shear_modulus") {
-      nominal_parameter_values_.push_back(parameters[pname]);  
-    } else {
-      throw std::logic_error("\nError: uq parameter " + pname + " is unrecognised or not currently supported\n");
-    }
-  }
-  block_first_param_index_[block_id] = start_idx;
-  block_last_param_index_[block_id]  = nparameters_ - 1;
-  // let block know if block id is present on this rank
-  if (block_id_present) {
-    auto uq_block_ptr = dynamic_cast<nimble_uq::Block*>(blocks[block_id].get());
-    uq_block_ptr->SetUqParameters(indices);
-  }
 //std::cout << " FINISH ParseBlockInput\n" << std::flush;
 }
 //===========================================================================
@@ -265,32 +241,27 @@ UqModel::ScaleParameters()
       parameters_[block_id][s][name] = p;
     }  
   }
-// parameter file order blockid & pameter name from input file
-// NOTE make per block id
-  //--Parameter values are in  -1.0:1.0 range
-  //--Scaling them to physical units 
-  //             -1.0 ==> nominal - range
-  //              1.0 ==> nominal + range
-  for (int p = 0; p < nparameters_; p++) {
-    double slope = ranges_[p];
-    double shift = nominal_parameter_values_[p];
-    for (int s = 0; s < nsamples_; s++) {
-      parameter_samples_[s][p] *= slope;
-      parameter_samples_[s][p] += shift;
-    }
-  }
 }
 //===========================================================================
 void
 UqModel::WriteSamples()
 {
-// HACK only do if rank == 0
+// NOTE/ HACK only do if rank == 0 HOW to get rank id?
   std::ofstream f("parameter_samples.dat");
   f << "# ";
-  for (int p = 0; p < nparameters_; p++) { f << names_[p] << " "; }
+  for (int i = 0 ; i < nparameters_ ; i++) {
+    int block_id     = parameter_order_[i].first;
+    std::string name = parameter_order_[i].second;
+    f << name+"_"+std::to_string(block_id) << " ";
+  }
   f << "\n";
-  for (int s = 0; s < nsamples_; s++) {
-    for (int p = 0; p < nparameters_; p++) { f << parameter_samples_[s][p] << " "; }
+  for (int s = 0 ; s < nsamples_ ; s++) {
+    for (int i = 0 ; i < nparameters_ ; i++) {
+      int block_id     = parameter_order_[i].first;
+      std::string name = parameter_order_[i].second;
+      double p = parameters_[block_id][s][name];
+      f << std::setw(8) << p << " ";
+    }  
     f << "\n";
   }
   f.close();

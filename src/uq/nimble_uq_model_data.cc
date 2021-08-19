@@ -95,7 +95,7 @@ ModelData::InitializeBlocks(
     double* v = uq_model_->Velocities()[i];
     double* f = uq_model_->Forces()[i];
     //
-    // We should replace {0, 3} with {length, 3}  <<< HACK? ASK ULRICH
+    // We should replace {0, 3} with {length, 3}  <<< HACK? ASK ULRICH / is the the problem?
     //
     displacement_views_.push_back(nimble::Viewify<2>(u, {0, 3}, {3, 1}));
     velocity_views_.    push_back(nimble::Viewify<2>(v, {0, 3}, {3, 1}));
@@ -177,15 +177,15 @@ ModelData::ComputeInternalForce(
       auto u = displacement;
       auto v = velocity;
       auto f = force;
-      std::vector<double> parameters;
+      std::map<std::string,double> parameters;
       if (is_off_nominal) {
         u  = displacement_views_[ii];
         v  = uq_model_->Velocities()[ii];
         f  = force_views_[ii];
-        parameters  = uq_model_->GetParameters(ii); 
-        uq_model_->Parameters(block_id,ii);
-// NOTE index blcok_id, sample
+        parameters = uq_model_->Parameters(block_id,ii);
+        continue; // HACK
       }
+      is_off_nominal = false; // HACK
       block->ComputeInternalForce(
         reference_coord,
         u.data(),
@@ -229,12 +229,12 @@ ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
   auto mass  = GetNodeData("lumped_mass"); // ASK double * not View?
   int n = uq_model_->GetNumSamples();
   for (int s = 0; s < n; ++s) {
-    double* f = uq_model_->Forces()[s];
+    double* f = uq_model_->Forces()[s]; // NOTE what about external force
     double* v = uq_model_->Velocities()[s];
     for (int i = 0; i < 3; ++i) {
       double m = mass[i / 3];
       double a = (1.0 / m) * f[i]; // NOTE store inv_mass
-      v[i] += dt * a;
+      v[i] += dt * a; // NOTE conver to View?
     }
   }
 

@@ -70,11 +70,11 @@ Block::ComputeInternalForce(
     std::vector<double>&            elem_data_np1,
     nimble::DataManager&            data_manager,
     bool                            is_output_step,
-    bool                            is_off_nominal,
-    std::vector<double> const&      uq_params_this_sample,
+    bool                            use_alternative_parameters,
+    std::map<std::string,double>    alternative_parameters,
     bool                            compute_stress_only) const
 {
-  if (!is_off_nominal) {
+  if (!use_alternative_parameters) {
     nimble::Block::ComputeInternalForce(
         reference_coordinates,
         displacement,
@@ -113,6 +113,9 @@ Block::ComputeInternalForce(
   double cauchy_stress_np1[sym_tensor_size * num_int_pt_per_elem];
   double force[vector_size * num_node_per_elem];
 
+  double K = alternative_parameters["bulk_modulus"];
+  double G = alternative_parameters["shear_modulus"];
+
   double*             state_data_n   = nullptr;
   double*             state_data_np1 = nullptr;
   std::vector<double> state_data_n_vec;
@@ -139,9 +142,6 @@ Block::ComputeInternalForce(
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
 
-    double K = uq_params_this_sample[bulk_modulus_uq_index_];
-    double G = uq_params_this_sample[shear_modulus_uq_index_];
-    std::cout << " p " << K << " " << G << "\n";
     material_->GetOffNominalStress(
         K,G,
         num_int_pt_per_elem,
