@@ -134,6 +134,7 @@ class ModelData : public nimble::ModelData
   std::vector<nimble::Viewify<2>>  displacement_views_;
   std::vector<nimble::Viewify<2>>  velocity_views_;
   std::vector<nimble::Viewify<2>>  force_views_;
+  int nunknowns_;
 };
 
 }  // namespace nimble_uq

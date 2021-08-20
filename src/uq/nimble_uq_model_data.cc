@@ -91,6 +91,8 @@ ModelData::InitializeBlocks(
   uq_model_->Setup();
   int num_samples = uq_model_->GetNumSamples();
   int nnodes = mesh_.GetNumNodes();
+  int ndims = 3; // HACK
+  nunknowns_ = ndims * nnodes;
   for (int i = 0; i < num_samples; i++) {
     double* u = uq_model_->Displacements()[i];
     double* v = uq_model_->Velocities()[i];
@@ -151,13 +153,13 @@ ModelData::ComputeInternalForce(
 {
   const auto& mesh = data_manager.GetMesh();
   int num_samples = uq_model_->GetNumSamples();
-  int num_exact_samples = uq_model_->GetNumExactSamples();
+  int num_exact_samples = uq_model_->GetNumExactSamples() + 1; // incl nominal
 
   force.zero();
   for(int i=0; i < num_samples; i++){ force_views_[i].zero(); }
 
   auto reference_coord = GetNodeData("reference_coordinate");
-  auto velocity        = GetNodeData("velocity"); // ASK double * not View?
+  auto velocity        = GetNodeData("velocity"); 
 
   for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
@@ -168,26 +170,27 @@ ModelData::ComputeInternalForce(
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
 //  std::vector<double> const parameters();
-    for(int i=0; i < num_exact_samples+1; i++){
+    for(int i=0; i < num_exact_samples; i++){
       int ii = i-1;
       bool is_off_nominal = (i > 0);
-      auto u = displacement;
+      auto u = displacement.data();
       auto v = velocity;
-      auto f = force;
+      auto f = force.data();
       std::map<std::string,double> parameters;
       if (is_off_nominal) {
-        u  = displacement_views_[ii];
-        v  = uq_model_->Velocities()[ii];
-        f  = force_views_[ii];
+//      u = uq_model_->Displacements()[i];
+        u = uq_model_->Displacements()[i];
+        v = uq_model_->Velocities()[i];
+        f = uq_model_->Forces()[i];
         parameters = uq_model_->Parameters(block_id,ii);
 //      continue; // HACK
       }
 //    is_off_nominal = false; // HACK
       block->ComputeInternalForce(
         reference_coord,
-        u.data(),
+        u,
         v,
-        f.data(),
+        f,
         time_previous,
         time_current,
         num_elem_in_block,
@@ -211,15 +214,17 @@ ModelData::ComputeInternalForce(
   vector_comm->VectorReduction(vector_dimension, force.data());
   int num_exact_trajectories = uq_model_->GetNumExactSamples();
   for(int i=0; i <= num_exact_trajectories; i++){
-    vector_comm->VectorReduction(vector_dimension,force_views_[i].data());
+//  vector_comm->VectorReduction(vector_dimension,force_views_[i].data());
+    vector_comm->VectorReduction(vector_dimension,uq_model_->Forces()[i]);
   }
 
   // Now apply closure to estimate approximate forces from the exact samples
   uq_model_->ApplyClosure();  
+
+//for(int i=0; i <= num_exact_samples; i++){ uq_model_->Forces()[i] = force; } // HACK
 }
 
-// NOTE need data manager?
-// advance approximate trajectories
+// advance adjacent trajectories
 void
 ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
 {
@@ -229,7 +234,7 @@ ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
   for (int s = 0; s < n; ++s) {
     double* f = uq_model_->Forces()[s]; // NOTE what about external force
     double* v = uq_model_->Velocities()[s];
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < nunknowns_; ++i) {
       double m = mass[i / 3];
       double a = (1.0 / m) * f[i]; // NOTE store inv_mass
       v[i] += dt * a; // NOTE conver to View?
@@ -238,7 +243,7 @@ ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
 
 }
 
-// advance approximate trajectories
+// advance adjacent trajectories
 void
 ModelData::UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
 {
@@ -247,7 +252,7 @@ ModelData::UpdateWithNewDisplacement(nimble::DataManager& data_manager, double d
   for (int s = 0; s < n; ++s) {
     double* u = uq_model_->Displacements()[s];
     double* v = uq_model_->Velocities()[s];
-    for (int i = 0; i < 3; ++i) { u[i] += dt * v[i]; }
+    for (int i = 0; i < nunknowns_; ++i) { u[i] += dt * v[i]; }
   }
 }
 

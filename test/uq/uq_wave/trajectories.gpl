@@ -1,6 +1,6 @@
 #!/usr/bin/env gnuplot
 set macros
-! ./reduce.py uq_wave.out.e > reduce.stdout
+! ./reduce.py uq_wave.out.e > reduce.stdout ; echo "reduced data"
 data="uq_wave.dat"
 
 nexact = system("grep -h 'trajectories' ".data." | awk '{print $4}'")

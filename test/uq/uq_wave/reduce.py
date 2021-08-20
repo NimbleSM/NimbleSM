@@ -61,8 +61,8 @@ class exoreader:
     
   def process(self):
     o = open(self.oname,"w")
-    o.write("# {0} sample {1} exact trajectories\n".format(self.ntraj,self.nexact))
-    o.write("# x u f u_1 u_2 ... f_1 f_2 ....\n")
+    o.write("# 1 nominal {0} exact {1} sample trajectories\n".format(self.nexact,self.ntraj))
+    o.write("# x u u_1 u_2 ... f f_1 f_2 ....\n")
     maxs = 0.0
     for i,time in enumerate(self.times):
       step = i + 1
