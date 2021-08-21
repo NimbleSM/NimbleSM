@@ -106,7 +106,7 @@ for [j=1:napprx] data u 1:(column(3+j)) index (ds*i-1) w lp t ""
 }
 unset multiplot
 
-m = 3+n+ntrajs
+m = 3+ntrajs
 set term png ; set output "exact_force.png"
 unset xtics
 unset ytics

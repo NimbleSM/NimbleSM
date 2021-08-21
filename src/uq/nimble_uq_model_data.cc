@@ -178,14 +178,11 @@ ModelData::ComputeInternalForce(
       auto f = force.data();
       std::map<std::string,double> parameters;
       if (is_off_nominal) {
-//      u = uq_model_->Displacements()[i];
         u = uq_model_->Displacements()[i];
         v = uq_model_->Velocities()[i];
         f = uq_model_->Forces()[i];
         parameters = uq_model_->Parameters(block_id,ii);
-//      continue; // HACK
       }
-//    is_off_nominal = false; // HACK
       block->ComputeInternalForce(
         reference_coord,
         u,
@@ -203,6 +200,11 @@ ModelData::ComputeInternalForce(
         is_output_step,
         is_off_nominal, parameters  // UQ
       );
+    }
+  }
+  for(int i=0; i < num_exact_samples; i++){ 
+    for(int j=0; j < nunknowns_; j++){ 
+      std::cout << i << " " << j << " "  << uq_model_->Forces()[i][j] << "\n";
     }
   }
 //for(int i=0; i < num_exact_samples; i++){ force_views_[i] = force; } // HACK
@@ -228,16 +230,17 @@ ModelData::ComputeInternalForce(
 void
 ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
 {
-//if (!uq_model_->initialized()) { return; }
-  auto mass  = GetNodeData("lumped_mass"); // ASK double * not View?
+//if (!uq_model_->initialized()) { return; } // HACK?
+  auto mass  = GetNodeData("lumped_mass"); 
+  auto f_ext = GetVectorNodeData("external_force").data();
   int n = uq_model_->GetNumSamples();
   for (int s = 0; s < n; ++s) {
     double* f = uq_model_->Forces()[s]; // NOTE what about external force
     double* v = uq_model_->Velocities()[s];
     for (int i = 0; i < nunknowns_; ++i) {
-      double m = mass[i / 3];
-      double a = (1.0 / m) * f[i]; // NOTE store inv_mass
-      v[i] += dt * a; // NOTE conver to View?
+      double m = mass[i / 3]; // NOTE divide instead of increment?
+      double a = (1.0 / m) * (f[i]+f_ext[i]); // NOTE store inv_mass
+      v[i] += dt * a; 
     }
   }
 

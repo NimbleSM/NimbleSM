@@ -77,13 +77,13 @@ class exoreader:
       for ws in wws:
         print("{0:9.6f}".format(amax(ws)),end=" ")
       print("")
-      stress = self.db.get_element_variable_values(self.blk,'stress_xx',step)
-      for s in stress: maxs = max(s,maxs)
-      ss = self.nnodes*[0.0]
-      for j,c in enumerate(self.conn):
-        for k in c:
-          ss[k-1] += stress[j]
-      for j,w in enumerate(self.weights): ss[j] *= w
+#     stress = self.db.get_element_variable_values(self.blk,'stress_xx',step)
+#     for s in stress: maxs = max(s,maxs)
+#     ss = self.nnodes*[0.0]
+#     for j,c in enumerate(self.conn):
+#       for k in c:
+#         ss[k-1] += stress[j]
+#     for j,w in enumerate(self.weights): ss[j] *= w
       o.write("# time {0:12.9f}\n".format(time))
       for j in range(0,self.nnodes,4):
         o.write("{0:7.4f} ".format(self.xs[j]))
