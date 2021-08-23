@@ -169,7 +169,7 @@ ModelData::ComputeInternalForce(
     std::vector<double> const& elem_data_n       = GetElementDataOld(block_id);
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
     auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
-//  std::vector<double> const parameters();
+
     for(int i=0; i < num_exact_samples; i++){
       int ii = i-1;
       bool is_off_nominal = (i > 0);
@@ -178,11 +178,14 @@ ModelData::ComputeInternalForce(
       auto f = force.data();
       std::map<std::string,double> parameters;
       if (is_off_nominal) {
+        std::cout << " IS OFF NOMINAL \n";
         u = uq_model_->Displacements()[i];
         v = uq_model_->Velocities()[i];
         f = uq_model_->Forces()[i];
         parameters = uq_model_->Parameters(block_id,ii);
+std::cout << i << " --POINTER " << &f << "\n";
       }
+std::cout << i << " POINTER " << &f << "\n";
       block->ComputeInternalForce(
         reference_coord,
         u,
@@ -200,14 +203,17 @@ ModelData::ComputeInternalForce(
         is_output_step,
         is_off_nominal, parameters  // UQ
       );
+    for(int j=0; j < nunknowns_; j++){ 
+      std::cout << j << " f="  << f[j] << "\n";
+    }
     }
   }
   for(int i=0; i < num_exact_samples; i++){ 
+std::cout << i << " pointer " << &(uq_model_->Forces()[i]) <<  "\n";
     for(int j=0; j < nunknowns_; j++){ 
-      std::cout << i << " " << j << " "  << uq_model_->Forces()[i][j] << "\n";
+      std::cout << i << " " << j << " F="  << uq_model_->Forces()[i][j] << "\n";
     }
   }
-//for(int i=0; i < num_exact_samples; i++){ force_views_[i] = force; } // HACK
 
   // Perform a vector reduction on internal force.  This is a vector nodal
   // quantity.
@@ -216,14 +222,11 @@ ModelData::ComputeInternalForce(
   vector_comm->VectorReduction(vector_dimension, force.data());
   int num_exact_trajectories = uq_model_->GetNumExactSamples();
   for(int i=0; i <= num_exact_trajectories; i++){
-//  vector_comm->VectorReduction(vector_dimension,force_views_[i].data());
     vector_comm->VectorReduction(vector_dimension,uq_model_->Forces()[i]);
   }
 
   // Now apply closure to estimate approximate forces from the exact samples
   uq_model_->ApplyClosure();  
-
-//for(int i=0; i <= num_exact_samples; i++){ uq_model_->Forces()[i] = force; } // HACK
 }
 
 // advance adjacent trajectories
@@ -243,7 +246,6 @@ ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
       v[i] += dt * a; 
     }
   }
-
 }
 
 // advance adjacent trajectories
