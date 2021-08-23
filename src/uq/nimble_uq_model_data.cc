@@ -176,16 +176,21 @@ ModelData::ComputeInternalForce(
       auto u = displacement.data();
       auto v = velocity;
       auto f = force.data();
+#if 0
+      auto u = uq_model_->Displacements()[i];
+      auto v = uq_model_->Velocities()[i];
+      auto f = uq_model_->Forces()[i];
+#endif
       std::map<std::string,double> parameters;
       if (is_off_nominal) {
         std::cout << " IS OFF NOMINAL \n";
-        u = uq_model_->Displacements()[i];
-        v = uq_model_->Velocities()[i];
-        f = uq_model_->Forces()[i];
+        u = uq_model_->Displacements()[ii];
+        v = uq_model_->Velocities()[ii];
+        f = uq_model_->Forces()[ii];
         parameters = uq_model_->Parameters(block_id,ii);
-std::cout << i << " --POINTER " << &f << "\n";
+std::cout << i << " --POINTER " << f << "\n";
       }
-std::cout << i << " POINTER " << &f << "\n";
+std::cout << i << " POINTER " << f << "\n";
       block->ComputeInternalForce(
         reference_coord,
         u,
@@ -203,9 +208,11 @@ std::cout << i << " POINTER " << &f << "\n";
         is_output_step,
         is_off_nominal, parameters  // UQ
       );
+#if 0
     for(int j=0; j < nunknowns_; j++){ 
-      std::cout << j << " f="  << f[j] << "\n";
+      std::cout << j << " f="  << f[j] << " " << uq_model_->Forces()[ii][j] << "\n";
     }
+#endif
     }
   }
   for(int i=0; i < num_exact_samples; i++){ 
