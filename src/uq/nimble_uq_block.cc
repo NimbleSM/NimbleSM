@@ -157,7 +157,6 @@ Block::ComputeInternalForce(
         int node_id = elem_conn[elem * num_node_per_elem + node];
         for (int i = 0; i < vector_size; i++) {
           internal_force[vector_size * node_id + i] += force[node * vector_size + i];
-std::cout << node << "  " << internal_force[vector_size * node_id + i] << "\n";
         }
       }
     }
