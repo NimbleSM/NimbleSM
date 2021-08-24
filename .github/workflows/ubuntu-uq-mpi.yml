@@ -1,0 +1,58 @@
+name: ubuntu-uq-mpi
+  
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:  
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      shell: bash
+      run: |
+           sudo apt-get update -y -qq
+           sudo apt-get install -y libblas-dev liblapack-dev
+           sudo apt-get install -y libmetis-dev
+           sudo apt-get install -y openmpi-bin libopenmpi-dev
+           sudo apt-get install -y netcdf-bin libnetcdf-dev
+           sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
+           sudo add-apt-repository ppa:nschloe/seacas-nightly
+           sudo apt-get update -y -qq
+           sudo apt-get install -y seacas-bin libseacas-dev
+    - name: configure
+      run: |
+           mkdir build && cd build
+           export ACCESS=`pwd`
+           cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
+                 -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" \
+                 -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
+                 -DHAVE_UQ=ON \
+                 -DNIMBLE_ENABLE_UNIT_TESTS=ON \
+                 ..
+    - name: build
+      run: cmake --build build
+    - name: test
+      run: |
+           cd build
+           export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+           make test
+    - name: Upload log files
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: log-files
+        path: ./**/*.log
