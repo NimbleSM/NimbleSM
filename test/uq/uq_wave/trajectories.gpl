@@ -22,6 +22,8 @@ unset ytics
 ###############################################################################
 # TO SCREEN
 ###############################################################################
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 4 lc rgb "blue"
 k0 = 2+ntrajs
 k = k0
 set yrange [*:*]
@@ -29,39 +31,51 @@ set yrange [*:*]
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
                  data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
 pause -1 "xF".i
 }
 
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 1 lc rgb "magenta"
+set style line 3 lt 1 pt 4 lc rgb "gray"
+set style line 4 lt 1 pt 1 lc rgb "cyan"
+set style line 5 lt 1 pt 4 lc rgb "blue"
 k = k0+nexact
 set yrange [*:*]
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
                  data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
 pause -1 "aF".i
 }
 
 ###############################################################################
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 4 lc rgb "blue"
 k0 = 2
 k = k0
 set yrange [-0.0035:0.0035]
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
                  data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
 pause -1 "xU".i
 }
 
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 1 lc rgb "magenta"
+set style line 3 lt 1 pt 4 lc rgb "gray"
+set style line 4 lt 1 pt 1 lc rgb "cyan"
+set style line 5 lt 1 pt 4 lc rgb "blue"
 k = k0+nexact
 set yrange [-0.0035:0.0035]
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
                  data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
 pause -1 "aU".i
 }
@@ -79,11 +93,16 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
-                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
+                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 lw 2 t ""
 }
 unset multiplot
 
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 1 lc rgb "magenta"
+set style line 3 lt 1 pt 4 lc rgb "gray"
+set style line 4 lt 1 pt 1 lc rgb "cyan"
+set style line 5 lt 1 pt 4 lc rgb "blue"
 k = k0+nexact
 set term png ; set output "sample_force.png"
 unset xtics
@@ -93,12 +112,14 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
-                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
+                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 lw 2 t ""
 }
 unset multiplot
 
 ###############################################################################
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 4 lc rgb "blue"
 k0 = 2
 k = k0
 set term png ; set output "exact_displacement.png"
@@ -109,11 +130,16 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
-                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
+for [j=1:nexact] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
+                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 lw 2 t ""
 }
 unset multiplot
 
+set style line 1 lt 1 pt 4 lc rgb "red"
+set style line 2 lt 1 pt 1 lc rgb "magenta"
+set style line 3 lt 1 pt 4 lc rgb "gray"
+set style line 4 lt 1 pt 1 lc rgb "cyan"
+set style line 5 lt 1 pt 4 lc rgb "blue"
 k = k0+nexact
 set term png ; set output "sample_displacement.png"
 unset xtics
@@ -123,8 +149,8 @@ set multiplot layout m,1
 do for [i=1:m] {
 set xzeroaxis
 plot \
-for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp t "", \
-                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 t ""
+for [j=1:napprx] data u 1:(column(k+j)) index (ds*i-1) w lp ls j t "", \
+                 data u 1:(column(k0))  index (ds*i-1) w l lt -1 lw 2 t ""
 }
 unset multiplot
 

@@ -66,14 +66,14 @@ class exoreader:
     maxs = 0.0
     for i,time in enumerate(self.times):
       step = i + 1
-      us = self.db.get_node_variable_values("displacement_x",step)
-      vs = self.db.get_node_variable_values("velocity_x",step)
-      fs = self.db.get_node_variable_values("internal_force_x",step)
+      u0 = self.db.get_node_variable_values("displacement_x",step)
+      v0 = self.db.get_node_variable_values("velocity_x",step)
+      f0 = self.db.get_node_variable_values("internal_force_x",step)
       wxs = [ self.db.get_node_variable_values("exact_displacement_"+str(j+1)+"_x",step) for j in range(self.nexact) ]
       fxs = [ self.db.get_node_variable_values("exact_force_"+str(j+1)+"_x",step) for j in range(self.nexact) ]
       wws = [ self.db.get_node_variable_values("sample_displacement_"+str(j+1)+"_x",step) for j in range(self.ntraj) ]
       ffs = [ self.db.get_node_variable_values("sample_force_"+str(j+1)+"_x",step) for j in range(self.ntraj) ]
-      print("time: {0:10.8f} u:{1:9.6f}".format(time,amax(us)),end=" ")
+      print("time: {0:10.8f} u:{1:9.6f}".format(time,amax(u0)),end=" ")
       for ws in wws:
         print("{0:9.6f}".format(amax(ws)),end=" ")
       print("")
@@ -87,10 +87,10 @@ class exoreader:
       o.write("# time {0:12.9f}\n".format(time))
       for j in range(0,self.nnodes,4):
         o.write("{0:7.4f} ".format(self.xs[j]))
-        o.write("{0:9.6f} ".format(us[j]))
+        o.write("{0:9.6f} ".format(u0[j]))
         for ws in wxs: o.write("{0:9.6f} ".format(ws[j]))
         for ws in wws: o.write("{0:9.6f} ".format(ws[j]))
-        o.write("{0:9.6f} ".format(fs[j]))
+        o.write("{0:9.6f} ".format(f0[j]))
         for fs in fxs: o.write("{0:9.6f} ".format(fs[j]))
         for fs in ffs: o.write("{0:9.6f} ".format(fs[j]))
         o.write("\n")
