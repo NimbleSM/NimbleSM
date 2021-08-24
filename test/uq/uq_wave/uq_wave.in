@@ -6,7 +6,7 @@ output frequency:                 100
 output fields:                    displacement internal_force sample_displacement_1 sample_displacement_2 sample_displacement_3 sample_displacement_4 sample_displacement_5 sample_force_1 sample_force_2 sample_force_3 sample_force_4 sample_force_5 exact_displacement_1 exact_displacement_2 exact_force_1 exact_force_2
 material parameters:              material_1 neohookean density 7.8 shear_modulus 1.5e12 bulk_modulus 1.0e12
 uq parameters:              material_1 bulk_modulus 5.0e11 
-uq model:                   file surrogate.coef
+uq model:                   file uq_wave.coef
 element block:                 block_1 material_1
 boundary condition:               initial_velocity nodelist_1 x 1000.0
 boundary condition:               prescribed_velocity nodelist_2 x 0.0
