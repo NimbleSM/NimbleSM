@@ -166,14 +166,13 @@ class UqModel
   int                              nparameters_;
   const GenesisMesh*               mesh_;
   ModelData*                       data_;
-
   std::string                      samples_file_name_;
   std::map<int,std::map<std::string,double>> nominal_parameters_; 
   std::map<int,std::map<std::string,double>> parameter_uncertainties_; 
   std::vector<std::pair<int,std::string>> parameter_order_;
   std::vector<std::vector<double>> parameter_samples_;  // ns,np
   std::vector<std::vector<double>> interpolation_coefficients_;  // na,np
-// HACK? NOTE is double* right type? ASK ULRICH
+  // trajectory data
   double* nominal_force_;
   std::vector<double*> displacements_;
   std::vector<double*> velocities_;
