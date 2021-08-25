@@ -91,7 +91,7 @@ ModelData::InitializeBlocks(
   uq_model_->Setup();
   int num_samples = uq_model_->GetNumSamples();
   int nnodes = mesh_.GetNumNodes();
-  int ndims = 3; // HACK
+  int ndims = mesh_.GetDim(); 
   nunknowns_ = ndims * nnodes;
   for (int i = 0; i < num_samples; i++) {
     double* u = uq_model_->Displacements()[i];
