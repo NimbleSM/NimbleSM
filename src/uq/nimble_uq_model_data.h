@@ -131,7 +131,10 @@ class ModelData : public nimble::ModelData
 
  protected:
   std::shared_ptr<nimble::UqModel> uq_model_;
-  std::vector<nimble::Viewify<2>>  bc_offnom_velocity_views_;
+  std::vector<nimble::Viewify<2>>  displacement_views_;
+  std::vector<nimble::Viewify<2>>  velocity_views_;
+  std::vector<nimble::Viewify<2>>  force_views_;
+  int nunknowns_;
 };
 
 }  // namespace nimble_uq

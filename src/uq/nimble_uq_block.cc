@@ -70,11 +70,11 @@ Block::ComputeInternalForce(
     std::vector<double>&            elem_data_np1,
     nimble::DataManager&            data_manager,
     bool                            is_output_step,
-    const bool&                     is_off_nominal,
-    std::vector<double> const&      uq_params_this_sample,
+    bool                            use_alternative_parameters,
+    std::map<std::string,double>    alternative_parameters,
     bool                            compute_stress_only) const
 {
-  if (!is_off_nominal) {
+  if (!use_alternative_parameters) {
     nimble::Block::ComputeInternalForce(
         reference_coordinates,
         displacement,
@@ -113,6 +113,9 @@ Block::ComputeInternalForce(
   double cauchy_stress_np1[sym_tensor_size * num_int_pt_per_elem];
   double force[vector_size * num_node_per_elem];
 
+  double K = alternative_parameters["bulk_modulus"];
+  double G = alternative_parameters["shear_modulus"];
+
   double*             state_data_n   = nullptr;
   double*             state_data_np1 = nullptr;
   std::vector<double> state_data_n_vec;
@@ -132,17 +135,15 @@ Block::ComputeInternalForce(
     for (int node = 0; node < num_node_per_elem; node++) {
       int node_id = elem_conn[elem * num_node_per_elem + node];
       for (int i = 0; i < vector_size; i++) {
-        ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i];
-        cur_coord[node * vector_size + i] =
-            reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
+        ref_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i]; // HACK/NOTE compute idx and reuse
+        cur_coord[node * vector_size + i] = reference_coordinates[vector_size * node_id + i] + displacement[vector_size * node_id + i];
       }
     }
 
     element_->ComputeDeformationGradients(ref_coord, cur_coord, def_grad_np1);
 
     material_->GetOffNominalStress(
-        uq_params_this_sample[bulk_modulus_uq_index_],
-        uq_params_this_sample[shear_modulus_uq_index_],
+        K,G,
         num_int_pt_per_elem,
         def_grad_np1,
         cauchy_stress_np1);
@@ -159,7 +160,6 @@ Block::ComputeInternalForce(
         }
       }
     }
-
   }  // for (int elem = 0; elem < num_elem; elem++)
 }
 

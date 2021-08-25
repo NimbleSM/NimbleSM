@@ -1,0 +1,10 @@
+Input FEM file                   = uq_wave.g
+LB file                          = uq_wave.g.nem
+Parallel Results File Base Name  = uq_wave
+File Extension for Spread Files  = .g
+Number of Processors             = 4 
+------------------------------------------------------------
+                Parallel I/O section
+------------------------------------------------------------
+Parallel Disk Info= number=1, offset=1, zeros, nosubdirectory
+Parallel file location = root=/home/rjones/repo/NimbleSM/test/uq/uq_wave/, subdir=.

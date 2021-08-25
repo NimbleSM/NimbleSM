@@ -81,8 +81,7 @@ ModelData::InitializeBlocks(
     std::string        uq_params_this_material = line.second;
     std::string const& nominal_params_string   = parser_.GetModelMaterialParameters(block_id);
     bool               block_id_present = std::find(block_ids.begin(), block_ids.end(), block_id) != block_ids.end();
-    uq_model_->ParseBlockInput(
-        uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
+    uq_model_->ParseBlockInput(uq_params_this_material, block_id, nominal_params_string, material_factory_base, block_id_present, blocks_);
   }
   //
   uq_model_->Initialize();
@@ -90,14 +89,17 @@ ModelData::InitializeBlocks(
   AllocateInitializeElementData(data_manager, material_factory_base);
   //
   uq_model_->Setup();
-  /// FOR CALL TO BCS ===================
   int num_samples = uq_model_->GetNumSamples();
-  for (int nuq = 0; nuq < num_samples; nuq++) {
-    double* v = uq_model_->Velocities()[nuq];
-    //
-    // We should replace {0, 3} with {length, 3}
-    //
-    bc_offnom_velocity_views_.push_back(nimble::Viewify<2>(v, {0, 3}, {3, 1}));
+  int nnodes = mesh_.GetNumNodes();
+  int ndims = mesh_.GetDim(); 
+  nunknowns_ = ndims * nnodes;
+  for (int i = 0; i < num_samples; i++) {
+    double* u = uq_model_->Displacements()[i];
+    double* v = uq_model_->Velocities()[i];
+    double* f = uq_model_->Forces()[i];
+    displacement_views_.push_back(nimble::Viewify<2>(u, {nnodes, 3}, {3, 1}));
+    velocity_views_.    push_back(nimble::Viewify<2>(v, {nnodes, 3}, {3, 1}));
+    force_views_.       push_back(nimble::Viewify<2>(f, {nnodes, 3}, {3, 1}));
   }
 }
 
@@ -117,8 +119,8 @@ ModelData::WriteExodusOutput(nimble::DataManager& data_manager, double time_curr
     auto&      block             = block_it.second;
     uq_model_->PerformAnalyses(reference_coordinate.data(), num_elem_in_block, elem_conn, block_id, block);
   }
-  // UH -- DEBUG TO FIX
-  // uq_model_->Write(step);
+
+  uq_model_->Write(time_current);
 }
 
 void
@@ -127,7 +129,7 @@ ModelData::ApplyInitialConditions(nimble::DataManager& data_manager)
   auto bc                   = data_manager.GetBoundaryConditionManager();
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto velocity             = GetVectorNodeData("velocity");
-  bc->ApplyInitialConditions(reference_coordinate, velocity, bc_offnom_velocity_views_);
+  bc->ApplyInitialConditions(reference_coordinate, velocity, velocity_views_); // applied to all
 }
 
 void
@@ -137,8 +139,7 @@ ModelData::ApplyKinematicConditions(nimble::DataManager& data_manager, double ti
   auto reference_coordinate = GetVectorNodeData("reference_coordinate");
   auto displacement         = GetVectorNodeData("displacement");
   auto velocity             = GetVectorNodeData("velocity");
-  bc->ApplyKinematicBC(
-      time_current, time_previous, reference_coordinate, displacement, velocity, bc_offnom_velocity_views_);
+  bc->ApplyKinematicBC( time_current, time_previous, reference_coordinate, displacement, velocity, velocity_views_); // applied to all 
 }
 
 void
@@ -151,11 +152,14 @@ ModelData::ComputeInternalForce(
     nimble::Viewify<2>&       force)
 {
   const auto& mesh = data_manager.GetMesh();
+  int num_samples = uq_model_->GetNumSamples();
+  int num_exact_samples = uq_model_->GetNumExactSamples() + 1; // incl nominal
 
   force.zero();
+  for(int i=0; i < num_samples; i++){ force_views_[i].zero(); }
 
   auto reference_coord = GetNodeData("reference_coordinate");
-  auto velocity        = GetNodeData("velocity");
+  auto velocity        = GetNodeData("velocity"); 
 
   for (auto& block_it : blocks_) {
     int                        block_id          = block_it.first;
@@ -164,14 +168,26 @@ ModelData::ComputeInternalForce(
     std::vector<int> const&    elem_global_ids   = mesh.GetElementGlobalIdsInBlock(block_id);
     std::vector<double> const& elem_data_n       = GetElementDataOld(block_id);
     std::vector<double>&       elem_data_np1     = GetElementDataNew(block_id);
-    bool                       is_off_nominal    = false;  // HACK
     auto                       block             = dynamic_cast<nimble_uq::Block*>(block_it.second.get());
-    std::vector<double>        uq_params_this_sample;  // HACK
-    block->ComputeInternalForce(
+
+    for(int i=0; i < num_exact_samples; i++){
+      int ii = i-1;
+      bool is_off_nominal = (i > 0);
+      auto u = displacement.data();
+      auto v = velocity;
+      auto f = force.data();
+      std::map<std::string,double> parameters;
+      if (is_off_nominal) {
+        u = uq_model_->Displacements()[ii];
+        v = uq_model_->Velocities()[ii];
+        f = uq_model_->Forces()[ii];
+        parameters = uq_model_->Parameters(block_id,ii);
+      }
+      block->ComputeInternalForce(
         reference_coord,
-        displacement.data(),
-        velocity,
-        force.data(),
+        u,
+        v,
+        f,
         time_previous,
         time_current,
         num_elem_in_block,
@@ -182,9 +198,9 @@ ModelData::ComputeInternalForce(
         elem_data_np1,
         data_manager,
         is_output_step,
-        is_off_nominal,        // UQ
-        uq_params_this_sample  // UQ
-    );
+        is_off_nominal, parameters  // UQ
+      );
+    }
   }
 
   // Perform a vector reduction on internal force.  This is a vector nodal
@@ -192,20 +208,43 @@ ModelData::ComputeInternalForce(
   auto          vector_comm      = data_manager.GetVectorCommunicator();
   constexpr int vector_dimension = 3;
   vector_comm->VectorReduction(vector_dimension, force.data());
+  int num_exact_trajectories = uq_model_->GetNumExactSamples();
+  for(int i=0; i <= num_exact_trajectories; i++){
+    vector_comm->VectorReduction(vector_dimension,uq_model_->Forces()[i]);
+  }
+
+  // Now apply closure to estimate approximate forces from the exact samples
+  uq_model_->ApplyClosure();  
 }
 
+// advance adjacent trajectories
 void
 ModelData::UpdateWithNewVelocity(nimble::DataManager& data_manager, double dt)
 {
-  uq_model_->UpdateVelocity(dt);
+  auto mass  = GetNodeData("lumped_mass"); 
+  auto f_ext = GetVectorNodeData("external_force").data();
+  int n = uq_model_->GetNumSamples();
+  for (int s = 0; s < n; ++s) {
+    double* f = uq_model_->Forces()[s]; 
+    double* v = uq_model_->Velocities()[s];
+    for (int i = 0; i < nunknowns_; ++i) {
+      double m = mass[i / 3]; // NOTE divide instead of increment?
+      double a = (1.0 / m) * (f[i]+f_ext[i]); // NOTE store inv_mass
+      v[i] += dt * a; 
+    }
+  }
 }
 
+// advance adjacent trajectories
 void
 ModelData::UpdateWithNewDisplacement(nimble::DataManager& data_manager, double dt)
 {
-  // advance approximate trajectories
-  uq_model_->UpdateDisplacement(dt);
-  uq_model_->Prep();
+  int n = uq_model_->GetNumSamples();
+  for (int s = 0; s < n; ++s) {
+    double* u = uq_model_->Displacements()[s];
+    double* v = uq_model_->Velocities()[s];
+    for (int i = 0; i < nunknowns_; ++i) { u[i] += dt * v[i]; }
+  }
 }
 
 }  // namespace nimble_uq

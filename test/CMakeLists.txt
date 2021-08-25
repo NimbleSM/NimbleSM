@@ -27,6 +27,9 @@ add_subdirectory(dynamics)
 #--- quasistatic
 add_subdirectory(quasistatic)
 
+#--- quasistatic
+add_subdirectory(uq)
+
 #
 # Copy files
 #
