@@ -4,8 +4,8 @@
 
 message("CMakeLists.txt - NimbleSM")
 
-# Needed to specify the version of NimbleSM
-CMAKE_POLICY(SET CMP0048 NEW)
+#--- Set CMake minimum version
+cmake_minimum_required(VERSION 3.17)
 
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
@@ -18,9 +18,6 @@ option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
 option(TIME_CONTACT "Whether to time contact" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
-
-#--- Set CMake minimum version
-cmake_minimum_required(VERSION 3.17)
 
 include(GNUInstallDirs)
 
