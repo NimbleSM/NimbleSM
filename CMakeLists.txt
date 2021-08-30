@@ -3,15 +3,33 @@
 #
 
 message("CMakeLists.txt - NimbleSM")
-
-cmake_minimum_required(VERSION 3.12)
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
+
+#--- Define options
+option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
+option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
+option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
+option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+option(TIME_CONTACT "Whether to time contact" OFF)
+option(HAVE_ARBORX "Whether to use ArborX" OFF)
+
+#--- Set CMake minimum version
+if (HAVE_KOKKOS OR HAVE_TRILINOS)
+  cmake_minimum_required(VERSION 3.17)
+else()
+  cmake_minimum_required(VERSION 3.12)
+endif()
 
 include(GNUInstallDirs)
 
+### The following option may be deprecated
+option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 if (NIMBLE_NVIDIA_BUILD)
   add_definitions(-DNIMBLE_NVIDIA_BUILD)
 endif()
+########################################
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,17 +40,6 @@ enable_testing()
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-
-option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
-option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
-option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
-option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
-option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
-option(HAVE_QTHREADS "Whether to use QThreads" OFF)
-option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
-option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
-option(TIME_CONTACT "Whether to time contact" OFF)
-option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
@@ -111,14 +118,6 @@ if(HAVE_TRILINOS)
 else()
   message(STATUS "Trilinos is NOT enabled.")
   set(NIMBLE_HAVE_TRILINOS FALSE)
-endif()
-
-# Qthreads library dependencies
-if (HAVE_QTHREADS)
-  find_package(QThreads REQUIRED)
-  target_link_libraries(nimble PUBLIC QThreads::QThreads)
-  target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_QTHREADS)
-  set(NIMBLE_HAVE_QTHREADS TRUE)
 endif()
 
 # Optional Kokkos dependency
