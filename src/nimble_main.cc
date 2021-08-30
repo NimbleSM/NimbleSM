@@ -75,7 +75,6 @@
 #endif
 
 #include <cmath>
-#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -830,7 +829,13 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
       std::fill(linear_solver_solution.begin(), linear_solver_solution.end(), 0.0);
       bool success = nimble::CG_SolveSystem(
           tangent_stiffness, residual_vector.data(), cg_scratch, linear_solver_solution.data(), num_cg_iterations);
-      if (!success) { throw std::logic_error("\nError:  CG linear solver failed to converge.\n"); }
+      if (!success) {
+        if (my_rank == 0) {
+          std::cout << "\n**** CG solver failed to converge!\n" << std::endl;
+        }
+        status = 1;
+        return status;
+      }
 
       //
       // Apply a line search
@@ -842,9 +847,9 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         for (auto const& node_id : node_ids) {
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
-            if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
+            if (ls_index < 0 || ls_index > linear_solver_solution.size() - 1) {
               throw std::range_error(
-                  "\nError:  Invalid index into residual vector in "
+                  "\nError:  Invalid index into linear solver solution in "
                   "QuasistaticTimeIntegrator().\n");
             }
             trial_displacement(node_id, dof) = displacement(node_id, dof) - linear_solver_solution[ls_index];
@@ -877,9 +882,9 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         for (auto const& node_id : node_ids) {
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
-            if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
+            if (ls_index < 0 || ls_index > linear_solver_solution.size() - 1) {
               throw std::range_error(
-                  "\nError:  Invalid index into residual vector in "
+                  "\nError:  Invalid index into linear solver solution vector in "
                   "QuasistaticTimeIntegrator().\n");
             }
             displacement(node_id, dof) -= alpha * linear_solver_solution[ls_index];
