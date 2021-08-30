@@ -214,9 +214,9 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
   {
     MPI_Init(&argc, &argv);
     int mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    if (mpi_err != MPI_SUCCESS) { throw std::logic_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n"); }
+    if (mpi_err != MPI_SUCCESS) { throw std::runtime_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n"); }
     mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    if (mpi_err != MPI_SUCCESS) { throw std::logic_error("\nError:  MPI_Comm_size() returned nonzero error code.\n"); }
+    if (mpi_err != MPI_SUCCESS) { throw std::runtime_error("\nError:  MPI_Comm_size() returned nonzero error code.\n"); }
   }
 #endif
 
@@ -232,7 +232,7 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
       std::cout << "Usage:  NimbleSM <input_deck.in>\n" << std::endl;
 #endif
     }
-    throw std::runtime_error("\nError: Inappropriate set of parameters.\n");
+    throw std::invalid_argument("\nError: Inappropriate set of parameters.\n");
   }
 
   // Banner
@@ -462,8 +462,10 @@ ExplicitTimeIntegrator(
   double user_specified_time_step = (final_time - initial_time) / num_load_steps;
 
   if (my_rank == 0 && final_time < initial_time) {
-    std::cerr << "**** ERROR: Final time: " << final_time << " is less than initial time: " << initial_time << "\n";
-    exit(1);
+    std::string msg = "Final time: " + std::to_string(final_time)
+                      + " is less than initial time: " + std::to_string(initial_time)
+                      + "\n";
+    throw std::invalid_argument(msg);
   }
 
   watch_simulation.push_region("BC enforcement");
@@ -655,10 +657,9 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   const int num_ranks = parser.GetNumRanks();
 
   if (num_ranks > 1) {
-    std::cerr << "Error:  Quasi-statics currently not implemented (work in "
-                 "progress).\n"
-              << std::endl;
-    throw std::runtime_error("No Quasistatics in parallel");
+    std::string msg = " Quasi-statics currently not implemented in parallel "
+                      "(work in progress).\n";
+    throw std::invalid_argument(msg);
   }
 
   int status = 0;
@@ -685,7 +686,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   std::vector<double> global_data;
 
   auto* model_data_ptr = dynamic_cast<nimble::ModelData*>(data_manager.GetModelData().get());
-  if (model_data_ptr == nullptr) { throw std::runtime_error(" Incompatible Model Data \n"); }
+  if (model_data_ptr == nullptr) { throw std::invalid_argument(" Incompatible Model Data \n"); }
   nimble::ModelData& model_data = *model_data_ptr;
 
   // Set up the global vectors
@@ -736,12 +737,14 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   double user_specified_time_step = (final_time - initial_time) / num_load_steps;
 
   if (my_rank == 0 && final_time < initial_time) {
-    std::cerr << "**** ERROR: Final time: " << final_time << " is less than initial time: " << initial_time << "\n";
-    exit(1);
+    std::string msg = "Final time: " + std::to_string(final_time)
+                      + " is less than initial time: " + std::to_string(initial_time)
+                      + "\n";
+    throw std::invalid_argument(msg);
   }
 
 #ifdef NIMBLE_HAVE_UQ
-  if (parser.UseUQ()) throw std::logic_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
+  if (parser.UseUQ()) throw std::domain_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
 #endif
 
   model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
@@ -840,7 +843,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
             if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
-              throw std::logic_error(
+              throw std::range_error(
                   "\nError:  Invalid index into residual vector in "
                   "QuasistaticTimeIntegrator().\n");
             }
@@ -875,7 +878,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
             if (ls_index < 0 || ls_index > residual_vector.size() - 1) {
-              throw std::logic_error(
+              throw std::range_error(
                   "\nError:  Invalid index into residual vector in "
                   "QuasistaticTimeIntegrator().\n");
             }
@@ -967,7 +970,7 @@ ComputeQuasistaticResidual(
     for (int dof = 0; dof < dim; dof++) {
       int ls_index = ls_id * dim + dof;
       if (ls_index < 0 || ls_index > linear_system_num_unknowns - 1) {
-        throw std::logic_error(
+        throw std::range_error(
             "\nError:  Invalid index into residual vector in "
             "QuasistaticTimeIntegrator().\n");
       }
