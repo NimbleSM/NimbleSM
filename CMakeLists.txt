@@ -4,10 +4,10 @@
 
 message("CMakeLists.txt - NimbleSM")
 
+project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
+
 # Needed to specify the version of NimbleSM
 CMAKE_POLICY(SET CMP0048 NEW)
-
-project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
 option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
@@ -20,20 +20,15 @@ option(TIME_CONTACT "Whether to time contact" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 #--- Set CMake minimum version
-if (HAVE_KOKKOS OR HAVE_TRILINOS)
-  cmake_minimum_required(VERSION 3.17)
-else()
-  cmake_minimum_required(VERSION 3.12)
-endif()
+cmake_minimum_required(VERSION 3.17)
 
 include(GNUInstallDirs)
 
-### The following option may be deprecated
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 if (NIMBLE_NVIDIA_BUILD)
-  add_definitions(-DNIMBLE_NVIDIA_BUILD)
+  message(WARNING "NVIDIA build is not currently active. ")
+  #add_definitions(-DNIMBLE_NVIDIA_BUILD)
 endif()
-########################################
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
