@@ -3,6 +3,10 @@
 #
 
 message("CMakeLists.txt - NimbleSM")
+
+# Needed to specify the version of NimbleSM
+cmake_policy(set CMP0048 new)
+
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
