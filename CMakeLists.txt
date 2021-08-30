@@ -4,10 +4,10 @@
 
 message("CMakeLists.txt - NimbleSM")
 
-project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
-
 # Needed to specify the version of NimbleSM
 CMAKE_POLICY(SET CMP0048 NEW)
+
+project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
 option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
