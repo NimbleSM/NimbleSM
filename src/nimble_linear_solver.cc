@@ -267,7 +267,9 @@ CG_SolveSystem(
     const double*               b,
     CGScratchSpace&             cg_scratch,
     double*                     x,
-    int&                        num_iterations)
+    int&                        num_iterations,
+    double                      cg_tol,
+    int                         max_iterations)
 {
   // see "An Introduction to the Conjugate Gradient Method Without the Agonizing
   // Pain", J.R. Shewchuk, 1994.
@@ -294,9 +296,8 @@ CG_SolveSystem(
   // delta_new = r^T d
   // delta_old = delta_new
   delta_new = delta_old = InnerProduct(num_entries, r, d);
-  double tolerance      = 1.0e-16 * delta_old;
+  double tolerance      = cg_tol * delta_old;
 
-  int max_iterations = 1000;
   int iteration      = 0;
 
   while (delta_new > tolerance && iteration < max_iterations) {
