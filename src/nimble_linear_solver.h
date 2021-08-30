@@ -270,7 +270,7 @@ CG_SolveSystem(
     CGScratchSpace&             cg_scratch,
     double*                     x,
     int&                        num_iterations,
-    double                      tol_cg = 1.0e-16,
+    double                      cg_tol = 1.0e-16,
     int                         max_iterations = 1000);
 
 }  // namespace nimble
