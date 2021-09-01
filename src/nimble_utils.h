@@ -44,13 +44,14 @@
 #ifndef NIMBLE_UTILS_H
 #define NIMBLE_UTILS_H
 
-#include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+
+#include "nimble_macros.h"
 
 NIMBLE_INLINE_FUNCTION
 int
@@ -191,7 +192,7 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Square_Full33T_Full33(const ScalarT* const mat, ScalarT* const result)
 {
-  assert(result != mat);
+  NIMBLE_DEBUG_ASSERT(result != mat);
   result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_YX] * mat[K_F_YX] + mat[K_F_ZX] * mat[K_F_ZX];
   result[K_S_YY] = mat[K_F_XY] * mat[K_F_XY] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_ZY] * mat[K_F_ZY];
   result[K_S_ZZ] = mat[K_F_XZ] * mat[K_F_XZ] + mat[K_F_YZ] * mat[K_F_YZ] + mat[K_F_ZZ] * mat[K_F_ZZ];
@@ -253,8 +254,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Full33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
-  assert(A != result);
-  assert(B != result);
+  NIMBLE_DEBUG_ASSERT(A != result);
+  NIMBLE_DEBUG_ASSERT(B != result);
   result[K_F_XX] = A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX];
   result[K_F_XY] = A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY];
   result[K_F_XZ] = A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ];
@@ -271,8 +272,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Sym33_Full33(const ScalarT* const sym, const ScalarT* const full, ScalarT* const result)
 {
-  assert(sym != result);
-  assert(full != result);
+  NIMBLE_DEBUG_ASSERT(sym != result);
+  NIMBLE_DEBUG_ASSERT(full != result);
   result[K_F_XX] = sym[K_S_XX] * full[K_F_XX] + sym[K_S_XY] * full[K_F_YX] + sym[K_S_XZ] * full[K_F_ZX];
   result[K_F_XY] = sym[K_S_XX] * full[K_F_XY] + sym[K_S_XY] * full[K_F_YY] + sym[K_S_XZ] * full[K_F_ZY];
   result[K_F_XZ] = sym[K_S_XX] * full[K_F_XZ] + sym[K_S_XY] * full[K_F_YZ] + sym[K_S_XZ] * full[K_F_ZZ];
@@ -289,8 +290,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Scalar_Full33_Full33(ScalarT alpha, const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
-  assert(A != result);
-  assert(B != result);
+  NIMBLE_DEBUG_ASSERT(A != result);
+  NIMBLE_DEBUG_ASSERT(B != result);
   result[K_F_XX] = alpha * (A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX]);
   result[K_F_XY] = alpha * (A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY]);
   result[K_F_XZ] = alpha * (A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ]);
@@ -307,7 +308,7 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Square_Full33_Full33T(const ScalarT* const mat, ScalarT* const result)
 {
-  assert(result != mat);
+  NIMBLE_DEBUG_ASSERT(result != mat);
   result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] + mat[K_F_XZ] * mat[K_F_XZ];
   result[K_S_YY] = mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_YZ] * mat[K_F_YZ];
   result[K_S_ZZ] = mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] + mat[K_F_ZZ] * mat[K_F_ZZ];
@@ -321,8 +322,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Full33_Sym33_ReturnT(const ScalarT* const full, const ScalarT* const sym, ScalarT* const result)
 {
-  assert(full != result);
-  assert(sym != result);
+  NIMBLE_DEBUG_ASSERT(full != result);
+  NIMBLE_DEBUG_ASSERT(sym != result);
   result[K_F_XX] = full[K_F_XX] * sym[K_S_XX] + full[K_F_XY] * sym[K_S_YX] + full[K_F_XZ] * sym[K_S_ZX];
   result[K_F_YX] = full[K_F_XX] * sym[K_S_XY] + full[K_F_XY] * sym[K_S_YY] + full[K_F_XZ] * sym[K_S_ZY];
   result[K_F_ZX] = full[K_F_XX] * sym[K_S_XZ] + full[K_F_XY] * sym[K_S_YZ] + full[K_F_XZ] * sym[K_S_ZZ];
@@ -339,8 +340,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Rotate_Sym33_Using_Rtranspose_S_R(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
-  assert(s != result);
-  assert(r != result);
+  NIMBLE_DEBUG_ASSERT(s != result);
+  NIMBLE_DEBUG_ASSERT(r != result);
 
   ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_YX] + s[K_S_XZ] * r[K_F_ZX];
   ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_YX] + s[K_S_YZ] * r[K_F_ZX];
@@ -365,8 +366,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Unrotate_Sym33_Using_R_S_Rtranspose(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
-  assert(s != result);
-  assert(r != result);
+  NIMBLE_DEBUG_ASSERT(s != result);
+  NIMBLE_DEBUG_ASSERT(r != result);
 
   ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_XY] + s[K_S_XZ] * r[K_F_XZ];
   ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_XY] + s[K_S_YZ] * r[K_F_XZ];
