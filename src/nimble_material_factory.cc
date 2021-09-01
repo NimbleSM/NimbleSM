@@ -43,7 +43,6 @@
 
 #include "nimble_material_factory.h"
 
-#include <cassert>
 #include <stdexcept>
 #include <tuple>
 #include <vector>

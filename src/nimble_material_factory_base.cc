@@ -43,11 +43,10 @@
 
 #include "nimble_material_factory_base.h"
 
-#include <cassert>
-#include <stdexcept>
 #include <tuple>
 #include <vector>
 
+#include "nimble_macros.h"
 #include "nimble_material.h"
 #include "nimble_parser_util.h"
 
@@ -68,7 +67,7 @@ MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_p
   // The first string is the material name, followed by the material properties
   // (key-value pairs)
 
-  assert(tokens.size() > 1);
+  NIMBLE_ASSERT(tokens.size() > 1);
 
   const std::string material_name = tokens.front();
   auto              token         = tokens.cbegin() + 1;
@@ -89,7 +88,7 @@ MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_p
       material_string_parameters.insert(std::make_pair(key, val));
     } else {
       std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
-      throw std::runtime_error(errMsg);
+      NIMBLE_ABORT(errMsg);
     }
   }
 
@@ -103,7 +102,7 @@ MaterialFactoryBase::ParseMaterialParamsStringToMap(const std::string& material_
   auto tokens = nimble::tokenize_string(material_parameters);
 
   // The first string is the material name, followed by the material properties (key-value pairs)
-  assert(tokens.size() > 1);
+  NIMBLE_ASSERT(tokens.size() > 1);
 
   const std::string material_name = tokens.front();
   auto              token         = tokens.cbegin() + 1;
@@ -124,7 +123,7 @@ MaterialFactoryBase::ParseMaterialParamsStringToMap(const std::string& material_
       material_string_parameters.insert(std::make_pair(key, val));
     } else {
       std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
-      throw std::runtime_error(errMsg);
+      NIMBLE_ABORT(errMsg);
     }
   }
 
