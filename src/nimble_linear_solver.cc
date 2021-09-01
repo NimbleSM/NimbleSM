@@ -49,6 +49,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "nimble_macros.h"
+
 namespace nimble {
 
 void

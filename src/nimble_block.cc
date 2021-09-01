@@ -44,6 +44,7 @@
 #include <nimble_block.h>
 #include <nimble_data_manager.h>
 #include <nimble_data_utils.h>
+#include <nimble_macros.h>
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
 

@@ -46,6 +46,7 @@
 #include <set>
 
 #include "nimble_genesis_mesh.h"
+#include "nimble_macros.h"
 #include "nimble_model_data.h"
 
 namespace nimble {
