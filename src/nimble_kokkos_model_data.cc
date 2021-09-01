@@ -611,7 +611,7 @@ ModelData::AllocateNodeData(nimble::Length length, std::string label, int num_ob
   } else if (length == nimble::VECTOR) {
     device_node_data_.emplace_back(new Field<FieldType::DeviceVectorNode>(label, num_objects));
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid device data length in "
         "nimble_kokkos::ModelData::AllocateNodeData().\n");
   }
@@ -631,7 +631,7 @@ ModelData::AllocateNodeData(nimble::Length length, std::string label, int num_ob
     auto                                     h_view = Kokkos::create_mirror_view(d_view);
     host_node_data_.emplace_back(new Field<FieldType::HostVectorNode>(h_view));
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid host data length in "
         "nimble_kokkos::ModelData::AllocateNodeData().\n");
   }
@@ -669,7 +669,7 @@ ModelData::AllocateElementData(int block_id, nimble::Length length, std::string 
   } else if (length == nimble::FULL_TENSOR) {
     device_element_data_.at(block_index).emplace_back(new Field<FieldType::DeviceFullTensorElem>(label, num_objects));
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid device data length in "
         "nimble_kokkos::ModelData::AllocateElementData().\n");
   }
@@ -694,7 +694,7 @@ ModelData::AllocateElementData(int block_id, nimble::Length length, std::string 
     auto                                         h_view = Kokkos::create_mirror_view(d_view);
     host_element_data_.at(block_index).emplace_back(new Field<FieldType::HostFullTensorElem>(h_view));
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid host data length in "
         "nimble_kokkos::ModelData::AllocateElementData().\n");
   }
@@ -756,7 +756,7 @@ ModelData::AllocateIntegrationPointData(
     device_integration_point_data_step_np1_.at(block_index)
         .emplace_back(new Field<FieldType::DeviceFullTensorIntPt>(label, num_objects));
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid device data length in "
         "nimble_kokkos::ModelData::AllocateIntegrationPointData().\n");
   }
@@ -871,7 +871,7 @@ ModelData::AllocateIntegrationPointData(
       Kokkos::deep_copy(d_view_step_np1, h_view_step_np1);
     }
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError:  Invalid host data length in "
         "nimble_kokkos::ModelData::AllocateElementData().\n");
   }

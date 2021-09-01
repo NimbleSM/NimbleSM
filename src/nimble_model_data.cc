@@ -46,10 +46,10 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
-#include <stdexcept>
 
 #include "nimble_data_manager.h"
 #include "nimble_genesis_mesh.h"
+#include "nimble_macros.h"
 #include "nimble_material_factory.h"
 #include "nimble_parser.h"
 #include "nimble_vector_communicator.h"
@@ -201,7 +201,7 @@ ModelData::GetElementDataForOutput(std::map<int, std::vector<std::vector<double>
         if (output_label == element_component_labels_[block_id][i]) { offset = i; }
       }
       if (offset == -1) {
-        throw std::logic_error(
+        NIMBLE_ABORT(
             "\n**** Error in ModelData::GetElementDataForOutput(), output "
             "label not found.\n");
       }
@@ -238,7 +238,7 @@ ModelData::SpecifyOutputFields(const std::string& output_field_string)
       for (const auto& component_label : component_labels) { node_component_labels.push_back(component_label); }
     } else if (relation == ELEMENT) {
       if (!HasIntegrationPointPrefix(label)) {
-        throw std::logic_error(
+        NIMBLE_ABORT(
             "\n**** Error, ModelData::SpecifyOutputFields() expected "
             "integration point prefix on data label \"" +
             label + "\".\n");
@@ -359,7 +359,7 @@ ModelData::SpecifyOutputFields(const std::string& output_field_string)
     }
 
     else {
-      throw std::logic_error(
+      NIMBLE_ABORT(
           "\nError:  ModelData::SpecifyOutputFields(), unable to process "
           "requested output \"" +
           requested_label + "\".\n");
@@ -381,7 +381,7 @@ ModelData::AssignFieldId(Field& field)
         field_id = it->second.id_;
         break;
       } else {
-        throw std::logic_error(
+        NIMBLE_ABORT(
             "\nError:  ModelData::AssignFieldId(), Inconsistent fields cannot "
             "be assigned the same label.  Label = " +
             field.label_ + "\n");
@@ -405,7 +405,7 @@ ModelData::GetNodeDataComponent(int field_id, int component, double* const compo
   std::vector<double>& data           = node_data_.at(field_id);
 
   if (component >= num_components) {
-    throw std::logic_error("\nError:  Invalid component in ModelData::GetNodeDataComponent\n");
+    NIMBLE_ABORT("\nError:  Invalid component in ModelData::GetNodeDataComponent\n");
   }
 
   for (unsigned int i = 0; i < data.size() / num_components; i++) {
@@ -601,7 +601,7 @@ ModelData::GetNodeData(const std::string& label)
   const auto field_id = GetFieldId(label);
   if (field_id < 0) {
     std::string code = " Field " + label + " Not Allocated ";
-    throw std::runtime_error(code);
+    NIMBLE_ABORT(code);
   }
   return node_data_.at(field_id).data();
 }

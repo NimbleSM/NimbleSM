@@ -47,6 +47,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "nimble_macros.h"
+
 #ifdef NIMBLE_HAVE_DARMA
 #include "darma.h"
 #else
@@ -163,7 +165,7 @@ class Parser
           "\n**** Error in Parser::TimeIntegrationScheme(), invalid "
           "integration scheme " +
           time_integration_scheme_ + ".\n";
-      throw std::logic_error(msg);
+      throw std::invalid_argument(msg);
     }
     return time_integration_scheme_;
   }
@@ -273,31 +275,31 @@ class Parser
       std::string msg =
           "\n**** Error in Parser::GetOutputFieldString(), output fields not "
           "found (possible input deck error?).";
-      throw std::logic_error(msg);
+      throw std::invalid_argument(msg);
     }
     return output_field_string_;
   }
 
   /// \brief Set that Kokkos is used for the simulation
   ///
-  /// \note The function will throw an exception when an environment
+  /// \note The function will abort when an environment
   /// has been set previously
   void
   SetToUseKokkos()
   {
-    if ((env_set_) && (!use_kokkos_)) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_kokkos_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_kokkos_ = true;
     env_set_    = true;
   }
 
   /// \brief Set that Tpetra is used for the simulation
   ///
-  /// \note The function will throw an exception when an environment
+  /// \note The function will abort when an environment
   /// has been set previously
   void
   SetToUseTpetra()
   {
-    if ((env_set_) && (!use_tpetra_)) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_tpetra_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_tpetra_ = true;
     env_set_    = true;
   }
@@ -312,12 +314,12 @@ class Parser
 
   /// \brief Set that VT is used for the simulation
   ///
-  /// \note The function will throw an exception when an environment
+  /// \note The function will abort when an environment
   /// has been set previously
   void
   SetToUseVT()
   {
-    if ((env_set_) && (!use_vt_)) throw std::runtime_error(" Conflicting Environment Variable ");
+    if ((env_set_) && (!use_vt_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_vt_  = true;
     env_set_ = true;
   }

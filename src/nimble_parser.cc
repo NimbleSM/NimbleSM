@@ -302,7 +302,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
           "\n**** Error in Parser::ReadFile(), unexpected value for \"contact "
           "visualization\"\n";
       msg +=
-          "**** Allowable syntax is \"visualize_contatct_entities <on/off> "
+          "**** Allowable syntax is \"visualize_contact_entities <on/off> "
           "visualize_bounding_boxes <on/off> file_name <file_name.e>\"\n";
       throw std::invalid_argument(msg);
     }

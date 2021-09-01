@@ -1050,7 +1050,7 @@ CheckCorrectnessOfPolarDecomp(
     Print_Full33("V", V);
     Print_Full33("R", R);
     std::cout << "norm of error = " << should_be_zero_norm << "\n" << std::endl;
-    // throw std::logic_error("\n**** Polar decomposition correctness check
+    // NIMBLE_ABORT("\n**** Polar decomposition correctness check
     // failed for " + label + "!\n");
   }
 }
@@ -1082,7 +1082,7 @@ CheckCorrectnessOfSymSkew(
     Print_Sym33("sym", sym);
     Print_Full33("skew", skew);
     std::cout << "norm of error = " << should_be_zero_norm << "\n" << std::endl;
-    // throw std::logic_error("\n**** Sym-skew correctness check failed for " +
+    // NIMBLE_ABORT("\n**** Sym-skew correctness check failed for " +
     // label + "!\n");
   }
 }
@@ -1097,8 +1097,7 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
 
   // set firewall to make sure the rotation is indeed 180 degrees
   if (std::abs(rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] + 1.0) < 10.0 * machine_epsilon) {
-    // throw std::logic_error("\n**** Input check failed for
-    // Log_Rotation_Pi()!\n");
+    // throw std::invalid_argument("\n**** Input check failed for Log_Rotation_Pi()!\n");
   }
 
   ScalarT B[9];
@@ -1187,7 +1186,7 @@ Log_Rotation(const ScalarT* const rotation, ScalarT* const log_rotation)
     ss << "\n****   (det(R) - 1) must be less than (100 * machine_epsilon):  "
           "det(R) = "
        << det_rotation << ", machine_epsilon = " << machine_epsilon << "\n";
-    // throw std::logic_error(ss.str());
+    // throw std::invalid_argument(ss.str());
   }
 
   // acos requires input between -1 and +1

@@ -215,11 +215,11 @@ TpetraContainer::TangentStiffnessMatrixReplaceValue(int row, int col, double val
   local_ordinal_type success = crs_matrix_->sumIntoLocalValues(local_row, local_cols(), values());
 
   if (success == Teuchos::OrdinalTraits<local_ordinal_type>::invalid()) {
-    throw std::logic_error(
+    NIMBLE_ABORT(
         "\nError in TangentStiffMatrixReplaceValue(), replaceLocalValues() "
         "failed.\n");
   } else if (success != 1) {
-    throw std::logic_error("\nError in TangentStiffMatrixReplaceValue(), invalid index.\n");
+    NIMBLE_ABORT("\nError in TangentStiffMatrixReplaceValue(), invalid index.\n");
   }
   std::cout << "DJL DEBUGGING " << success << std::endl;
 

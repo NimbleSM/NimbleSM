@@ -118,7 +118,7 @@ UqModel::ParseBlockInput(
 {
 //std::cout << " START ParseBlockInput\n" << std::flush;
   if (line == "none")
-    throw std::logic_error( "\nError: NIMBLE_DO_UQ is defined but no uq parameters are specified for material corresponding to block id " + std::to_string(block_id) + "\n");
+    throw std::invalid_argument( "\nError: NIMBLE_DO_UQ is defined but no uq parameters are specified for material corresponding to block id " + std::to_string(block_id) + "\n");
   int  start_idx = GetNumParameters(); // number of parameter from previous blocks
   // collect ranges of the uncertain parameters
   std::list<std::string> items     = split(line);
@@ -171,7 +171,7 @@ UqModel::ReadSamples()
     items.clear();
     items = split(line);
     if (items.size() != nparameters_) {
-      throw std::logic_error("\nError: UQ file " + samples_file_name_ + " has not enough exact sample parameters on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + " found " + std::to_string(items.size()) + "\n");
+      throw std::invalid_argument("\nError: UQ file " + samples_file_name_ + " has not enough exact sample parameters on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + " found " + std::to_string(items.size()) + "\n");
     }
     for (int n = 0; n < nparameters_; n++) {
       std::string item = items.front();
@@ -188,14 +188,14 @@ UqModel::ReadSamples()
     getline(f, line); linenumber++;
     size_t colon_pos = line.find(":");
     if (colon_pos == std::string::npos) {
-      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has wrong format (no colon) on line " + std::to_string(linenumber) + "\n");
+      throw std::invalid_argument( "\nError: UQ file " + samples_file_name_ + " has wrong format (no colon) on line " + std::to_string(linenumber) + "\n");
     }
     std::string params_string = line.substr(0, colon_pos);
     std::string coeffs_string = line.substr(colon_pos + 1, line.size());
     items.clear();
     items = split(params_string);
     if (items.size() != nparameters_) {
-      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) +" parameters (preceding :) on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + "\n");
+      throw std::invalid_argument( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) +" parameters (preceding :) on line " + std::to_string(linenumber) + " expecting " + std::to_string(nparameters_) + "\n");
     }
     for (int n = 0; n < nparameters_; n++) {
       std::string item = items.front();
@@ -205,7 +205,7 @@ UqModel::ReadSamples()
     items.clear();
     items = split(coeffs_string);
     if (items.size() != ncoeff) {
-      throw std::logic_error( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) + " coefficients on line " + std::to_string(linenumber) + " expecting " + std::to_string(ncoeff) + "\n");
+      throw std::invalid_argument( "\nError: UQ file " + samples_file_name_ + " has " + std::to_string(items.size()) + " coefficients on line " + std::to_string(linenumber) + " expecting " + std::to_string(ncoeff) + "\n");
     }
 
     for (int n = 0; n < ncoeff; n++) {

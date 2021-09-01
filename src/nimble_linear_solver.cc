@@ -109,7 +109,7 @@ CRSMatrixContainer::FindIndex(int i_index, int j_index) const
     j_value = j_index_[trial];
   }
 
-  throw std::runtime_error("Error, CRSMatrixContainer::FindIndex() failed to find index.");
+  throw std::invalid_argument("Error, CRSMatrixContainer::FindIndex() failed to find index.");
 }
 
 void
@@ -124,7 +124,7 @@ CRSMatrixContainer::DiagonalMatrixMatVec(const double* vec, double* result) cons
 {
   // the matrix must be diagonal
   if (num_rows_ != data_.size()) {
-    throw std::runtime_error(
+    NIMBLE_ABORT(
         "**** Error in CRSMatrixContainer::DiagonalMatrixMatVec(), matrix is "
         "not diagonal.\n");
   }
@@ -137,7 +137,7 @@ PopulateDiagonalPreconditioner(const CRSMatrixContainer& A, CRSMatrixContainer& 
 {
   // the preconditioner must be a diagonal matrix
   if (M.num_rows_ != M.data_.size()) {
-    throw std::runtime_error(
+    throw std::invalid_argument(
         "**** Error in PopulateDiagonalPreconditioner(), preconditioner must "
         "be a diagonal matrix.\n");
   }
@@ -167,7 +167,7 @@ LU_Decompose(int num_entries, nimble::MatrixContainer& mat, int* index)
     }
     if (big < tiny) {
       // No nonzero largest element.
-      throw std::runtime_error("Singular matrix in routine LU_Decompose()");
+      NIMBLE_ABORT("Singular matrix in routine LU_Decompose()");
     }
     vv[i] = 1.0 / big;
   }
@@ -207,7 +207,7 @@ LU_Decompose(int num_entries, nimble::MatrixContainer& mat, int* index)
 
     if (std::fabs(mat(j, j)) < tiny) {
       // matrix is singular and we're about to divide by zero
-      throw std::runtime_error("Singular matrix in routine LU_Decompose()");
+      NIMBLE_ABORT("Singular matrix in routine LU_Decompose()");
     }
 
     // divide by the pivot element

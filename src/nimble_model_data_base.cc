@@ -51,7 +51,7 @@ namespace nimble {
 void
 ModelDataBase::SetDimension(int dim)
 {
-  if (dim != 2 && dim != 3) { throw std::logic_error("\nError:  Invalid dimension in ModelData\n"); }
+  if (dim != 2 && dim != 3) throw std::invalid_argument("\nError:  Invalid dimension in ModelData\n");
   dim_ = dim;
 }
 
@@ -76,7 +76,7 @@ ModelDataBase::SetReferenceCoordinates(const nimble::GenesisMesh& mesh)
       reference_coordinate(i, 2) = ref_coord_z[i];
     }
   } else {
-    throw std::runtime_error(" -- Inappropriate Spatial Dimension");
+    throw std::invalid_argument(" -- Inappropriate Spatial Dimension");
   }
 }
 

@@ -54,6 +54,7 @@
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_linear_solver.h"
+#include "nimble_macros.h"
 #include "nimble_view.h"
 
 namespace nimble {
@@ -105,7 +106,7 @@ class ModelDataBase
     if (id < 0) {
       std::ostringstream errc;
       errc << "Field \"" << field_label << "\" not allocated";
-      throw std::runtime_error(errc.str());
+      NIMBLE_ABORT(errc.str());
     }
     return id;
   }
@@ -175,7 +176,7 @@ class ModelDataBase
   virtual void
   InitializeExodusOutput(nimble::DataManager& data_manager)
   {
-    throw std::runtime_error(" Exodus Output Not Implemented \n");
+    NIMBLE_ABORT(" Exodus Output Not Implemented \n");
   }
 
   /// \brief Write output of simulation in Exodus format
@@ -185,7 +186,7 @@ class ModelDataBase
   virtual void
   WriteExodusOutput(nimble::DataManager& data_manager, double time_current)
   {
-    throw std::runtime_error(" Exodus Output Not Implemented \n");
+    NIMBLE_ABORT(" Exodus Output Not Implemented \n");
   }
 
   /// \brief Compute the external force
