@@ -43,6 +43,7 @@
 
 #include "nimble_material_factory_base.h"
 
+#include <stdexcept>
 #include <tuple>
 #include <vector>
 
@@ -88,7 +89,7 @@ MaterialFactoryBase::ParseMaterialParametersString(const std::string& material_p
       material_string_parameters.insert(std::make_pair(key, val));
     } else {
       std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
-      NIMBLE_ABORT(errMsg);
+      throw std::invalid_argument(errMsg);
     }
   }
 
@@ -123,7 +124,7 @@ MaterialFactoryBase::ParseMaterialParamsStringToMap(const std::string& material_
       material_string_parameters.insert(std::make_pair(key, val));
     } else {
       std::string errMsg = "Invalid material parameter encountered: '" + key + "'";
-      NIMBLE_ABORT(errMsg);
+      throw std::invalid_argument(errMsg);
     }
   }
 
