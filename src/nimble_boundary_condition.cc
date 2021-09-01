@@ -86,7 +86,7 @@ BoundaryCondition::Initialize(
   } else if (bc_type_string == "prescribed_traction") {
     bc_type_ = PRESCRIBED_TRACTION;
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "Error processing boundary condition, unknown boundary condition "
         "type: " +
         bc_type_string);
@@ -113,7 +113,7 @@ BoundaryCondition::Initialize(
     has_expression_ = false;
     ss >> magnitude_;  // DJL valgrind complains about this
   } else {
-    throw std::logic_error("Error processing boundary condition, illegal number of quotes: " + bc_string);
+    throw std::invalid_argument("Error processing boundary condition, illegal number of quotes: " + bc_string);
   }
 
   std::transform(bc_type_string.begin(), bc_type_string.end(), bc_type_string.begin(), ::tolower);
@@ -137,7 +137,7 @@ BoundaryCondition::Initialize(
   } else if (coordinate_string == "z") {
     coordinate_ = 2;
   } else {
-    throw std::logic_error("Error processing boundary condition, unknown coordinate: " + coordinate_string);
+    throw std::invalid_argument("Error processing boundary condition, unknown coordinate: " + coordinate_string);
   }
 
   return is_valid;

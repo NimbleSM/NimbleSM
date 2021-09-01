@@ -437,7 +437,7 @@ class ContactEntity
         break;
       case TRIANGLE:
         if (N == nullptr) {
-          // throw error
+          throw std::invalid_argument("\n Null pointer provided.\n\n");
         }
         force_1_x_ = N[0] * contact_force[0];
         force_1_y_ = N[0] * contact_force[1];

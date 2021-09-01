@@ -49,6 +49,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <stdexcept>
 #include <vector>
 
 #include "nimble_contact_entity.h"
@@ -358,7 +359,7 @@ class ContactManager
   ComputeContactForce(int step, bool debug_output)
   {
     if (penalty_parameter_ <= 0.0) {
-      throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+      throw std::invalid_argument("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
     }
     double background_grid_cell_size = BoundingBoxAverageCharacteristicLengthOverAllRanks();
 #ifdef NIMBLE_HAVE_KOKKOS

@@ -699,7 +699,7 @@ struct BoundaryConditionFunctor
   double           x = 0, y = 0, z = 0, t = 0;
   EquationContext* context;
   // The Computable Expression Object
-  RealValuedExpression* expression = 0;
+  RealValuedExpression* expression = nullptr;
   std::string           equation;
   BoundaryConditionFunctor() : context(0) {}  // Sets context to nil
   BoundaryConditionFunctor(const std::string& equation)
@@ -758,7 +758,7 @@ struct BoundaryConditionFunctor
   eval()
   {
     if (!expression) {
-      throw std::logic_error(
+      throw std::invalid_argument(
           "Error in BoundaryConditionFunctor::eva(), expression pointer is "
           "null.");
     }
@@ -772,7 +772,7 @@ struct BoundaryConditionFunctor
     this->z = z;
     this->t = t;
     if (!expression) {
-      throw std::logic_error(
+      throw std::invalid_argument(
           "Error in BoundaryConditionFunctor::eva(), expression pointer is "
           "null.");
     }
@@ -786,7 +786,7 @@ struct BoundaryConditionFunctor
     this->z = z;
     this->t = t;
     if (!expression) {
-      throw std::logic_error(
+      throw std::invalid_argument(
           "Error in BoundaryConditionFunctor::eva(), expression pointer is "
           "null.");
     }

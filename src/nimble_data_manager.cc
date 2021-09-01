@@ -54,10 +54,10 @@
 #endif
 
 #include <algorithm>
-#include <stdexcept>
 
 #include "nimble_block_material_interface_factory_base.h"
 #include "nimble_boundary_condition_manager.h"
+#include "nimble_macros.h"
 #include "nimble_material_factory.h"
 #include "nimble_model_data.h"
 #include "nimble_model_data_base.h"
@@ -107,13 +107,13 @@ DataManager::Initialize()
 #ifdef NIMBLE_HAVE_UQ
     model_data_ = std::make_shared<nimble_uq::ModelData>();
 #else
-    throw std::runtime_error(" Wrong environment !\n");
+    NIMBLE_ABORT(" Wrong environment !\n");
 #endif
   } else if (parser_.UseKokkos()) {
 #ifdef NIMBLE_HAVE_KOKKOS
     model_data_ = std::make_shared<nimble_kokkos::ModelData>();
 #else
-    throw std::runtime_error(" Wrong environment !\n");
+    NIMBLE_ABORT(" Wrong environment !\n");
 #endif
   } else {
     model_data_ = std::make_shared<nimble::ModelData>();

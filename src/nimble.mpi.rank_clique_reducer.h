@@ -51,6 +51,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "nimble_macros.h"
 #include "nimble.mpi.mpicontext.h"
 #include "nimble.mpi.reduction_utils.h"
 #include "nimble.quanta.arrayview.h"
@@ -178,7 +179,7 @@ struct ReductionClique_t
   void
   EnsureDataSafety(int field_size)
   {
-    if (!okayfieldsizeQ(field_size)) { throw std::logic_error("Field size too big"); }
+    if (!okayfieldsizeQ(field_size)) { throw std::invalid_argument("Field size too big"); }
   }
   // Performs a blocking Allreduce
   template <int field_size, class Lookup>
@@ -197,10 +198,11 @@ struct ReductionClique_t
   void
   asyncreduce_initialize(Lookup&& databuffer)
   {
-    if (exists_active_asyncreduce_request)
-      throw std::logic_error(
+    if (exists_active_asyncreduce_request) {
+      NIMBLE_ABORT(
           "asyncreduce_initialize(data) was called "
           "when an active asynchronous reduce already exists");
+    }
 
     EnsureDataSafety(field_size);
     pack<field_size>(databuffer);
@@ -226,10 +228,11 @@ struct ReductionClique_t
       MPI_Test(&Iallreduce_request, &flag, MPI_STATUS_IGNORE);
       // flag is set to true if the allreduce has completed
       return flag != 0;
-    } else
-      throw std::logic_error(
+    } else {
+      NIMBLE_ABORT(
           "Iallreduce_completedQ() was called "
           "without an active asynchronous reduce request.");
+    }
   }
   // Returns true and unpacks data if the currently active asynchronous reduce
   // request has completed Returns false if the currently active asynchronous
@@ -247,10 +250,11 @@ struct ReductionClique_t
       } else {
         return false;
       }
-    } else
-      throw std::logic_error(
+    } else {
+      NIMBLE_ABORT(
           "asyncreduce_finalize(data) was called "
           "without an active asynchronous reduce request.");
+    }
   }
   int
   GetNumIndices()

@@ -44,6 +44,7 @@
 #ifdef NIMBLE_HAVE_MPI
 
 #include "nimble.mpi.reduction_utils.h"
+#include "nimble_macros.h"
 
 #include <map>
 
@@ -64,7 +65,7 @@ nimble::PackIDSpace(const std::vector<int>& raw_node_ids, int max_nodes_assigned
       MPI_Status recv_status;
       int        recv_size;
       int        err = MPI_Recv(buffer.data(), buffer.size(), MPI_INT, rank, 0xfae, context.get_comm(), &recv_status);
-      if (err != MPI_SUCCESS) throw std::logic_error("Bad recv in PackIDSpace");
+      if (err != MPI_SUCCESS) NIMBLE_ABORT("Bad recv in PackIDSpace");
       MPI_Get_count(&recv_status, MPI_INT, &recv_size);
       for (int i = 0; i < recv_size; ++i) {
         int node = buffer[i];
