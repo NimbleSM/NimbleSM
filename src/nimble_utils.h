@@ -114,7 +114,7 @@ CheckVectorSanity(int vec_length, ScalarT const* const vec, const char* label)
   for (int i = 0; i < vec_length; i++) {
 #ifndef NIMBLE_HAVE_KOKKOS
     if (!std::isfinite(vec[i])) {
-      throw std::logic_error("\n**** Finite value check failed for " + std::string(label) + "!\n");
+      NIMBLE_ABORT("\n**** Finite value check failed for " + std::string(label) + "!\n");
     }
 #else
     if (vec[i] != vec[i] || vec[i] > DBL_MAX || vec[i] < -DBL_MAX) {
@@ -520,9 +520,7 @@ Invert_Full33(const ScalarT* mat, ScalarT* inv)
   ScalarT minor8 = mat[K_F_XX] * mat[K_F_YY] - mat[K_F_XY] * mat[K_F_YX];
   ScalarT det    = mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
 
-  if (det < 0.0) {
-    // throw std::logic_error("Error in Invert_Full33(), singular matrix");
-  }
+  NIMBLE_DEBUG_ASSERT(det >= 0.0, "Error in Invert_Full33(), singular matrix");
 
   inv[K_F_XX] = minor0 / det;
   inv[K_F_XY] = -1.0 * minor3 / det;
@@ -1141,10 +1139,8 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
     norm = normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
     if (norm > 0.0) { norm = std::sqrt(norm); }
 
-    if (norm < machine_epsilon) {
-      // throw std::logic_error("\n**** Error in Log_Rotation_Pi(), cannot
-      // determine rotation vector.");
-    }
+    NIMBLE_DEBUG_ASSERT(norm >= machine_epsilon, "\n**** Error in Log_Rotation_Pi(), cannot"
+                        " determine rotation vector.");
   }
 
   normal[0] /= norm;
