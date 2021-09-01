@@ -213,9 +213,9 @@ NimbleInitializeAndGetInput(int argc, char** argv, nimble::Parser& parser)
   {
     MPI_Init(&argc, &argv);
     int mpi_err = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    if (mpi_err != MPI_SUCCESS) { throw std::runtime_error("\nError:  MPI_Comm_rank() returned nonzero error code.\n"); }
+    if (mpi_err != MPI_SUCCESS) { NIMBLE_ABORT("\nError:  MPI_Comm_rank() returned nonzero error code.\n"); }
     mpi_err = MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    if (mpi_err != MPI_SUCCESS) { throw std::runtime_error("\nError:  MPI_Comm_size() returned nonzero error code.\n"); }
+    if (mpi_err != MPI_SUCCESS) { NIMBLE_ABORT("\nError:  MPI_Comm_size() returned nonzero error code.\n"); }
   }
 #endif
 
@@ -743,7 +743,7 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
   }
 
 #ifdef NIMBLE_HAVE_UQ
-  if (parser.UseUQ()) throw std::domain_error("\nError:  UQ enabled but not implemented for quasistatics.\n");
+  if (parser.UseUQ()) NIMBLE_ABORT("\nError:  UQ enabled but not implemented for quasistatics.\n");
 #endif
 
   model_data.ApplyKinematicConditions(data_manager, time_current, time_previous);
@@ -847,11 +847,13 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         for (auto const& node_id : node_ids) {
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
+#ifdef NIMBLE_DEBUG
             if (ls_index < 0 || ls_index > linear_solver_solution.size() - 1) {
-              throw std::range_error(
+              throw std::invalid_argument(
                   "\nError:  Invalid index into linear solver solution in "
                   "QuasistaticTimeIntegrator().\n");
             }
+#endif
             trial_displacement(node_id, dof) = displacement(node_id, dof) - linear_solver_solution[ls_index];
           }
         }
@@ -882,11 +884,13 @@ QuasistaticTimeIntegrator(const nimble::Parser& parser, nimble::GenesisMesh& mes
         for (auto const& node_id : node_ids) {
           for (int dof = 0; dof < dim; dof++) {
             int ls_index = n * dim + dof;
+#ifdef NIMBLE_DEBUG
             if (ls_index < 0 || ls_index > linear_solver_solution.size() - 1) {
-              throw std::range_error(
+              throw std::invalid_argument(
                   "\nError:  Invalid index into linear solver solution vector in "
                   "QuasistaticTimeIntegrator().\n");
             }
+#endif
             displacement(node_id, dof) -= alpha * linear_solver_solution[ls_index];
           }
         }
@@ -974,11 +978,13 @@ ComputeQuasistaticResidual(
     int ls_id = linear_system_global_node_ids[n];
     for (int dof = 0; dof < dim; dof++) {
       int ls_index = ls_id * dim + dof;
+#ifdef NIMBLE_DEBUG
       if (ls_index < 0 || ls_index > linear_system_num_unknowns - 1) {
-        throw std::range_error(
+        throw std::invalid_argument(
             "\nError:  Invalid index into residual vector in "
             "QuasistaticTimeIntegrator().\n");
       }
+#endif
       residual_vector[ls_index] += -1.0 * internal_force(n, dof);
     }
   }
