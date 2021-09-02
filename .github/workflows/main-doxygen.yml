@@ -26,4 +26,4 @@ jobs:
       uses: mattnotmitt/doxygen-action@v1.1.0
       with:
         # Path to Doxyfile
-        doxyfile-path: "./docs/doxygen/doxygen.conf" # default is ./Doxyfile
+        doxyfile-path: "./docs/doxygen/.Doxyfile_for_Deployment" # default is ./Doxyfile
