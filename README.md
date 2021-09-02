@@ -39,7 +39,7 @@ https://trilinos.org
 ## BVH & VT
 
 This combination will be publicly released in the near future. 
-It combines a novel geometric search library with the [VT runtime tasking library](https://github.com/DARMA-tasking/vt) for C++, 
+It combines a novel geometric search library, BVH, with the [VT runtime tasking library](https://github.com/DARMA-tasking/vt) for C++, 
 built for general scientific applications.
 
 
