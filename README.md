@@ -36,7 +36,7 @@ Required for parallel execution of implicit time integration (quasi-statics).
 
 https://trilinos.org
 
-# BVH
+## BVH
 
 Novel library for geometric search.
 This library will be soon publicly released.
