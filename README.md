@@ -38,5 +38,4 @@ https://trilinos.org
 
 ## BVH
 
-Novel library for geometric search.
-This library will be soon publicly released.
+This library will be publicly released in the near future.
