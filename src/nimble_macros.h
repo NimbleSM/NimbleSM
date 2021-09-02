@@ -88,7 +88,7 @@
 #define NIMBLE_TRACE(...) NIMBLE_TRACE_IMPL(__VA_ARGS__, "")
 #define NIMBLE_DUMP(...) NIMBLE_DUMP_IMPL(__VA_ARGS__, "")
 
-#if defined(NDEBUG)
+#ifndef NIMBLE_DEBUG
 #define NIMBLE_EXPECT(...)
 #else
 #define NIMBLE_EXPECT(...) NIMBLE_ASSERT(__VA_ARGS__)

@@ -43,7 +43,6 @@
 
 #include "nimble_material_factory.h"
 
-#include <cassert>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -63,7 +62,7 @@ MaterialFactory::create()
   } else if (name_string == "elastic") {
     material = std::make_shared<ElasticMaterial>(*material_params);
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError in Block::InstantiateMaterialModel(), invalid material model "
         "name.\n");
   }

@@ -53,6 +53,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "nimble_macros.h"
+
 #ifdef NIMBLE_HAVE_EXODUS
 #include "exodusII.h"
 #endif
@@ -593,7 +595,7 @@ ExodusOutput::ReportExodusError(int error_code, const char* method_name, const c
   if (error_code < 0) {
     ss << "**Error ExodusOutput::" << method_name << "(), Error code: " << error_code << " (" << exodus_method_name
        << ")\n";
-    throw std::logic_error(ss.str());
+    NIMBLE_ABORT(ss.str());
   } else {
     ss << "**Warning ExodusOutput::" << method_name << "(), Warning code: " << error_code << " (" << exodus_method_name
        << ")\n";

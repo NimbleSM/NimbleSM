@@ -49,6 +49,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace nimble {
@@ -202,7 +203,7 @@ Parser::ReadFile()
   fin.open(file_name_.c_str());
   if (!fin.good()) {
     std::string msg = "\n**** Error in Parser::ReadFile(), unable to read file " + file_name_ + "\n";
-    throw std::logic_error(msg);
+    throw std::invalid_argument(msg);
   }
 
   while (!fin.eof()) {
@@ -254,7 +255,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
           "\n**** Error in Parser::ReadFile(), unexpected value for \"use two "
           "level mesh decomposition\" " +
           value + "\n";
-      throw std::logic_error(msg);
+      throw std::invalid_argument(msg);
     }
   } else if (key == "write timing data file") {
     std::string value_upper_case(value);
@@ -269,7 +270,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
           "\n**** Error in Parser::ReadFile(), unexpected value for \"write "
           "timing data file\" " +
           value + "\n";
-      throw std::logic_error(msg);
+      throw std::invalid_argument(msg);
     }
   } else if (key == "time integration scheme") {
     time_integration_scheme_ = value;
@@ -301,9 +302,9 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
           "\n**** Error in Parser::ReadFile(), unexpected value for \"contact "
           "visualization\"\n";
       msg +=
-          "**** Allowable syntax is \"visualize_contatct_entities <on/off> "
+          "**** Allowable syntax is \"visualize_contact_entities <on/off> "
           "visualize_bounding_boxes <on/off> file_name <file_name.e>\"\n";
-      throw std::logic_error(msg);
+      throw std::invalid_argument(msg);
     }
 
     visualize_contact_entities_ = false;
@@ -345,7 +346,7 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
 #endif
   else {
     std::string msg = "\n**** Error in Parser::ReadFile(), unknown key " + key + "\n";
-    throw std::logic_error(msg);
+    throw std::invalid_argument(msg);
   }
 }
 

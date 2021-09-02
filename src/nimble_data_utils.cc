@@ -43,6 +43,8 @@
 
 #include "nimble_data_utils.h"
 
+#include "nimble_macros.h"
+
 #include <ctype.h>
 
 #include <algorithm>
@@ -61,7 +63,7 @@ LengthToInt(Length length, int dim)
       case VECTOR: value = 2; break;
       case SYMMETRIC_TENSOR: value = 3; break;
       case FULL_TENSOR: value = 4; break;
-      case UNDEFINED_LENGTH: throw std::logic_error("\nError in LengthToInt(), unrecognized Length.\n");
+      case UNDEFINED_LENGTH: throw std::invalid_argument("\nError in LengthToInt(), unrecognized Length.\n");
       default: value = static_cast<int>(length); break;
     }
   } else if (dim == 3) {
@@ -70,11 +72,11 @@ LengthToInt(Length length, int dim)
       case VECTOR: value = 3; break;
       case SYMMETRIC_TENSOR: value = 6; break;
       case FULL_TENSOR: value = 9; break;
-      case UNDEFINED_LENGTH: throw std::logic_error("\nError in LengthToInt(), unrecognized Length.\n");
+      case UNDEFINED_LENGTH: throw std::invalid_argument("\nError in LengthToInt(), unrecognized Length.\n");
       default: value = static_cast<int>(length); break;
     }
   } else {
-    throw std::logic_error("\nError in LengthToInt(), unrecognized dimension.\n");
+    throw std::invalid_argument("\nError in LengthToInt(), unrecognized dimension.\n");
   }
   return value;
 }
@@ -132,11 +134,9 @@ LabelToIntegrationPointNumber(std::string label)
   int int_pt_number;
 
   size_t pos = label.find("ipt");
-  if (pos != 0) {
-    throw std::logic_error(
+  NIMBLE_ASSERT(pos == 0, 
         "\nError:  LabelToIntegratinPointNumber() called with a label that "
         "does not beging with ipt.\n");
-  }
 
   // remove "ipt"
   std::string temp = label.substr(3);
@@ -214,7 +214,7 @@ GetComponentLabel(std::string label, Length length, int dim, int component_index
       case 0: label += "_x"; break;
       case 1: label += "_y"; break;
       case 2: label += "_z"; break;
-      default: throw std::logic_error("\nError in GetComponentLabel().\n");
+      default: throw std::invalid_argument("\nError in GetComponentLabel().\n");
     }
   } else if (length == SYMMETRIC_TENSOR) {
     if (dim == 2) {
@@ -222,7 +222,7 @@ GetComponentLabel(std::string label, Length length, int dim, int component_index
         case 0: label += "_xx"; break;
         case 1: label += "_yy"; break;
         case 2: label += "_xy"; break;
-        default: throw std::logic_error("\nError in GetComponentLabel().\n");
+        default: throw std::invalid_argument("\nError in GetComponentLabel().\n");
       }
     } else if (dim == 3) {
       switch (component_index) {
@@ -232,7 +232,7 @@ GetComponentLabel(std::string label, Length length, int dim, int component_index
         case 3: label += "_xy"; break;
         case 4: label += "_yz"; break;
         case 5: label += "_zx"; break;
-        default: throw std::logic_error("\nError in GetComponentLabel().\n");
+        default: throw std::invalid_argument("\nError in GetComponentLabel().\n");
       }
     }
   } else if (length == FULL_TENSOR) {
@@ -242,7 +242,7 @@ GetComponentLabel(std::string label, Length length, int dim, int component_index
         case 1: label += "_yy"; break;
         case 2: label += "_xy"; break;
         case 3: label += "_yx"; break;
-        default: throw std::logic_error("\nError in GetComponentLabel().\n");
+        default: throw std::invalid_argument("\nError in GetComponentLabel().\n");
       }
     } else if (dim == 3) {
       switch (component_index) {
@@ -255,7 +255,7 @@ GetComponentLabel(std::string label, Length length, int dim, int component_index
         case 6: label += "_yx"; break;
         case 7: label += "_zy"; break;
         case 8: label += "_xz"; break;
-        default: throw std::logic_error("\nError in GetComponentLabel().\n");
+        default: throw std::invalid_argument("\nError in GetComponentLabel().\n");
       }
     }
   }
@@ -273,7 +273,7 @@ LabelToLength(std::string label, std::map<int, Field> const& data_fields, int di
     Field const& field = it.second;
     if (label == RemoveIntegrationPointPrefix(field.label_)) { return field.length_; }
   }
-  throw std::logic_error("\nError in LabelToField(), failed to find label " + label + ".\n");
+  throw std::invalid_argument("\nError in LabelToLength(), failed to find label " + label + ".\n");
 }
 
 }  // namespace nimble

@@ -79,7 +79,7 @@ MaterialFactory::create()
     std::tie(material, material_device) =
         allocate_material_on_host_and_device<nimble::ElasticMaterial>(*material_params);
   } else {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\nError in Block::InstantiateMaterialModel(), invalid material model "
         "name.\n");
   }

@@ -278,9 +278,7 @@ ArborXParallelContactManager::ComputeParallelContactForce(int step, bool debug_o
   this->stopTimer("Contact:ResetData");
 
   //--- Constraint per ContactManager::ComputeContactForce
-  if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
-  }
+  NIMBLE_ASSERT(penalty_parameter_ > 0.0, "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
 
   Kokkos::View<details::OutputData*, kokkos_device> results("results", 0);
   Kokkos::View<int*, kokkos_device>                 offset("offset", 0);

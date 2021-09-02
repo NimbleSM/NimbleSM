@@ -44,12 +44,12 @@
 #include <nimble_block.h>
 #include <nimble_data_manager.h>
 #include <nimble_data_utils.h>
+#include <nimble_macros.h>
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
 
 #include <algorithm>
 #include <map>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -70,8 +70,7 @@ Block::InstantiateMaterialModel(MaterialFactory& factory)
     factory.parse_and_create(model_material_parameters_);
     material_ = factory.get_material();
   } else {
-    throw std::logic_error(
-        "\nError in Block::InstantiateMaterialModel(), invalid material "
+    NIMBLE_ABORT("\nError in Block::InstantiateMaterialModel(), invalid material "
         "parameters\n");
   }
 }
@@ -520,11 +519,10 @@ Block::DetermineDataOffsets(
       }
     }
   }
-  if (def_grad_offset_.size() != full_tensor_size * num_int_pt_per_elem) {
-    throw std::logic_error(
-        "\nError in Block::ComputeInternalForce(), failed to index def_grad "
-        "into global data.\n");
-  }
+
+  NIMBLE_ASSERT(def_grad_offset_.size() == full_tensor_size * num_int_pt_per_elem,
+                "\nError in Block::ComputeInternalForce(), failed to index def_grad "
+                "into global data.\n");
 
   // Determine the offset for the stress in the element data container
   stress_offset_.clear();
@@ -536,11 +534,10 @@ Block::DetermineDataOffsets(
       }
     }
   }
-  if (stress_offset_.size() != sym_tensor_size * num_int_pt_per_elem) {
-    throw std::logic_error(
-        "\nError in Block::ComputeInternalForce(), failed to index stress into "
-        "global data.\n");
-  }
+
+  NIMBLE_ASSERT(stress_offset_.size() == sym_tensor_size * num_int_pt_per_elem,
+                "\nError in Block::ComputeInternalForce(), failed to index stress into "
+                "global data.\n");
 
   // Determine the offset for the state data in the element data container
   int                      num_state_data = material_->NumStateVariables();
@@ -560,11 +557,10 @@ Block::DetermineDataOffsets(
       }
     }
   }
-  if (state_data_offset_.size() != num_state_data * num_int_pt_per_elem) {
-    throw std::logic_error(
-        "\nError in Block::ComputeInternalForce(), failed to index state data "
-        "into global data.\n");
-  }
+
+  NIMBLE_ASSERT(state_data_offset_.size() == num_state_data * num_int_pt_per_elem,
+                "\nError in Block::ComputeInternalForce(), failed to index state data "
+                "into global data.\n");
 
   // Determine which requested derived data are volume-averaged data
   // and set up some bookkeeping

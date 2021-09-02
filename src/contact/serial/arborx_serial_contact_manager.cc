@@ -148,9 +148,7 @@ void
 ArborXSerialContactManager::ComputeSerialContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   //--- Constraint per ContactManager::ComputeContactForce
-  if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
-  }
+  NIMBLE_ASSERT(penalty_parameter_ > 0.0, "\nError in ComputeContactForce(), invalid penalty_parameter.\n");
 
   if (model_data == nullptr) {
     auto model_ptr = data_manager_.GetModelData().get();

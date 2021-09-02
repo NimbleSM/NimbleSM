@@ -48,6 +48,7 @@
 #include "nimble_defs.h"
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
+#include "nimble_macros.h"
 #include "nimble_parser.h"
 #include "nimble_utils.h"
 #include "nimble_vector_communicator.h"
@@ -119,7 +120,7 @@ ParseContactCommand(
   if ((contact_primary_key != "primary_blocks") && (contact_primary_key != "master_blocks")) {
     std::stringstream error_ss;
     error_ss << "\n**** Error processing contact command, unknown key: " << contact_primary_key << std::endl;
-    throw std::logic_error(error_ss.str());
+    throw std::invalid_argument(error_ss.str());
   }
 
   bool secondary_key_found = false;
@@ -134,7 +135,7 @@ ParseContactCommand(
   }
 
   if (!secondary_key_found) {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\n**** Error processing contact command, expected "
         "\"secondary_blocks\" or \"slave_blocks\" (deprectated).\n");
   }
@@ -151,7 +152,7 @@ ParseContactCommand(
   }
 
   if (!penalty_parameter_key_found) {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "\n**** Error processing contact command, expected "
         "\"penalty_parameter\".\n");
   }
@@ -422,7 +423,7 @@ void
 ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   if (penalty_parameter_ <= 0.0) {
-    throw std::logic_error("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
+    throw std::invalid_argument("\nError in ComputeContactForce(), invalid penalty_parameter.\n");
   }
 
   const auto& parser = data_manager_.GetParser();
@@ -952,7 +953,7 @@ ContactManager::SkinBlocks(
                                          // subdivided downstream)
       entity_ids.push_back(entity_id);
     } else if (face.second[0] != 2) {
-      throw std::logic_error("Error in mesh skinning routine, face found more than two times!\n");
+      NIMBLE_ABORT("Error in mesh skinning routine, face found more than two times!\n");
     }
   }
 }
@@ -1083,7 +1084,7 @@ ContactManager::CreateContactNodesAndFaces(
 
     int num_nodes_in_face = static_cast<int>(face.size());
     if (num_nodes_in_face != 4) {
-      throw std::logic_error(
+      NIMBLE_ABORT(
           "\nError in ContactManager::CreateContactNodesAndFaces(), invalid "
           "number of face nodes.\n");
     }

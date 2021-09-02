@@ -73,7 +73,7 @@ Element::Invert3x3(double mat[][3], double inv[][3]) const
           "(%e)\n",
           det);
 #else
-    throw std::logic_error("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+    NIMBLE_ASSERT(det > 0.0, "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
 #endif
   }
 
@@ -116,8 +116,7 @@ Element::LU_Decompose(double a[][3], int index[]) const
           "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #else
-      throw std::logic_error(
-          "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
+      NIMBLE_ASSERT(big >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #endif
     }
@@ -162,9 +161,8 @@ Element::LU_Decompose(double a[][3], int index[]) const
           "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #else
-      throw std::logic_error(
-          "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-          "matrix.\n");
+      NIMBLE_ASSERT(fabs(a[j][j]) >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(),"
+                    " singular matrix.\n"); 
 #endif
     }
 

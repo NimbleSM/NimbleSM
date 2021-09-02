@@ -40,6 +40,15 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
 
+# Enhanced debugging option
+OPTION(ENABLE_DEBUGGING "Flag to turn on enhanced debugging info" OFF)
+IF (ENABLE_DEBUGGING)
+  MESSAGE("-- Enhanced debugging        is Enabled, compiling with -DNIMBLE_DEBUG")
+  SET(NIMBLE_DEBUG TRUE)
+ELSE()
+  SET(NIMBLE_DEBUG FALSE)
+ENDIF()
+
 target_include_directories(nimble PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

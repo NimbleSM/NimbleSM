@@ -109,7 +109,7 @@ struct ReductionInfo
       }
     }
 
-    if (comms.size() != clique_ids.size()) throw std::logic_error("**** Error, comms.size() != clique_ids.size().");
+    if (comms.size() != clique_ids.size()) NIMBLE_ABORT("**** Error, comms.size() != clique_ids.size().");
 
     for (size_t i = 0; i < clique_ids.size(); ++i) {
       int      clique_id  = clique_ids[i];

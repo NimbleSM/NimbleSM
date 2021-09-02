@@ -138,7 +138,7 @@ class MaterialParameters
       return material_double_parameters_.at(parameter_name);
     } catch (...) {
       std::string errMsg = "Double parameter '" + std::string(parameter_name) + "' does not exist";
-      throw std::runtime_error(errMsg);
+      throw std::invalid_argument(errMsg);
     }
   }
 
@@ -149,7 +149,7 @@ class MaterialParameters
       return material_string_parameters_.at(parameter_name);
     } catch (...) {
       std::string errMsg = "String parameter '" + std::string(parameter_name) + "' does not exist";
-      throw std::runtime_error(errMsg);
+      throw std::invalid_argument(errMsg);
     }
   }
 

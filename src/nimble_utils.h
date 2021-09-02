@@ -44,13 +44,14 @@
 #ifndef NIMBLE_UTILS_H
 #define NIMBLE_UTILS_H
 
-#include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+
+#include "nimble_macros.h"
 
 NIMBLE_INLINE_FUNCTION
 int
@@ -113,7 +114,7 @@ CheckVectorSanity(int vec_length, ScalarT const* const vec, const char* label)
   for (int i = 0; i < vec_length; i++) {
 #ifndef NIMBLE_HAVE_KOKKOS
     if (!std::isfinite(vec[i])) {
-      throw std::logic_error("\n**** Finite value check failed for " + std::string(label) + "!\n");
+      NIMBLE_ABORT("\n**** Finite value check failed for " + std::string(label) + "!\n");
     }
 #else
     if (vec[i] != vec[i] || vec[i] > DBL_MAX || vec[i] < -DBL_MAX) {
@@ -191,7 +192,7 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Square_Full33T_Full33(const ScalarT* const mat, ScalarT* const result)
 {
-  assert(result != mat);
+  NIMBLE_DEBUG_ASSERT(result != mat);
   result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_YX] * mat[K_F_YX] + mat[K_F_ZX] * mat[K_F_ZX];
   result[K_S_YY] = mat[K_F_XY] * mat[K_F_XY] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_ZY] * mat[K_F_ZY];
   result[K_S_ZZ] = mat[K_F_XZ] * mat[K_F_XZ] + mat[K_F_YZ] * mat[K_F_YZ] + mat[K_F_ZZ] * mat[K_F_ZZ];
@@ -253,8 +254,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Full33_Full33(const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
-  assert(A != result);
-  assert(B != result);
+  NIMBLE_DEBUG_ASSERT(A != result);
+  NIMBLE_DEBUG_ASSERT(B != result);
   result[K_F_XX] = A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX];
   result[K_F_XY] = A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY];
   result[K_F_XZ] = A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ];
@@ -271,8 +272,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Sym33_Full33(const ScalarT* const sym, const ScalarT* const full, ScalarT* const result)
 {
-  assert(sym != result);
-  assert(full != result);
+  NIMBLE_DEBUG_ASSERT(sym != result);
+  NIMBLE_DEBUG_ASSERT(full != result);
   result[K_F_XX] = sym[K_S_XX] * full[K_F_XX] + sym[K_S_XY] * full[K_F_YX] + sym[K_S_XZ] * full[K_F_ZX];
   result[K_F_XY] = sym[K_S_XX] * full[K_F_XY] + sym[K_S_XY] * full[K_F_YY] + sym[K_S_XZ] * full[K_F_ZY];
   result[K_F_XZ] = sym[K_S_XX] * full[K_F_XZ] + sym[K_S_XY] * full[K_F_YZ] + sym[K_S_XZ] * full[K_F_ZZ];
@@ -289,8 +290,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Scalar_Full33_Full33(ScalarT alpha, const ScalarT* const A, const ScalarT* const B, ScalarT* const result)
 {
-  assert(A != result);
-  assert(B != result);
+  NIMBLE_DEBUG_ASSERT(A != result);
+  NIMBLE_DEBUG_ASSERT(B != result);
   result[K_F_XX] = alpha * (A[K_F_XX] * B[K_F_XX] + A[K_F_XY] * B[K_F_YX] + A[K_F_XZ] * B[K_F_ZX]);
   result[K_F_XY] = alpha * (A[K_F_XX] * B[K_F_XY] + A[K_F_XY] * B[K_F_YY] + A[K_F_XZ] * B[K_F_ZY]);
   result[K_F_XZ] = alpha * (A[K_F_XX] * B[K_F_XZ] + A[K_F_XY] * B[K_F_YZ] + A[K_F_XZ] * B[K_F_ZZ]);
@@ -307,7 +308,7 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Square_Full33_Full33T(const ScalarT* const mat, ScalarT* const result)
 {
-  assert(result != mat);
+  NIMBLE_DEBUG_ASSERT(result != mat);
   result[K_S_XX] = mat[K_F_XX] * mat[K_F_XX] + mat[K_F_XY] * mat[K_F_XY] + mat[K_F_XZ] * mat[K_F_XZ];
   result[K_S_YY] = mat[K_F_YX] * mat[K_F_YX] + mat[K_F_YY] * mat[K_F_YY] + mat[K_F_YZ] * mat[K_F_YZ];
   result[K_S_ZZ] = mat[K_F_ZX] * mat[K_F_ZX] + mat[K_F_ZY] * mat[K_F_ZY] + mat[K_F_ZZ] * mat[K_F_ZZ];
@@ -321,8 +322,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Mult_Full33_Sym33_ReturnT(const ScalarT* const full, const ScalarT* const sym, ScalarT* const result)
 {
-  assert(full != result);
-  assert(sym != result);
+  NIMBLE_DEBUG_ASSERT(full != result);
+  NIMBLE_DEBUG_ASSERT(sym != result);
   result[K_F_XX] = full[K_F_XX] * sym[K_S_XX] + full[K_F_XY] * sym[K_S_YX] + full[K_F_XZ] * sym[K_S_ZX];
   result[K_F_YX] = full[K_F_XX] * sym[K_S_XY] + full[K_F_XY] * sym[K_S_YY] + full[K_F_XZ] * sym[K_S_ZY];
   result[K_F_ZX] = full[K_F_XX] * sym[K_S_XZ] + full[K_F_XY] * sym[K_S_YZ] + full[K_F_XZ] * sym[K_S_ZZ];
@@ -339,8 +340,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Rotate_Sym33_Using_Rtranspose_S_R(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
-  assert(s != result);
-  assert(r != result);
+  NIMBLE_DEBUG_ASSERT(s != result);
+  NIMBLE_DEBUG_ASSERT(r != result);
 
   ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_YX] + s[K_S_XZ] * r[K_F_ZX];
   ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_YX] + s[K_S_YZ] * r[K_F_ZX];
@@ -365,8 +366,8 @@ template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
 Unrotate_Sym33_Using_R_S_Rtranspose(const ScalarT* const s, const ScalarT* const r, ScalarT* const result)
 {
-  assert(s != result);
-  assert(r != result);
+  NIMBLE_DEBUG_ASSERT(s != result);
+  NIMBLE_DEBUG_ASSERT(r != result);
 
   ScalarT temp_xx = s[K_S_XX] * r[K_F_XX] + s[K_S_XY] * r[K_F_XY] + s[K_S_XZ] * r[K_F_XZ];
   ScalarT temp_yx = s[K_S_YX] * r[K_F_XX] + s[K_S_YY] * r[K_F_XY] + s[K_S_YZ] * r[K_F_XZ];
@@ -519,9 +520,7 @@ Invert_Full33(const ScalarT* mat, ScalarT* inv)
   ScalarT minor8 = mat[K_F_XX] * mat[K_F_YY] - mat[K_F_XY] * mat[K_F_YX];
   ScalarT det    = mat[K_F_XX] * minor0 - mat[K_F_XY] * minor1 + mat[K_F_XZ] * minor2;
 
-  if (det < 0.0) {
-    // throw std::logic_error("Error in Invert_Full33(), singular matrix");
-  }
+  NIMBLE_ASSERT(det >= 0.0, "Error in Invert_Full33(), singular matrix");
 
   inv[K_F_XX] = minor0 / det;
   inv[K_F_XY] = -1.0 * minor3 / det;
@@ -1051,7 +1050,7 @@ CheckCorrectnessOfPolarDecomp(
     Print_Full33("V", V);
     Print_Full33("R", R);
     std::cout << "norm of error = " << should_be_zero_norm << "\n" << std::endl;
-    // throw std::logic_error("\n**** Polar decomposition correctness check
+    // NIMBLE_ABORT("\n**** Polar decomposition correctness check
     // failed for " + label + "!\n");
   }
 }
@@ -1083,7 +1082,7 @@ CheckCorrectnessOfSymSkew(
     Print_Sym33("sym", sym);
     Print_Full33("skew", skew);
     std::cout << "norm of error = " << should_be_zero_norm << "\n" << std::endl;
-    // throw std::logic_error("\n**** Sym-skew correctness check failed for " +
+    // NIMBLE_ABORT("\n**** Sym-skew correctness check failed for " +
     // label + "!\n");
   }
 }
@@ -1098,8 +1097,7 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
 
   // set firewall to make sure the rotation is indeed 180 degrees
   if (std::abs(rotation[K_F_XX] + rotation[K_F_YY] + rotation[K_F_ZZ] + 1.0) < 10.0 * machine_epsilon) {
-    // throw std::logic_error("\n**** Input check failed for
-    // Log_Rotation_Pi()!\n");
+    // throw std::invalid_argument("\n**** Input check failed for Log_Rotation_Pi()!\n");
   }
 
   ScalarT B[9];
@@ -1140,10 +1138,8 @@ Log_Rotation_Pi(const ScalarT* const rotation, ScalarT* const log_rotation)
     norm = normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
     if (norm > 0.0) { norm = std::sqrt(norm); }
 
-    if (norm < machine_epsilon) {
-      // throw std::logic_error("\n**** Error in Log_Rotation_Pi(), cannot
-      // determine rotation vector.");
-    }
+    NIMBLE_ASSERT(norm >= machine_epsilon, "\n**** Error in Log_Rotation_Pi(), cannot"
+                  " determine rotation vector.");
   }
 
   normal[0] /= norm;
@@ -1190,7 +1186,7 @@ Log_Rotation(const ScalarT* const rotation, ScalarT* const log_rotation)
     ss << "\n****   (det(R) - 1) must be less than (100 * machine_epsilon):  "
           "det(R) = "
        << det_rotation << ", machine_epsilon = " << machine_epsilon << "\n";
-    // throw std::logic_error(ss.str());
+    // throw std::invalid_argument(ss.str());
   }
 
   // acos requires input between -1 and +1

@@ -56,6 +56,8 @@
 #include <Tpetra_Vector.hpp>
 #endif
 
+#include "nimble_macros.h"
+
 // TODO
 // Move the matrix contain class to nimble_linear_solver.h
 // Modify accessor routines for all matrix container classes to be as compatible
@@ -98,11 +100,11 @@ class TpetraMatrixContainer
     LocalOrdinal success = crs_matrix_->sumIntoLocalValues(local_row, local_cols(), values());
 
     if (success == Teuchos::OrdinalTraits<LocalOrdinal>::invalid()) {
-      throw std::logic_error(
+      NIMBLE_ABORT(
           "\nError in TpetraMatrixContainer::sumIntoValue(), "
           "replaceLocalValues() failed.\n");
     } else if (success != 1) {
-      throw std::logic_error("\nError in TpetraMatrixContainer::sumIntoValue(), invalid index.\n");
+      NIMBLE_ABORT("\nError in TpetraMatrixContainer::sumIntoValue(), invalid index.\n");
     }
     std::cout << "DJL DEBUGGING TpetraMatrixContainer::sumIntoValue() success! " << success << std::endl;
   }

@@ -115,7 +115,7 @@ GenesisMesh::ReadFile(std::string file_name)
   retval = ex_get_map_param(exodus_file_id, &num_node_maps, &num_elem_maps);
   if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_map_param");
   if (num_node_maps > 1 || num_elem_maps > 1) {
-    throw std::logic_error(
+    NIMBLE_ABORT(
         "GenesisMesh::ReadFile(), multiple auxiliary node/element maps not "
         "supported!");
   }
@@ -128,7 +128,7 @@ GenesisMesh::ReadFile(std::string file_name)
     retval = ex_get_name(exodus_file_id, EX_NODE_MAP, 1, map_name);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     if (std::string(map_name) != std::string("original_global_id_map")) {
-      throw std::logic_error("GenesisMesh::ReadFile(), unsupported auxiliary node map!");
+      NIMBLE_ABORT("GenesisMesh::ReadFile(), unsupported auxiliary node map!");
     }
     retval = ex_get_num_map(exodus_file_id, EX_NODE_MAP, 1, &node_global_id_[0]);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
@@ -141,7 +141,7 @@ GenesisMesh::ReadFile(std::string file_name)
     retval = ex_get_name(exodus_file_id, EX_ELEM_MAP, 1, map_name);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_name");
     if (std::string(map_name) != std::string("original_global_id_map")) {
-      throw std::logic_error("GenesisMesh::ReadFile(), unsupported auxiliary element map!");
+      NIMBLE_ABORT("GenesisMesh::ReadFile(), unsupported auxiliary element map!");
     }
     retval = ex_get_num_map(exodus_file_id, EX_ELEM_MAP, 1, &elem_global_id_[0]);
     if (retval != 0) ReportExodusError(retval, "GenesisMesh::ReadFile()", "ex_get_num_map");
@@ -331,7 +331,7 @@ GenesisMesh::ReadTextFile(std::string file_name)
   if (!mesh_file.is_open()) {
     std::stringstream error_msg_ss;
     error_msg_ss << "\n** Error, failed to open mesh file " << text_file_name << "\n";
-    throw std::logic_error(error_msg_ss.str());
+    throw std::invalid_argument(error_msg_ss.str());
   }
 
   int num_nodes, num_elem, num_blocks, num_node_sets;
@@ -499,7 +499,7 @@ GenesisMesh::GetElementType(int block_id) const
     }
   }
 
-  if (elem_type == "UNKNOWN") { throw std::logic_error("Error processing input mesh, unknown element type."); }
+  if (elem_type == "UNKNOWN") throw std::invalid_argument("Error processing input mesh, unknown element type.");
 
   return elem_type;
 }
@@ -519,7 +519,7 @@ GenesisMesh::GetBlockId(std::string const& block_name) const
   for (auto& entry : block_names_) {
     if (entry.second == block_name) { return entry.first; }
   }
-  throw std::logic_error("\n**** Error in GenesisMesh::GetBlockId(), block name not found.\n");
+  throw std::invalid_argument("\n**** Error in GenesisMesh::GetBlockId(), block name not found.\n");
 }
 
 void
@@ -617,7 +617,7 @@ GenesisMesh::ReportExodusError(int error_code, const char* method_name, const ch
   if (error_code < 0) {
     ss << "\n**Error GenesisMesh::" << method_name << ", Error code: " << error_code << " (" << exodus_method_name
        << ")\n";
-    throw std::logic_error(ss.str());
+    NIMBLE_ABORT(ss.str());
   } else {
     ss << "\n**Warning GenesisMesh::" << method_name << ", Warning code: " << error_code << " (" << exodus_method_name
        << ")\n";
