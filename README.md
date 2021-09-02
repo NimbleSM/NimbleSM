@@ -1,6 +1,8 @@
 # NimbleSM
 NimbleSM is a Lagrangian finite-element code for solid mechanics.  Its primary application is the solution of mechanics problems on nonuniform, three-dimensional meshes using either explicit transient dynamic or implicit quasi-static time integration.  Additional features include multiscale modeling and the simulation of contact.  The NimbleSM code base is designed for performance portability across varying hardware architectures.
 
+The NimbleSM documentation can be found [here](https://nimblesm.github.io/NimbleSM).
+
 NimbleSM may be built with the following optional dependencies:
 
 ## ArborX
