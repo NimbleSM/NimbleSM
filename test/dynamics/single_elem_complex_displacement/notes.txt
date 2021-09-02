@@ -1,1 +1,0 @@
-This is a regression test as documented in NimbleSMExtras.
