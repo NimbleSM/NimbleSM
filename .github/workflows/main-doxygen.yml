@@ -1,14 +1,10 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Doxygen Action
+name: Check Doxygen Action
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
 on:
-  push:
-    branches:
-    - master
-    - develop
   pull_request:
     branches:
     - master
@@ -31,12 +27,3 @@ jobs:
       with:
         # Path to Doxyfile
         doxyfile-path: "./docs/doxygen/doxygen.conf" # default is ./Doxyfile
-    
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        # Default Doxyfile build documentation to html directory. 
-        # Change the directory if changes in Doxyfile
-        publish_dir: "./doxygen/html"
-        publish_branch: gh-pages
