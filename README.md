@@ -36,6 +36,10 @@ Required for parallel execution of implicit time integration (quasi-statics).
 
 https://trilinos.org
 
-## BVH
+## BVH & VT
 
-This library will be publicly released in the near future.
+This combination will be publicly released in the near future. 
+It combines a novel geometric search library with the [VT runtime tasking library](https://github.com/DARMA-tasking/vt) for C++, 
+built for general scientific applications.
+
+
