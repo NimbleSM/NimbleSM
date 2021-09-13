@@ -12,19 +12,6 @@
  *
  * Source files can be downloaded [here](https://github.com/NimbleSM/NimbleSM).
  *
- * \section sec_compile How to build NimbleSM?
- *
- * Examples of steps for building the code can be found
- * in [the workflows directory](https://github.com/NimbleSM/NimbleSM/tree/develop/.github/workflows) 
- * (which builds NimbleSM for testing under different configurations)
- * or in [the scripts directory](https://github.com/NimbleSM/NimbleSM/tree/develop/scripts/cmake-example-scripts).
- *
- * \subsection subsec_serial  Serial version
- *
- * This configuration runs only explicit transient dynamic simulations.
- *
- * \subsection subsec_mpi MPI version
- *
- * \section sec_run  MPI-run 
+ * Build steps can be found [here](https://github.com/NimbleSM/NimbleSM/blob/develop/BUILD.md)
  *
  */
