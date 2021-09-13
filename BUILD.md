@@ -15,7 +15,7 @@ The full keyword listing is below.
   * Whether to configure with MPI library.
   * Default: OFF
 
-##### [LICENSE](https://github.com/NimbleSM/NimbleSM/blob/devel/LICENSE)
+##### [LICENSE](https://github.com/NimbleSM/NimbleSM/blob/develop/LICENSE)
 
 Under the terms of Contract DE-NA0003525 with NTESS,
 the U.S. Government retains certain rights in this software.
