@@ -8,7 +8,6 @@ on:
       - develop
   pull_request:
     branches:
-      - develop-refactor
       - master
       - develop
 
@@ -53,8 +52,9 @@ jobs:
            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_KOKKOS=ON -DHAVE_ARBORX=ON -DUSE_PURE_MPI=OFF \
-                 -DNIMBLE_ENABLE_UNIT_TESTS=ON \
+                 -DNimbleSM_ENABLE_ARBORX=ON \
+                 -DNimbleSM_ENABLE_GTEST=ON \
+                 -DNimbleSM_ENABLE_KOKKOS=ON \
                  ..
       - name: compile
         run: cmake --build build
