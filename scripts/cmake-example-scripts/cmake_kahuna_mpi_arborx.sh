@@ -51,10 +51,10 @@ rm -f CMakeCache.txt
 #
 cmake \
 -D CMAKE_BUILD_TYPE:STRING=Release \
--DUSE_PURE_MPI=ON \
--DHAVE_ARBORX=ON \
+-DNimbleSM_ENABLE_MPI=ON \
+-DNimbleSM_ENABLE_ARBORX=ON \
 -DArborX_ROOT="/projects/wg-nimble/users/ulhetma/local" \
--DHAVE_KOKKOS=ON \
+-DNimbleSM_ENABLE_KOKKOS=ON \
 -DKokkos_ROOT="/projects/wg-nimble/users/ulhetma/local/" \
 /path/to/nimblesm/CMakeLists.txt
 #
