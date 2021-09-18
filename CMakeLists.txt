@@ -104,8 +104,8 @@ add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
 
 # Enhanced debugging option
-OPTION(ENABLE_DEBUGGING "Flag to turn on enhanced debugging info" OFF)
-IF (ENABLE_DEBUGGING)
+OPTION(NimbleSM_ENABLE_DEBUG "Flag to turn on enhanced debugging info" OFF)
+IF (NimbleSM_ENABLE_DEBUG)
   MESSAGE("-- Enhanced debugging        is Enabled, compiling with -DNIMBLE_DEBUG")
   SET(NIMBLE_DEBUG TRUE)
 ELSE()
@@ -272,7 +272,7 @@ include_directories(src)
 add_subdirectory(src)
 add_subdirectory(test)
 
-if(NimbleSM_ENABLE_Testing)
+if(NimbleSM_ENABLE_GTEST)
   add_subdirectory(unit_tests)
 endif()
 
