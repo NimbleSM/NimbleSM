@@ -10,19 +10,47 @@ cmake_minimum_required(VERSION 3.17)
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
-option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
 option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
 option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
-option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
-option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
 option(TIME_CONTACT "Whether to time contact" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
+option(NimbleSM_ENABLE_UQ "Whether to use enamble UQ sampling" OFF)
+option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
+if (HAVE_UQ)
+  set(NimbleSM_ENABLE_UQ TRUE)
+  message(DEPRECATION "Flag HAVE_UQ is deprecated. Use NimbleSM_ENABLE_UQ instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+if (USE_PURE_MPI)
+  set(NimbleSM_ENABLE_MPI TRUE)
+  message(DEPRECATION "Flag USE_PURE_MPI is deprecated. Use NimbleSM_ENABLE_MPI instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_Testing "Whether to build Nimble with GTest testing" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+if (NIMBLE_ENABLE_UNIT_TESTS)
+  set(NimbleSM_ENABLE_Testing TRUE)
+  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_Testing instead.")
+endif()
+#------
+
 include(GNUInstallDirs)
 
+option(NimbleSM_ENABLE_CUDA "Whether to build Nimble with CUDA" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 if (NIMBLE_NVIDIA_BUILD)
+  set(NimbleSM_ENABLE_CUDA TRUE)
+  message(DEPRECATION "Flag NIMBLE_NVIDIA_BUILD is deprecated. Use NimbleSM_ENABLE_CUDA instead.")
+endif()
+%------
+
+if (NimbleSM_ENABLE_CUDA)
   message(WARNING "NVIDIA build is not currently active. ")
   #add_definitions(-DNIMBLE_NVIDIA_BUILD)
 endif()
@@ -54,7 +82,7 @@ target_include_directories(nimble PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Optional functionality for UQ
-if (HAVE_UQ)
+if (NimbleSM_ENABLE_UQ)
   set(NIMBLE_HAVE_UQ TRUE)
   message(STATUS "Compiling with UQ")
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_UQ)
@@ -68,12 +96,12 @@ if (TIME_CONTACT)
 endif()
 
 # Optional dependency for pure MPI build (no Trilinos)
-if (USE_PURE_MPI)
+if (NimbleSM_ENABLE_MPI)
   set(NIMBLE_HAVE_MPI TRUE)
-    message(STATUS "Compiling with MPI")
   find_package(MPI REQUIRED)
   target_link_libraries(nimble PUBLIC MPI::MPI_CXX)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
+  message(STATUS "Compiling with MPI")
 endif()
 
 # Optional BVH dependency
@@ -204,7 +232,7 @@ include_directories(src)
 add_subdirectory(src)
 add_subdirectory(test)
 
-if(NIMBLE_ENABLE_UNIT_TESTS)
+if(NimbleSM_ENABLE_Testing)
   add_subdirectory(unit_tests)
 endif()
 
