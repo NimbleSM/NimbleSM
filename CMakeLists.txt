@@ -40,6 +40,14 @@ if (NimbleSM_ENABLE_CUDA)
 endif()
 #------
 
+option(NimbleSM_ENABLE_GTEST "Whether to build Nimble with GTest testing" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+if (NIMBLE_ENABLE_UNIT_TESTS)
+  set(NimbleSM_ENABLE_GTEST TRUE)
+  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_GTEST instead.")
+endif()
+#------
+
 option(NimbleSM_ENABLE_KOKKOS "Whether to use Kokkos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos" OFF)
 if (HAVE_KOKKOS)
@@ -61,14 +69,6 @@ option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 if (HAVE_TRILINOS)
   set(NimbleSM_ENABLE_TRILINOS TRUE)
   message(DEPRECATION "Flag HAVE_TRILINOS is deprecated. Use NimbleSM_ENABLE_TRILINOS instead.")
-endif()
-#------
-
-option(NimbleSM_ENABLE_GTEST "Whether to build Nimble with GTest testing" OFF)
-option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
-if (NIMBLE_ENABLE_UNIT_TESTS)
-  set(NimbleSM_ENABLE_GTEST TRUE)
-  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_GTEST instead.")
 endif()
 #------
 
@@ -165,20 +165,25 @@ endif()
 
 # Optional Trilinos dependencies
 if(NimbleSM_ENABLE_TRILINOS)
+  option(NimbleSM_USE_TRILINOS_EXODUS "Whether to use Exodus from Trilinos" ON)
   option(USE_TRILINOS_EXODUS "Whether to use Exodus from Trilinos" ON)
+  if (NOT USE_TRILINOS_EXODUS)
+    set(NimbleSM_USE_TRILINOS_EXODUS FALSE)
+    message(DEPRECATION "Flag USE_TRILINOS_EXODUS is deprecated. Use NimbleSM_USE_TRILINOS_EXODUS instead.")
+  endif()
   # Trilinos brings in Trilinos, Kokkos, and (optionally) Exodus
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_TRILINOS)
   set(NIMBLE_HAVE_TRILINOS TRUE)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_KOKKOS)
   set(NIMBLE_HAVE_KOKKOS TRUE)
-  if(USE_TRILINOS_EXODUS)
+  if(NimbleSM_USE_TRILINOS_EXODUS)
     target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_EXODUS)
     set(NIMBLE_HAVE_EXODUS TRUE)
   endif()
   message(STATUS "Trilinos is enabled.")
   set(Trilinos_DIR CACHE PATH "Path to Trilinos install directory")
   set(NIMBLE_TRILINOS_COMPONENTS KokkosCore TpetraCore)
-  if(USE_TRILINOS_EXODUS)
+  if(NimbleSM_USE_TRILINOS_EXODUS)
     set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} SEACASExodus)
   endif()
   find_package(Trilinos REQUIRED COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS})
@@ -230,7 +235,7 @@ endif()
 
 # Exodus library dependencies
 message(STATUS "HAVE_TRILINOS: ${HAVE_TRILINOS}")
-if(NOT NimbleSM_ENABLE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
+if(NOT NimbleSM_ENABLE_TRILINOS OR NOT NimbleSM_USE_TRILINOS_EXODUS)
   find_package(Exodus REQUIRED)
   set(NIMBLE_HAVE_EXODUS TRUE)
   target_compile_definitions(nimble PRIVATE NIMBLE_HAVE_EXODUS)
