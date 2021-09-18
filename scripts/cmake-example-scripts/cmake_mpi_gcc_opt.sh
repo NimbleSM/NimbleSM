@@ -8,6 +8,5 @@ cmake \
 -D CMAKE_CXX_FLAGS:STRING="-O2 -std=c++1y" \
 -D EXODUS_INCLUDE_DIR:PATH="/path/to/seacas/include" \
 -D EXODUS_LIB_DIR:PATH="/path/to/seacas/lib" \
--D HAVE_DARMA=OFF \
--D USE_PURE_MPI:BOOL=ON \
+-D NimbleSM_ENABLE_MPI:BOOL=ON \
 ../../Nimble/
