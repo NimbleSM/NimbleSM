@@ -10,25 +10,32 @@ cmake_minimum_required(VERSION 3.17)
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
-option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
 option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
 option(TIME_CONTACT "Whether to time contact" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
-
-option(NimbleSM_ENABLE_UQ "Whether to use enamble UQ sampling" OFF)
-option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
-if (HAVE_UQ)
-  set(NimbleSM_ENABLE_UQ TRUE)
-  message(DEPRECATION "Flag HAVE_UQ is deprecated. Use NimbleSM_ENABLE_UQ instead.")
-endif()
-#------
 
 option(NimbleSM_ENABLE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 if (USE_PURE_MPI)
   set(NimbleSM_ENABLE_MPI TRUE)
   message(DEPRECATION "Flag USE_PURE_MPI is deprecated. Use NimbleSM_ENABLE_MPI instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+if (HAVE_BVH)
+  set(NimbleSM_ENABLE_BVH TRUE)
+  message(DEPRECATION "Flag HAVE_BVH is deprecated. Use NimbleSM_ENABLE_BVH instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_UQ "Whether to use enamble UQ sampling" OFF)
+option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
+if (HAVE_UQ)
+  set(NimbleSM_ENABLE_UQ TRUE)
+  message(DEPRECATION "Flag HAVE_UQ is deprecated. Use NimbleSM_ENABLE_UQ instead.")
 endif()
 #------
 
@@ -48,7 +55,7 @@ if (NIMBLE_NVIDIA_BUILD)
   set(NimbleSM_ENABLE_CUDA TRUE)
   message(DEPRECATION "Flag NIMBLE_NVIDIA_BUILD is deprecated. Use NimbleSM_ENABLE_CUDA instead.")
 endif()
-%------
+#------
 
 if (NimbleSM_ENABLE_CUDA)
   message(WARNING "NVIDIA build is not currently active. ")
@@ -105,7 +112,7 @@ if (NimbleSM_ENABLE_MPI)
 endif()
 
 # Optional BVH dependency
-if (HAVE_BVH)
+if (NimbleSM_ENABLE_BVH)
   ADD_DEFINITIONS(-DNIMBLE_HAVE_BVH)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_VT)
   if (BVH_DEBUG_LEVEL)
