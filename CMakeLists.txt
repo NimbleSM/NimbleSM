@@ -13,13 +13,20 @@ project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
 option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
 option(TIME_CONTACT "Whether to time contact" OFF)
-option(HAVE_ARBORX "Whether to use ArborX" OFF)
 
 option(NimbleSM_ENABLE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
 if (USE_PURE_MPI)
   set(NimbleSM_ENABLE_MPI TRUE)
   message(DEPRECATION "Flag USE_PURE_MPI is deprecated. Use NimbleSM_ENABLE_MPI instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_ARBORX "Whether to use ArborX" OFF)
+option(HAVE_ARBORX "Whether to use ArborX" OFF)
+if (HAVE_ARBORX)
+  set(NimbleSM_ENABLE_ARBORX TRUE)
+  message(DEPRECATION "Flag HAVE_ARBORX is deprecated. Use NimbleSM_ENABLE_ARBORX instead.")
 endif()
 #------
 
@@ -213,7 +220,7 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
 endif()
 
 # Optional ArborX dependency
-if (HAVE_ARBORX)
+if (NimbleSM_ENABLE_ARBORX)
   message(STATUS "Compiling with ArborX:")
   find_package(ArborX REQUIRED)
   #
