@@ -38,10 +38,11 @@ jobs:
            mkdir build && cd build
            export ACCESS=`pwd`
            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
-                 -DUSE_PURE_MPI=ON -Dexodus_INCLUDE_DIR="/usr/include" \
+                 -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
-                 -DHAVE_UQ=ON \
-                 -DNIMBLE_ENABLE_UNIT_TESTS=ON \
+                 -DNimbleSM_ENABLE_GTEST=ON \
+                 -DNimbleSM_ENABLE_MPI=ON \
+                 -DNimbleSM_ENABLE_UQ=ON \
                  ..
     - name: build
       run: cmake --build build
