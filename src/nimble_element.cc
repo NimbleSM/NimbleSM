@@ -275,7 +275,7 @@ HexElement::ComputeVolumeAverage(
   nimble::Viewify<2, const double> int_pt_quantities_v(int_pt_quantities, {num_int_pts_, num_quantities},
                                                        {num_quantities, 1});
 
-  nimble::Viewify<1> vol_ave_quantity(volume_averaged_quantities, {num_quantities}, {1});
+  nimble::Viewify<1> vol_ave_quantity(volume_averaged_quantities, num_quantities);
 
   ComputeVolumeAverageQuantities_impl(node_reference_coords, node_disp, int_pt_quantities_v,
                                       vol_ave_quantity, num_quantities, volume);

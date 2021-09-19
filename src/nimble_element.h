@@ -329,6 +329,7 @@ class HexElement : public Element
     double a_inv[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
     std::vector<double> vol_ave(num_quantities, 0);
+    volume = 0.0;
 
     for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
       // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
