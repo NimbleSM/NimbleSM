@@ -52,6 +52,7 @@
 #include <stdexcept>
 
 #include "nimble_macros.h"
+#include "nimble_view.h"
 
 NIMBLE_INLINE_FUNCTION
 int
@@ -1228,14 +1229,14 @@ Invert3x3(const double mat[][3], double inv[][3])
   if (det <= 0.0) {
 #ifdef NIMBLE_HAVE_KOKKOS
     if (det == 0.0)
-      printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+      printf("\n**** Error in Invert3x3(), singular matrix.\n");
     else
       printf(
-          "\n**** Error in HexElement::Invert3x3(), negative determinant "
+          "\n**** Error in HexInvert3x3(), negative determinant "
           "(%e)\n",
           det);
 #else
-    NIMBLE_ASSERT(det > 0.0, "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
+    NIMBLE_ASSERT(det > 0.0, "\n**** Error in Invert3x3(), singular matrix.\n");
 #endif
   }
 
@@ -1252,37 +1253,28 @@ Invert3x3(const double mat[][3], double inv[][3])
   return det;
 }
 
-NIMBLE_INLINE_FUNCTION void
-LU_Decompose(double a[][3], int index[])
-{
-  // a is the square matrix to be decomposed (will be destroyed and replaced by
-  // decomp) index holds the pivoting information (row interchanges)
 
-  int    imax = 0;
-  double big, temp, sum;
-  constexpr int n = 3;
-  double vv[n];  // vv stores the implicit scaling of each row.
-  constexpr double tiny = 1e-40;
+template< class Matrix >
+void
+LU_Decompose(int num_entries, Matrix& mat, int* index)
+{
+  int                 imax = 0;
+  double              big, temp, sum;
+  int                 n = num_entries;
+  std::vector<double> vv(n);  // vv stores the implicit scaling of each row.
+  double              tiny = 1e-40;
 
   // loop over rows to get the implicit scaling information
   // scale each row by 1/(largest element)
+
   for (int i = 0; i < n; ++i) {
     big = 0.0;
     for (int j = 0; j < n; ++j) {
-      if (std::fabs(a[i][j]) > big) { big = std::fabs(a[i][j]); }
+      if (std::fabs(mat(i, j)) > big) big = std::fabs(mat(i, j));
     }
     if (big < tiny) {
       // No nonzero largest element.
-#ifdef NIMBLE_HAVE_KOKKOS
-printf(
-    "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-    "matrix.\n");
-#else
-NIMBLE_ASSERT(
-    big >= tiny,
-    "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-    "matrix.\n");
-#endif
+      NIMBLE_ABORT("Singular matrix in routine LU_Decompose()");
     }
     vv[i] = 1.0 / big;
   }
@@ -1290,19 +1282,21 @@ NIMBLE_ASSERT(
   // loop over columns
   for (int j = 0; j < n; ++j) {
     for (int i = 0; i < j; ++i) {
-      sum = a[i][j];
-      for (int k = 0; k < i; ++k) { sum -= a[i][k] * a[k][j]; }
-      a[i][j] = sum;
+      sum = mat(i, j);
+      for (int k = 0; k < i; ++k) { sum -= mat(i, k) * mat(k, j); }
+      mat(i, j) = sum;
     }
+
     big = 0.0;
     for (int i = j; i < n; ++i) {
-      sum = a[i][j];
-      for (int k = 0; k < j; ++k) { sum -= a[i][k] * a[k][j]; }
-      a[i][j] = sum;
-      if (vv[i] * fabs(sum) > big) {
+      sum = mat(i, j);
+      for (int k = 0; k < j; ++k) { sum -= mat(i, k) * mat(k, j); }
+      mat(i, j) = sum;
+
+      if (vv[i] * std::fabs(sum) > big) {
         // this is the biggest element in the column
         // save it as the pivot element
-        big  = vv[i] * fabs(sum);
+        big  = vv[i] * std::fabs(sum);
         imax = i;
       }
     }
@@ -1310,107 +1304,72 @@ NIMBLE_ASSERT(
     // interchange rows if required
     if (j != imax) {
       for (int k = 0; k < n; ++k) {
-        temp       = a[imax][k];
-        a[imax][k] = a[j][k];
-        a[j][k]    = temp;
+        temp         = mat(imax, k);
+        mat(imax, k) = mat(j, k);
+        mat(j, k)    = temp;
       }
       vv[imax] = vv[j];
     }
     index[j] = imax;
 
-    if (fabs(a[j][j]) < tiny) {
+    if (std::fabs(mat(j, j)) < tiny) {
       // matrix is singular and we're about to divide by zero
-#ifdef NIMBLE_HAVE_KOKKOS
-printf(
-    "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-    "matrix.\n");
-#else
-NIMBLE_ASSERT(
-    fabs(a[j][j]) >= tiny,
-    "\n**** Error in HexElement::Invert3x3LUDecomp(),"
-    " singular matrix.\n");
-#endif
+      NIMBLE_ABORT("Singular matrix in routine LU_Decompose()");
     }
 
     // divide by the pivot element
-
     if (j != n) {
-      temp = 1.0 / (a[j][j]);
-      for (int i = j + 1; i < n; ++i) { a[i][j] *= temp; }
+      temp = 1.0 / (mat(j, j));
+      for (int i = j + 1; i < n; ++i) { mat(i, j) *= temp; }
     }
   }
+
+  // decomposition is returned in mat
 }
 
-NIMBLE_INLINE_FUNCTION void
-LU_Solve(const double a[][3], const int index[3], double b[3])
+
+template< class Matrix >
+void
+LU_Solve(int num_entries, const Matrix& mat, double* vec, const int* index)
 {
-  // a holds the upper and lower triangular decomposition (obtained by
-  // LU_Deompose) index holds the pivoting information (row interchanges) b hold
-  // the right-hand-side vector
+  // mat holds the upper and lower triangular decomposition (obtained by
+  // LU_Deompose) vec hold the right-hand-side vector index holds the pivoting
+  // information (row interchanges)
 
   double sum;
-  constexpr int n = 3;
+  int    n = num_entries;
 
   // forward substitution
   // resolve pivoting as we go (stored in index array)
   for (int i = 0; i < n; ++i) {
-    sum         = b[index[i]];
-    b[index[i]] = b[i];
-    for (int j = 0; j < i; ++j) { sum -= a[i][j] * b[j]; }
-    b[i] = sum;
+    sum           = vec[index[i]];
+    vec[index[i]] = vec[i];
+    for (int j = 0; j < i; ++j) { sum -= mat(i, j) * vec[j]; }
+    vec[i] = sum;
   }
 
   // back substitution
   for (int i = n - 1; i >= 0; --i) {
-    sum = b[i];
-    for (int j = i + 1; j < n; ++j) { sum -= a[i][j] * b[j]; }
-    b[i] = sum / a[i][i];
+    sum = vec[i];
+    for (int j = i + 1; j < n; ++j) { sum -= mat(i, j) * vec[j]; }
+    vec[i] = sum / mat(i, i);
   }
-  // solution is returned in b
+
+  // solution is returned in vec
 }
 
-NIMBLE_INLINE_FUNCTION void
-LU_Invert(const double mat[][3], double inv[][3])
-{
-  constexpr int n = 3;
-  int    index[n];
-  double col[n];
 
-  // make local copies (which will be destroyed)
-  double temp[n][n];
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { temp[i][j] = mat[i][j]; }
-  }
+template< class Matrix >
+void
+LU_SolveSystem(int num_entries, Matrix& mat, double* vec, int* scratch)
+{
+  int* index = scratch;
 
   // decompose the matrix into upper and lower triangular parts
-  LU_Decompose(temp, index);
+  LU_Decompose(num_entries, mat, index);
 
-  // find the inverse by columns (forward and backward substitution)
-  for (int i = 0; i < n; ++i) {
-    for (double & j : col) { j = 0.0; }
-    col[i] = 1.0;
-
-    LU_Solve(temp, index, col);
-
-    for (int j = 0; j < n; ++j) { inv[j][i] = col[j]; }
-  }
-}
-
-NIMBLE_INLINE_FUNCTION double
-MatrixInverseCheckCorrectness(const double mat[][3], const double inv[][3])
-{
-  constexpr int n = 3;
-  double error[n][n];
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { error[i][j] = mat[i][0] * inv[0][j] + mat[i][1] * inv[1][j] + mat[i][2] * inv[2][j]; }
-  }
-  for (int i = 0; i < n; i++) { error[i][i] -= 1.0; }
-  double frobenius_norm = 0.0;
-  for (auto & e_i : error) {
-    for (double e_ij : e_i) { frobenius_norm += e_ij * e_ij; }
-  }
-  frobenius_norm = sqrt(frobenius_norm);
-  return frobenius_norm;
+  // solve the system (forward and backward substitution)
+  LU_Solve(num_entries, mat, vec, index);
 }
 
 #endif  // NIMBLE_UTILS_H
