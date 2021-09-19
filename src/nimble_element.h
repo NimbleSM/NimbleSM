@@ -146,9 +146,9 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d) const = 0;
 #endif
 
-  NIMBLE_INLINE_FUNCTION
+  static NIMBLE_INLINE_FUNCTION
   double
-  Invert3x3(const double mat[][3], double inv[][3]) const;
+  Invert3x3(const double mat[][3], double inv[][3]) ;
 
   static NIMBLE_INLINE_FUNCTION
   void

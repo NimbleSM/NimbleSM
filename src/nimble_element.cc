@@ -52,7 +52,7 @@
 namespace nimble {
 
 double
-Element::Invert3x3(const double mat[][3], double inv[][3]) const
+Element::Invert3x3(const double mat[][3], double inv[][3])
 {
   double minor0 = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
   double minor1 = mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0];
