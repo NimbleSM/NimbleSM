@@ -43,6 +43,7 @@
 
 #include "nimble_element.h"
 
+#include <cmath>
 #include <limits>
 
 #include "nimble_view.h"
@@ -246,7 +247,7 @@ Element::MatrixInverseCheckCorrectness(const double mat[][3], const double inv[]
   for (int i = 0; i < n; i++) { error[i][i] -= 1.0; }
   double frobenius_norm = 0.0;
   for (auto & e_i : error) {
-    for (int j = 0; j < n; j++) { frobenius_norm += e_i[j] * e_i[j]; }
+    for (double e_ij : e_i) { frobenius_norm += e_ij * e_ij; }
   }
   frobenius_norm = sqrt(frobenius_norm);
   return frobenius_norm;
@@ -656,19 +657,19 @@ HexElement::ComputeDeformationGradients(
     double*       deformation_gradients) const
 {
   double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double b_inv[][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double def_grad[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double b_inv[][dim_]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double def_grad[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
   // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
+  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
     // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
     // \sum_{i}^{N_{node}} X_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double b[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double b[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
     // Sum over the number of nodes
-    for (int j = 0; j < 8; j++) {
+    for (int j = 0; j < num_nodes_; j++) {
       rc1 = node_reference_coords[3 * j];
       rc2 = node_reference_coords[3 * j + 1];
       rc3 = node_reference_coords[3 * j + 2];
@@ -705,8 +706,8 @@ HexElement::ComputeDeformationGradients(
     Invert3x3(b, b_inv);
     // LU_Invert(b, b_inv);
 
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
+    for (int j = 0; j < dim_; j++) {
+      for (int k = 0; k < dim_; k++) {
         def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
       }
     }
@@ -894,161 +895,18 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
 void
 HexElement::ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces)
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
-  double jac_det;
-  double a_inv[][3]      = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  int    sym_tensor_size = 6;
+  nimble::Viewify<2, const double> node_reference_coords(node_current_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  for (int n = 0; n < num_nodes_; n++) {
-    for (int i = 0; i < dim_; i++) { node_forces[n * dim_ + i] = 0.0; }
-  }
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  constexpr int sym_tensor_size = 6;
+  nimble::Viewify<2, const double> int_stresses_v(int_pt_stresses, {num_int_pts_, sym_tensor_size},
+                                                  {sym_tensor_size, 1});
 
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_current_coords[3 * n];
-      cc2  = node_current_coords[3 * n + 1];
-      cc3  = node_current_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
+  nimble::Viewify<2> node_forces_v(node_forces, {num_nodes_, dim_}, {dim_, 1});
 
-    jac_det = Invert3x3(a, a_inv);
-    // LU_Invert(a, a_inv);
-
-    for (int node = 0; node < num_nodes_; node++) {
-      dN_dx1 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][0];
-
-      dN_dx2 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][1];
-
-      dN_dx3 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][2];
-
-      f1 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XX] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YX] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZX];
-
-      f2 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XY] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YY] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZY];
-
-      f3 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XZ] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YZ] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZZ];
-
-      f1 *= jac_det * int_wts_[int_pt];
-      f2 *= jac_det * int_wts_[int_pt];
-      f3 *= jac_det * int_wts_[int_pt];
-
-      node_forces[3 * node] -= f1;
-      node_forces[3 * node + 1] -= f2;
-      node_forces[3 * node + 2] -= f3;
-    }
-  }
+  ComputeNodalForces_impl(node_reference_coords, node_disp, int_stresses_v, node_forces_v);
 }
-
-#ifdef NIMBLE_HAVE_KOKKOS
-void
-HexElement::ComputeNodalForces(
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-    nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const
-{
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double force[][3] = {
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0}};
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-
-    jac_det = Invert3x3(a, a_inv);
-
-    for (int node = 0; node < num_nodes_; node++) {
-      dN_dx1 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][0];
-
-      dN_dx2 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][1];
-
-      dN_dx3 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][2];
-
-      f1 = dN_dx1 * int_pt_stresses(int_pt, K_S_XX_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YX_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZX_);
-
-      f2 = dN_dx1 * int_pt_stresses(int_pt, K_S_XY_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YY_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZY_);
-
-      f3 = dN_dx1 * int_pt_stresses(int_pt, K_S_XZ_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YZ_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZZ_);
-
-      f1 *= jac_det * int_wts_[int_pt];
-      f2 *= jac_det * int_wts_[int_pt];
-      f3 *= jac_det * int_wts_[int_pt];
-
-      // profiling showed that calling the -= operator directly on the kokkos
-      // view is expensive
-      force[node][0] -= f1;
-      force[node][1] -= f2;
-      force[node][2] -= f3;
-    }
-  }
-
-  for (int node = 0; node < num_nodes_; node++) {
-    node_forces(node, 0) = force[node][0];
-    node_forces(node, 1) = force[node][1];
-    node_forces(node, 2) = force[node][2];
-  }
-}
-#endif
 
 }  // namespace nimble

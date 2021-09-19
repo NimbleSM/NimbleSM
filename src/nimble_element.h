@@ -333,6 +333,96 @@ class HexElement : public Element
   void
   ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent) override;
 
+ protected:
+
+  template < class ConstViewT, class ViewTensorT, class ViewT>
+  void
+  ComputeNodalForces_impl(
+      ConstViewT       node_reference_coords,
+      ConstViewT       node_displacements,
+      ViewTensorT int_pt_stresses,
+      ViewT       node_forces) const
+  {
+    double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
+    double jac_det;
+    double a_inv[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double force[][dim_] = {
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0}};
+    constexpr int dim_nodes = dim_ * num_nodes_;
+
+    for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
+      // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
+      double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+      for (int n = 0; n < num_nodes_; n++) {
+        cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
+        cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
+        cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
+        sfd1 = shape_fcn_deriv_[dim_nodes * int_pt + dim_ * n];
+        sfd2 = shape_fcn_deriv_[dim_nodes * int_pt + dim_ * n + 1];
+        sfd3 = shape_fcn_deriv_[dim_nodes * int_pt + dim_ * n + 2];
+        a[0][0] += cc1 * sfd1;
+        a[0][1] += cc1 * sfd2;
+        a[0][2] += cc1 * sfd3;
+        a[1][0] += cc2 * sfd1;
+        a[1][1] += cc2 * sfd2;
+        a[1][2] += cc2 * sfd3;
+        a[2][0] += cc3 * sfd1;
+        a[2][1] += cc3 * sfd2;
+        a[2][2] += cc3 * sfd3;
+      }
+
+      jac_det = Invert3x3(a, a_inv);
+
+      for (int node = 0; node < num_nodes_; node++) {
+        dN_dx1 = shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node] * a_inv[0][0] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 1] * a_inv[1][0] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 2] * a_inv[2][0];
+
+        dN_dx2 = shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node] * a_inv[0][1] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 1] * a_inv[1][1] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 2] * a_inv[2][1];
+
+        dN_dx3 = shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node] * a_inv[0][2] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 1] * a_inv[1][2] +
+            shape_fcn_deriv_[int_pt * dim_nodes + dim_ * node + 2] * a_inv[2][2];
+
+        f1 = dN_dx1 * int_pt_stresses(int_pt, K_S_XX_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YX_) +
+            dN_dx3 * int_pt_stresses(int_pt, K_S_ZX_);
+
+        f2 = dN_dx1 * int_pt_stresses(int_pt, K_S_XY_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YY_) +
+            dN_dx3 * int_pt_stresses(int_pt, K_S_ZY_);
+
+        f3 = dN_dx1 * int_pt_stresses(int_pt, K_S_XZ_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YZ_) +
+            dN_dx3 * int_pt_stresses(int_pt, K_S_ZZ_);
+
+        f1 *= jac_det * int_wts_[int_pt];
+        f2 *= jac_det * int_wts_[int_pt];
+        f3 *= jac_det * int_wts_[int_pt];
+
+        // profiling showed that calling the -= operator directly on the kokkos
+        // view is expensive
+        force[node][0] -= f1;
+        force[node][1] -= f2;
+        force[node][2] -= f3;
+      }
+    }
+
+    for (int node = 0; node < num_nodes_; node++) {
+      node_forces(node, 0) = force[node][0];
+      node_forces(node, 1) = force[node][1];
+      node_forces(node, 2) = force[node][2];
+    }
+  }
+
+ public:
   void
   ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces) override;
 
@@ -343,7 +433,11 @@ class HexElement : public Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
-      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const override;
+      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const override
+  {
+    ComputeNodalForces_impl(node_reference_coords, node_displacements, int_pt_stresses,
+                            node_forces);
+  }
 #endif
 
  protected:
