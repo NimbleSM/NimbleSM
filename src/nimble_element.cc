@@ -267,45 +267,18 @@ HexElement::ComputeVolumeAverage(
     double&       volume,
     double*       volume_averaged_quantities) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> node_reference_coords(node_current_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  volume = 0.0;
-  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) { volume_averaged_quantities[i_quantity] = 0.0; }
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> int_pt_quantities_v(int_pt_quantities, {num_int_pts_, num_quantities},
+                                                       {num_quantities, 1});
 
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_current_coords[3 * n];
-      cc2  = node_current_coords[3 * n + 1];
-      cc3  = node_current_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
-      volume_averaged_quantities[i_quantity] +=
-          int_pt_quantities[int_pt * num_quantities + i_quantity] * int_wts_[int_pt] * jac_det;
-    }
-  }
+  nimble::Viewify<1> vol_ave_quantity(volume_averaged_quantities, {num_quantities}, {1});
 
-  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
-    volume_averaged_quantities[i_quantity] /= volume;
-  }
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_disp, int_pt_quantities_v,
+                                      vol_ave_quantity, num_quantities, volume);
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -361,22 +334,22 @@ HexElement::ComputeVolumeAverageFullTensor(
 {
   double cc1, cc2, cc3, sfd1, sfd2, sfd3;
   double jac_det;
-  double a_inv[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double a_inv[][dim_]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   double vol_ave[9]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   int    num_quantities = 9;
   double volume         = 0.0;
 
   for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
     // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
     for (int n = 0; n < num_nodes_; n++) {
       cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
       cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
       cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
+      sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
+      sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
+      sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
       a[0][0] += cc1 * sfd1;
       a[0][1] += cc1 * sfd2;
       a[0][2] += cc1 * sfd3;

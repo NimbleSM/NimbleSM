@@ -54,7 +54,6 @@ namespace nimble {
 class Element
 {
  public:
-
   /// \brief Default constructor
   NIMBLE_FUNCTION
   Element() = default;
@@ -203,7 +202,6 @@ class HexElement : public Element
   static constexpr int num_int_pts_ = 8;
 
  public:
-
   /// \brief Default constructor
   NIMBLE_FUNCTION
   HexElement();
@@ -283,7 +281,6 @@ class HexElement : public Element
   }
 
  public:
-
   /// \brief Compute the lumped mass
   ///
   /// \param[in] density  Material density
@@ -313,6 +310,59 @@ class HexElement : public Element
   double
   ComputeCharacteristicLength(const double* node_coords) override;
 
+ protected:
+
+  template <class ConstViewVec, class ConstViewTensor, class ViewTensor>
+  void
+  ComputeVolumeAverageQuantities_impl(
+      ConstViewVec    node_reference_coords,
+      ConstViewVec    node_displacements,
+      ConstViewTensor int_pt_quantities,
+      ViewTensor      vol_ave_quantity,
+      int num_quantities,
+      double          &volume) const
+  {
+    double cc1, cc2, cc3, sfd1, sfd2, sfd3;
+    double jac_det;
+    double a_inv[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+    std::vector<double> vol_ave(num_quantities, 0);
+
+    for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
+      // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
+      double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+      for (int n = 0; n < num_nodes_; n++) {
+        cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
+        cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
+        cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
+        sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
+        sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
+        sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
+        a[0][0] += cc1 * sfd1;
+        a[0][1] += cc1 * sfd2;
+        a[0][2] += cc1 * sfd3;
+        a[1][0] += cc2 * sfd1;
+        a[1][1] += cc2 * sfd2;
+        a[1][2] += cc2 * sfd3;
+        a[2][0] += cc3 * sfd1;
+        a[2][1] += cc3 * sfd2;
+        a[2][2] += cc3 * sfd3;
+      }
+      jac_det = Invert3x3(a, a_inv);
+      volume += jac_det;
+      for (int i = 0; i < num_quantities; ++i) {
+        vol_ave[i] += int_pt_quantities(int_pt, i) * int_wts_[int_pt] * jac_det;
+      }
+    }
+
+    for (int i = 0; i < num_quantities; ++i) {
+      vol_ave[i] /= volume;
+      vol_ave_quantity(i) = vol_ave[i];
+    }
+  }
+
+ public:
   void
   ComputeVolumeAverage(
       const double* node_current_coords,
@@ -348,13 +398,12 @@ class HexElement : public Element
 #endif
 
  protected:
-
-  template< class ConstViewT, class TensorViewT >
-  NIMBLE_FUNCTION
-  void
+  template <class ConstViewT, class TensorViewT>
+  NIMBLE_FUNCTION void
   ComputeDeformationGradients_impl(
-      ConstViewT node_reference_coords, ConstViewT node_displacements,
-      TensorViewT  deformation_gradients) const
+      ConstViewT  node_reference_coords,
+      ConstViewT  node_displacements,
+      TensorViewT deformation_gradients) const
   {
     double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
     double b_inv[][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -424,7 +473,6 @@ class HexElement : public Element
   }
 
  public:
-
   void
   ComputeDeformationGradients(
       const double* node_reference_coords,
@@ -444,7 +492,6 @@ class HexElement : public Element
   ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent) override;
 
  protected:
-
   template <class ConstViewT, class ViewTensorT, class ViewT>
   void
   ComputeNodalForces_impl(
