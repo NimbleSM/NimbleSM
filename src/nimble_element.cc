@@ -45,12 +45,13 @@
 
 #include <limits>
 
+#include "nimble_view.h"
 #include "nimble_utils.h"
 
 namespace nimble {
 
 double
-Element::Invert3x3(double mat[][3], double inv[][3]) const
+Element::Invert3x3(const double mat[][3], double inv[][3]) const
 {
   double minor0 = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
   double minor1 = mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0];
@@ -91,16 +92,16 @@ Element::Invert3x3(double mat[][3], double inv[][3]) const
 }
 
 void
-Element::LU_Decompose(double a[][3], int index[]) const
+Element::LU_Decompose(double a[][3], int index[])
 {
   // a is the square matrix to be decomposed (will be destroyed and replaced by
   // decomp) index holds the pivoting information (row interchanges)
 
   int    imax = 0;
   double big, temp, sum;
-  int    n = 3;
-  double vv[3];  // vv stores the implicit scaling of each row.
-  double tiny = 1e-40;
+  constexpr int n = 3;
+  double vv[n];  // vv stores the implicit scaling of each row.
+  constexpr double tiny = 1e-40;
 
   // loop over rows to get the implicit scaling information
   // scale each row by 1/(largest element)
@@ -180,14 +181,14 @@ Element::LU_Decompose(double a[][3], int index[]) const
 }
 
 void
-Element::LU_Solve(double a[][3], int index[3], double b[3]) const
+Element::LU_Solve(const double a[][3], const int index[3], double b[3])
 {
   // a holds the upper and lower triangular decomposition (obtained by
   // LU_Deompose) index holds the pivoting information (row interchanges) b hold
   // the right-hand-side vector
 
   double sum;
-  int    n = 3;
+  constexpr int n = 3;
 
   // forward substitution
   // resolve pivoting as we go (stored in index array)
@@ -208,14 +209,14 @@ Element::LU_Solve(double a[][3], int index[3], double b[3]) const
 }
 
 void
-Element::LU_Invert(double mat[][3], double inv[][3]) const
+Element::LU_Invert(const double mat[][3], double inv[][3])
 {
-  int    n = 3;
-  int    index[3];
-  double col[3];
+  constexpr int n = 3;
+  int    index[n];
+  double col[n];
 
   // make local copies (which will be destroyed)
-  double temp[3][3];
+  double temp[n][n];
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) { temp[i][j] = mat[i][j]; }
   }
@@ -225,7 +226,7 @@ Element::LU_Invert(double mat[][3], double inv[][3]) const
 
   // find the inverse by columns (forward and backward substitution)
   for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) { col[j] = 0.0; }
+    for (double & j : col) { j = 0.0; }
     col[i] = 1.0;
 
     LU_Solve(temp, index, col);
@@ -235,26 +236,26 @@ Element::LU_Invert(double mat[][3], double inv[][3]) const
 }
 
 double
-Element::MatrixInverseCheckCorrectness(double mat[][3], double inv[][3]) const
+Element::MatrixInverseCheckCorrectness(const double mat[][3], const double inv[][3])
 {
-  int    n = 3;
-  double error[3][3];
+  constexpr int n = 3;
+  double error[n][n];
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) { error[i][j] = mat[i][0] * inv[0][j] + mat[i][1] * inv[1][j] + mat[i][2] * inv[2][j]; }
   }
   for (int i = 0; i < n; i++) { error[i][i] -= 1.0; }
-  double forbenius_norm = 0.0;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { forbenius_norm += error[i][j] * error[i][j]; }
+  double frobenius_norm = 0.0;
+  for (auto & e_i : error) {
+    for (int j = 0; j < n; j++) { frobenius_norm += e_i[j] * e_i[j]; }
   }
-  forbenius_norm = sqrt(forbenius_norm);
-  return forbenius_norm;
+  frobenius_norm = sqrt(frobenius_norm);
+  return frobenius_norm;
 }
 
 HexElement::HexElement()
 {
   // 1/sqrt(3)
-  const double val = 0.577350269189626;
+  constexpr double val = 0.577350269189626;
   // integration point 1
   int_pts_[0] = -val;
   int_pts_[1] = -val;
@@ -288,7 +289,7 @@ HexElement::HexElement()
   int_pts_[22] = val;
   int_pts_[23] = val;
 
-  for (int i = 0; i < num_int_pts_; i++) { int_wts_[i] = 1.0; }
+  for (double & int_wt : int_wts_) { int_wt = 1.0; }
 
   ShapeFunctionValues(int_pts_, shape_fcn_vals_);
 
@@ -299,14 +300,14 @@ void
 HexElement::ShapeFunctionValues(const double* natural_coords, double* shape_function_values)
 {
   double r, s, t;
-  double c = 1.0 / 8.0;
+  constexpr double c = 1.0 / 8.0;
 
   // Loop over the integration points
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_int_pts_; i++) {
     // Natural coordinates of this integration point
-    r = natural_coords[3 * i];
-    s = natural_coords[3 * i + 1];
-    t = natural_coords[3 * i + 2];
+    r = natural_coords[dim_ * i];
+    s = natural_coords[dim_ * i + 1];
+    t = natural_coords[dim_ * i + 2];
 
     // Value of each of the eight shape functions at this integration point
     shape_function_values[8 * i]     = c * (1.0 - r) * (1.0 - s) * (1.0 - t);
@@ -324,14 +325,14 @@ void
 HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape_function_derivatives)
 {
   double r, s, t;
-  double c = 1.0 / 8.0;
+  constexpr double c = 1.0 / 8.0;
 
   // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
+  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
     // Natural coordinates of this integration point
-    r = natural_coords[3 * int_pt];
-    s = natural_coords[3 * int_pt + 1];
-    t = natural_coords[3 * int_pt + 2];
+    r = natural_coords[dim_ * int_pt];
+    s = natural_coords[dim_ * int_pt + 1];
+    t = natural_coords[dim_ * int_pt + 2];
 
     // Derivative of each of the eight shape functions w.r.t. the natural
     // coordinates at this integration point shape function 1
@@ -372,7 +373,7 @@ HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape
 void
 HexElement::ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const
 {
-  double consistent_mass_matrix[][24] = {
+  double consistent_mass_matrix[][num_nodes_] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -382,46 +383,12 @@ HexElement::ComputeLumpedMass(double density, const double* node_reference_coord
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-  double jac_det[num_int_pts_];
-  double rc1, rc2, rc3, sfd1, sfd2, sfd3;
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> view_node_reference_coords(node_reference_coords, {num_nodes_, dim_}, {dim_, 1});
+  ComputeConsistentMass_impl(density, view_node_reference_coords, consistent_mass_matrix);
 
-    for (int n = 0; n < num_nodes_; n++) {
-      rc1  = node_reference_coords[3 * n];
-      rc2  = node_reference_coords[3 * n + 1];
-      rc3  = node_reference_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += rc1 * sfd1;
-      a[0][1] += rc1 * sfd2;
-      a[0][2] += rc1 * sfd3;
-      a[1][0] += rc2 * sfd1;
-      a[1][1] += rc2 * sfd2;
-      a[1][2] += rc2 * sfd3;
-      a[2][0] += rc3 * sfd1;
-      a[2][1] += rc3 * sfd2;
-      a[2][2] += rc3 * sfd3;
-    }
-    jac_det[int_pt] = Invert3x3(a, a_inv);
-  }
-
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      consistent_mass_matrix[i][j] = 0.0;
-      for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
-                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
-      }
-    }
-  }
-
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_nodes_; i++) {
     lumped_mass[i] = 0.0;
-    for (int j = 0; j < 8; j++) { lumped_mass[i] += consistent_mass_matrix[i][j]; }
+    for (int j = 0; j < num_nodes_; j++) { lumped_mass[i] += consistent_mass_matrix[i][j]; }
   }
 }
 
@@ -432,7 +399,7 @@ HexElement::ComputeLumpedMass(
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
     nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const
 {
-  double consistent_mass_matrix[][24] = {
+  double consistent_mass_matrix[][num_nodes_] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -442,46 +409,11 @@ HexElement::ComputeLumpedMass(
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-  double jac_det[num_int_pts_];
-  double rc1, rc2, rc3, sfd1, sfd2, sfd3;
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  ComputeConsistentMass_impl(density, node_reference_coords, consistent_mass_matrix);
 
-    for (int n = 0; n < num_nodes_; n++) {
-      rc1  = node_reference_coords(n, 0);
-      rc2  = node_reference_coords(n, 1);
-      rc3  = node_reference_coords(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += rc1 * sfd1;
-      a[0][1] += rc1 * sfd2;
-      a[0][2] += rc1 * sfd3;
-      a[1][0] += rc2 * sfd1;
-      a[1][1] += rc2 * sfd2;
-      a[1][2] += rc2 * sfd3;
-      a[2][0] += rc3 * sfd1;
-      a[2][1] += rc3 * sfd2;
-      a[2][2] += rc3 * sfd3;
-    }
-    jac_det[int_pt] = Invert3x3(a, a_inv);
-  }
-
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      consistent_mass_matrix[i][j] = 0.0;
-      for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
-                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
-      }
-    }
-  }
-
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_nodes_; i++) {
     lumped_mass(i) = 0.0;
-    for (int j = 0; j < 8; j++) { lumped_mass(i) += consistent_mass_matrix[i][j]; }
+    for (int j = 0; j < num_nodes_; j++) { lumped_mass(i) += consistent_mass_matrix[i][j]; }
   }
 }
 #endif

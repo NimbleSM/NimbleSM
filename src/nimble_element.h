@@ -148,23 +148,23 @@ class Element
 
   NIMBLE_INLINE_FUNCTION
   double
-  Invert3x3(double mat[][3], double inv[][3]) const;
+  Invert3x3(const double mat[][3], double inv[][3]) const;
 
-  NIMBLE_INLINE_FUNCTION
+  static NIMBLE_INLINE_FUNCTION
   void
-  LU_Decompose(double mat[][3], int index[]) const;
+  LU_Decompose(double mat[][3], int index[]) ;
 
-  NIMBLE_INLINE_FUNCTION
+  static NIMBLE_INLINE_FUNCTION
   void
-  LU_Solve(double a[][3], int index[3], double b[3]) const;
+  LU_Solve(const double a[][3], const int index[3], double b[3]) ;
 
-  NIMBLE_INLINE_FUNCTION
+  static NIMBLE_INLINE_FUNCTION
   void
-  LU_Invert(double mat[][3], double inv[][3]) const;
+  LU_Invert(const double mat[][3], double inv[][3]) ;
 
-  NIMBLE_INLINE_FUNCTION
+  static NIMBLE_INLINE_FUNCTION
   double
-  MatrixInverseCheckCorrectness(double mat[][3], double inv[][3]) const;
+  MatrixInverseCheckCorrectness(const double mat[][3], const double inv[][3]) ;
 
  protected:
   const int K_S_XX_ = 0;
@@ -190,6 +190,11 @@ class Element
 
 class HexElement : public Element
 {
+ private:
+  static constexpr int dim_         = 3;
+  static constexpr int num_nodes_   = 8;
+  static constexpr int num_int_pts_ = 8;
+
  public:
   NIMBLE_FUNCTION
   HexElement();
@@ -214,6 +219,52 @@ class HexElement : public Element
   {
     return num_int_pts_;
   }
+
+ protected:
+
+  template< class ViewT >
+  void ComputeConsistentMass_impl(double density, const ViewT node_reference_coords,
+                                  double consistent_mass_matrix[][num_nodes_]) const
+  {
+    double jac_det[num_int_pts_];
+    double rc1, rc2, rc3, sfd1, sfd2, sfd3;
+    for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
+      // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
+      double a[][dim_]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+      double a_inv[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+      for (int n = 0; n < num_nodes_; n++) {
+        rc1  = node_reference_coords(n, 0);
+        rc2  = node_reference_coords(n, 1);
+        rc3  = node_reference_coords(n, 2);
+        sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
+        sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
+        sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
+        a[0][0] += rc1 * sfd1;
+        a[0][1] += rc1 * sfd2;
+        a[0][2] += rc1 * sfd3;
+        a[1][0] += rc2 * sfd1;
+        a[1][1] += rc2 * sfd2;
+        a[1][2] += rc2 * sfd3;
+        a[2][0] += rc3 * sfd1;
+        a[2][1] += rc3 * sfd2;
+        a[2][2] += rc3 * sfd3;
+      }
+      jac_det[int_pt] = Invert3x3(a, a_inv);
+    }
+
+    for (int i = 0; i < num_nodes_; i++) {
+      for (int j = 0; j < num_nodes_; j++) {
+        consistent_mass_matrix[i][j] = 0.0;
+        for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
+          consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
+              shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
+        }
+      }
+    }
+  }
+
+ public:
 
   void
   ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const override;
@@ -305,14 +356,11 @@ class HexElement : public Element
   ShapeFunctionDerivatives(const double* natural_coords, double* shape_function_derivatives);
 
  private:
-  static constexpr int dim_         = 3;
-  static constexpr int num_nodes_   = 8;
-  static constexpr int num_int_pts_ = 8;
 
-  double int_pts_[num_int_pts_ * dim_];
-  double int_wts_[num_int_pts_];
-  double shape_fcn_vals_[num_nodes_ * num_int_pts_];
-  double shape_fcn_deriv_[num_nodes_ * num_int_pts_ * dim_];
+  double int_pts_[num_int_pts_ * dim_]{};
+  double int_wts_[num_int_pts_]{};
+  double shape_fcn_vals_[num_nodes_ * num_int_pts_]{};
+  double shape_fcn_deriv_[num_nodes_ * num_int_pts_ * dim_]{};
 };
 
 }  // namespace nimble
