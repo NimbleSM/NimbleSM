@@ -45,6 +45,7 @@
 #define NIMBLE_ELEMENT_H
 
 #include "nimble_defs.h"
+#include "nimble_macros.h"
 
 namespace nimble {
 
