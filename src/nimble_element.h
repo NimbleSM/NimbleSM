@@ -45,31 +45,52 @@
 #define NIMBLE_ELEMENT_H
 
 #include "nimble_defs.h"
+#include "nimble_utils.h"
 
 namespace nimble {
 
+/// \brief Abstract class for representing an element
 class Element
 {
  public:
+
+  /// \brief Default constructor
   NIMBLE_FUNCTION
   Element() = default;
 
+  /// \brief Default virtual destructor
   NIMBLE_FUNCTION
   virtual ~Element() = default;
 
+  /// \brief Virtual function returning the spatial dimension
+  /// \return Spatial dimension
   virtual int
   Dim() const = 0;
 
+  /// \brief Virtual function returning the number of nodes in the element
+  /// \return Number of nodes in the element
   virtual int
   NumNodesPerElement() const = 0;
 
+  /// \brief Virtual function returning the number of integration points per element
+  /// \return Number of integration points per element
   virtual int
   NumIntegrationPointsPerElement() const = 0;
 
+  /// \brief Virtual function to compute the lumped mass
+  ///
+  /// \param[in] density  Material density
+  /// \param[in] node_reference_coords  Pointer to array of nodal reference coordinates
+  /// \param[out] lumped_mass   Pointer to array of nodal lumped mass value
   virtual void
   ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Virtual function to compute the lumped mass
+  ///
+  /// \param[in] density  Material density
+  /// \param[in] node_reference_coords  Pointer to array of nodal reference coordinates
+  /// \param[out] lumped_mass   Pointer to array of nodal lumped mass value
   NIMBLE_FUNCTION
   virtual void
   ComputeLumpedMass(
@@ -78,6 +99,10 @@ class Element
       nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const = 0;
 #endif
 
+  /// \brief Virtual function to compute the characteristic length
+  ///
+  /// \param[in] node_coords  Pointer to array of nodal coordinates
+  /// \return  Characteristic length
   virtual double
   ComputeCharacteristicLength(const double* node_coords) = 0;
 
@@ -146,59 +171,6 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d) const = 0;
 #endif
 
-  static NIMBLE_INLINE_FUNCTION double
-  Invert3x3(const double mat[][3], double inv[][3])
-  {
-    double minor0 = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
-    double minor1 = mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0];
-    double minor2 = mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0];
-    double minor3 = mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1];
-    double minor4 = mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2];
-    double minor5 = mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0];
-    double minor6 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
-    double minor7 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
-    double minor8 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
-    double det    = mat[0][0] * minor0 - mat[0][1] * minor1 + mat[0][2] * minor2;
-
-    if (det <= 0.0) {
-#ifdef NIMBLE_HAVE_KOKKOS
-      if (det == 0.0)
-        printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-      else
-        printf(
-            "\n**** Error in HexElement::Invert3x3(), negative determinant "
-            "(%e)\n",
-            det);
-#else
-      NIMBLE_ASSERT(det > 0.0, "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-#endif
-    }
-
-    inv[0][0] = minor0 / det;
-    inv[0][1] = -1.0 * minor3 / det;
-    inv[0][2] = minor6 / det;
-    inv[1][0] = -1.0 * minor1 / det;
-    inv[1][1] = minor4 / det;
-    inv[1][2] = -1.0 * minor7 / det;
-    inv[2][0] = minor2 / det;
-    inv[2][1] = -1.0 * minor5 / det;
-    inv[2][2] = minor8 / det;
-
-    return det;
-  }
-
-  static NIMBLE_INLINE_FUNCTION void
-  LU_Decompose(double mat[][3], int index[]);
-
-  static NIMBLE_INLINE_FUNCTION void
-  LU_Solve(const double a[][3], const int index[3], double b[3]);
-
-  static NIMBLE_INLINE_FUNCTION void
-  LU_Invert(const double mat[][3], double inv[][3]);
-
-  static NIMBLE_INLINE_FUNCTION double
-  MatrixInverseCheckCorrectness(const double mat[][3], const double inv[][3]);
-
  protected:
   const int K_S_XX_ = 0;
   const int K_S_YY_ = 1;
@@ -221,6 +193,7 @@ class Element
   const int K_F_XZ_ = 8;
 };
 
+/// \brief Class for an 8-node hexahedral element
 class HexElement : public Element
 {
  private:
@@ -229,24 +202,33 @@ class HexElement : public Element
   static constexpr int num_int_pts_ = 8;
 
  public:
+
+  /// \brief Default constructor
   NIMBLE_FUNCTION
   HexElement();
 
+  /// \brief Default destructor
   NIMBLE_FUNCTION
   ~HexElement() override = default;
 
+  /// \brief Returns the spatial dimension
+  /// \return Spatial dimension (3 for the hexahedral element)
   int
   Dim() const override
   {
     return dim_;
   }
 
+  /// \brief Returns the number of nodes per element
+  /// \return Number of nodes per element (8 for the Q1 hexahedral element)
   int
   NumNodesPerElement() const override
   {
     return num_nodes_;
   }
 
+  /// \brief Returns the number of integration points per element
+  /// \return Number of integration points per element (8 for the Q1 hexahedral element)
   int
   NumIntegrationPointsPerElement() const override
   {
@@ -300,10 +282,21 @@ class HexElement : public Element
   }
 
  public:
+
+  /// \brief Compute the lumped mass
+  ///
+  /// \param[in] density  Material density
+  /// \param[in] node_reference_coords  Pointer to array of nodal reference coordinates
+  /// \param[out] lumped_mass   Pointer to array of nodal lumped mass value
   void
   ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Compute the lumped mass when using Kokkos objects
+  ///
+  /// \param[in] density  Material density
+  /// \param[in] node_reference_coords  Pointer to array of nodal reference coordinates
+  /// \param[out] lumped_mass   Pointer to array of nodal lumped mass value
   NIMBLE_FUNCTION
   void
   ComputeLumpedMass(
@@ -312,6 +305,10 @@ class HexElement : public Element
       nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const override;
 #endif
 
+  /// \brief Function to compute the characteristic length
+  ///
+  /// \param[in] node_coords  Pointer to array of nodal coordinates
+  /// \return  Characteristic length
   double
   ComputeCharacteristicLength(const double* node_coords) override;
 
