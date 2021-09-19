@@ -52,47 +52,6 @@
 
 namespace nimble {
 
-double
-Element::Invert3x3(const double mat[][3], double inv[][3])
-{
-  double minor0 = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
-  double minor1 = mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0];
-  double minor2 = mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0];
-  double minor3 = mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1];
-  double minor4 = mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2];
-  double minor5 = mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0];
-  double minor6 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
-  double minor7 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
-  double minor8 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
-  double det    = mat[0][0] * minor0 - mat[0][1] * minor1 + mat[0][2] * minor2;
-
-  if (det <= 0.0) {
-#ifdef NIMBLE_HAVE_KOKKOS
-    if (det == 0.0)
-      printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-    else
-      printf(
-          "\n**** Error in HexElement::Invert3x3(), negative determinant "
-          "(%e)\n",
-          det);
-#else
-    NIMBLE_ASSERT(det > 0.0, "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-#endif
-  }
-
-  inv[0][0] = minor0 / det;
-  inv[0][1] = -1.0 * minor3 / det;
-  inv[0][2] = minor6 / det;
-  inv[1][0] = -1.0 * minor1 / det;
-  inv[1][1] = minor4 / det;
-  inv[1][2] = -1.0 * minor7 / det;
-  inv[2][0] = minor2 / det;
-  inv[2][1] = -1.0 * minor5 / det;
-  inv[2][2] = minor8 / det;
-
-  return det;
-}
-
 void
 Element::LU_Decompose(double a[][3], int index[])
 {
@@ -657,72 +616,18 @@ HexElement::ComputeDeformationGradients(
     const double* node_current_coords,
     double*       deformation_gradients) const
 {
-  double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double b_inv[][dim_]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double def_grad[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> node_reference_coords_v(node_reference_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  // Loop over the integration points
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  for (size_t ii = 0; ii < tmp_disp.size(); ++ii)
+    tmp_disp[ii] = node_current_coords[ii] - node_reference_coords[ii];
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-    // \sum_{i}^{N_{node}} X_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double b[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  constexpr int dim2 = dim_ * dim_;
+  nimble::Viewify<2> deformation_gradients_v(deformation_gradients, {num_int_pts_, dim2}, {dim2, 1});
 
-    // Sum over the number of nodes
-    for (int j = 0; j < num_nodes_; j++) {
-      rc1 = node_reference_coords[3 * j];
-      rc2 = node_reference_coords[3 * j + 1];
-      rc3 = node_reference_coords[3 * j + 2];
-
-      cc1 = node_current_coords[3 * j];
-      cc2 = node_current_coords[3 * j + 1];
-      cc3 = node_current_coords[3 * j + 2];
-
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * j];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * j + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * j + 2];
-
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-
-      b[0][0] += rc1 * sfd1;
-      b[0][1] += rc1 * sfd2;
-      b[0][2] += rc1 * sfd3;
-      b[1][0] += rc2 * sfd1;
-      b[1][1] += rc2 * sfd2;
-      b[1][2] += rc2 * sfd3;
-      b[2][0] += rc3 * sfd1;
-      b[2][1] += rc3 * sfd2;
-      b[2][2] += rc3 * sfd3;
-    }
-
-    Invert3x3(b, b_inv);
-    // LU_Invert(b, b_inv);
-
-    for (int j = 0; j < dim_; j++) {
-      for (int k = 0; k < dim_; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
-      }
-    }
-
-    deformation_gradients[9 * int_pt + K_F_XX] = def_grad[0][0];
-    deformation_gradients[9 * int_pt + K_F_XY] = def_grad[0][1];
-    deformation_gradients[9 * int_pt + K_F_XZ] = def_grad[0][2];
-    deformation_gradients[9 * int_pt + K_F_YX] = def_grad[1][0];
-    deformation_gradients[9 * int_pt + K_F_YY] = def_grad[1][1];
-    deformation_gradients[9 * int_pt + K_F_YZ] = def_grad[1][2];
-    deformation_gradients[9 * int_pt + K_F_ZX] = def_grad[2][0];
-    deformation_gradients[9 * int_pt + K_F_ZY] = def_grad[2][1];
-    deformation_gradients[9 * int_pt + K_F_ZZ] = def_grad[2][2];
-  }
+  ComputeDeformationGradients_impl(node_reference_coords_v, node_disp,
+                                   deformation_gradients_v);
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -732,71 +637,7 @@ HexElement::ComputeDeformationGradients(
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
     nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const
 {
-  double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double b_inv[][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double def_grad[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    // \sum_{i}^{N_{node}} X_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double b[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    // Sum over the number of nodes
-    for (int j = 0; j < 8; j++) {
-      rc1 = node_reference_coords(j, 0);
-      rc2 = node_reference_coords(j, 1);
-      rc3 = node_reference_coords(j, 2);
-
-      cc1 = node_reference_coords(j, 0) + node_displacements(j, 0);
-      cc2 = node_reference_coords(j, 1) + node_displacements(j, 1);
-      cc3 = node_reference_coords(j, 2) + node_displacements(j, 2);
-
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * j];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * j + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * j + 2];
-
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-
-      b[0][0] += rc1 * sfd1;
-      b[0][1] += rc1 * sfd2;
-      b[0][2] += rc1 * sfd3;
-      b[1][0] += rc2 * sfd1;
-      b[1][1] += rc2 * sfd2;
-      b[1][2] += rc2 * sfd3;
-      b[2][0] += rc3 * sfd1;
-      b[2][1] += rc3 * sfd2;
-      b[2][2] += rc3 * sfd3;
-    }
-
-    Invert3x3(b, b_inv);
-
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
-      }
-    }
-
-    deformation_gradients(int_pt, K_F_XX_) = def_grad[0][0];
-    deformation_gradients(int_pt, K_F_XY_) = def_grad[0][1];
-    deformation_gradients(int_pt, K_F_XZ_) = def_grad[0][2];
-    deformation_gradients(int_pt, K_F_YX_) = def_grad[1][0];
-    deformation_gradients(int_pt, K_F_YY_) = def_grad[1][1];
-    deformation_gradients(int_pt, K_F_YZ_) = def_grad[1][2];
-    deformation_gradients(int_pt, K_F_ZX_) = def_grad[2][0];
-    deformation_gradients(int_pt, K_F_ZY_) = def_grad[2][1];
-    deformation_gradients(int_pt, K_F_ZZ_) = def_grad[2][2];
-  }
+  ComputeDeformationGradients_impl(node_reference_coords, node_displacements, deformation_gradients);
 }
 #endif
 
@@ -824,8 +665,8 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
   //      dN8/dX
 
   double B[6][24];
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 24; j++) { B[i][j] = 0.0; }
+  for (auto & B_i : B) {
+    for (double & B_ij : B_i) { B_ij = 0.0; }
   }
 
   for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
@@ -834,8 +675,8 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
     double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double temp[6][24];
-    for (int i = 0; i < 6; i++) {
-      for (int j = 0; j < 24; j++) { temp[i][j] = 0.0; }
+    for (auto & t_i : temp) {
+      for (double & t_ij : t_i) { t_ij = 0.0; }
     }
 
     for (int n = 0; n < num_nodes_; n++) {
