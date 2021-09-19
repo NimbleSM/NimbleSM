@@ -288,36 +288,14 @@ HexElement::ComputeVolume(
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
     nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double volume     = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-  }
-
+  constexpr int num_quantities = 0;
+  double volume = 0.0;
+  nimble::Viewify<2, const double> int_pt_quantities_v(nullptr, {num_int_pts_, num_quantities},
+                                                       {num_quantities, 1});
+  nimble::Viewify<1> vol_ave_quantity(nullptr, num_quantities);
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities_v, vol_ave_quantity, num_quantities, volume);
+  //
   // DJL cleaner to use
   // elem_volume(0) = volume;
   // but this isn't working with older versions of Kokkos
@@ -332,45 +310,10 @@ HexElement::ComputeVolumeAverageFullTensor(
     nimble_kokkos::DeviceFullTensorIntPtSubView        int_pt_quantities,
     nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][dim_]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double vol_ave[9]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  int    num_quantities = 9;
-  double volume         = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i = 0; i < num_quantities; ++i) {
-      vol_ave[i] += int_pt_quantities(int_pt, i) * int_wts_[int_pt] * jac_det;
-    }
-  }
-
-  for (int i = 0; i < num_quantities; ++i) {
-    vol_ave[i] /= volume;
-    vol_ave_quantity[i] = vol_ave[i];
-  }
+  constexpr int num_quantities = 9;
+  double volume = 0.0;
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities, vol_ave_quantity, num_quantities, volume);
 }
 
 void
@@ -380,45 +323,10 @@ HexElement::ComputeVolumeAverageSymTensor(
     nimble_kokkos::DeviceSymTensorIntPtSubView        int_pt_quantities,
     nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][dim_]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double vol_ave[6]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  int    num_quantities = 6;
-  double volume         = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][dim_] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + dim_ * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + dim_ * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i = 0; i < num_quantities; ++i) {
-      vol_ave[i] += int_pt_quantities(int_pt, i) * int_wts_[int_pt] * jac_det;
-    }
-  }
-
-  for (int i = 0; i < num_quantities; ++i) {
-    vol_ave[i] /= volume;
-    vol_ave_quantity[i] = vol_ave[i];
-  }
+  constexpr int num_quantities = 6;
+  double volume = 0.0;
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities, vol_ave_quantity, num_quantities, volume);
 }
 #endif
 
