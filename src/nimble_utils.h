@@ -50,6 +50,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 #include "nimble_macros.h"
 #include "nimble_view.h"
