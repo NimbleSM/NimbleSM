@@ -52,28 +52,28 @@ class Element
 {
  public:
   NIMBLE_FUNCTION
-  Element() {}
+  Element() = default;
 
   NIMBLE_FUNCTION
-  virtual ~Element() {}
+  virtual ~Element() = default;
 
   virtual int
-  Dim() = 0;
+  Dim() const = 0;
 
   virtual int
-  NumNodesPerElement() = 0;
+  NumNodesPerElement() const = 0;
 
   virtual int
-  NumIntegrationPointsPerElement() = 0;
+  NumIntegrationPointsPerElement() const = 0;
 
   virtual void
-  ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const = 0;
+  ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
   virtual void
   ComputeLumpedMass(
-      const double                                   density,
+      double                                   density,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const = 0;
 #endif
@@ -195,40 +195,40 @@ class HexElement : public Element
   HexElement();
 
   NIMBLE_FUNCTION
-  virtual ~HexElement() {}
+  ~HexElement() override = default;
 
   int
-  Dim()
+  Dim() const override
   {
-    return 3;
+    return dim_;
   }
 
   int
-  NumNodesPerElement()
+  NumNodesPerElement() const override
   {
-    return 8;
+    return num_nodes_;
   }
 
   int
-  NumIntegrationPointsPerElement()
+  NumIntegrationPointsPerElement() const override
   {
-    return 8;
+    return num_int_pts_;
   }
 
   void
-  ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const;
+  ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
   void
   ComputeLumpedMass(
-      const double                                   density,
+      double                                   density,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
-      nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const;
+      nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const override;
 #endif
 
   double
-  ComputeCharacteristicLength(const double* node_coords);
+  ComputeCharacteristicLength(const double* node_coords) override;
 
   void
   ComputeVolumeAverage(
@@ -236,7 +236,7 @@ class HexElement : public Element
       int           num_quantities,
       const double* int_pt_quantities,
       double&       volume,
-      double*       volume_averaged_quantity) const;
+      double*       volume_averaged_quantity) const override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
 
@@ -245,7 +245,7 @@ class HexElement : public Element
   ComputeVolume(
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-      nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const;
+      nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const override;
 
   NIMBLE_FUNCTION
   void
@@ -253,7 +253,7 @@ class HexElement : public Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView    node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView    node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView        int_pt_quantities,
-      nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const;
+      nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const override;
 
   NIMBLE_FUNCTION
   void
@@ -261,14 +261,14 @@ class HexElement : public Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView     node_displacements,
       nimble_kokkos::DeviceFullTensorIntPtSubView        int_pt_quantities,
-      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const;
+      nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const override;
 #endif
 
   void
   ComputeDeformationGradients(
       const double* node_reference_coords,
       const double* node_current_coords,
-      double*       deformation_gradients) const;
+      double*       deformation_gradients) const override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -276,14 +276,14 @@ class HexElement : public Element
   ComputeDeformationGradients(
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-      nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const;
+      nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const override;
 #endif
 
   void
-  ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent);
+  ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent) override;
 
   void
-  ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces);
+  ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
   NIMBLE_FUNCTION
@@ -292,7 +292,7 @@ class HexElement : public Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
-      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const;
+      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const override;
 #endif
 
  protected:

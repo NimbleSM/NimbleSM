@@ -116,7 +116,9 @@ Element::LU_Decompose(double a[][3], int index[]) const
           "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #else
-      NIMBLE_ASSERT(big >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
+      NIMBLE_ASSERT(
+          big >= tiny,
+          "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #endif
     }
@@ -161,8 +163,10 @@ Element::LU_Decompose(double a[][3], int index[]) const
           "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
           "matrix.\n");
 #else
-      NIMBLE_ASSERT(fabs(a[j][j]) >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(),"
-                    " singular matrix.\n"); 
+      NIMBLE_ASSERT(
+          fabs(a[j][j]) >= tiny,
+          "\n**** Error in HexElement::Invert3x3LUDecomp(),"
+          " singular matrix.\n");
 #endif
     }
 
@@ -366,7 +370,7 @@ HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape
 }
 
 void
-HexElement::ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const
+HexElement::ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const
 {
   double consistent_mass_matrix[][24] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -424,7 +428,7 @@ HexElement::ComputeLumpedMass(const double density, const double* node_reference
 #ifdef NIMBLE_HAVE_KOKKOS
 void
 HexElement::ComputeLumpedMass(
-    const double                                   density,
+    double                                         density,
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
     nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const
 {
