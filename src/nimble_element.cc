@@ -45,6 +45,7 @@
 
 #include <cmath>
 #include <limits>
+#include <vector>
 
 #include "nimble_view.h"
 #include "nimble_utils.h"
