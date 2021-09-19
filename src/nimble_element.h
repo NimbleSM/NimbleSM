@@ -48,6 +48,8 @@
 #include "nimble_macros.h"
 #include "nimble_utils.h"
 
+#include <vector>
+
 namespace nimble {
 
 /// \brief Abstract class for representing an element
