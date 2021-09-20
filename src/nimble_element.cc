@@ -43,214 +43,19 @@
 
 #include "nimble_element.h"
 
+#include <cmath>
 #include <limits>
+#include <vector>
 
+#include "nimble_view.h"
 #include "nimble_utils.h"
 
 namespace nimble {
 
-double
-Element::Invert3x3(double mat[][3], double inv[][3]) const
-{
-  double minor0 = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
-  double minor1 = mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0];
-  double minor2 = mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0];
-  double minor3 = mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1];
-  double minor4 = mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2];
-  double minor5 = mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0];
-  double minor6 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
-  double minor7 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
-  double minor8 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
-  double det    = mat[0][0] * minor0 - mat[0][1] * minor1 + mat[0][2] * minor2;
-
-  if (det <= 0.0) {
-#ifdef NIMBLE_HAVE_KOKKOS
-    if (det == 0.0)
-      printf("\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-    else
-      printf(
-          "\n**** Error in HexElement::Invert3x3(), negative determinant "
-          "(%e)\n",
-          det);
-#else
-    NIMBLE_ASSERT(det > 0.0, "\n**** Error in HexElement::Invert3x3(), singular matrix.\n");
-#endif
-  }
-
-  inv[0][0] = minor0 / det;
-  inv[0][1] = -1.0 * minor3 / det;
-  inv[0][2] = minor6 / det;
-  inv[1][0] = -1.0 * minor1 / det;
-  inv[1][1] = minor4 / det;
-  inv[1][2] = -1.0 * minor7 / det;
-  inv[2][0] = minor2 / det;
-  inv[2][1] = -1.0 * minor5 / det;
-  inv[2][2] = minor8 / det;
-
-  return det;
-}
-
-void
-Element::LU_Decompose(double a[][3], int index[]) const
-{
-  // a is the square matrix to be decomposed (will be destroyed and replaced by
-  // decomp) index holds the pivoting information (row interchanges)
-
-  int    imax = 0;
-  double big, temp, sum;
-  int    n = 3;
-  double vv[3];  // vv stores the implicit scaling of each row.
-  double tiny = 1e-40;
-
-  // loop over rows to get the implicit scaling information
-  // scale each row by 1/(largest element)
-  for (int i = 0; i < n; ++i) {
-    big = 0.0;
-    for (int j = 0; j < n; ++j) {
-      if (std::fabs(a[i][j]) > big) { big = std::fabs(a[i][j]); }
-    }
-    if (big < tiny) {
-      // No nonzero largest element.
-#ifdef NIMBLE_HAVE_KOKKOS
-      printf(
-          "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-          "matrix.\n");
-#else
-      NIMBLE_ASSERT(big >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-          "matrix.\n");
-#endif
-    }
-    vv[i] = 1.0 / big;
-  }
-
-  // loop over columns
-  for (int j = 0; j < n; ++j) {
-    for (int i = 0; i < j; ++i) {
-      sum = a[i][j];
-      for (int k = 0; k < i; ++k) { sum -= a[i][k] * a[k][j]; }
-      a[i][j] = sum;
-    }
-    big = 0.0;
-    for (int i = j; i < n; ++i) {
-      sum = a[i][j];
-      for (int k = 0; k < j; ++k) { sum -= a[i][k] * a[k][j]; }
-      a[i][j] = sum;
-      if (vv[i] * fabs(sum) > big) {
-        // this is the biggest element in the column
-        // save it as the pivot element
-        big  = vv[i] * fabs(sum);
-        imax = i;
-      }
-    }
-
-    // interchange rows if required
-    if (j != imax) {
-      for (int k = 0; k < n; ++k) {
-        temp       = a[imax][k];
-        a[imax][k] = a[j][k];
-        a[j][k]    = temp;
-      }
-      vv[imax] = vv[j];
-    }
-    index[j] = imax;
-
-    if (fabs(a[j][j]) < tiny) {
-      // matrix is singular and we're about to divide by zero
-#ifdef NIMBLE_HAVE_KOKKOS
-      printf(
-          "\n**** Error in HexElement::Invert3x3LUDecomp(), singular "
-          "matrix.\n");
-#else
-      NIMBLE_ASSERT(fabs(a[j][j]) >= tiny, "\n**** Error in HexElement::Invert3x3LUDecomp(),"
-                    " singular matrix.\n"); 
-#endif
-    }
-
-    // divide by the pivot element
-
-    if (j != n) {
-      temp = 1.0 / (a[j][j]);
-      for (int i = j + 1; i < n; ++i) { a[i][j] *= temp; }
-    }
-  }
-}
-
-void
-Element::LU_Solve(double a[][3], int index[3], double b[3]) const
-{
-  // a holds the upper and lower triangular decomposition (obtained by
-  // LU_Deompose) index holds the pivoting information (row interchanges) b hold
-  // the right-hand-side vector
-
-  double sum;
-  int    n = 3;
-
-  // forward substitution
-  // resolve pivoting as we go (stored in index array)
-  for (int i = 0; i < n; ++i) {
-    sum         = b[index[i]];
-    b[index[i]] = b[i];
-    for (int j = 0; j < i; ++j) { sum -= a[i][j] * b[j]; }
-    b[i] = sum;
-  }
-
-  // back substitution
-  for (int i = n - 1; i >= 0; --i) {
-    sum = b[i];
-    for (int j = i + 1; j < n; ++j) { sum -= a[i][j] * b[j]; }
-    b[i] = sum / a[i][i];
-  }
-  // solution is returned in b
-}
-
-void
-Element::LU_Invert(double mat[][3], double inv[][3]) const
-{
-  int    n = 3;
-  int    index[3];
-  double col[3];
-
-  // make local copies (which will be destroyed)
-  double temp[3][3];
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { temp[i][j] = mat[i][j]; }
-  }
-
-  // decompose the matrix into upper and lower triangular parts
-  LU_Decompose(temp, index);
-
-  // find the inverse by columns (forward and backward substitution)
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) { col[j] = 0.0; }
-    col[i] = 1.0;
-
-    LU_Solve(temp, index, col);
-
-    for (int j = 0; j < n; ++j) { inv[j][i] = col[j]; }
-  }
-}
-
-double
-Element::MatrixInverseCheckCorrectness(double mat[][3], double inv[][3]) const
-{
-  int    n = 3;
-  double error[3][3];
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { error[i][j] = mat[i][0] * inv[0][j] + mat[i][1] * inv[1][j] + mat[i][2] * inv[2][j]; }
-  }
-  for (int i = 0; i < n; i++) { error[i][i] -= 1.0; }
-  double forbenius_norm = 0.0;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) { forbenius_norm += error[i][j] * error[i][j]; }
-  }
-  forbenius_norm = sqrt(forbenius_norm);
-  return forbenius_norm;
-}
-
 HexElement::HexElement()
 {
   // 1/sqrt(3)
-  const double val = 0.577350269189626;
+  constexpr double val = 0.577350269189626;
   // integration point 1
   int_pts_[0] = -val;
   int_pts_[1] = -val;
@@ -284,7 +89,7 @@ HexElement::HexElement()
   int_pts_[22] = val;
   int_pts_[23] = val;
 
-  for (int i = 0; i < num_int_pts_; i++) { int_wts_[i] = 1.0; }
+  for (double & int_wt : int_wts_) { int_wt = 1.0; }
 
   ShapeFunctionValues(int_pts_, shape_fcn_vals_);
 
@@ -295,14 +100,14 @@ void
 HexElement::ShapeFunctionValues(const double* natural_coords, double* shape_function_values)
 {
   double r, s, t;
-  double c = 1.0 / 8.0;
+  constexpr double c = 1.0 / 8.0;
 
   // Loop over the integration points
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_int_pts_; i++) {
     // Natural coordinates of this integration point
-    r = natural_coords[3 * i];
-    s = natural_coords[3 * i + 1];
-    t = natural_coords[3 * i + 2];
+    r = natural_coords[dim_ * i];
+    s = natural_coords[dim_ * i + 1];
+    t = natural_coords[dim_ * i + 2];
 
     // Value of each of the eight shape functions at this integration point
     shape_function_values[8 * i]     = c * (1.0 - r) * (1.0 - s) * (1.0 - t);
@@ -320,14 +125,14 @@ void
 HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape_function_derivatives)
 {
   double r, s, t;
-  double c = 1.0 / 8.0;
+  constexpr double c = 1.0 / 8.0;
 
   // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
+  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
     // Natural coordinates of this integration point
-    r = natural_coords[3 * int_pt];
-    s = natural_coords[3 * int_pt + 1];
-    t = natural_coords[3 * int_pt + 2];
+    r = natural_coords[dim_ * int_pt];
+    s = natural_coords[dim_ * int_pt + 1];
+    t = natural_coords[dim_ * int_pt + 2];
 
     // Derivative of each of the eight shape functions w.r.t. the natural
     // coordinates at this integration point shape function 1
@@ -366,9 +171,9 @@ HexElement::ShapeFunctionDerivatives(const double* natural_coords, double* shape
 }
 
 void
-HexElement::ComputeLumpedMass(const double density, const double* node_reference_coords, double* lumped_mass) const
+HexElement::ComputeLumpedMass(double density, const double* node_reference_coords, double* lumped_mass) const
 {
-  double consistent_mass_matrix[][24] = {
+  double consistent_mass_matrix[][num_nodes_] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -378,57 +183,23 @@ HexElement::ComputeLumpedMass(const double density, const double* node_reference
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-  double jac_det[num_int_pts_];
-  double rc1, rc2, rc3, sfd1, sfd2, sfd3;
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> view_node_reference_coords(node_reference_coords, {num_nodes_, dim_}, {dim_, 1});
+  ComputeConsistentMass_impl(density, view_node_reference_coords, consistent_mass_matrix);
 
-    for (int n = 0; n < num_nodes_; n++) {
-      rc1  = node_reference_coords[3 * n];
-      rc2  = node_reference_coords[3 * n + 1];
-      rc3  = node_reference_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += rc1 * sfd1;
-      a[0][1] += rc1 * sfd2;
-      a[0][2] += rc1 * sfd3;
-      a[1][0] += rc2 * sfd1;
-      a[1][1] += rc2 * sfd2;
-      a[1][2] += rc2 * sfd3;
-      a[2][0] += rc3 * sfd1;
-      a[2][1] += rc3 * sfd2;
-      a[2][2] += rc3 * sfd3;
-    }
-    jac_det[int_pt] = Invert3x3(a, a_inv);
-  }
-
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      consistent_mass_matrix[i][j] = 0.0;
-      for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
-                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
-      }
-    }
-  }
-
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_nodes_; i++) {
     lumped_mass[i] = 0.0;
-    for (int j = 0; j < 8; j++) { lumped_mass[i] += consistent_mass_matrix[i][j]; }
+    for (int j = 0; j < num_nodes_; j++) { lumped_mass[i] += consistent_mass_matrix[i][j]; }
   }
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
 void
 HexElement::ComputeLumpedMass(
-    const double                                   density,
+    double                                         density,
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
     nimble_kokkos::DeviceScalarNodeGatheredSubView lumped_mass) const
 {
-  double consistent_mass_matrix[][24] = {
+  double consistent_mass_matrix[][num_nodes_] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -438,46 +209,11 @@ HexElement::ComputeLumpedMass(
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-  double jac_det[num_int_pts_];
-  double rc1, rc2, rc3, sfd1, sfd2, sfd3;
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  ComputeConsistentMass_impl(density, node_reference_coords, consistent_mass_matrix);
 
-    for (int n = 0; n < num_nodes_; n++) {
-      rc1  = node_reference_coords(n, 0);
-      rc2  = node_reference_coords(n, 1);
-      rc3  = node_reference_coords(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += rc1 * sfd1;
-      a[0][1] += rc1 * sfd2;
-      a[0][2] += rc1 * sfd3;
-      a[1][0] += rc2 * sfd1;
-      a[1][1] += rc2 * sfd2;
-      a[1][2] += rc2 * sfd3;
-      a[2][0] += rc3 * sfd1;
-      a[2][1] += rc3 * sfd2;
-      a[2][2] += rc3 * sfd3;
-    }
-    jac_det[int_pt] = Invert3x3(a, a_inv);
-  }
-
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      consistent_mass_matrix[i][j] = 0.0;
-      for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-        consistent_mass_matrix[i][j] += int_wts_[int_pt] * density * shape_fcn_vals_[int_pt * num_nodes_ + i] *
-                                        shape_fcn_vals_[int_pt * num_nodes_ + j] * jac_det[int_pt];
-      }
-    }
-  }
-
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < num_nodes_; i++) {
     lumped_mass(i) = 0.0;
-    for (int j = 0; j < 8; j++) { lumped_mass(i) += consistent_mass_matrix[i][j]; }
+    for (int j = 0; j < num_nodes_; j++) { lumped_mass(i) += consistent_mass_matrix[i][j]; }
   }
 }
 #endif
@@ -531,45 +267,18 @@ HexElement::ComputeVolumeAverage(
     double&       volume,
     double*       volume_averaged_quantities) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> node_reference_coords(node_current_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  volume = 0.0;
-  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) { volume_averaged_quantities[i_quantity] = 0.0; }
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> int_pt_quantities_v(int_pt_quantities, {num_int_pts_, num_quantities},
+                                                       {num_quantities, 1});
 
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_current_coords[3 * n];
-      cc2  = node_current_coords[3 * n + 1];
-      cc3  = node_current_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
-      volume_averaged_quantities[i_quantity] +=
-          int_pt_quantities[int_pt * num_quantities + i_quantity] * int_wts_[int_pt] * jac_det;
-    }
-  }
+  nimble::Viewify<1> vol_ave_quantity(volume_averaged_quantities, num_quantities);
 
-  for (int i_quantity = 0; i_quantity < num_quantities; i_quantity++) {
-    volume_averaged_quantities[i_quantity] /= volume;
-  }
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_disp, int_pt_quantities_v,
+                                      vol_ave_quantity, num_quantities, volume);
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -579,36 +288,14 @@ HexElement::ComputeVolume(
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
     nimble_kokkos::DeviceScalarElemSingleEntryView elem_volume) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double volume     = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-  }
-
+  constexpr int num_quantities = 0;
+  double volume = 0.0;
+  nimble::Viewify<2, const double> int_pt_quantities_v(nullptr, {num_int_pts_, num_quantities},
+                                                       {num_quantities, 1});
+  nimble::Viewify<1> vol_ave_quantity(nullptr, num_quantities);
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities_v, vol_ave_quantity, num_quantities, volume);
+  //
   // DJL cleaner to use
   // elem_volume(0) = volume;
   // but this isn't working with older versions of Kokkos
@@ -623,45 +310,10 @@ HexElement::ComputeVolumeAverageFullTensor(
     nimble_kokkos::DeviceFullTensorIntPtSubView        int_pt_quantities,
     nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double vol_ave[9]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  int    num_quantities = 9;
-  double volume         = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i = 0; i < num_quantities; ++i) {
-      vol_ave[i] += int_pt_quantities(int_pt, i) * int_wts_[int_pt] * jac_det;
-    }
-  }
-
-  for (int i = 0; i < num_quantities; ++i) {
-    vol_ave[i] /= volume;
-    vol_ave_quantity[i] = vol_ave[i];
-  }
+  constexpr int num_quantities = 9;
+  double volume = 0.0;
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities, vol_ave_quantity, num_quantities, volume);
 }
 
 void
@@ -671,45 +323,10 @@ HexElement::ComputeVolumeAverageSymTensor(
     nimble_kokkos::DeviceSymTensorIntPtSubView        int_pt_quantities,
     nimble_kokkos::DeviceSymTensorElemSingleEntryView vol_ave_quantity) const
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double jac_det;
-  double a_inv[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double vol_ave[6]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  int    num_quantities = 6;
-  double volume         = 0.0;
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-    jac_det = Invert3x3(a, a_inv);
-    volume += jac_det;
-    for (int i = 0; i < num_quantities; ++i) {
-      vol_ave[i] += int_pt_quantities(int_pt, i) * int_wts_[int_pt] * jac_det;
-    }
-  }
-
-  for (int i = 0; i < num_quantities; ++i) {
-    vol_ave[i] /= volume;
-    vol_ave_quantity[i] = vol_ave[i];
-  }
+  constexpr int num_quantities = 6;
+  double volume = 0.0;
+  ComputeVolumeAverageQuantities_impl(node_reference_coords, node_displacements,
+                                      int_pt_quantities, vol_ave_quantity, num_quantities, volume);
 }
 #endif
 
@@ -719,72 +336,18 @@ HexElement::ComputeDeformationGradients(
     const double* node_current_coords,
     double*       deformation_gradients) const
 {
-  double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double b_inv[][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double def_grad[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  nimble::Viewify<2, const double> node_reference_coords_v(node_reference_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  for (size_t ii = 0; ii < tmp_disp.size(); ++ii)
+    tmp_disp[ii] = node_current_coords[ii] - node_reference_coords[ii];
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-    // \sum_{i}^{N_{node}} X_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double b[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  constexpr int dim2 = dim_ * dim_;
+  nimble::Viewify<2> deformation_gradients_v(deformation_gradients, {num_int_pts_, dim2}, {dim2, 1});
 
-    // Sum over the number of nodes
-    for (int j = 0; j < 8; j++) {
-      rc1 = node_reference_coords[3 * j];
-      rc2 = node_reference_coords[3 * j + 1];
-      rc3 = node_reference_coords[3 * j + 2];
-
-      cc1 = node_current_coords[3 * j];
-      cc2 = node_current_coords[3 * j + 1];
-      cc3 = node_current_coords[3 * j + 2];
-
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * j];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * j + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * j + 2];
-
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-
-      b[0][0] += rc1 * sfd1;
-      b[0][1] += rc1 * sfd2;
-      b[0][2] += rc1 * sfd3;
-      b[1][0] += rc2 * sfd1;
-      b[1][1] += rc2 * sfd2;
-      b[1][2] += rc2 * sfd3;
-      b[2][0] += rc3 * sfd1;
-      b[2][1] += rc3 * sfd2;
-      b[2][2] += rc3 * sfd3;
-    }
-
-    Invert3x3(b, b_inv);
-    // LU_Invert(b, b_inv);
-
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
-      }
-    }
-
-    deformation_gradients[9 * int_pt + K_F_XX] = def_grad[0][0];
-    deformation_gradients[9 * int_pt + K_F_XY] = def_grad[0][1];
-    deformation_gradients[9 * int_pt + K_F_XZ] = def_grad[0][2];
-    deformation_gradients[9 * int_pt + K_F_YX] = def_grad[1][0];
-    deformation_gradients[9 * int_pt + K_F_YY] = def_grad[1][1];
-    deformation_gradients[9 * int_pt + K_F_YZ] = def_grad[1][2];
-    deformation_gradients[9 * int_pt + K_F_ZX] = def_grad[2][0];
-    deformation_gradients[9 * int_pt + K_F_ZY] = def_grad[2][1];
-    deformation_gradients[9 * int_pt + K_F_ZZ] = def_grad[2][2];
-  }
+  ComputeDeformationGradients_impl(node_reference_coords_v, node_disp,
+                                   deformation_gradients_v);
 }
 
 #ifdef NIMBLE_HAVE_KOKKOS
@@ -794,71 +357,7 @@ HexElement::ComputeDeformationGradients(
     nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
     nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const
 {
-  double rc1, rc2, rc3, cc1, cc2, cc3, sfd1, sfd2, sfd3;
-  double b_inv[][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double def_grad[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  // Loop over the integration points
-  for (int int_pt = 0; int_pt < 8; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    // \sum_{i}^{N_{node}} X_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double b[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    // Sum over the number of nodes
-    for (int j = 0; j < 8; j++) {
-      rc1 = node_reference_coords(j, 0);
-      rc2 = node_reference_coords(j, 1);
-      rc3 = node_reference_coords(j, 2);
-
-      cc1 = node_reference_coords(j, 0) + node_displacements(j, 0);
-      cc2 = node_reference_coords(j, 1) + node_displacements(j, 1);
-      cc3 = node_reference_coords(j, 2) + node_displacements(j, 2);
-
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * j];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * j + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * j + 2];
-
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-
-      b[0][0] += rc1 * sfd1;
-      b[0][1] += rc1 * sfd2;
-      b[0][2] += rc1 * sfd3;
-      b[1][0] += rc2 * sfd1;
-      b[1][1] += rc2 * sfd2;
-      b[1][2] += rc2 * sfd3;
-      b[2][0] += rc3 * sfd1;
-      b[2][1] += rc3 * sfd2;
-      b[2][2] += rc3 * sfd3;
-    }
-
-    Invert3x3(b, b_inv);
-
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
-        def_grad[j][k] = a[j][0] * b_inv[0][k] + a[j][1] * b_inv[1][k] + a[j][2] * b_inv[2][k];
-      }
-    }
-
-    deformation_gradients(int_pt, K_F_XX_) = def_grad[0][0];
-    deformation_gradients(int_pt, K_F_XY_) = def_grad[0][1];
-    deformation_gradients(int_pt, K_F_XZ_) = def_grad[0][2];
-    deformation_gradients(int_pt, K_F_YX_) = def_grad[1][0];
-    deformation_gradients(int_pt, K_F_YY_) = def_grad[1][1];
-    deformation_gradients(int_pt, K_F_YZ_) = def_grad[1][2];
-    deformation_gradients(int_pt, K_F_ZX_) = def_grad[2][0];
-    deformation_gradients(int_pt, K_F_ZY_) = def_grad[2][1];
-    deformation_gradients(int_pt, K_F_ZZ_) = def_grad[2][2];
-  }
+  ComputeDeformationGradients_impl(node_reference_coords, node_displacements, deformation_gradients);
 }
 #endif
 
@@ -886,8 +385,8 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
   //      dN8/dX
 
   double B[6][24];
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 24; j++) { B[i][j] = 0.0; }
+  for (auto & B_i : B) {
+    for (double & B_ij : B_i) { B_ij = 0.0; }
   }
 
   for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
@@ -896,8 +395,8 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
     double a[][3]     = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double temp[6][24];
-    for (int i = 0; i < 6; i++) {
-      for (int j = 0; j < 24; j++) { temp[i][j] = 0.0; }
+    for (auto & t_i : temp) {
+      for (double & t_ij : t_i) { t_ij = 0.0; }
     }
 
     for (int n = 0; n < num_nodes_; n++) {
@@ -958,161 +457,18 @@ HexElement::ComputeTangent(const double* node_current_coords, const double* mate
 void
 HexElement::ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces)
 {
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
-  double jac_det;
-  double a_inv[][3]      = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  int    sym_tensor_size = 6;
+  nimble::Viewify<2, const double> node_reference_coords(node_current_coords, {num_nodes_, dim_}, {dim_, 1});
 
-  for (int n = 0; n < num_nodes_; n++) {
-    for (int i = 0; i < dim_; i++) { node_forces[n * dim_ + i] = 0.0; }
-  }
+  std::vector<double> tmp_disp(num_nodes_ * dim_, 0.0);
+  nimble::Viewify<2, const double> node_disp(tmp_disp.data(), {num_nodes_, dim_}, {dim_, 1});
 
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  constexpr int sym_tensor_size = 6;
+  nimble::Viewify<2, const double> int_stresses_v(int_pt_stresses, {num_int_pts_, sym_tensor_size},
+                                                  {sym_tensor_size, 1});
 
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_current_coords[3 * n];
-      cc2  = node_current_coords[3 * n + 1];
-      cc3  = node_current_coords[3 * n + 2];
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
+  nimble::Viewify<2> node_forces_v(node_forces, {num_nodes_, dim_}, {dim_, 1});
 
-    jac_det = Invert3x3(a, a_inv);
-    // LU_Invert(a, a_inv);
-
-    for (int node = 0; node < num_nodes_; node++) {
-      dN_dx1 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][0];
-
-      dN_dx2 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][1];
-
-      dN_dx3 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][2];
-
-      f1 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XX] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YX] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZX];
-
-      f2 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XY] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YY] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZY];
-
-      f3 = dN_dx1 * int_pt_stresses[sym_tensor_size * int_pt + K_S_XZ] +
-           dN_dx2 * int_pt_stresses[sym_tensor_size * int_pt + K_S_YZ] +
-           dN_dx3 * int_pt_stresses[sym_tensor_size * int_pt + K_S_ZZ];
-
-      f1 *= jac_det * int_wts_[int_pt];
-      f2 *= jac_det * int_wts_[int_pt];
-      f3 *= jac_det * int_wts_[int_pt];
-
-      node_forces[3 * node] -= f1;
-      node_forces[3 * node + 1] -= f2;
-      node_forces[3 * node + 2] -= f3;
-    }
-  }
+  ComputeNodalForces_impl(node_reference_coords, node_disp, int_stresses_v, node_forces_v);
 }
-
-#ifdef NIMBLE_HAVE_KOKKOS
-void
-HexElement::ComputeNodalForces(
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-    nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
-    nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const
-{
-  double cc1, cc2, cc3, sfd1, sfd2, sfd3, dN_dx1, dN_dx2, dN_dx3, f1, f2, f3;
-  double jac_det;
-  double a_inv[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-  double force[][3] = {
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0},
-      {0.0, 0.0, 0.0}};
-
-  for (int int_pt = 0; int_pt < num_int_pts_; int_pt++) {
-    // \sum_{i}^{N_{node}} x_{i} \frac{\partial N_{i} (\xi)}{\partial \xi}
-    double a[][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-    for (int n = 0; n < num_nodes_; n++) {
-      cc1  = node_reference_coords(n, 0) + node_displacements(n, 0);
-      cc2  = node_reference_coords(n, 1) + node_displacements(n, 1);
-      cc3  = node_reference_coords(n, 2) + node_displacements(n, 2);
-      sfd1 = shape_fcn_deriv_[24 * int_pt + 3 * n];
-      sfd2 = shape_fcn_deriv_[24 * int_pt + 3 * n + 1];
-      sfd3 = shape_fcn_deriv_[24 * int_pt + 3 * n + 2];
-      a[0][0] += cc1 * sfd1;
-      a[0][1] += cc1 * sfd2;
-      a[0][2] += cc1 * sfd3;
-      a[1][0] += cc2 * sfd1;
-      a[1][1] += cc2 * sfd2;
-      a[1][2] += cc2 * sfd3;
-      a[2][0] += cc3 * sfd1;
-      a[2][1] += cc3 * sfd2;
-      a[2][2] += cc3 * sfd3;
-    }
-
-    jac_det = Invert3x3(a, a_inv);
-
-    for (int node = 0; node < num_nodes_; node++) {
-      dN_dx1 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][0] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][0];
-
-      dN_dx2 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][1] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][1];
-
-      dN_dx3 = shape_fcn_deriv_[int_pt * 24 + 3 * node] * a_inv[0][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 1] * a_inv[1][2] +
-               shape_fcn_deriv_[int_pt * 24 + 3 * node + 2] * a_inv[2][2];
-
-      f1 = dN_dx1 * int_pt_stresses(int_pt, K_S_XX_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YX_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZX_);
-
-      f2 = dN_dx1 * int_pt_stresses(int_pt, K_S_XY_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YY_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZY_);
-
-      f3 = dN_dx1 * int_pt_stresses(int_pt, K_S_XZ_) + dN_dx2 * int_pt_stresses(int_pt, K_S_YZ_) +
-           dN_dx3 * int_pt_stresses(int_pt, K_S_ZZ_);
-
-      f1 *= jac_det * int_wts_[int_pt];
-      f2 *= jac_det * int_wts_[int_pt];
-      f3 *= jac_det * int_wts_[int_pt];
-
-      // profiling showed that calling the -= operator directly on the kokkos
-      // view is expensive
-      force[node][0] -= f1;
-      force[node][1] -= f2;
-      force[node][2] -= f3;
-    }
-  }
-
-  for (int node = 0; node < num_nodes_; node++) {
-    node_forces(node, 0) = force[node][0];
-    node_forces(node, 1) = force[node][1];
-    node_forces(node, 2) = force[node][2];
-  }
-}
-#endif
 
 }  // namespace nimble
