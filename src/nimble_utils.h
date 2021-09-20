@@ -51,6 +51,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "nimble_defs.h"
 #include "nimble_macros.h"
 
 NIMBLE_INLINE_FUNCTION
