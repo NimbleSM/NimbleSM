@@ -52,6 +52,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "nimble_defs.h"
 #include "nimble_macros.h"
 #include "nimble_view.h"
 
@@ -507,6 +508,18 @@ SkewPart_Full33(const ScalarT* const mat, ScalarT* const result)
   result[K_F_ZZ] = 0.0;
 }
 
+/// \brief Function to invert a 3x3 matrix
+///
+/// \tparam ScalarT  Scalar values
+/// \param mat  Pointer to 3x3 matrix with a storage based on the indices K_F_**
+/// \param inv  Pointer to 3x3 mqtrix with a storage based on the indices K_F_**
+/// \return  Determinant
+/// \remark  The matrix is has the pattern
+///           [  K_F_XX  K_F_XY  K_F_XZ  ]
+///           [  K_F_YX  K_F_YY  K_F_YZ  ]
+///           [  K_F_ZX  K_F_ZY  K_F_ZZ  ]
+/// but note that K_F_YY = 1 and K_F_ZZ = 2
+/// The storage proceeds along diagonals.
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION ScalarT
 Invert_Full33(const ScalarT* mat, ScalarT* inv)
