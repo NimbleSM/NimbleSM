@@ -196,7 +196,7 @@ class Element
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
       nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
-      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const override
+      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const = 0;
 #endif
 
  protected:
