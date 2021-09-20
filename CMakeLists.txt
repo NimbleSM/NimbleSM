@@ -40,11 +40,11 @@ if (NimbleSM_ENABLE_CUDA)
 endif()
 #------
 
-option(NimbleSM_ENABLE_GTEST "Whether to build Nimble with GTest testing" OFF)
-option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
+option(NimbleSM_ENABLE_UNIT_TESTS "Whether to build Nimble with unit testing" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with unit testing" OFF)
 if (NIMBLE_ENABLE_UNIT_TESTS)
-  set(NimbleSM_ENABLE_GTEST TRUE)
-  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_GTEST instead.")
+  set(NimbleSM_ENABLE_UNIT_TESTS TRUE)
+  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_UNIT_TESTS instead.")
 endif()
 #------
 
@@ -272,7 +272,7 @@ include_directories(src)
 add_subdirectory(src)
 add_subdirectory(test)
 
-if(NimbleSM_ENABLE_GTEST)
+if(NimbleSM_ENABLE_UNIT_TESTS)
   add_subdirectory(unit_tests)
 endif()
 
