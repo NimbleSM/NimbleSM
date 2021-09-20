@@ -73,9 +73,9 @@ jobs:
         export ACCESS=`pwd`
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" \
-              -DNimbleSM_ENABLE_GTEST=ON \
               -DNimbleSM_ENABLE_MPI=ON \
               -DNimbleSM_ENABLE_TRILINOS=ON \
+              -DNimbleSM_ENABLE_UNIT_TESTS=ON \
               ..
     - name: Build NimbleSM
       run: |
