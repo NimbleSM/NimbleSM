@@ -142,6 +142,11 @@ class Element
       nimble_kokkos::DeviceFullTensorElemSingleEntryView vol_ave_quantity) const = 0;
 #endif
 
+  /// \brief Virtual function to compute the deformation gradients
+  ///
+  /// \param[in] node_reference_coords  Pointer to array of reference nodal coordinates
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[out] deformation_gradients  Pointer to array of deformation gradients
   virtual void
   ComputeDeformationGradients(
       const double* node_reference_coords,
@@ -149,6 +154,11 @@ class Element
       double*       deformation_gradients) const = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Virtual function to compute the deformation gradients
+  ///
+  /// \param[in] node_reference_coords  Kokkos view of reference nodal coordinates
+  /// \param[in] node_displacements  Kokkos view of nodal displacements
+  /// \param[out] deformation_gradients  Kokkos view of deformation gradients
   NIMBLE_FUNCTION
   virtual void
   ComputeDeformationGradients(
@@ -157,20 +167,36 @@ class Element
       nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const = 0;
 #endif
 
+  /// \brief Virtual function to compute the tangent
+  ///
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[in] material_tangent  Pointer to array of material tangent
+  /// \param[out] tangent  Pointer to array of tangent
   virtual void
-  ComputeTangent(const double* node_reference_coords, const double* node_current_coords, double* tangent) = 0;
+  ComputeTangent(const double* node_reference_coords, const double* material_tangent, double* tangent) = 0;
 
+  /// \brief Virtual function to compute the nodal forces
+  ///
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[in] int_pt_stresses  Pointer to array of stresses at integration points
+  /// \param[out] node_forces  Pointer to array of forces
   virtual void
   ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces) = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Virtual function to compute the nodal forces
+  ///
+  /// \param[in] node_reference_coords  Kokkos view of reference nodal coordinates
+  /// \param[in] node_displacements  Kokkos view of nodal displacements
+  /// \param[in] int_pt_stresses  Kokkos view of stress at integration points
+  /// \param[out] node_forces  Kokkos view of nodal forces
   NIMBLE_FUNCTION
   virtual void
   ComputeNodalForces(
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_reference_coords,
       nimble_kokkos::DeviceVectorNodeGatheredSubView node_displacements,
-      nimble_kokkos::DeviceSymTensorIntPtSubView     element_stress_step_np1_d,
-      nimble_kokkos::DeviceVectorNodeGatheredSubView element_internal_force_d) const = 0;
+      nimble_kokkos::DeviceSymTensorIntPtSubView     int_pt_stresses,
+      nimble_kokkos::DeviceVectorNodeGatheredSubView node_forces) const override
 #endif
 
  protected:
@@ -476,6 +502,12 @@ class HexElement : public Element
   }
 
  public:
+
+  /// \brief Function to compute the deformation gradients
+  ///
+  /// \param[in] node_reference_coords  Pointer to array of reference nodal coordinates
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[out] deformation_gradients  Pointer to array of deformation gradients
   void
   ComputeDeformationGradients(
       const double* node_reference_coords,
@@ -483,6 +515,11 @@ class HexElement : public Element
       double*       deformation_gradients) const override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Function to compute the deformation gradients
+  ///
+  /// \param[in] node_reference_coords  Kokkos view of reference nodal coordinates
+  /// \param[in] node_displacements  Kokkos view of current nodal coordinates
+  /// \param[out] deformation_gradients  Kokkos view of deformation gradients
   NIMBLE_FUNCTION
   void
   ComputeDeformationGradients(
@@ -491,6 +528,11 @@ class HexElement : public Element
       nimble_kokkos::DeviceFullTensorIntPtSubView    deformation_gradients) const override;
 #endif
 
+  /// \brief Function to compute the tangent
+  ///
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[in] material_tangent  Pointer to array of material tangent
+  /// \param[out] tangent  Pointer to array of tangent
   void
   ComputeTangent(const double* node_current_coords, const double* material_tangent, double* element_tangent) override;
 
@@ -583,10 +625,22 @@ class HexElement : public Element
   }
 
  public:
+
+  /// \brief Virtual function to compute the nodal forces
+  ///
+  /// \param[in] node_current_coords  Pointer to array of current nodal coordinates
+  /// \param[in] int_pt_stresses  Pointer to array of stresses at integration points
+  /// \param[out] node_forces  Pointer to array of forces
   void
   ComputeNodalForces(const double* node_current_coords, const double* int_pt_stresses, double* node_forces) override;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  /// \brief Function to compute the nodal forces
+  ///
+  /// \param[in] node_reference_coords  Kokkos view of reference nodal coordinates
+  /// \param[in] node_displacements  Kokkos view of nodal displacements
+  /// \param[in] int_pt_stresses  Kokkos view of stress at integration points
+  /// \param[out] node_forces  Kokkos view of nodal forces
   NIMBLE_FUNCTION
   void
   ComputeNodalForces(
