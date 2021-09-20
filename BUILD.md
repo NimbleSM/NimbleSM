@@ -36,10 +36,6 @@ The full keyword listing is below.
   * Whether to turn on enhanced debugging info.
   * Default: OFF
 
-* NimbleSM_ENABLE_GTEST
-  * Whether to build Nimble with GTest testing.
-  * Default: OFF
-
 * NimbleSM_ENABLE_KOKKOS: BOOL
   * Whether to use [Kokkos library](https://github.com/kokkos/kokkos).
   * Default: OFF
@@ -50,6 +46,10 @@ The full keyword listing is below.
 
 * NimbleSM_ENABLE_TRILINOS: BOOL
   * Whether to use [Trilinos library](https://github.com/trilinos/Trilinos).
+  * Default: OFF
+
+* NimbleSM_ENABLE_UNIT_TESTS
+  * Whether to build Nimble with unit testing.
   * Default: OFF
 
 * NimbleSM_ENABLE_UQ: BOOL
