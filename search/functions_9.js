@@ -7,8 +7,7 @@ var searchData=
   ['local_5fid_4',['local_id',['../classnimble_1_1_contact_entity.html#a834576488b60a912373669c728505a87',1,'nimble::ContactEntity']]],
   ['log_5frotation_5',['Log_Rotation',['../nimble__utils_8h.html#a0c9c80f8124efda2f6a72750db348ad0',1,'nimble_utils.h']]],
   ['log_5frotation_5fpi_6',['Log_Rotation_Pi',['../nimble__utils_8h.html#a829ad4677c5e99ff4fc053a8f5cf7796',1,'nimble_utils.h']]],
-  ['lu_5fdecompose_7',['LU_Decompose',['../classnimble_1_1_element.html#ad616d9f084a9d52ee0396b3e9610745f',1,'nimble::Element::LU_Decompose()'],['../namespacenimble.html#a9095f73dfecca7b4bfb4b12fc0cc96c1',1,'nimble::LU_Decompose()']]],
-  ['lu_5finvert_8',['LU_Invert',['../classnimble_1_1_element.html#aa61f2cd016deb4b1b49550c499047dd9',1,'nimble::Element']]],
-  ['lu_5fsolve_9',['LU_Solve',['../classnimble_1_1_element.html#a16e0f9531b6b16fe4af47b0455ada632',1,'nimble::Element::LU_Solve()'],['../namespacenimble.html#a84f893a8b31428c4ba6cf89a65c03c2e',1,'nimble::LU_Solve(int num_entries, nimble::MatrixContainer &amp;mat, double *vec, int *index)']]],
-  ['lu_5fsolvesystem_10',['LU_SolveSystem',['../namespacenimble.html#a15511ea91b55f27b73bddbdd4c00239c',1,'nimble']]]
+  ['lu_5fdecompose_7',['LU_Decompose',['../namespacenimble.html#ac475d0094d78b745150fef4f672faa16',1,'nimble::LU_Decompose()'],['../nimble__utils_8h.html#a66617113a58d9db8221d9d6f128a0a85',1,'LU_Decompose():&#160;nimble_utils.h']]],
+  ['lu_5fsolve_8',['LU_Solve',['../namespacenimble.html#a027c528af149ec9dc71c4f5687cdf010',1,'nimble::LU_Solve()'],['../nimble__utils_8h.html#abea5f47f6112197064dac04fd5298347',1,'LU_Solve():&#160;nimble_utils.h']]],
+  ['lu_5fsolvesystem_9',['LU_SolveSystem',['../namespacenimble.html#a0a7d4978bfa689660b05f8c4dbbea680',1,'nimble::LU_SolveSystem()'],['../nimble__utils_8h.html#a2df4869941f409be29cfbeddb0eafe4d',1,'LU_SolveSystem():&#160;nimble_utils.h']]]
 ];

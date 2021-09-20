@@ -9,6 +9,6 @@ var searchData=
   ['determinedataoffsets_6',['DetermineDataOffsets',['../classnimble_1_1_block.html#a0cbcd3d013f8aa86f350e849a39ba4c1',1,'nimble::Block']]],
   ['determinetangentmatrixnonzerostructure_7',['DetermineTangentMatrixNonzeroStructure',['../namespacenimble.html#a2e86ee6f77e472a5c39eb91a2f19390b',1,'nimble']]],
   ['diagonalmatrixmatvec_8',['DiagonalMatrixMatVec',['../classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f',1,'nimble::CRSMatrixContainer']]],
-  ['dim_9',['Dim',['../classnimble_1_1_element.html#a5cd946ef3650aa9659473462397d51eb',1,'nimble::Element::Dim()'],['../classnimble_1_1_hex_element.html#a50a8b0475b357756ce729122bea2b443',1,'nimble::HexElement::Dim()']]],
+  ['dim_9',['Dim',['../classnimble_1_1_element.html#a7e498ed2e760c6666aa53200970b28a1',1,'nimble::Element::Dim()'],['../classnimble_1_1_hex_element.html#ac18262c0092340a159209bd62eb1344a',1,'nimble::HexElement::Dim()']]],
   ['displacements_10',['Displacements',['../classnimble_1_1_uq_model.html#a7a97bc876f1451b597b00a22e28429a4',1,'nimble::UqModel']]]
 ];

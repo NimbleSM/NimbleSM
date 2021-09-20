@@ -120,6 +120,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_elastic_material.html">ElasticMaterial</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_element.html">Element</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Abstract class for representing an element.  <a href="classnimble_1_1_element.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnimble_1_1_environment_flags.html">EnvironmentFlags</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,6 +133,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_genesis_mesh.html">GenesisMesh</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_hex_element.html">HexElement</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class for an 8-node hexahedral element.  <a href="classnimble_1_1_hex_element.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_kokkos_contact_manager.html">KokkosContactManager</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -288,18 +290,18 @@ Functions</h2></td></tr>
 <tr class="separator:a4873197ba7049d8b04a908b8a00eba10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52bad2e4d7cb5de2938453202288316a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a52bad2e4d7cb5de2938453202288316a">PopulateDiagonalPreconditioner</a> (const <a class="el" href="classnimble_1_1_c_r_s_matrix_container.html">CRSMatrixContainer</a> &amp;A, <a class="el" href="classnimble_1_1_c_r_s_matrix_container.html">CRSMatrixContainer</a> &amp;M)</td></tr>
 <tr class="separator:a52bad2e4d7cb5de2938453202288316a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9095f73dfecca7b4bfb4b12fc0cc96c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a9095f73dfecca7b4bfb4b12fc0cc96c1">LU_Decompose</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;mat, int *index)</td></tr>
-<tr class="separator:a9095f73dfecca7b4bfb4b12fc0cc96c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84f893a8b31428c4ba6cf89a65c03c2e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a84f893a8b31428c4ba6cf89a65c03c2e">LU_Solve</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;mat, double *vec, int *index)</td></tr>
-<tr class="separator:a84f893a8b31428c4ba6cf89a65c03c2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15511ea91b55f27b73bddbdd4c00239c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a15511ea91b55f27b73bddbdd4c00239c">LU_SolveSystem</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;mat, double *vec, int *scratch)</td></tr>
-<tr class="separator:a15511ea91b55f27b73bddbdd4c00239c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2da282720446829d8b2d5bf9ac9abf15"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a2da282720446829d8b2d5bf9ac9abf15">CG_SolveSystem</a> (<a class="el" href="classnimble_1_1_c_r_s_matrix_container.html">nimble::CRSMatrixContainer</a> &amp;A, const double *b, <a class="el" href="structnimble_1_1_c_g_scratch_space.html">CGScratchSpace</a> &amp;cg_scratch, double *x, int &amp;num_iterations, double cg_tol, int max_iterations)</td></tr>
 <tr class="separator:a2da282720446829d8b2d5bf9ac9abf15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14f2717bd1c97bee634f3c04203f08cc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a> (unsigned int num_entries, const double *vec_1, const double *vec_2)</td></tr>
 <tr class="separator:a14f2717bd1c97bee634f3c04203f08cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a172fa1161d11607910df7bd057f0babe"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a172fa1161d11607910df7bd057f0babe">InnerProduct</a> (const std::vector&lt; double &gt; &amp;vec_1, const std::vector&lt; double &gt; &amp;vec_2)</td></tr>
 <tr class="separator:a172fa1161d11607910df7bd057f0babe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac475d0094d78b745150fef4f672faa16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#ac475d0094d78b745150fef4f672faa16">LU_Decompose</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;mat, int *index)</td></tr>
+<tr class="separator:ac475d0094d78b745150fef4f672faa16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a027c528af149ec9dc71c4f5687cdf010"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a027c528af149ec9dc71c4f5687cdf010">LU_Solve</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;mat, double *vec, int *index)</td></tr>
+<tr class="separator:a027c528af149ec9dc71c4f5687cdf010"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a7d4978bfa689660b05f8c4dbbea680"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a0a7d4978bfa689660b05f8c4dbbea680">LU_SolveSystem</a> (int num_entries, <a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;mat, double *vec, int *scratch)</td></tr>
+<tr class="separator:a0a7d4978bfa689660b05f8c4dbbea680"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0429015785e1a8ac533dd63b7ce5f239"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">parseCommandLine</a> (int argc, char **argv, <a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a> &amp;myFlags)</td></tr>
 <tr class="memdesc:a0429015785e1a8ac533dd63b7ce5f239"><td class="mdescLeft">&#160;</td><td class="mdescRight">Routine to parse command-line input parameters.  <a href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">More...</a><br /></td></tr>
 <tr class="separator:a0429015785e1a8ac533dd63b7ce5f239"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -599,78 +601,78 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>{</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  <span class="comment">// see &quot;An Introduction to the Conjugate Gradient Method Without the Agonizing</span></div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  <span class="comment">// Pain&quot;, J.R. Shewchuk, 1994.</span></div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  <span class="keywordtype">double</span>       alpha, beta, delta_old, delta_new;</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> num_entries = A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ae0e541db61ae0dcb8e74f7abb2013b1d">NumRows</a>();</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  cg_scratch.<a class="code hl_function" href="structnimble_1_1_c_g_scratch_space.html#af14291934c6b267701d8cc1f99d88aa6">Resize</a>(num_entries);</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  <span class="keywordtype">double</span>* d = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#a3989a9683a9edcbc42df1a155bfe7fc4">d</a>.data();</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keywordtype">double</span>* r = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#ac8c63fa63adbf49ce0cd6a3a200cfd5e">r</a>.data();</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  <span class="keywordtype">double</span>* s = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#afa07a9ac8948412c9254be753f3e109e">s</a>.data();</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  <span class="keywordtype">double</span>* q = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#a0114ecd20b62476292f6514b5fd86ba0">q</a>.data();</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  <span class="comment">// diagonal preconditioner</span></div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <a class="code hl_class" href="classnimble_1_1_c_r_s_matrix_container.html">CRSMatrixContainer</a>&amp; M = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#af8079f854763b02015bfde04510a8964">M</a>;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <a class="code hl_function" href="namespacenimble.html#a52bad2e4d7cb5de2938453202288316a">PopulateDiagonalPreconditioner</a>(A, M);</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>  <span class="comment">// r = b - Ax</span></div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(x, q);</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] = b[i] - q[i]; }</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span> </div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>  <span class="comment">// d = M^-1 r</span></div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>  M.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f">DiagonalMatrixMatVec</a>(r, d);</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span> </div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  <span class="comment">// delta_new = r^T d</span></div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  <span class="comment">// delta_old = delta_new</span></div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  delta_new = delta_old = <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, r, d);</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  <span class="keywordtype">double</span> tolerance      = cg_tol * delta_old;</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span> </div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  <span class="keywordtype">int</span> iteration      = 0;</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span> </div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  <span class="keywordflow">while</span> (delta_new &gt; tolerance &amp;&amp; iteration &lt; max_iterations) {</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    <span class="comment">// q = Ad</span></div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(d, q);</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span> </div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>    <span class="comment">// alpha = delta_new / (d^T q)</span></div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>    alpha = delta_new / <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, d, q);</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span> </div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>    <span class="comment">// x = x + alpha * d</span></div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { x[i] += alpha * d[i]; }</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span> </div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    <span class="keywordflow">if</span> (iteration % 50 == 0) {</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>      <span class="comment">// r = b - Ax</span></div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>      A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(x, q);  <span class="comment">// here, q is just a place to store Ax</span></div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>      <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] = b[i] - q[i]; }</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>      <span class="comment">// r = r - alpha * q</span></div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>      <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] -= alpha * q[i]; }</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>    }</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span> </div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>    <span class="comment">// s = M^-1 r</span></div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>    M.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f">DiagonalMatrixMatVec</a>(r, s);</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span> </div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>    <span class="comment">// delta_old = delta_new</span></div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>    delta_old = delta_new;</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span> </div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>    <span class="comment">// delta_new = r^T s</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    delta_new = <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, r, s);</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span> </div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>    <span class="comment">// beta = delta_new / delta_old</span></div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>    beta = delta_new / delta_old;</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span> </div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>    <span class="comment">// d = s + beta * d</span></div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { d[i] = s[i] + beta * d[i]; }</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span> </div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>    iteration += 1;</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  }</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span> </div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  num_iterations = iteration;</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  <span class="keywordtype">bool</span> success   = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>  <span class="keywordflow">if</span> (iteration == max_iterations) { success = <span class="keyword">false</span>; }</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>  <span class="keywordflow">return</span> success;</div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>}</div>
+<div class="fragment"><div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>{</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="comment">// see &quot;An Introduction to the Conjugate Gradient Method Without the Agonizing</span></div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="comment">// Pain&quot;, J.R. Shewchuk, 1994.</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span> </div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keywordtype">double</span>       alpha, beta, delta_old, delta_new;</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> num_entries = A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ae0e541db61ae0dcb8e74f7abb2013b1d">NumRows</a>();</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  cg_scratch.<a class="code hl_function" href="structnimble_1_1_c_g_scratch_space.html#af14291934c6b267701d8cc1f99d88aa6">Resize</a>(num_entries);</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="keywordtype">double</span>* d = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#a3989a9683a9edcbc42df1a155bfe7fc4">d</a>.data();</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordtype">double</span>* r = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#ac8c63fa63adbf49ce0cd6a3a200cfd5e">r</a>.data();</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keywordtype">double</span>* s = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#afa07a9ac8948412c9254be753f3e109e">s</a>.data();</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  <span class="keywordtype">double</span>* q = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#a0114ecd20b62476292f6514b5fd86ba0">q</a>.data();</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span> </div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>  <span class="comment">// diagonal preconditioner</span></div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>  <a class="code hl_class" href="classnimble_1_1_c_r_s_matrix_container.html">CRSMatrixContainer</a>&amp; M = cg_scratch.<a class="code hl_variable" href="structnimble_1_1_c_g_scratch_space.html#af8079f854763b02015bfde04510a8964">M</a>;</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>  <a class="code hl_function" href="namespacenimble.html#a52bad2e4d7cb5de2938453202288316a">PopulateDiagonalPreconditioner</a>(A, M);</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  <span class="comment">// r = b - Ax</span></div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>  A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(x, q);</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>  <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] = b[i] - q[i]; }</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>  <span class="comment">// d = M^-1 r</span></div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>  M.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f">DiagonalMatrixMatVec</a>(r, d);</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span> </div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  <span class="comment">// delta_new = r^T d</span></div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  <span class="comment">// delta_old = delta_new</span></div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  delta_new = delta_old = <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, r, d);</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="keywordtype">double</span> tolerance      = cg_tol * delta_old;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="keywordtype">int</span> iteration      = 0;</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>  <span class="keywordflow">while</span> (delta_new &gt; tolerance &amp;&amp; iteration &lt; max_iterations) {</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    <span class="comment">// q = Ad</span></div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(d, q);</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    <span class="comment">// alpha = delta_new / (d^T q)</span></div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    alpha = delta_new / <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, d, q);</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span> </div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    <span class="comment">// x = x + alpha * d</span></div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { x[i] += alpha * d[i]; }</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    <span class="keywordflow">if</span> (iteration % 50 == 0) {</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>      <span class="comment">// r = b - Ax</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>      A.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">MatVec</a>(x, q);  <span class="comment">// here, q is just a place to store Ax</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>      <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] = b[i] - q[i]; }</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>      <span class="comment">// r = r - alpha * q</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>      <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { r[i] -= alpha * q[i]; }</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    }</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>    <span class="comment">// s = M^-1 r</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    M.<a class="code hl_function" href="classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f">DiagonalMatrixMatVec</a>(r, s);</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    <span class="comment">// delta_old = delta_new</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>    delta_old = delta_new;</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    <span class="comment">// delta_new = r^T s</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    delta_new = <a class="code hl_function" href="namespacenimble.html#a14f2717bd1c97bee634f3c04203f08cc">InnerProduct</a>(num_entries, r, s);</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    <span class="comment">// beta = delta_new / delta_old</span></div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>    beta = delta_new / delta_old;</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span> </div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>    <span class="comment">// d = s + beta * d</span></div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; num_entries; i++) { d[i] = s[i] + beta * d[i]; }</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>    iteration += 1;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  }</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span> </div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  num_iterations = iteration;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  <span class="keywordtype">bool</span> success   = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  <span class="keywordflow">if</span> (iteration == max_iterations) { success = <span class="keyword">false</span>; }</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  <span class="keywordflow">return</span> success;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>}</div>
 <div class="ttc" id="aclassnimble_1_1_c_r_s_matrix_container_html"><div class="ttname"><a href="classnimble_1_1_c_r_s_matrix_container.html">nimble::CRSMatrixContainer</a></div><div class="ttdef"><b>Definition:</b> nimble_linear_solver.h:119</div></div>
 <div class="ttc" id="aclassnimble_1_1_c_r_s_matrix_container_html_a205dd9fb2dc7da57365a6486b452b089"><div class="ttname"><a href="classnimble_1_1_c_r_s_matrix_container.html#a205dd9fb2dc7da57365a6486b452b089">nimble::CRSMatrixContainer::MatVec</a></div><div class="ttdeci">void MatVec(const double *vec, double *result) const</div><div class="ttdef"><b>Definition:</b> nimble_linear_solver.cc:118</div></div>
 <div class="ttc" id="aclassnimble_1_1_c_r_s_matrix_container_html_ace11b871b32acef5a8d8f7ee4b26e11f"><div class="ttname"><a href="classnimble_1_1_c_r_s_matrix_container.html#ace11b871b32acef5a8d8f7ee4b26e11f">nimble::CRSMatrixContainer::DiagonalMatrixMatVec</a></div><div class="ttdeci">void DiagonalMatrixMatVec(const double *vec, double *result) const</div><div class="ttdef"><b>Definition:</b> nimble_linear_solver.cc:125</div></div>
@@ -1604,8 +1606,8 @@ template&lt;class Key , class Val &gt; </div>
 </div><!-- fragment -->
 </div>
 </div>
-<a id="a9095f73dfecca7b4bfb4b12fc0cc96c1" name="a9095f73dfecca7b4bfb4b12fc0cc96c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9095f73dfecca7b4bfb4b12fc0cc96c1">&#9670;&nbsp;</a></span>LU_Decompose()</h2>
+<a id="ac475d0094d78b745150fef4f672faa16" name="ac475d0094d78b745150fef4f672faa16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac475d0094d78b745150fef4f672faa16">&#9670;&nbsp;</a></span>LU_Decompose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1619,7 +1621,7 @@ template&lt;class Key , class Val &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;&#160;</td>
           <td class="paramname"><em>mat</em>, </td>
         </tr>
         <tr>
@@ -1635,81 +1637,11 @@ template&lt;class Key , class Val &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>{</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>  <span class="keywordtype">int</span>                 imax = 0;</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>  <span class="keywordtype">double</span>              big, temp, sum;</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="keywordtype">int</span>                 n = num_entries;</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>  std::vector&lt;double&gt; vv(n);  <span class="comment">// vv stores the implicit scaling of each row.</span></div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="keywordtype">double</span>              tiny = 1e-40;</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="comment">// loop over rows to get the implicit scaling information</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="comment">// scale each row by 1/(largest element)</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; n; ++i) {</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    big = 0.0;</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; n; ++j) {</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>      <span class="keywordflow">if</span> (std::fabs(mat(i, j)) &gt; big) big = std::fabs(mat(i, j));</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    }</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    <span class="keywordflow">if</span> (big &lt; tiny) {</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>      <span class="comment">// No nonzero largest element.</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>      <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot;Singular matrix in routine LU_Decompose()&quot;</span>);</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>    }</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    vv[i] = 1.0 / big;</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>  }</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>  <span class="comment">// loop over columns</span></div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; n; ++j) {</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; j; ++i) {</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>      sum = mat(i, j);</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; i; ++k) { sum -= mat(i, k) * mat(k, j); }</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>      mat(i, j) = sum;</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    }</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>    big = 0.0;</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = j; i &lt; n; ++i) {</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>      sum = mat(i, j);</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; j; ++k) { sum -= mat(i, k) * mat(k, j); }</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>      mat(i, j) = sum;</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>      <span class="keywordflow">if</span> (vv[i] * std::fabs(sum) &gt; big) {</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        <span class="comment">// this is the biggest element in the column</span></div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        <span class="comment">// save it as the pivot element</span></div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        big  = vv[i] * std::fabs(sum);</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        imax = i;</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>      }</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    }</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    <span class="comment">// interchange rows if required</span></div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    <span class="keywordflow">if</span> (j != imax) {</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; n; ++k) {</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        temp         = mat(imax, k);</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        mat(imax, k) = mat(j, k);</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        mat(j, k)    = temp;</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>      }</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>      vv[imax] = vv[j];</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    }</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>    index[j] = imax;</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    <span class="keywordflow">if</span> (std::fabs(mat(j, j)) &lt; tiny) {</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>      <span class="comment">// matrix is singular and we&#39;re about to divide by zero</span></div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>      <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot;Singular matrix in routine LU_Decompose()&quot;</span>);</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    }</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    <span class="comment">// divide by the pivot element</span></div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>    <span class="keywordflow">if</span> (j != n) {</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>      temp = 1.0 / (mat(j, j));</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = j + 1; i &lt; n; ++i) { mat(i, j) *= temp; }</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    }</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  }</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <span class="comment">// decomposition is returned in mat</span></div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>}</div>
-<div class="ttc" id="animble__macros_8h_html_af9b42a568a58a4fec3697ddab61ba880"><div class="ttname"><a href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a></div><div class="ttdeci">#define NIMBLE_ABORT(...)</div><div class="ttdef"><b>Definition:</b> nimble_macros.h:87</div></div>
-</div><!-- fragment -->
+
 </div>
 </div>
-<a id="a84f893a8b31428c4ba6cf89a65c03c2e" name="a84f893a8b31428c4ba6cf89a65c03c2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a84f893a8b31428c4ba6cf89a65c03c2e">&#9670;&nbsp;</a></span>LU_Solve()</h2>
+<a id="a027c528af149ec9dc71c4f5687cdf010" name="a027c528af149ec9dc71c4f5687cdf010"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a027c528af149ec9dc71c4f5687cdf010">&#9670;&nbsp;</a></span>LU_Solve()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1723,7 +1655,7 @@ template&lt;class Key , class Val &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;&#160;</td>
           <td class="paramname"><em>mat</em>, </td>
         </tr>
         <tr>
@@ -1745,37 +1677,11 @@ template&lt;class Key , class Val &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>{</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="comment">// mat holds the upper and lower triangular decomposition (obtained by</span></div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="comment">// LU_Deompose) vec hold the right-hand-side vector index holds the pivoting</span></div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="comment">// information (row interchanges)</span></div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  <span class="keywordtype">double</span> sum;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  <span class="keywordtype">int</span>    n = num_entries;</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span> </div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  <span class="comment">// forward substitution</span></div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="comment">// resolve pivoting as we go (stored in index array)</span></div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; n; ++i) {</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    sum           = vec[index[i]];</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>    vec[index[i]] = vec[i];</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; i; ++j) { sum -= mat(i, j) * vec[j]; }</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    vec[i] = sum;</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  }</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span> </div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  <span class="comment">// back substitution</span></div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = n - 1; i &gt;= 0; --i) {</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    sum = vec[i];</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = i + 1; j &lt; n; ++j) { sum -= mat(i, j) * vec[j]; }</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    vec[i] = sum / mat(i, i);</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  }</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="comment">// solution is returned in vec</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>}</div>
-</div><!-- fragment -->
+
 </div>
 </div>
-<a id="a15511ea91b55f27b73bddbdd4c00239c" name="a15511ea91b55f27b73bddbdd4c00239c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15511ea91b55f27b73bddbdd4c00239c">&#9670;&nbsp;</a></span>LU_SolveSystem()</h2>
+<a id="a0a7d4978bfa689660b05f8c4dbbea680" name="a0a7d4978bfa689660b05f8c4dbbea680"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a7d4978bfa689660b05f8c4dbbea680">&#9670;&nbsp;</a></span>LU_SolveSystem()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1789,7 +1695,7 @@ template&lt;class Key , class Val &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">nimble::MatrixContainer</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classnimble_1_1_matrix_container.html">MatrixContainer</a> &amp;&#160;</td>
           <td class="paramname"><em>mat</em>, </td>
         </tr>
         <tr>
@@ -1811,18 +1717,7 @@ template&lt;class Key , class Val &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>{</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <span class="keywordtype">int</span>* index = scratch;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span> </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  <span class="comment">// decompose the matrix into upper and lower triangular parts</span></div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  <a class="code hl_function" href="namespacenimble.html#a9095f73dfecca7b4bfb4b12fc0cc96c1">LU_Decompose</a>(num_entries, mat, index);</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span> </div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  <span class="comment">// solve the system (forward and backward substitution)</span></div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>  <a class="code hl_function" href="namespacenimble.html#a84f893a8b31428c4ba6cf89a65c03c2e">LU_Solve</a>(num_entries, mat, vec, index);</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>}</div>
-<div class="ttc" id="anamespacenimble_html_a84f893a8b31428c4ba6cf89a65c03c2e"><div class="ttname"><a href="namespacenimble.html#a84f893a8b31428c4ba6cf89a65c03c2e">nimble::LU_Solve</a></div><div class="ttdeci">void LU_Solve(int num_entries, nimble::MatrixContainer &amp;mat, double *vec, int *index)</div><div class="ttdef"><b>Definition:</b> nimble_linear_solver.cc:226</div></div>
-<div class="ttc" id="anamespacenimble_html_a9095f73dfecca7b4bfb4b12fc0cc96c1"><div class="ttname"><a href="namespacenimble.html#a9095f73dfecca7b4bfb4b12fc0cc96c1">nimble::LU_Decompose</a></div><div class="ttdeci">void LU_Decompose(int num_entries, nimble::MatrixContainer &amp;mat, int *index)</div><div class="ttdef"><b>Definition:</b> nimble_linear_solver.cc:154</div></div>
-</div><!-- fragment -->
+
 </div>
 </div>
 <a id="ac629042f6002152363ec36a11dcfc9a1" name="ac629042f6002152363ec36a11dcfc9a1"></a>
@@ -2017,6 +1912,7 @@ template&lt;class Key , class Val &gt; </div>
 <div class="ttc" id="aclassnimble_1_1_parser_html_ac60639056cf81ba3bd618f543e8b2c2a"><div class="ttname"><a href="classnimble_1_1_parser.html#ac60639056cf81ba3bd618f543e8b2c2a">nimble::Parser::SetRankID</a></div><div class="ttdeci">void SetRankID(int myrank)</div><div class="ttdoc">Set the rank index.</div><div class="ttdef"><b>Definition:</b> nimble_parser.h:357</div></div>
 <div class="ttc" id="anamespacenimble_1_1details_html_a6d81a4fc4d935474597869ba36925635"><div class="ttname"><a href="namespacenimble_1_1details.html#a6d81a4fc4d935474597869ba36925635">nimble::details::parseCommandLine</a></div><div class="ttdeci">int parseCommandLine(int argc, char **argv, nimble::Parser &amp;parser)</div><div class="ttdef"><b>Definition:</b> nimble_main.cc:164</div></div>
 <div class="ttc" id="anamespacenimble_html_a75f91a9e2afc38571e748a620b8b79c8"><div class="ttname"><a href="namespacenimble.html#a75f91a9e2afc38571e748a620b8b79c8">nimble::NimbleVersion</a></div><div class="ttdeci">std::string NimbleVersion()</div><div class="ttdef"><b>Definition:</b> nimble_version.h:68</div></div>
+<div class="ttc" id="animble__macros_8h_html_af9b42a568a58a4fec3697ddab61ba880"><div class="ttname"><a href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a></div><div class="ttdeci">#define NIMBLE_ABORT(...)</div><div class="ttdef"><b>Definition:</b> nimble_macros.h:87</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2837,7 +2733,7 @@ template&lt;typename ArgT &gt; </div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>  area = 0.5 * std::sqrt(cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]);</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>  <span class="keywordflow">return</span> area;</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>}</div>
-<div class="ttc" id="animble__utils_8h_html_ad1aa3afc0dd1bd0a39f48cd6d3846da1"><div class="ttname"><a href="nimble__utils_8h.html#ad1aa3afc0dd1bd0a39f48cd6d3846da1">CrossProduct</a></div><div class="ttdeci">NIMBLE_INLINE_FUNCTION void CrossProduct(const ScalarT *const u, const ScalarT *const v, ScalarT *const result)</div><div class="ttdef"><b>Definition:</b> nimble_utils.h:392</div></div>
+<div class="ttc" id="animble__utils_8h_html_ad1aa3afc0dd1bd0a39f48cd6d3846da1"><div class="ttname"><a href="nimble__utils_8h.html#ad1aa3afc0dd1bd0a39f48cd6d3846da1">CrossProduct</a></div><div class="ttdeci">NIMBLE_INLINE_FUNCTION void CrossProduct(const ScalarT *const u, const ScalarT *const v, ScalarT *const result)</div><div class="ttdef"><b>Definition:</b> nimble_utils.h:394</div></div>
 </div><!-- fragment -->
 </div>
 </div>
