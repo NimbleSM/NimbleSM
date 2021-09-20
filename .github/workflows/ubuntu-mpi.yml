@@ -42,7 +42,7 @@ jobs:
                  -Dexodus_INCLUDE_DIR="/usr/include" \
                  -Dexodus_LIBRARY="/usr/lib/x86_64-linux-gnu/libexodus.so" \
                  -DNimbleSM_ENABLE_MPI=ON \
-                 -DNimbleSM_ENABLE_GTEST=ON \
+                 -DNimbleSM_ENABLE_UNIT_TESTS=ON \
                  ..
     - name: build
       run: cmake --build build
