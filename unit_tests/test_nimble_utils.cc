@@ -50,13 +50,13 @@ TEST(nimble_utils, invert_3x3_matrix)
   std::vector<double> mat(9);
   std::vector<double> inv(9), ref_inv(9);
 
-  mat[0] = 1.0; mat[1] = 0.0; mat[2] = 0.0;
-  mat[3] = 1.0; mat[4] = 1.0; mat[5] = 0.0;
-  mat[6] = 1.0; mat[7] = 1.0; mat[8] = 1.0;
+  mat[K_F_XX] = 1.0; mat[K_F_XY] = 0.0; mat[K_F_XZ] = 0.0;
+  mat[K_F_YX] = 1.0; mat[K_F_YY] = 1.0; mat[K_F_YZ] = 0.0;
+  mat[K_F_ZX] = 1.0; mat[K_F_ZY] = 1.0; mat[K_F_ZZ] = 1.0;
 
-  ref_inv[0] = 1.0; ref_inv[1] = 0.0; ref_inv[2] = 0.0;
-  ref_inv[3] = -1.0; ref_inv[4] = 1.0; ref_inv[5] = 0.0;
-  ref_inv[6] = 0.0; ref_inv[7] = -1.0; ref_inv[8] = 1.0;
+  ref_inv[K_F_XX] = 1.0; ref_inv[K_F_XY] = 0.0; ref_inv[K_F_XZ] = 0.0;
+  ref_inv[K_F_YX] = -1.0; ref_inv[K_F_YY] = 1.0; ref_inv[K_F_YZ] = 0.0;
+  ref_inv[K_F_ZX] = 0.0; ref_inv[K_F_ZY] = -1.0; ref_inv[K_F_ZZ] = 1.0;
 
   double det = Invert_Full33(&mat[0], &inv[0]);
 
@@ -70,5 +70,26 @@ TEST(nimble_utils, invert_3x3_matrix)
 
   ASSERT_TRUE(correctInverse);
   ASSERT_DOUBLE_EQ(det, 1.0);
+
+  mat[K_F_XX] = 3.0; mat[K_F_XY] = 0.0; mat[K_F_XZ] = 2.0;
+  mat[K_F_YX] = 2.0; mat[K_F_YY] = 0.0; mat[K_F_YZ] = -2.0;
+  mat[K_F_ZX] = 0.0; mat[K_F_ZY] = 1.0; mat[K_F_ZZ] = 1.0;
+
+  ref_inv[K_F_XX] = 0.2; ref_inv[K_F_XY] = 0.2; ref_inv[K_F_XZ] = 0.0;
+  ref_inv[K_F_YX] = -0.2; ref_inv[K_F_YY] = 0.3; ref_inv[K_F_YZ] = 1.0;
+  ref_inv[K_F_ZX] = 0.2; ref_inv[K_F_ZY] = -0.3; ref_inv[K_F_ZZ] = 0.0;
+
+  det = Invert_Full33(&mat[0], &inv[0]);
+
+  correctInverse = true;
+  for (int ii = 0; ii < 9; ++ii) {
+    if (ref_inv[ii] != inv[ii]) {
+      correctInverse = false;
+      break;
+    }
+  }
+
+  ASSERT_TRUE(correctInverse);
+  ASSERT_DOUBLE_EQ(det, 10.0);
 
 }
