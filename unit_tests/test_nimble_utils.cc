@@ -44,7 +44,7 @@
 #include <gtest/gtest.h>
 #include "nimble_utils.h"
 
-TEST(nimble_material_params, add_double_parameter)
+TEST(nimble_utils, invert_3x3_matrix)
 {
 
   std::vector<double> mat(9);
@@ -67,7 +67,7 @@ TEST(nimble_material_params, add_double_parameter)
       break;
     }
   }
-  
+
   ASSERT_TRUE(correctInverse);
   ASSERT_DOUBLE_EQ(det, 1.0);
 
