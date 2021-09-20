@@ -10,22 +10,85 @@ cmake_minimum_required(VERSION 3.17)
 project(NimbleSM VERSION 0.1.0 LANGUAGES CXX)
 
 #--- Define options
-option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
-option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
-option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
-option(HAVE_KOKKOS "Whether to use Kokkos for parallel execution" OFF)
-option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
-option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with GTest testing" OFF)
-option(TIME_CONTACT "Whether to time contact" OFF)
+
+option(NimbleSM_ENABLE_ARBORX "Whether to use ArborX" OFF)
 option(HAVE_ARBORX "Whether to use ArborX" OFF)
+if (HAVE_ARBORX)
+  set(NimbleSM_ENABLE_ARBORX TRUE)
+  message(DEPRECATION "Flag HAVE_ARBORX is deprecated. Use NimbleSM_ENABLE_ARBORX instead.")
+endif()
+#------
 
-include(GNUInstallDirs)
+option(NimbleSM_ENABLE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+option(HAVE_BVH "Whether to use BVH for parallel asynchronous contact" OFF)
+if (HAVE_BVH)
+  set(NimbleSM_ENABLE_BVH TRUE)
+  message(DEPRECATION "Flag HAVE_BVH is deprecated. Use NimbleSM_ENABLE_BVH instead.")
+endif()
+#------
 
+
+option(NimbleSM_ENABLE_CUDA "Whether to build Nimble with CUDA" OFF)
 option(NIMBLE_NVIDIA_BUILD "Whether to build Nimble with CUDA" OFF)
 if (NIMBLE_NVIDIA_BUILD)
+  set(NimbleSM_ENABLE_CUDA TRUE)
+  message(DEPRECATION "Flag NIMBLE_NVIDIA_BUILD is deprecated. Use NimbleSM_ENABLE_CUDA instead.")
+endif()
+if (NimbleSM_ENABLE_CUDA)
   message(WARNING "NVIDIA build is not currently active. ")
   #add_definitions(-DNIMBLE_NVIDIA_BUILD)
 endif()
+#------
+
+option(NimbleSM_ENABLE_UNIT_TESTS "Whether to build Nimble with unit testing" OFF)
+option(NIMBLE_ENABLE_UNIT_TESTS "Whether to build Nimble with unit testing" OFF)
+if (NIMBLE_ENABLE_UNIT_TESTS)
+  set(NimbleSM_ENABLE_UNIT_TESTS TRUE)
+  message(DEPRECATION "Flag NIMBLE_ENABLE_UNIT_TESTS is deprecated. Use NimbleSM_ENABLE_UNIT_TESTS instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_KOKKOS "Whether to use Kokkos" OFF)
+option(HAVE_KOKKOS "Whether to use Kokkos" OFF)
+if (HAVE_KOKKOS)
+  set(NimbleSM_ENABLE_KOKKOS TRUE)
+  message(DEPRECATION "Flag HAVE_KOKKOS is deprecated. Use NimbleSM_ENABLE_KOKKOS instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+option(USE_PURE_MPI "Whether to use Pure MPI (no Trilinos)" OFF)
+if (USE_PURE_MPI)
+  set(NimbleSM_ENABLE_MPI TRUE)
+  message(DEPRECATION "Flag USE_PURE_MPI is deprecated. Use NimbleSM_ENABLE_MPI instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_TRILINOS "Whether to use Trilinos" OFF)
+option(HAVE_TRILINOS "Whether to use Trilinos" OFF)
+if (HAVE_TRILINOS)
+  set(NimbleSM_ENABLE_TRILINOS TRUE)
+  message(DEPRECATION "Flag HAVE_TRILINOS is deprecated. Use NimbleSM_ENABLE_TRILINOS instead.")
+endif()
+#------
+
+option(NimbleSM_ENABLE_UQ "Whether to use enamble UQ sampling" OFF)
+option(HAVE_UQ "Whether to use enamble UQ sampling" OFF)
+if (HAVE_UQ)
+  set(NimbleSM_ENABLE_UQ TRUE)
+  message(DEPRECATION "Flag HAVE_UQ is deprecated. Use NimbleSM_ENABLE_UQ instead.")
+endif()
+#------
+
+option(NimbleSM_TIME_Contact "Whether to time contact" OFF)
+option(TIME_CONTACT "Whether to time contact" OFF)
+if (TIME_CONTACT)
+  set(NimbleSM_TIME_Contact TRUE)
+  message(DEPRECATION "Flag TIME_CONTACT is deprecated. Use NimbleSM_TIME_Contact instead.")
+endif()
+#------
+
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,8 +104,8 @@ add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
 
 # Enhanced debugging option
-OPTION(ENABLE_DEBUGGING "Flag to turn on enhanced debugging info" OFF)
-IF (ENABLE_DEBUGGING)
+OPTION(NimbleSM_ENABLE_DEBUG "Flag to turn on enhanced debugging info" OFF)
+IF (NimbleSM_ENABLE_DEBUG)
   MESSAGE("-- Enhanced debugging        is Enabled, compiling with -DNIMBLE_DEBUG")
   SET(NIMBLE_DEBUG TRUE)
 ELSE()
@@ -54,30 +117,30 @@ target_include_directories(nimble PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Optional functionality for UQ
-if (HAVE_UQ)
+if (NimbleSM_ENABLE_UQ)
   set(NIMBLE_HAVE_UQ TRUE)
   message(STATUS "Compiling with UQ")
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_UQ)
 endif()
 
 # Optional functionality for contact
-if (TIME_CONTACT)
+if (NimbleSM_TIME_Contact)
   set(NIMBLE_TIME_CONTACT TRUE)
   message(STATUS "Compiling with contact timing")
   target_compile_definitions(nimble PUBLIC NIMBLE_TIME_CONTACT)
 endif()
 
 # Optional dependency for pure MPI build (no Trilinos)
-if (USE_PURE_MPI)
+if (NimbleSM_ENABLE_MPI)
   set(NIMBLE_HAVE_MPI TRUE)
-    message(STATUS "Compiling with MPI")
   find_package(MPI REQUIRED)
   target_link_libraries(nimble PUBLIC MPI::MPI_CXX)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_MPI)
+  message(STATUS "Compiling with MPI")
 endif()
 
 # Optional BVH dependency
-if (HAVE_BVH)
+if (NimbleSM_ENABLE_BVH)
   ADD_DEFINITIONS(-DNIMBLE_HAVE_BVH)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_VT)
   if (BVH_DEBUG_LEVEL)
@@ -101,21 +164,26 @@ else()
 endif()
 
 # Optional Trilinos dependencies
-if(HAVE_TRILINOS)
+if(NimbleSM_ENABLE_TRILINOS)
+  option(NimbleSM_USE_TRILINOS_EXODUS "Whether to use Exodus from Trilinos" ON)
   option(USE_TRILINOS_EXODUS "Whether to use Exodus from Trilinos" ON)
+  if (NOT USE_TRILINOS_EXODUS)
+    set(NimbleSM_USE_TRILINOS_EXODUS FALSE)
+    message(DEPRECATION "Flag USE_TRILINOS_EXODUS is deprecated. Use NimbleSM_USE_TRILINOS_EXODUS instead.")
+  endif()
   # Trilinos brings in Trilinos, Kokkos, and (optionally) Exodus
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_TRILINOS)
   set(NIMBLE_HAVE_TRILINOS TRUE)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_KOKKOS)
   set(NIMBLE_HAVE_KOKKOS TRUE)
-  if(USE_TRILINOS_EXODUS)
+  if(NimbleSM_USE_TRILINOS_EXODUS)
     target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_EXODUS)
     set(NIMBLE_HAVE_EXODUS TRUE)
   endif()
   message(STATUS "Trilinos is enabled.")
   set(Trilinos_DIR CACHE PATH "Path to Trilinos install directory")
   set(NIMBLE_TRILINOS_COMPONENTS KokkosCore TpetraCore)
-  if(USE_TRILINOS_EXODUS)
+  if(NimbleSM_USE_TRILINOS_EXODUS)
     set(NIMBLE_TRILINOS_COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS} SEACASExodus)
   endif()
   find_package(Trilinos REQUIRED COMPONENTS ${NIMBLE_TRILINOS_COMPONENTS})
@@ -127,7 +195,7 @@ endif()
 
 # Optional Kokkos dependency
 # If trilinos is used, it comes with Kokkos so we don't need standalone
-if(NOT HAVE_TRILINOS AND HAVE_KOKKOS)
+if(NOT NimbleSM_ENABLE_TRILINOS AND NimbleSM_ENABLE_KOKKOS)
   if (Kokkos_ROOT)
     #
     # Search paths specified in the <PackageName>_ROOT
@@ -159,7 +227,7 @@ if(NOT HAVE_TRILINOS AND HAVE_KOKKOS)
   target_compile_definitions(nimble PUBLIC -DNIMBLE_HAVE_KOKKOS)
 endif()
 
-if(NOT HAVE_TRILINOS AND NOT HAVE_KOKKOS)
+if(NOT NimbleSM_ENABLE_TRILINOS AND NOT NimbleSM_ENABLE_KOKKOS)
   message("-- Kokkos is NOT enabled.")
   set(NIMBLE_HAVE_KOKKOS FALSE)
   set(NIMBLE_KOKKOS_LIBS)
@@ -167,7 +235,7 @@ endif()
 
 # Exodus library dependencies
 message(STATUS "HAVE_TRILINOS: ${HAVE_TRILINOS}")
-if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
+if(NOT NimbleSM_ENABLE_TRILINOS OR NOT NimbleSM_USE_TRILINOS_EXODUS)
   find_package(Exodus REQUIRED)
   set(NIMBLE_HAVE_EXODUS TRUE)
   target_compile_definitions(nimble PRIVATE NIMBLE_HAVE_EXODUS)
@@ -178,7 +246,7 @@ if(NOT HAVE_TRILINOS OR NOT USE_TRILINOS_EXODUS)
 endif()
 
 # Optional ArborX dependency
-if (HAVE_ARBORX)
+if (NimbleSM_ENABLE_ARBORX)
   message(STATUS "Compiling with ArborX:")
   find_package(ArborX REQUIRED)
   #
@@ -204,7 +272,7 @@ include_directories(src)
 add_subdirectory(src)
 add_subdirectory(test)
 
-if(NIMBLE_ENABLE_UNIT_TESTS)
+if(NimbleSM_ENABLE_UNIT_TESTS)
   add_subdirectory(unit_tests)
 endif()
 

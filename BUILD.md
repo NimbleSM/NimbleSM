@@ -20,53 +20,53 @@ The full keyword listing is below.
   * Location of BVH install root.
   * Default: None
 
-* ENABLE_DEBUGGING: BOOL
-  * Whether to turn on enhanced debugging info.
-  * Default: OFF
-
-* HAVE_ARBORX: BOOL
-  * Whether to configure with [ArborX library](https://github.com/arborx/ArborX).
-  * Default: OFF
-
-* HAVE_BVH: BOOL
-  * Whether to use BVH for parallel asynchronous contact.
-  * Default: OFF
-
-* HAVE_KOKKOS: BOOL
-  * Whether to use [Kokkos library](https://github.com/kokkos/kokkos).
-  * Default: OFF
-
-* HAVE_TRILINOS: BOOL
-  * Whether to use [Trilinos library](https://github.com/trilinos/Trilinos).
-  * Default: OFF
-
-* HAVE_UQ: BOOL
-  * Whether to enable UQ sampling.
-  * Default: OFF
-
 * Kokkos_DIR or Kokkos_ROOT: STRING
   * Location of Kokkos install root.
   * Default: None
 
-* NIMBLE_ENABLE_UNIT_TESTS
-  * Whether to build Nimble with GTest testing.
+* NimbleSM_ENABLE_ARBORX: BOOL
+  * Whether to configure with [ArborX library](https://github.com/arborx/ArborX).
   * Default: OFF
 
-* TIME_CONTACT
+* NimbleSM_ENABLE_BVH: BOOL
+  * Whether to use BVH for parallel asynchronous contact.
+  * Default: OFF
+
+* NimbleSM_ENABLE_DEBUG: BOOL
+  * Whether to turn on enhanced debugging info.
+  * Default: OFF
+
+* NimbleSM_ENABLE_KOKKOS: BOOL
+  * Whether to use [Kokkos library](https://github.com/kokkos/kokkos).
+  * Default: OFF
+
+* NimbleSM_ENABLE_MPI: BOOL
+  * Whether to configure with MPI library.
+  * Default: OFF
+
+* NimbleSM_ENABLE_TRILINOS: BOOL
+  * Whether to use [Trilinos library](https://github.com/trilinos/Trilinos).
+  * Default: OFF
+
+* NimbleSM_ENABLE_UNIT_TESTS
+  * Whether to build Nimble with unit testing.
+  * Default: OFF
+
+* NimbleSM_ENABLE_UQ: BOOL
+  * Whether to enable UQ sampling.
+  * Default: OFF
+
+* NimbleSM_TIME_Contact
   * Whether to add extra contact timers.
+  * Default: OFF
+
+* NimbleSM_USE_TRILINOS_EXODUS: BOOL
+  * Whether to use Exodus from Trilinos.
   * Default: OFF
 
 * Trilinos_DIR or Trilinos_ROOT: STRING
   * Location of Trilinos install root.
   * Default: None
-
-* USE_PURE_MPI: BOOL
-  * Whether to configure with MPI library.
-  * Default: OFF
-
-* USE_TRILINOS_EXODUS: BOOL
-  * Whether to use Exodus from Trilinos.
-  * Default: OFF
 
 
 ## Examples of scripts or configuration steps
