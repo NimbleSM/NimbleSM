@@ -505,6 +505,12 @@ SkewPart_Full33(const ScalarT* const mat, ScalarT* const result)
   result[K_F_ZZ] = 0.0;
 }
 
+/// \brief Function to invert a 3x3 matrix
+///
+/// \tparam ScalarT  Scalar values
+/// \param mat  Pointer to 3x3 matrix
+/// \param inv  Pointer to 3x3 mqtrix
+/// \return  Determinant
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION ScalarT
 Invert_Full33(const ScalarT* mat, ScalarT* inv)

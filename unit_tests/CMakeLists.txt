@@ -36,6 +36,7 @@ set(NIMBLE_UNIT_SOURCES
         nimble_unit_main.cc
         projection_node_to_face.cc
         test_nimble_material_params.cc
+        test_nimble_utils.cc
         )
 
 if (NIMBLE_HAVE_KOKKOS)
