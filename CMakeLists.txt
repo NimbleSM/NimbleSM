@@ -269,6 +269,7 @@ endif()
 
 include_directories(src)
 
+add_subdirectory(tpl)
 add_subdirectory(src)
 add_subdirectory(test)
 
