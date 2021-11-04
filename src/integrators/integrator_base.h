@@ -41,44 +41,35 @@
 // @HEADER
 */
 
-#ifndef NIMBLE_CLI_H
-#define NIMBLE_CLI_H
+#ifndef INTEGRATOR_BASE_H
+#define INTEGRATOR_BASE_H
 
-#include <string>
-#include <memory>
+#include "../nimble_genesis_mesh.h"
 
 namespace nimble {
-class CommandLineConfiguration
+class NimbleApplication;
+class DataManager;
+
+class IntegratorBase
 {
  public:
 
-  CommandLineConfiguration(int argc, char** argv);
-  CommandLineConfiguration(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration(CommandLineConfiguration &&) noexcept;
-  virtual ~CommandLineConfiguration();
+  IntegratorBase( NimbleApplication &app, GenesisMesh &mesh, DataManager &data_manager );
+  virtual ~IntegratorBase();
 
-  CommandLineConfiguration &operator=(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration &operator=(CommandLineConfiguration &&) noexcept;
+  virtual int Integrate() = 0;
 
-  virtual void ConfigureCommandLineArguments();
-
-  int ParseAndGetErrorCode();
-
-  bool UseKokkos() const noexcept;
-  bool UseTpetra() const noexcept;
-  bool UseVT() const noexcept;
-  bool UseUQ() const noexcept;
-
-  const std::string &InputFilename() const noexcept;
-
-  int &ArgC() noexcept;
-  char **&ArgV() noexcept;
+  NimbleApplication &App() noexcept { return *nimble_app_; }
+  const GenesisMesh &Mesh() const noexcept { return *mesh_; }
+  GenesisMesh &Mesh() noexcept { return *mesh_; }
+  DataManager &GetDataManager() noexcept { return *data_manager_; }
 
  private:
 
-  struct impl;
-  std::unique_ptr< impl > impl_;
+  NimbleApplication *nimble_app_;
+  GenesisMesh *mesh_;
+  DataManager *data_manager_;
 };
-}  // namespace nimble
+}
 
-#endif  // NIMBLE_CLI_H
+#endif  // INTEGRATOR_BASE_H

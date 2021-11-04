@@ -41,44 +41,12 @@
 // @HEADER
 */
 
-#ifndef NIMBLE_CLI_H
-#define NIMBLE_CLI_H
-
-#include <string>
-#include <memory>
+#include "integrator_base.h"
 
 namespace nimble {
-class CommandLineConfiguration
-{
- public:
+IntegratorBase::IntegratorBase(NimbleApplication& app, GenesisMesh& mesh, DataManager &data_manager)
+  : nimble_app_(&app), mesh_(&mesh), data_manager_(&data_manager)
+{}
 
-  CommandLineConfiguration(int argc, char** argv);
-  CommandLineConfiguration(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration(CommandLineConfiguration &&) noexcept;
-  virtual ~CommandLineConfiguration();
-
-  CommandLineConfiguration &operator=(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration &operator=(CommandLineConfiguration &&) noexcept;
-
-  virtual void ConfigureCommandLineArguments();
-
-  int ParseAndGetErrorCode();
-
-  bool UseKokkos() const noexcept;
-  bool UseTpetra() const noexcept;
-  bool UseVT() const noexcept;
-  bool UseUQ() const noexcept;
-
-  const std::string &InputFilename() const noexcept;
-
-  int &ArgC() noexcept;
-  char **&ArgV() noexcept;
-
- private:
-
-  struct impl;
-  std::unique_ptr< impl > impl_;
-};
-}  // namespace nimble
-
-#endif  // NIMBLE_CLI_H
+IntegratorBase::~IntegratorBase() = default;
+}

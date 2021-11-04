@@ -41,44 +41,20 @@
 // @HEADER
 */
 
-#ifndef NIMBLE_CLI_H
-#define NIMBLE_CLI_H
+#ifndef EXPLICIT_TIME_INTEGRATOR_H
+#define EXPLICIT_TIME_INTEGRATOR_H
 
-#include <string>
-#include <memory>
+#include "integrator_base.h"
 
 namespace nimble {
-class CommandLineConfiguration
+class ExplicitTimeIntegrator : public IntegratorBase
 {
  public:
 
-  CommandLineConfiguration(int argc, char** argv);
-  CommandLineConfiguration(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration(CommandLineConfiguration &&) noexcept;
-  virtual ~CommandLineConfiguration();
+  ExplicitTimeIntegrator( NimbleApplication &app, GenesisMesh &mesh, DataManager &data_manager );
 
-  CommandLineConfiguration &operator=(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration &operator=(CommandLineConfiguration &&) noexcept;
-
-  virtual void ConfigureCommandLineArguments();
-
-  int ParseAndGetErrorCode();
-
-  bool UseKokkos() const noexcept;
-  bool UseTpetra() const noexcept;
-  bool UseVT() const noexcept;
-  bool UseUQ() const noexcept;
-
-  const std::string &InputFilename() const noexcept;
-
-  int &ArgC() noexcept;
-  char **&ArgV() noexcept;
-
- private:
-
-  struct impl;
-  std::unique_ptr< impl > impl_;
+  int Integrate() override;
 };
-}  // namespace nimble
+}
 
-#endif  // NIMBLE_CLI_H
+#endif  // EXPLICIT_TIME_INTEGRATOR_H

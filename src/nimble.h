@@ -41,44 +41,59 @@
 // @HEADER
 */
 
-#ifndef NIMBLE_CLI_H
-#define NIMBLE_CLI_H
+#ifndef NIMBLE_H
+#define NIMBLE_H
 
-#include <string>
 #include <memory>
 
 namespace nimble {
-class CommandLineConfiguration
+class Parser;
+class CommandLineConfiguration;
+class MaterialFactoryBase;
+class BlockMaterialInterfaceFactoryBase;
+class ContactInterface;
+class IntegratorBase;
+class DataManager;
+class GenesisMesh;
+
+class NimbleApplication
 {
  public:
+  NimbleApplication();
+  NimbleApplication( const NimbleApplication & ) = delete;
+  NimbleApplication( NimbleApplication && ) noexcept;
+  virtual ~NimbleApplication();
 
-  CommandLineConfiguration(int argc, char** argv);
-  CommandLineConfiguration(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration(CommandLineConfiguration &&) noexcept;
-  virtual ~CommandLineConfiguration();
+  NimbleApplication &operator=( const NimbleApplication & ) = delete;
+  NimbleApplication &operator=( NimbleApplication && ) noexcept;
 
-  CommandLineConfiguration &operator=(const CommandLineConfiguration &) = delete;
-  CommandLineConfiguration &operator=(CommandLineConfiguration &&) noexcept;
+  int Run(int argc, char **argv);
 
-  virtual void ConfigureCommandLineArguments();
+  int Rank() const noexcept;
+  int NumRanks() const noexcept;
 
-  int ParseAndGetErrorCode();
-
-  bool UseKokkos() const noexcept;
-  bool UseTpetra() const noexcept;
-  bool UseVT() const noexcept;
-  bool UseUQ() const noexcept;
-
-  const std::string &InputFilename() const noexcept;
-
-  int &ArgC() noexcept;
-  char **&ArgV() noexcept;
+  std::shared_ptr< ContactInterface > GetContactInterface();
+  Parser &GetParser();
 
  private:
 
   struct impl;
+
+  virtual std::unique_ptr< Parser > CreateParser();
+  virtual std::unique_ptr< CommandLineConfiguration > CreateCLI(int argc, char **argv);
+  virtual std::unique_ptr< MaterialFactoryBase > CreateMaterialFactory();
+  virtual std::unique_ptr< BlockMaterialInterfaceFactoryBase > CreateBlockMaterialInterfaceFactory();
+  virtual std::unique_ptr< ContactInterface > CreateContactInterface();
+  virtual std::unique_ptr< IntegratorBase > CreateIntegrator(DataManager &data_manager,
+                                                             GenesisMesh &mesh);
+
+  void InitializeSubsystems();
+  void FinalizeSubsystems();
+  int ExecMain();
+  int MainLoop();
+
   std::unique_ptr< impl > impl_;
 };
 }  // namespace nimble
 
-#endif  // NIMBLE_CLI_H
+#endif  // NIMBLE_H

@@ -24,7 +24,7 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
   nimble_cli.cc
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_main.cc)
+  nimble.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.h
@@ -57,8 +57,7 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_utils.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_vector_communicator.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_version.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h
-  ${CMAKE_CURRENT_LIST_DIR}/nimble_main.h)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h)
 
 if(NIMBLE_HAVE_KOKKOS)
   set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
@@ -86,6 +85,7 @@ if(NIMBLE_HAVE_MPI)
 endif()
 
 add_subdirectory(contact)
+add_subdirectory(integrators)
 
 IF(NIMBLE_HAVE_UQ)
   add_subdirectory(uq)
@@ -107,7 +107,7 @@ IF(NIMBLE_HAVE_KOKKOS)
   )
 ENDIF()
 
-add_executable(NimbleSM nimble.cc)
+add_executable(NimbleSM nimble_main.cc)
 target_link_libraries(NimbleSM PRIVATE nimble::nimble)
 
 IF(NIMBLE_HAVE_KOKKOS)
