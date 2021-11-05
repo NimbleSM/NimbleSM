@@ -33,9 +33,10 @@ jobs:
            sudo apt-get install -y libmetis-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-           sudo add-apt-repository ppa:nschloe/seacas-nightly
-           sudo apt-get update -y -qq
-           sudo apt-get install -y seacas-bin libseacas-dev
+           mkdir -p /opt/seacas
+           pushd /opt/seacas
+           ./build-exodus.sh 2020-08-13
+           popd
     - name: configure
       run: |
            mkdir build && cd build
