@@ -51,6 +51,9 @@ then
     exit 1
 fi
 
+mkdir -p /opt/seacas
+pushd /opt/seacas
+
 seacas_version="$1"
 seacas_tar_name="v${seacas_version}.tar.gz"
 
@@ -80,3 +83,5 @@ mkdir build
 pushd build
 ../cmake-config
 make -j8 install
+
+popd

@@ -33,10 +33,7 @@ jobs:
            sudo apt-get install -y libmetis-dev
            sudo apt-get install -y netcdf-bin libnetcdf-dev
            sudo apt-get install -y libhdf5-serial-dev libhdf5-mpich-dev
-           mkdir -p /opt/seacas
-           pushd /opt/seacas
            ./.github/workflows/deps/build-exodus.sh 2020-08-13
-           popd
     - name: configure
       run: |
            mkdir build && cd build
