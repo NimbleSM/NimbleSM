@@ -25,7 +25,8 @@ RUN apt-get update \
      gcc-11 \
      g++-11 \
      gfortran-11 \
-     cmake \
+     cmake-data=3.21.3-0kitware1ubuntu20.04.1 \
+     cmake=3.21.3-0kitware1ubuntu20.04.1 \
   && rm -rf /var/lib/apt/lists/*
 
 # mpich
