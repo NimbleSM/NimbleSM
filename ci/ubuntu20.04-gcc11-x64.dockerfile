@@ -12,6 +12,12 @@ RUN apt-get update \
       wget \
       gpgconf \
       software-properties-common \
+      libsigsegv2 \
+      libsigsegv-dev \
+      pkg-config \
+      zlib1g \
+      zlib1g-dev \
+      m4 \
   && rm -rf /var/lib/apt/lists/*
 
 # Cmake ppa
