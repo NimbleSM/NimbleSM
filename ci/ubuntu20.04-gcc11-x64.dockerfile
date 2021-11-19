@@ -48,7 +48,7 @@ RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
 RUN mkdir -p /opt/spack-environment
-ADD ./ci/spack-depends.yaml /opt/spack-environment/spack.yaml
+ADD ./ci/spack-depends.yml /opt/spack-environment/spack.yaml
 RUN cd /opt/spack-environment \
   && . /opt/spack/share/spack/setup-env.sh \
   && spack env activate . \
