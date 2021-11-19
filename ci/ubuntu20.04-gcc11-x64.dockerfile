@@ -47,4 +47,23 @@ RUN apt-get update \
 RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
-RUN . /opt/spack/share/spack/setup-env.sh && spack install --fail-fast exodusii
+RUN mkdir -p /opt/spack-environment
+ADD ./ci/spack-depends.yaml /opt/spack-environment/spack.yaml
+RUN cd /opt/spack-environment \
+  && . /opt/spack/share/spack/setup-env.sh \
+  && spack env activate . \
+  && spack install --fail-fast \
+  && spack gc -y
+
+# Add current source dir into the image
+ADD . /opt/src/NimbleSM
+RUN mkdir -p /opt/build/NimbleSM
+
+# Build using the spack environment we created
+RUN . /opt/spack/share/spack/setup-env.sh \
+  && spack env activate /opt/spack-environment \
+  && cmake -DCMAKE_BUILD_TYPE=Release \
+     -DCMAKE_C_COMPILER=gcc-11 \
+     -DCMAKE_CXX_COMPILER=g++-11 \
+     -S /opt/src/NimbleSM -B /opt/builds/NimbleSM \
+  && cmake --build /opt/builds/NimbleSM --parallel $(nproc)

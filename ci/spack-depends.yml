@@ -1,0 +1,7 @@
+spack:
+  specs:
+    - netcdf-c
+    - exodusii
+  config:
+    install_tree: /opt/software
+  view: /opt/view
