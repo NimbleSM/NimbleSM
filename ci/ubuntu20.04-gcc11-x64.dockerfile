@@ -40,3 +40,4 @@ RUN apt-get update \
 RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
+RUN . /opt/spack/share/spack/setup-env.sh && spack install --fail-fast exodusii
