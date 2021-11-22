@@ -1,6 +1,18 @@
 name: Ubuntu 20.04 gcc 11 x64
 
-on: [push, workflow_dispatch]
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - develop-refactor
+      - master
+      - develop
+
+  workflow_dispatch:
 
 jobs:
   build:
