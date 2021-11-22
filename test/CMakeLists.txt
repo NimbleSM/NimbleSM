@@ -14,6 +14,9 @@ set(nimble_kokkos_flag "-kokkos")
 set(nimble_tpetra_cli_arg "use_tpetra")
 set(nimble_tpetra_flag "-tpetra")
 
+# Find the python interpreter
+find_package(Python REQUIRED COMPONENTS Interpreter)
+
 #
 # Include test directories
 #
