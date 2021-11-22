@@ -33,4 +33,4 @@ jobs:
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
       - name: Build the Docker image and code
-        run: docker build -t ${{ steps.vars.outputs.docker_tag }} -f ./ci/ubuntu20.04-gcc11-x64.dockerfile .
+        run: DOCKER_BUILDKIT=1 docker build -t ${{ steps.vars.outputs.docker_tag }} -f ./ci/ubuntu20.04-gcc11-x64.dockerfile .
