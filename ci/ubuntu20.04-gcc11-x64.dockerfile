@@ -36,13 +36,6 @@ RUN apt-get update \
      cmake=3.21.3-0kitware1ubuntu20.04.1 \
   && rm -rf /var/lib/apt/lists/*
 
-# mpich
-RUN apt-get update \
-  && apt-get install -y \
-     mpich \
-     libmpich-dev \
-  && rm -rf /var/lib/apt/lists/*
-
 # Now we install spack and find compilers/externals
 RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find

@@ -1,6 +1,17 @@
 spack:
+  definitions:
+    - compilers: [gcc@11]
+    - mpis: [mpich@3.4.2]
+    - packages:
+        - exodusii
   specs:
-    - exodusii
+    - matrix:
+        - [$mpis]
+        - [$%compilers]
+    - matrix:
+        - [$packages]
+        - [$^mpis]
+        - [$%compilers]
   config:
     install_tree: /opt/software
   view: /opt/view
