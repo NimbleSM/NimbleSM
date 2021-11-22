@@ -62,3 +62,7 @@ RUN . /opt/spack/share/spack/setup-env.sh \
      -DNimbleSM_ENABLE_UNIT_TESTS=ON \
      -S /opt/src/NimbleSM -B /opt/builds/NimbleSM \
   && cmake --build /opt/builds/NimbleSM --parallel $(nproc)
+
+RUN . /opt/spack/share/spack/setup-env.sh \
+  && spack env activate /opt/spack-environment \
+  && cd /opt/builds/NimbleSM && ctest --output-on-failure
