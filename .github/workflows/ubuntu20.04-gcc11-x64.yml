@@ -32,5 +32,25 @@ jobs:
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Build the Docker image and code
-        run: DOCKER_BUILDKIT=1 docker build -t ${{ steps.vars.outputs.docker_tag }} -f ./ci/ubuntu20.04-gcc11-x64.dockerfile .
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          tags: ${{ steps.vars.outputs.docker_tag }}
+          context: .
+          file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+      # This helps prevent the cache from growing...
+      # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
