@@ -3,7 +3,7 @@ spack:
     - compilers: [gcc@11.1.0]
     - mpis: [mpich@3.4.2]
     - packages:
-        - exodusii
+        - seacas -x11
   specs:
     - matrix:
         - [$mpis]
