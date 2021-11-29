@@ -1,0 +1,12 @@
+spack:
+  definitions:
+    - compilers: [gcc@11.1.0]
+    - packages:
+        - seacas -x11 -mpi
+  specs:
+    - matrix:
+        - [$packages]
+        - [$%compilers]
+  config:
+    install_tree: /opt/software
+  view: /opt/view
