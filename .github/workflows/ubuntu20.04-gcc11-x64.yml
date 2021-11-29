@@ -20,7 +20,8 @@ jobs:
     strategy:
       matrix:
         mpi: [serial, mpi]
-    name: NimbleSM ${{ matrix.mpi }}
+        kokkos: [kokkos, trilinos, nokokkos]
+    name: NimbleSM ${{ matrix.mpi }} + ${{ matrix.kokkos }}
     steps:
       - uses: actions/checkout@v2
       - name: CI Variables
@@ -40,9 +41,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.mpi }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.mpi }}-${{ matrix.kokkos }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.mpi }}-
+            ${{ runner.os }}-buildx-${{ matrix.mpi }}-${{ matrix.kokkos }}-
       - name: Build the Docker image and code
         uses: docker/build-push-action@v2
         with:
@@ -52,7 +53,9 @@ jobs:
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-          build-args: NIMBLE_MPI_CONFIGURATION=${{ matrix.mpi }}
+          build-args: |
+            NIMBLE_MPI_CONFIGURATION=${{ matrix.mpi }}
+            NIMBLE_KOKKOS_CONFIGURATION=${{ matrix.kokkos }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache
