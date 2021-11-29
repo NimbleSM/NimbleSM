@@ -55,15 +55,7 @@ ADD . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # Build using the spack environment we created
-RUN . /opt/spack/share/spack/setup-env.sh \
-  && spack env activate /opt/spack-environment \
-  && cmake -DCMAKE_BUILD_TYPE=Release \
-     -DCMAKE_C_COMPILER=gcc-11 \
-     -DCMAKE_CXX_COMPILER=g++-11 \
-     -DCMAKE_CXX_FLAGS="-Werror" \
-     -DNimbleSM_ENABLE_UNIT_TESTS=ON \
-     -S /opt/src/NimbleSM -B /opt/builds/NimbleSM \
-  && cmake --build /opt/builds/NimbleSM --parallel $(nproc)
+RUN bash /opt/src/NimbleSM/build.sh
 
 RUN . /opt/spack/share/spack/setup-env.sh \
   && spack env activate /opt/spack-environment \
