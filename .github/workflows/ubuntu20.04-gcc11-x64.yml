@@ -56,6 +56,7 @@ jobs:
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache
+        if: always() # Cache the partial image even if building it fails
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
