@@ -57,6 +57,4 @@ RUN mkdir -p /opt/build/NimbleSM
 # Build using the spack environment we created
 RUN bash /opt/src/NimbleSM/ci/build.sh
 
-RUN . /opt/spack/share/spack/setup-env.sh \
-  && spack env activate /opt/spack-environment \
-  && cd /opt/build/NimbleSM && ctest --output-on-failure
+RUN bash /opt/src/NimbleSM/ci/test.sh

@@ -5,7 +5,7 @@ import os
 import string
 import glob
 import argparse as ap
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
 
@@ -65,9 +65,12 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=logfile)
-    return_code = p.wait()
+    p = Popen(command, stdout=logfile, stderr=PIPE)
+    err = p.communicate()[1]
+    return_code = p.returncode
     if return_code != 0:
+        print(err, file=sys.stderr)
+        logfile.write(err)
         result = return_code
 
     # run epu
