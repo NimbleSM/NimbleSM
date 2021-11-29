@@ -52,7 +52,8 @@ jobs:
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-          build-args: [NIMBLE_MPI_CONFIGURATION=${{ matrix.mpi }}]
+          build-args:
+            - NIMBLE_MPI_CONFIGURATION=${{ matrix.mpi }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache
