@@ -1,4 +1,4 @@
-name: Ubuntu 20.04 gcc 11 x64
+name: Build and Test Ubuntu 20.04 gcc 11 x64
 
 # Trigger the workflow on push or pull request
 on:
@@ -20,6 +20,7 @@ jobs:
     strategy:
       matrix:
         mpi: [serial, mpi]
+    name: NimbleSM ${{ matrix.mpi }}
     steps:
       - uses: actions/checkout@v2
       - name: CI Variables
