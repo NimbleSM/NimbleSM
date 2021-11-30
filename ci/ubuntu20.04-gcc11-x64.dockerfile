@@ -52,9 +52,9 @@ RUN mkdir -p /opt/spack-environment
 ADD ./ci/spack-depends-mpi.yml /opt/spack-environment/spack-mpi.yaml
 ADD ./ci/spack-depends-serial.yml /opt/spack-environment/spack-serial.yaml
 RUN if [ "$NimbleSM_ENABLE_MPI" = "ON" ]; then \
-        mv /opt/spack-environment/spack-mpi.yaml /opt/spack-environment/mpi.yaml && rm /opt/spack-environment/spack-serial.yaml; \
+        mv /opt/spack-environment/spack-mpi.yaml /opt/spack-environment/spack.yaml && rm /opt/spack-environment/spack-serial.yaml; \
     else \
-        mv /opt/spack-environment/spack-serial.yaml /opt/spack-environment/mpi.yaml && rm /opt/spack-environment/spack-mpi.yaml; \
+        mv /opt/spack-environment/spack-serial.yaml /opt/spack-environment/spack.yaml && rm /opt/spack-environment/spack-mpi.yaml; \
     fi
 RUN cd /opt/spack-environment \
   && . /opt/spack/share/spack/setup-env.sh \
