@@ -20,9 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mpi: [serial, mpi]
-        kokkos: [kokkos, trilinos, nokokkos]
-    name: NimbleSM ${{ matrix.mpi }} + ${{ matrix.kokkos }}
+        mpi: [{name: "MPI", value: "ON"}, {name: "Serial", value: "OFF"}]
+        kokkos: [{name: " + Kokkos", value: "ON"}, {name: "", value: "OFF"}]
+        trilinos: [{name: " + Trilinos", value: "ON"}, {name: "", value: "OFF"}]
+        exclude:
+          - kokkos: {name: " + Kokkos", value: "ON"}
+            trilinos: {name: " + Trilinos", value: "ON"}
+    name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}
     steps:
       - uses: actions/checkout@v2
       - name: CI Variables
@@ -42,9 +46,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.mpi }}-${{ matrix.kokkos }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.mpi }}-${{ matrix.kokkos }}-
+            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-
       - name: Build the Docker image and code
         uses: docker/build-push-action@v2
         with:
@@ -55,8 +59,9 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
           build-args: |
-            NIMBLE_MPI_CONFIGURATION=${{ matrix.mpi }}
-            NIMBLE_KOKKOS_CONFIGURATION=${{ matrix.kokkos }}
+            NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
+            NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
+            NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache

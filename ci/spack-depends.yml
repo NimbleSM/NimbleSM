@@ -1,0 +1,30 @@
+spack:
+  definitions:
+    - compilers: [gcc@11.1.0]
+    - mpis: []
+    - core-packages: []
+    - packages:
+        - seacas -x11
+    - when: env["NimbleSM_ENABLE_MPI"] == "ON"
+      mpis:
+        - mpich@3.4.2
+    - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
+      core-packages:
+        - kokkos@3.4.01 +openmp
+    - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
+      core-packages:
+        - trilinos@13.2.0 +openmp +exodus
+  specs:
+    - matrix:
+        - [$mpis]
+        - [$%compilers]
+    - matrix:
+        - [$core-packages]
+        - [$%compilers]
+    - matrix:
+        - [$packages]
+        - [$^mpis]
+        - [$%compilers]
+  config:
+    install_tree: /opt/software
+  view: /opt/view
