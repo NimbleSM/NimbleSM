@@ -11,7 +11,7 @@ spack:
         - [$mpis]
         - [$%compilers]
     - matrix:
-        - [$core_packages]
+        - [$core-packages]
         - [$%compilers]
     - matrix:
         - [$packages]
