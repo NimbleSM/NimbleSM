@@ -37,6 +37,10 @@ RUN apt-get update \
      gfortran-11 \
      cmake-data=3.21.3-0kitware1ubuntu20.04.1 \
      cmake=3.21.3-0kitware1ubuntu20.04.1 \
+     pkg-config \
+     libncurses5-dev \
+     m4 \
+     perl \
   && rm -rf /var/lib/apt/lists/*
 
 # Now we install spack and find compilers/externals
