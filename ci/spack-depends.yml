@@ -1,20 +1,13 @@
 spack:
   definitions:
     - compilers: [gcc@11.1.0]
-    - mpis:
-        - mpich@3.4.2
+    - mpis: []
     - core-packages: []
-    - mpi-packages:
+    - packages:
         - seacas -x11
     - when: env["NimbleSM_ENABLE_MPI"] == "ON"
-      core-packages:
-        - [$mpis]
-      packages:
-        - matrix:
-          - [$mpi-packages]
-          - [$^mpis]
-    - when: env["NimbleSM_ENABLE_MPI"] == "OFF"
-      packages: [$mpi-packages]
+      mpis:
+        - mpich@3.4.2
     - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
       core-packages:
         - kokkos@3.4.01 +openmp
@@ -23,9 +16,18 @@ spack:
         - trilinos@13.2.0 +openmp +exodus
   specs:
     - matrix:
-        - [$core-packages]
+        - [$mpis]
         - [$%compilers]
     - matrix:
+        - [$core-packages]
+        - [$%compilers]
+    - when: env["NimbleSM_ENABLE_MPI"] == "ON"
+      matrix:
+        - [$packages]
+        - [$^mpis]
+        - [$%compilers]
+    - when: env["NimbleSM_ENABLE_MPI"] == "OFF"
+      matrix:
         - [$packages]
         - [$%compilers]
   config:
