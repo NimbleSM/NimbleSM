@@ -2,12 +2,16 @@ spack:
   definitions:
     - compilers: [gcc@11.1.0]
     - mpis: [mpich@3.4.2]
+    - core-packages:
+        - kokkos@3.4.01 +openmp
     - packages:
         - seacas -x11
-        - kokkos@3.4.01 +openmp -hpx -cuda -pthread -serial -rocm -sycl ^hwloc~netloc
   specs:
     - matrix:
         - [$mpis]
+        - [$%compilers]
+    - matrix:
+        - [$core_packages]
         - [$%compilers]
     - matrix:
         - [$packages]
