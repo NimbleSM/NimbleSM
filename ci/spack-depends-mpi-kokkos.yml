@@ -4,7 +4,7 @@ spack:
     - mpis: [mpich@3.4.2]
     - packages:
         - seacas -x11
-        - kokkos@3.4.01 +openmp
+        - kokkos@3.4.01 +openmp -hpx
   specs:
     - matrix:
         - [$mpis]

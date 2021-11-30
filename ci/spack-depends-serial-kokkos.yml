@@ -3,7 +3,7 @@ spack:
     - compilers: [gcc@11.1.0]
     - packages:
         - seacas -x11 -mpi
-        - kokkos@3.4.01 +openmp
+        - kokkos@3.4.01 +openmp -hpx
   specs:
     - matrix:
         - [$packages]
