@@ -28,7 +28,7 @@ jobs:
         exclude:
           - kokkos: {name: " + Kokkos", value: "ON"}
             trilinos: {name: " + Trilinos", value: "ON"}
-          - aborx: {name: " + ArborX", value: "ON"}
+          - arborx: {name: " + ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.uq.name }}${{ matrix.arborx.name }}
     steps:
