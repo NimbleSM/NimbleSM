@@ -4,20 +4,22 @@ spack:
     - mpis:
         - mpich@3.4.2
     - core-packages: []
-    - packages:
-        - seacas -x11
+    - packages: []
     - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
       core-packages:
-        - kokkos@3.4.01 +openmp
+        - kokkos@3.4.01 +openmp +serial
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
         - trilinos@13.2.0 +openmp +exodus
+    - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
+      packages:
+        - seacas -x11
     - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "ON" )
       packages:
-        - arborx@1.1 +openmp -serial +mpi +trilinos
+        - arborx@1.1 +openmp +mpi +trilinos
     - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "OFF" )
       packages:
-        - arborx@1.1 +openmp -serial +mpi
+        - arborx@1.1 +openmp +mpi
   specs:
     - matrix:
         - [$mpis]
