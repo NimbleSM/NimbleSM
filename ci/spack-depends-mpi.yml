@@ -21,6 +21,7 @@ spack:
         - [$%compilers]
     - matrix:
         - [$packages]
+        - [$^mpis]
         - [$%compilers]
   config:
     install_tree: /opt/software

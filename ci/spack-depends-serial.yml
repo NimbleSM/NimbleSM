@@ -2,7 +2,7 @@ spack:
   definitions:
     - compilers: [gcc@11.1.0]
     - packages:
-        - seacas -x11
+        - seacas -x11 -mpi
     - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
       packages:
         - kokkos@3.4.01 +openmp
