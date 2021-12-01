@@ -12,6 +12,12 @@ spack:
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
         - trilinos@13.2.0 +openmp +exodus
+    - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "ON" )
+      packages:
+        - arborx@1.1 +openmp -serial +mpi +trilinos
+    - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "OFF" )
+      packages:
+        - arborx@1.1 +openmp -serial +mpi
   specs:
     - matrix:
         - [$mpis]

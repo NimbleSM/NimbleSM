@@ -3,6 +3,8 @@ FROM ubuntu:20.04
 ARG NimbleSM_ENABLE_MPI
 ARG NimbleSM_ENABLE_KOKKOS
 ARG NimbleSM_ENABLE_TRILINOS
+ARG NimbleSM_ENABLE_UQ
+ARG NimbleSM_ENABLE_ARBORX
 
 RUN apt-get update \
   && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
