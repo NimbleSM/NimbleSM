@@ -113,10 +113,6 @@ IF(NIMBLE_HAVE_KOKKOS)
   IF (NIMBLE_HAVE_ARBORX)
     target_link_libraries(NimbleSM PRIVATE ArborX::ArborX)
   ENDIF()
-
-  if (NIMBLE_HAVE_TRILINOS OR NIMBLE_HAVE_MPI)
-    target_link_libraries(NimbleSM PRIVATE MPI::MPI_CXX)
-  ENDIF()
 ENDIF()
 
 set_target_properties(nimble PROPERTIES PUBLIC_HEADER "${NIMBLE_PUBLIC_HEADERS}")
