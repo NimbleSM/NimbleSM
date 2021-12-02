@@ -14,7 +14,7 @@ add_test(NAME "${prefix}-serial"
 
 if(NIMBLE_HAVE_KOKKOS)
   add_test(NAME "${prefix}-serial-kokkos"
-           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-filg "use-uq" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use-uq" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
           )
 endif()
 
@@ -32,7 +32,7 @@ if (NIMBLE_HAVE_MPI)
 
     if(NIMBLE_HAVE_KOKKOS)
       add_test(NAME "${prefix}-np${nrank}-kokkos"
-               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-filg "use-uq" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
+               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use-uq" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endif()
 
