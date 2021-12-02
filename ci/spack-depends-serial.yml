@@ -7,7 +7,7 @@ spack:
         - kokkos@3.4.01 +openmp
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
-        - trilinos@13.2.0 +openmp +exodus -mpi
+        - trilinos@13.2.0 +openmp +exodus -mpi ^hdf5~mpi
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       packages:
         - seacas -x11 -mpi
