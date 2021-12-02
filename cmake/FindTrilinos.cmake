@@ -2,20 +2,21 @@
 find_package(Trilinos CONFIG COMPONENTS ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 
 
-# MESSAGE("-- Compiling with Trilinos:")
-# MESSAGE("       Trilinos_DIR: ${Trilinos_DIR}")
-# MESSAGE("       Trilinos_VERSION: ${Trilinos_VERSION}")
-# MESSAGE("       Trilinos_TPL_LIST: ${Trilinos_TPL_LIST}")
-# MESSAGE("       Trilinos_PACKAGE_LIST: ${Trilinos_PACKAGE_LIST}")
-# message(STATUS "COmponents: ${Trilinos_FIND_COMPONENTS}")
-# MESSAGE("       Trilinos_TPL_INCLUDE_DIRS: ${Trilinos_TPL_INCLUDE_DIRS}")
-# MESSAGE("       Trilinos_TPL_LIBRARIES: ${Trilinos_TPL_LIBRARIES}")
-# MESSAGE("       Trilinos_TPL_LIBRARY_DIRS: ${Trilinos_TPL_LIBRARY_DIRS}")
-# MESSAGE("       Trilinos_BUILD_SHARED_LIBS: ${Trilinos_BUILD_SHARED_LIBS}")
-# MESSAGE("       Trilinos_CXX_COMPILER_FLAGS: ${Trilinos_CXX_COMPILER_FLAGS}")
-#MESSAGE("       Trilinos_LIBRARIES: ${Trilinos_LIBRARIES}")
-# MESSAGE("       Trilinos_INCLUDE_DIRS: ${Trilinos_INCLUDE_DIRS}")
-# MESSAGE("       Trilinos_LIBRARY_DIRS: ${Trilinos_LIBRARY_DIRS}")
+MESSAGE("-- Compiling with Trilinos:")
+MESSAGE("       Trilinos_DIR: ${Trilinos_DIR}")
+MESSAGE("       Trilinos_VERSION: ${Trilinos_VERSION}")
+MESSAGE("       Trilinos_TPL_LIST: ${Trilinos_TPL_LIST}")
+MESSAGE("       Trilinos_PACKAGE_LIST: ${Trilinos_PACKAGE_LIST}")
+message(STATUS "Components: ${Trilinos_FIND_COMPONENTS}")
+MESSAGE("       Trilinos_TPL_INCLUDE_DIRS: ${Trilinos_TPL_INCLUDE_DIRS}")
+MESSAGE("       Trilinos_TPL_LIBRARIES: ${Trilinos_TPL_LIBRARIES}")
+MESSAGE("       Trilinos_TPL_LIBRARY_DIRS: ${Trilinos_TPL_LIBRARY_DIRS}")
+MESSAGE("       Trilinos_BUILD_SHARED_LIBS: ${Trilinos_BUILD_SHARED_LIBS}")
+MESSAGE("       Trilinos_CXX_COMPILER_FLAGS: ${Trilinos_CXX_COMPILER_FLAGS}")
+MESSAGE("       Trilinos_LD_FLAGS: ${Trilinos_LD_FLAGS}")
+MESSAGE("       Trilinos_LIBRARIES: ${Trilinos_LIBRARIES}")
+MESSAGE("       Trilinos_INCLUDE_DIRS: ${Trilinos_INCLUDE_DIRS}")
+MESSAGE("       Trilinos_LIBRARY_DIRS: ${Trilinos_LIBRARY_DIRS}")
 string(REPLACE " " ";" _trilinos_flags ${Trilinos_CXX_COMPILER_FLAGS})
 if (${Trilinos_LD_FLAGS})
   string(REPLACE " " ";" _trilinos_link_flags ${Trilinos_LD_FLAGS})
@@ -45,6 +46,4 @@ set_target_properties(Trilinos::Trilinos PROPERTIES
     INTERFACE_LINK_OPTIONS "${_trilinos_link_flags}"
     )
 
-# CMake 3.12 doesn't support INTERFACE_LINK_OPTIONS
-# set it as a "library" instead to propagate transitively
-set_property(TARGET Trilinos::Trilinos APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_trilinos_link_flags}")
+set_property(TARGET Trilinos::Trilinos APPEND PROPERTY INTERFACE_LINK_OPTIONS "${_trilinos_link_flags}")
