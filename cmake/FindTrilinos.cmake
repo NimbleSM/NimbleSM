@@ -26,7 +26,7 @@ endif()
 foreach(_flag IN LISTS _trilinos_flags)
   if (_flag MATCHES "^--?arch=.+")
     list(APPEND _trilinos_link_flags "${_flag}")
-  elseif (_flag MATCHES "^--fopenmp") # fopenmp doens't get propagated either -- this might fail if the openmp flag is different
+  elseif (_flag MATCHES "^-fopenmp") # fopenmp doens't get propagated either -- this might fail if the openmp flag is different
     list(APPEND _trilinos_link_flags "${_flag}")
   endif()
 endforeach()
