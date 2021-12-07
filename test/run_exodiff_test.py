@@ -5,9 +5,9 @@ import os
 import string
 import glob
 import argparse as ap
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
-def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
+def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openmpi=False):
 
     result = 0
     base_name = input_deck_name[:-3]
@@ -16,16 +16,17 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
 
     epu_required = False
     if num_ranks > 1:
-      command.append("mpirun")
-      command.append("-np")
-      command.append(str(num_ranks))
-      epu_required = True
-      command.append("--use-hwthread-cpus")
+        command.append("mpirun")
+        command.append("-np")
+        command.append(str(num_ranks))
+        epu_required = True
+        if use_openmpi:
+            command.append("--use-hwthread-cpus")
     #
     command.append(executable_name)
     #
     if cli_flag:
-      command.append("--" + cli_flag)
+        command.append("--" + cli_flag)
     command.append(input_deck_name)
 
     # differentiate output files based on type of run
@@ -33,7 +34,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
     log_file_name = "none"
     epu_output_extension = ".e"
     if num_ranks > 1:
-      epu_output_extension = "np" + str(num_ranks) + ".e"
+        epu_output_extension = "np" + str(num_ranks) + ".e"
     epu_exodus_output_name = "none"
     epu_ranks_string = str(num_ranks)
     nimble_output_name = base_name + ".out"
@@ -65,9 +66,12 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks):
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=logfile)
-    return_code = p.wait()
+    p = Popen(command, stdout=logfile, stderr=PIPE, text=True)
+    err = p.communicate()[1]
+    return_code = p.returncode
     if return_code != 0:
+        print(err, file=sys.stderr)
+        logfile.write(err)
         result = return_code
 
     # run epu

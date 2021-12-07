@@ -1,0 +1,77 @@
+name: Build and Test Ubuntu 20.04 gcc 11 x64
+
+# Trigger the workflow on push or pull request
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - develop-refactor
+      - master
+      - develop
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mpi: [{name: "MPI", value: "ON"}, {name: "Serial", value: "OFF"}]
+        kokkos: [{name: " + Kokkos", value: "ON"}, {name: "", value: "OFF"}]
+        trilinos: [{name: " + Trilinos", value: "ON"}, {name: "", value: "OFF"}]
+        uq: [{name: " + UQ", value: "ON"}, {name: "", value: "OFF"}]
+        arborx: [{name: " + ArborX", value: "ON"}, {name: "", value: "OFF"}]
+        exclude:
+          - kokkos: {name: " + Kokkos", value: "ON"}
+            trilinos: {name: " + Trilinos", value: "ON"}
+          - arborx: {name: " + ArborX", value: "ON"}
+            kokkos: {name: "", value: "OFF"}
+    name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.uq.name }}${{ matrix.arborx.name }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: CI Variables
+        id: vars
+        run: echo "::set-output name=docker_tag::$(git rev-parse --abbrev-ref ${{ github.head_ref || github.ref || 'HEAD' }} | sed 's/[^a-z0-9_-]/__/gi')"
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.uq.value }}-${{ matrix.arborx.value }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.uq.value }}-${{ matrix.arborx.value }}-
+      - name: Build the Docker image and code
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          tags: ${{ steps.vars.outputs.docker_tag }}
+          context: .
+          file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+          build-args: |
+            NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
+            NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
+            NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
+            NimbleSM_ENABLE_UQ=${{ matrix.uq.value }}
+            NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
+      # This helps prevent the cache from growing...
+      # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
+      - name: Move cache
+        if: always() # Cache the partial image even if building it fails
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache

@@ -11,7 +11,7 @@ set(inputfile "${prefix}.in")
 if (NIMBLE_HAVE_ARBORX)
 
   add_test(NAME "${prefix}-serial-kokkos"
-           COMMAND python ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
           )
 
   if (NIMBLE_HAVE_MPI)
@@ -23,7 +23,7 @@ if (NIMBLE_HAVE_ARBORX)
 
     foreach (nrank 2 4)
       add_test(NAME "${prefix}-np${nrank}-kokkos"
-               COMMAND python ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
+               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endforeach()
 
@@ -36,7 +36,7 @@ if (NIMBLE_HAVE_BVH)
   # When BVH is set, VT is also present
   #
   add_test(NAME "${prefix}-serial-bvh"
-           COMMAND python ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_vt" --input-deck "${inputfile}" --num-ranks 1
+           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_vt" --input-deck "${inputfile}" --num-ranks 1
           )
 
   if (NIMBLE_HAVE_MPI)
@@ -48,7 +48,7 @@ if (NIMBLE_HAVE_BVH)
 
     foreach (nrank 2 4)
       add_test(NAME "${prefix}-np${nrank}-bvh"
-               COMMAND python ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_vt" --input-deck "${inputfile}" --num-ranks ${nrank}
+               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_vt" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endforeach()
 

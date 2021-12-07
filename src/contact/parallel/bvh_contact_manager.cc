@@ -119,7 +119,7 @@ struct NarrowphaseFunc
 {
   explicit NarrowphaseFunc(BvhContactManager* cm) : contact_manager{cm} {}
 
-#ifndef NIMBLE_HAVE_KOKKOS
+#ifndef NIMBLE_HAVE_ARBORX
   bvh::narrowphase_result_pair
   operator()(const bvh::broadphase_collision<ContactEntity>& _a, const bvh::broadphase_collision<ContactEntity>& _b)
   {
