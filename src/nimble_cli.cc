@@ -49,7 +49,7 @@
 // From VT, if not we get some nasty conflicting symbols
 #include <CLI/CLI11.hpp>
 #else
-#include <nimble_tpl/CLI11/CLI11.hpp>
+#include <tpl/CLI11/CLI11.hpp>
 #endif
 
 namespace nimble {
