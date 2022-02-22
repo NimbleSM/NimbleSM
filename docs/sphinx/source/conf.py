@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = u'NimbleSM'
-copyright = u'2018, David Littlewood, Nicolas Morales, Jorge Antonio Perez'
-author = u'David Littlewood, Nicolas Morales, Jorge Antonio Perez'
+copyright = u'2018, David Littlewood, Nicolas Morales, Alecto Irene Perez'
+author = u'David Littlewood, Nicolas Morales, Alecto Irene Perez'
 
 # The short X.Y version
 version = u''
@@ -140,7 +140,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'NimbleSM.tex', u'NimbleSM Documentation',
-     u'David Littlewood, Nicolas Morales, Jorge Antonio Perez', 'manual'),
+     u'David Littlewood, Nicolas Morales, Alecto Irene Perez', 'manual'),
 ]
 
 
