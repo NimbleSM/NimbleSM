@@ -217,8 +217,8 @@ class Material
   NumStateVariables() const = 0;
 
   NIMBLE_FUNCTION
-  virtual void
-  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const = 0;
+  virtual std::pair<std::string, nimble::Length>
+  GetStateVariableLabelAndType(int index) const = 0;
 
   NIMBLE_FUNCTION
   virtual double
@@ -319,12 +319,13 @@ class ElasticMaterial : public Material
   };
 
   NIMBLE_FUNCTION
-  void
-  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
+  virtual std::pair<std::string, nimble::Length>
+  GetStateVariableLabelAndType(int index) const override
   {
     printf(
         "\n**** Error, bad index in "
-        "ElasticMaterial::GetStateVariableLabel().\n");
+        "ElasticMaterial::GetStateVariableLabelAndType().\n");
+    return std::make_pair("", nimble::LENGTH_0);
   }
 
   NIMBLE_FUNCTION
@@ -428,12 +429,13 @@ class NeohookeanMaterial : public Material
   };
 
   NIMBLE_FUNCTION
-  void
-  GetStateVariableLabel(int index, char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN]) const override
+  virtual std::pair<std::string, nimble::Length>
+  GetStateVariableLabelAndType(int index) const override
   {
     printf(
         "\n**** Error, bad index in "
-        "NeohookeanMaterial::GetStateVariableLabel().\n");
+        "NeohookeanMaterial::GetStateVariableLabelAndType().\n");
+    return std::make_pair("", nimble::LENGTH_0);
   }
 
   NIMBLE_FUNCTION
@@ -516,6 +518,117 @@ class NeohookeanMaterial : public Material
   double bulk_modulus_;
   double shear_modulus_;
 };
+
+class J2PlasticityMaterialMaterial : public Material
+{
+ public:
+  static void
+  register_supported_material_parameters(MaterialFactoryBase& factory);
+
+  NIMBLE_FUNCTION
+  J2PlasticityMaterialMaterial(const J2PlasticityMaterialMaterial& mat) = default;
+
+  NIMBLE_FUNCTION
+  explicit J2PlasticityMaterialMaterial(MaterialParameters const& material_parameters);
+
+  NIMBLE_FUNCTION
+  int
+  NumStateVariables() const override
+  {
+    return num_state_variables_;
+  };
+
+  NIMBLE_FUNCTION
+  virtual std::pair<std::string, nimble::Length>
+  GetStateVariableLabelAndType(int index) const override
+  {
+    printf(
+        "\n**** Error, bad index in "
+        "J2PlasticityMaterialMaterial::GetStateVariableLabelAndType().\n");
+    return std::make_pair("", nimble::LENGTH_0);
+  }
+  
+  NIMBLE_FUNCTION
+  double
+  GetStateVariableInitialValue(int index) const override
+  {
+    printf(
+        "\n**** Error, bad index in "
+        "J2PlasticityMaterialMaterial::GetStateVariableInitialValue().\n");
+    return 0.0;
+  }
+
+  NIMBLE_FUNCTION
+  double
+  GetDensity() const override
+  {
+    return density_;
+  }
+
+  NIMBLE_FUNCTION
+  double
+  GetBulkModulus() const override
+  {
+    return bulk_modulus_;
+  }
+
+  NIMBLE_FUNCTION
+  double
+  GetShearModulus() const override
+  {
+    return shear_modulus_;
+  }
+
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      int           elem_id,
+      int           num_pts,
+      double        time_previous,
+      double        time_current,
+      const double* deformation_gradient_n,
+      const double* deformation_gradient_np1,
+      const double* stress_n,
+      double*       stress_np1,
+      const double* state_data_n,
+      double*       state_data_np1,
+      DataManager&  data_manager,
+      bool          is_output_step) override;
+
+  NIMBLE_FUNCTION
+  void
+  GetTangent(int num_pts, double* material_tangent) const override;
+
+#ifdef NIMBLE_HAVE_UQ
+  NIMBLE_FUNCTION
+  void
+  GetOffNominalStress(
+      const double& bulk_mod,
+      const double& shear_mod,
+      int           num_pts,
+      const double* deformation_gradient_np1,
+      double*       stress_np1) override;
+#endif
+
+ protected:
+  NIMBLE_FUNCTION
+  void
+  GetStress(
+      double                            time_previous,
+      double                            time_current,
+      nimble::Viewify<1, const double>& deformation_gradient_n,
+      nimble::Viewify<1, const double>& deformation_gradient_np1,
+      nimble::Viewify<1, const double>& stress_n,
+      nimble::Viewify<1>                stress_np1) const override;
+
+ private:
+  int    num_state_variables_;
+  int    dim_;
+  double density_;
+  double bulk_modulus_;
+  double shear_modulus_;
+};
+
 
 }  // namespace nimble
 
