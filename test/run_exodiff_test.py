@@ -66,7 +66,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=PIPE, text=True)
+    p = Popen(command, stdout=logfile, stderr=PIPE)
     err = p.communicate()[1]
     return_code = p.returncode
     if return_code != 0:
