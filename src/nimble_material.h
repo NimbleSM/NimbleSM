@@ -512,12 +512,42 @@ class NeohookeanMaterial : public Material
       nimble::Viewify<1>                stress_np1) const override;
 
  private:
-  int    num_state_variables_;
-  int    dim_;
-  double density_;
-  double bulk_modulus_;
-  double shear_modulus_;
+  int    num_state_variables_{2};
+  int    dim_{3};
+  double density_{0.0};
+  double bulk_modulus_{0.0};
+  double shear_modulus_{0.0};
+  double yield_stress_{0.0};
 };
+
+namespace j2 {
+
+struct Properties
+{
+  double E{0.0};
+  double nu{0.0};
+
+  double kappa{0.0};
+  double mu{0.0};
+
+  double Y0{0.0};
+  double n{0.0};
+  double eps0{0.0};
+
+  double Svis0{0.0};
+  double m{0.0};
+  double eps_dot0{0.0};
+
+  double Cp{0.0};
+  double beta{0.9};
+  double rho0{0.0};
+
+  double Tref{293.15};
+  double Tmelt{293.15};
+  double M{0.0};
+};
+
+}  // namespace j2
 
 class J2PlasticityMaterialMaterial : public Material
 {
@@ -628,7 +658,6 @@ class J2PlasticityMaterialMaterial : public Material
   double bulk_modulus_;
   double shear_modulus_;
 };
-
 
 }  // namespace nimble
 
