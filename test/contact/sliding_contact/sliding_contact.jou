@@ -13,4 +13,4 @@ nodeset 300 volume all
 nodeset 100 surface with z_coord < -0.9999
 nodeset 200 surface with z_coord >  0.9999
 export genesis "sliding_contact.g" overwrite
-#quit
+quit
