@@ -10,6 +10,7 @@ RUN apt-get update \
   && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
       git \
       python3 \
+      python3-pip \
       python3-distutils \
       xz-utils \
       bzip2 \
@@ -44,9 +45,8 @@ RUN apt-get update \
      libncurses5-dev \
      m4 \
      perl \
-     patchelf \ 
   && rm -rf /var/lib/apt/lists/*
-
+RUN pip install clingo
 # Now we install spack and find compilers/externals
 RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
@@ -62,7 +62,6 @@ RUN if [ "$NimbleSM_ENABLE_MPI" = "ON" ]; then \
 RUN cd /opt/spack-environment \
   && . /opt/spack/share/spack/setup-env.sh \
   && spack env activate . \
-  && spack bootstrap untrust github-actions-v0.2\
   && spack install --fail-fast \
   && spack gc -y
 
