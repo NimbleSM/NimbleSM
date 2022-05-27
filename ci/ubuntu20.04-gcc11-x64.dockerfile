@@ -32,7 +32,7 @@ RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https:
 
 # gcc ppa
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test
-
+#add patchelf for spack concretizer clingo
 RUN apt-get update \
   && apt-get install -y \
      gcc-11 \
@@ -44,6 +44,7 @@ RUN apt-get update \
      libncurses5-dev \
      m4 \
      perl \
+     patchelf \ 
   && rm -rf /var/lib/apt/lists/*
 
 # Now we install spack and find compilers/externals
