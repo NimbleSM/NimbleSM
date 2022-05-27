@@ -62,7 +62,7 @@ RUN if [ "$NimbleSM_ENABLE_MPI" = "ON" ]; then \
 RUN cd /opt/spack-environment \
   && . /opt/spack/share/spack/setup-env.sh \
   && spack env activate . \
-  && spack bootstrap untrust github-actions \
+  && spack bootstrap untrust github-actions-v0.2\
   && spack install --fail-fast \
   && spack gc -y
 
