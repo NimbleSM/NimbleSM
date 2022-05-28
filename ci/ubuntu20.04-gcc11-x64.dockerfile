@@ -33,7 +33,7 @@ RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https:
 
 # gcc ppa
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test
-#add patchelf for spack concretizer clingo
+
 RUN apt-get update \
   && apt-get install -y \
      gcc-11 \
