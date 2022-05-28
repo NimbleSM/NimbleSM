@@ -21,6 +21,8 @@ spack:
     - matrix:
         - [$packages]
         - [$%compilers]
+  concretizer:
+    unify: true
   config:
     install_tree: /opt/software
   view: /opt/view
