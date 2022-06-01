@@ -43,6 +43,7 @@
 
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
+#include <p3a_exp.hpp>
 
 #include <cmath>
 
