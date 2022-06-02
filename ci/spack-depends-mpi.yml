@@ -31,6 +31,8 @@ spack:
         - [$packages]
         - [$^mpis]
         - [$%compilers]
+  concretizer:
+    unify: true
   config:
     install_tree: /opt/software
   view: /opt/view
