@@ -390,107 +390,78 @@ NeohookeanMaterial::GetTangent(int num_pts, double* material_tangent) const
   }
 }
 
-namespace j2 {
-
-double
-temperature_multiplier(Properties const& props, double const T)
+void
+J2PlasticityMaterial::register_supported_material_parameters(MaterialFactoryBase& factory)
 {
-  double const& Tref  = props.Tref;
-  double const& Tmelt = props.Tmelt;
-  double const& M     = props.M;
-  if (M <= 0.0) return 1.0;
-  return 1.0 - std::pow((T - Tref) / (Tmelt - Tref), M);
+  factory.add_valid_double_parameter_name("bulk_modulus");
+  factory.add_valid_double_parameter_name("shear_modulus");
+  factory.add_valid_double_parameter_name("density");
+  factory.add_valid_double_parameter_name("yield_stress");
+  factory.add_valid_double_parameter_name("hardening_exponent");
+  factory.add_valid_double_parameter_name("reference_plastic_strain");
+  factory.add_valid_double_parameter_name("reference_viscoplastic_stress");
+  factory.add_valid_double_parameter_name("rate_dependence_exponent");
+  factory.add_valid_double_parameter_name("reference_plastic_strain_rate");
+  factory.add_valid_double_parameter_name("melting_temperature");
+  factory.add_valid_double_parameter_name("reference_temperature");
+  factory.add_valid_double_parameter_name("temperature_exponent");
+  factory.add_valid_double_parameter_name("specific_heat");
+  factory.add_valid_double_parameter_name("taylor_quinney_coefficient");
 }
 
-double
-HardeningPotential(Properties const& props, double const eqps)
+J2PlasticityMaterial::J2PlasticityMaterial(MaterialParameters const& material_parameters)
+    : Material(),
+      num_state_variables_(10),
+      dim_(3)
 {
-  double const& Y0   = props.Y0;
-  double const& n    = props.n;
-  double const& eps0 = props.eps0;
-
-  if (n <= 0.0) return Y0 * eqps;
-
-  double const exponent = (1.0 + n) / n;
-
-  return Y0 * eps0 / exponent * (std::pow(1.0 + eqps / eps0, exponent) - 1.0);
+  props_.rho0 = material_parameters.GetParameterValue("density");
+  props_.kappa = material_parameters.GetParameterValue("bulk_modulus");
+  props_.mu = material_parameters.GetParameterValue("shear_modulus");
 }
 
-double
-FlowStrength(Properties const& props, double const eqps)
+void
+J2PlasticityMaterial::GetStress(
+  int           elem_id,
+  int           num_pts,
+  double        time_previous,
+  double        time_current,
+  const double* deformation_gradient_n,
+  const double* deformation_gradient_np1,
+  const double* stress_n,
+  double*       stress_np1,
+  const double* state_data_n,
+  double*       state_data_np1,
+  DataManager&  data_manager,
+  bool          is_output_step)
 {
-  double const& Y0   = props.Y0;
-  double const& n    = props.n;
-  double const& eps0 = props.eps0;
-
-  if (n <= 0.0) return Y0;
-
-  return Y0 * std::pow(1.0 + eqps / eps0, 1.0 / n);
 }
 
-double
-HardeningRate(Properties const& props, double const eqps)
+void
+J2PlasticityMaterial::GetTangent(int num_pts, double* material_tangent) const
 {
-  double const& Y0   = props.Y0;
-  double const& n    = props.n;
-  double const& eps0 = props.eps0;
-
-  if (n <= 0.0) return 0.0;
-
-  return Y0 / (eps0 * n) * std::pow(1.0 + eqps / eps0, (1.0 - n) / n);
 }
 
-double
-ViscoplasticDualKineticPotential(Properties const& props, double const delta_eqps, double const dt)
+#ifdef NIMBLE_HAVE_UQ
+void
+J2PlasticityMaterial::GetOffNominalStress(
+  const double& bulk_mod,
+  const double& shear_mod,
+  int           num_pts,
+  const double* deformation_gradient_np1,
+  double*       stress_np1)
 {
-  double const& Svis0    = props.Svis0;
-  double const& m        = props.m;
-  double const& eps_dot0 = props.eps_dot0;
-
-  if (Svis0 <= 0.0 || dt <= 0.0) return 0.0;
-
-  double const exponent = (1.0 + m) / m;
-  double       psi_star = 0.0;
-  if (delta_eqps > 0) {
-    psi_star = dt * Svis0 * eps_dot0 / exponent * std::pow(delta_eqps / dt / eps_dot0, exponent);
-  }
-  return psi_star;
 }
+#endif
 
-double
-ViscoplasticStress(Properties const& props, double const delta_eqps, double const dt)
-{
-  double const& Svis0    = props.Svis0;
-  double const& m        = props.m;
-  double const& eps_dot0 = props.eps_dot0;
-
-  if (Svis0 <= 0.0 || dt <= 0.0) return 0.0;
-
-  double Svis = 0;
-  if (delta_eqps > 0) {
-    Svis = Svis0 * std::pow(delta_eqps / dt / eps_dot0, 1.0 / m);
-  }
-
-  return Svis;
+void
+J2PlasticityMaterial::GetStress(
+  double                            time_previous,
+  double                            time_current,
+  nimble::Viewify<1, const double>& deformation_gradient_n,
+  nimble::Viewify<1, const double>& deformation_gradient_np1,
+  nimble::Viewify<1, const double>& stress_n,
+  nimble::Viewify<1>                stress_np1) const
+{ 
 }
-
-double
-ViscoplasticHardeningRate(Properties const& props, double const delta_eqps, double const dt)
-{
-  double const& Svis0    = props.Svis0;
-  double const& m        = props.m;
-  double const& eps_dot0 = props.eps_dot0;
-
-  if (Svis0 <= 0.0 || dt <= 0.0) return 0.0;
-
-  double Hvis = 0;
-  if (delta_eqps > 0) {
-    Hvis = Svis0 / (eps_dot0 * m * dt) * std::pow(delta_eqps / dt / eps_dot0, (1.0 - m) / m);
-  }
-
-  return Hvis;
-}
-
-}  // namespace j2
 
 }  // namespace nimble
