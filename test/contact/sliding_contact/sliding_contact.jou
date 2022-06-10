@@ -6,6 +6,8 @@ volume 1 size 0.25
 volume 2 size 0.2
 block 1 volume 1 
 block 2 volume 2 
+nodeset 1 volume 1
+nodeset 2 volume 2
 nodeset 100 surface with z_coord < -0.9999
 nodeset 200 surface with z_coord >  0.9999
 mesh volume all
