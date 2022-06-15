@@ -7,7 +7,7 @@ spack:
     - packages: []
     - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
       core-packages:
-        - kokkos@3.4.01 +openmp +serial
+        - kokkos@3.6 +openmp +serial
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
         - trilinos@13.2.0 +openmp +exodus
