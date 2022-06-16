@@ -155,6 +155,13 @@ Block::InitializeElementData(
     MaterialFactory&                material_factory,
     DataManager&                    data_manager)
 {
+  // AQUI
+  {
+    auto const n = elem_data_labels.size();
+    for (auto i = 0; i < n; ++i) {
+      std::cout << "*** i : " << i << ", elem_data_labels[i] : " << elem_data_labels[i] << '\n';
+    }
+  }
   int num_int_pts = element_->NumIntegrationPointsPerElement();
 #ifndef NIMBLE_HAVE_KOKKOS
   for (int i_elem = 0; i_elem < num_elem_in_block; ++i_elem) {

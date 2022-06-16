@@ -393,8 +393,8 @@ NeohookeanMaterial::GetTangent(int num_pts, double* material_tangent) const
 void
 J2PlasticityMaterial::register_supported_material_parameters(MaterialFactoryBase& factory)
 {
-  factory.add_valid_double_parameter_name("bulk_modulus");
-  factory.add_valid_double_parameter_name("shear_modulus");
+  factory.add_valid_double_parameter_name("elastic_modulus");
+  factory.add_valid_double_parameter_name("poisons_ratio");
   factory.add_valid_double_parameter_name("density");
   factory.add_valid_double_parameter_name("yield_stress");
   factory.add_valid_double_parameter_name("hardening_exponent");
@@ -402,21 +402,30 @@ J2PlasticityMaterial::register_supported_material_parameters(MaterialFactoryBase
   factory.add_valid_double_parameter_name("reference_viscoplastic_stress");
   factory.add_valid_double_parameter_name("rate_dependence_exponent");
   factory.add_valid_double_parameter_name("reference_plastic_strain_rate");
-  factory.add_valid_double_parameter_name("melting_temperature");
   factory.add_valid_double_parameter_name("reference_temperature");
+  factory.add_valid_double_parameter_name("melting_temperature");
   factory.add_valid_double_parameter_name("temperature_exponent");
   factory.add_valid_double_parameter_name("specific_heat");
   factory.add_valid_double_parameter_name("taylor_quinney_coefficient");
 }
 
 J2PlasticityMaterial::J2PlasticityMaterial(MaterialParameters const& material_parameters)
-    : Material(),
-      num_state_variables_(10),
-      dim_(3)
+    : Material()
 {
+  props_.E = material_parameters.GetParameterValue("elastic_modulus");
+  props_.nu = material_parameters.GetParameterValue("poissons_ratio");
   props_.rho0 = material_parameters.GetParameterValue("density");
-  props_.kappa = material_parameters.GetParameterValue("bulk_modulus");
-  props_.mu = material_parameters.GetParameterValue("shear_modulus");
+  props_.Y0 = material_parameters.GetParameterValue("yield_stress");
+  props_.n = material_parameters.GetParameterValue("hardening_exponent");
+  props_.eps0 = material_parameters.GetParameterValue("reference_plastic_strain");
+  props_.Svis0 = material_parameters.GetParameterValue("reference_viscoplastic_stress");
+  props_.m = material_parameters.GetParameterValue("rate_dependence_exponent");
+  props_.eps_dot0 = material_parameters.GetParameterValue("reference_plastic_strain_rate");
+  props_.Tref = material_parameters.GetParameterValue("reference_temperature");
+  props_.Tmelt = material_parameters.GetParameterValue("melting_temperature");
+  props_.M = material_parameters.GetParameterValue("temperature_exponent");
+  props_.Cp = material_parameters.GetParameterValue("specific_heat");
+  props_.beta = material_parameters.GetParameterValue("taylor_quinney_coefficient");
 }
 
 void

@@ -671,9 +671,31 @@ class J2PlasticityMaterial : public Material
   virtual std::pair<std::string, nimble::Length>
   GetStateVariableLabelAndType(int index) const override
   {
-    printf(
-        "\n**** Error, bad index in "
-        "J2PlasticityMaterial::GetStateVariableLabelAndType().\n");
+    switch (index) {
+    case 0:
+      return std::make_pair("plastic deformation gradient xx", nimble::SCALAR);
+    case 1:
+      return std::make_pair("plastic deformation gradient xy", nimble::SCALAR);
+    case 2:
+      return std::make_pair("plastic deformation gradient xz", nimble::SCALAR);
+    case 3:
+      return std::make_pair("plastic deformation gradient yx", nimble::SCALAR);
+    case 4:
+      return std::make_pair("plastic deformation gradient yy", nimble::SCALAR);
+    case 5:
+      return std::make_pair("plastic deformation gradient yz", nimble::SCALAR);
+    case 6:
+      return std::make_pair("plastic deformation gradient zx", nimble::SCALAR);
+    case 7:
+      return std::make_pair("plastic deformation gradient zy", nimble::SCALAR);
+    case 8:
+      return std::make_pair("plastic deformation gradient zz", nimble::SCALAR);
+    case 9:
+      return std::make_pair("equivalent plastic strain", nimble::SCALAR);
+    default:
+      std::cerr << std::endl << "**** Error, bad index in " << __PRETTY_FUNCTION__ << std::endl;
+      exit(1);
+    }
     return std::make_pair("", nimble::LENGTH_0);
   }
   
@@ -681,9 +703,31 @@ class J2PlasticityMaterial : public Material
   double
   GetStateVariableInitialValue(int index) const override
   {
-    printf(
-        "\n**** Error, bad index in "
-        "J2PlasticityMaterial::GetStateVariableInitialValue().\n");
+    switch (index) {
+    case 0:
+      return 1.0;
+    case 1:
+      return 0.0;
+    case 2:
+      return 0.0;
+    case 3:
+      return 0.0;
+    case 4:
+      return 1.0;
+    case 5:
+      return 0.0;
+    case 6:
+      return 0.0;
+    case 7:
+      return 0.0;
+    case 8:
+      return 1.0;
+    case 9:
+      return 0.0;
+    default:
+      std::cerr << std::endl << "**** Error, bad index in " << __PRETTY_FUNCTION__ << std::endl;
+      exit(1);
+    }
     return 0.0;
   }
 
