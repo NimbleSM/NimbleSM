@@ -1,5 +1,5 @@
 . /opt/spack/share/spack/setup-env.sh
-spack env activate /opt/spack-environment
+spack env activate nimble
 
 pushd /opt/build/NimbleSM
 
