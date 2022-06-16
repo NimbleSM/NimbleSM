@@ -60,10 +60,8 @@ RUN if [ "$NimbleSM_ENABLE_MPI" = "ON" ]; then \
         mv /opt/spack-environment/spack-serial.yaml /opt/spack-environment/spack.yaml && rm /opt/spack-environment/spack-mpi.yaml; \
     fi
 RUN cd /opt/spack-environment \
-  && . /opt/spack/share/spack/setup-env.sh \
-  && spack env activate . \
-  && spack install --fail-fast \
-  && spack gc -y
+  && . /opt/spack/share/spack/setup-env.sh && spack env create nimble /opt/spack-environment/spack.yaml
+RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack install --fail-fast && spack gc -y
 
 # Add current source dir into the image
 ADD . /opt/src/NimbleSM
