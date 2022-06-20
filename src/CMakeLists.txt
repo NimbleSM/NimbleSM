@@ -23,8 +23,8 @@ target_sources(nimble PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/nimble_linear_solver.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_entity.cc
   ${CMAKE_CURRENT_LIST_DIR}/nimble_contact_manager.cc
-  nimble_cli.cc
-  nimble.cc)
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_cli.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble.cc)
 
 set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_model_data_base.h
