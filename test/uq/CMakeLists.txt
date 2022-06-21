@@ -3,5 +3,6 @@
 #
 
 if (NIMBLE_HAVE_UQ)
-    add_subdirectory(uq_wave)
+    message(STATUS "UQ testing disabled")
+    #add_subdirectory(uq_wave)
 endif()
