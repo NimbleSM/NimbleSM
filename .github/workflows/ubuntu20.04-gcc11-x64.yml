@@ -23,14 +23,13 @@ jobs:
         mpi: [{name: "MPI", value: "ON"}, {name: "Serial", value: "OFF"}]
         kokkos: [{name: " + Kokkos", value: "ON"}, {name: "", value: "OFF"}]
         trilinos: [{name: " + Trilinos", value: "ON"}, {name: "", value: "OFF"}]
-        uq: [{name: " + UQ", value: "ON"}, {name: "", value: "OFF"}]
         arborx: [{name: " + ArborX", value: "ON"}, {name: "", value: "OFF"}]
         exclude:
           - kokkos: {name: " + Kokkos", value: "ON"}
             trilinos: {name: " + Trilinos", value: "ON"}
           - arborx: {name: " + ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
-    name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.uq.name }}${{ matrix.arborx.name }}
+    name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v2
       - name: CI Variables
@@ -47,12 +46,13 @@ jobs:
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
+        id: cache
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.uq.value }}-${{ matrix.arborx.value }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.uq.value }}-${{ matrix.arborx.value }}-
+            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-
       - name: Build the Docker image and code
         uses: docker/build-push-action@v2
         with:
@@ -66,7 +66,7 @@ jobs:
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
             NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
-            NimbleSM_ENABLE_UQ=${{ matrix.uq.value }}
+            NimbleSM_ENABLE_UQ=OFF
             NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
