@@ -2,7 +2,13 @@
 spack env activate nimble
 
 pushd /opt/build/NimbleSM
+testlist=(
+  "ctest --output-on-failure | tee ctest-output.log"
+)
 
-ctest --output-on-failure
+for this in "${testlist[@]}"; do
+  $this || flag=1
+done
 
 popd
+exit $flag
