@@ -178,9 +178,9 @@ void
 NimbleApplication::InitializeSubsystems()
 {
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (parser.UseTpetra()) {
+  if (impl_->parser_.UseTpetra()) {
     auto sguard = new Tpetra::ScopeGuard(&argc, &argv);
-    parser.ResetTpetraScope(sguard);
+    impl_->parser_.ResetTpetraScope(sguard);
     auto comm = Tpetra::getDefaultComm();
     num_ranks_ = comm->getSize();
     rank_   = comm->getRank();
