@@ -178,12 +178,12 @@ void
 NimbleApplication::InitializeSubsystems()
 {
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (impl_->parser_.UseTpetra()) {
-    auto sguard = new Tpetra::ScopeGuard(&argc, &argv);
-    impl_->parser_.ResetTpetraScope(sguard);
+  if (impl_->parser_->UseTpetra()) {
+    auto sguard = new Tpetra::ScopeGuard(&impl_->cli_config_->ArgC(), &impl_->cli_config_->ArgV());
+    impl_->parser_->ResetTpetraScope(sguard);
     auto comm = Tpetra::getDefaultComm();
-    num_ranks_ = comm->getSize();
-    rank_   = comm->getRank();
+    impl_->num_ranks_ = comm->getSize();
+    impl_->rank_   = comm->getRank();
   } else
 #endif
 #ifdef NIMBLE_HAVE_MPI
@@ -252,7 +252,7 @@ void NimbleApplication::FinalizeSubsystems()
 #endif
 
 #ifdef NIMBLE_HAVE_TRILINOS
-  if (!impl_->parser_->UseTpetra) {
+  if (!impl_->parser_->UseTpetra()) {
 #ifdef NIMBLE_HAVE_MPI
     MPI_Finalize();
 #endif
