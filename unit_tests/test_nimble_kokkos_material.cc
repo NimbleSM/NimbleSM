@@ -65,7 +65,8 @@ execute_material_on_device(nimble::Material* mat)
       1, KOKKOS_LAMBDA(const int i) {
         auto dens = mat->GetDensity();
         printf("Density = %f\n", dens);
-        mat->GetStress(0., 0., dn, dnp1, sn, snp1);
+        nimble::Material::DeviceElemState element_state_n_d, element_state_np1_d;
+        mat->GetStress(0., 0., dn, dnp1, sn, snp1, element_state_n_d, element_state_np1_d);
       });
 }
 
