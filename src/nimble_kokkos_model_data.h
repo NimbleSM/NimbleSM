@@ -235,6 +235,12 @@ class ModelData : public nimble::ModelDataBase
   DeviceFullTensorIntPtView
   GetDeviceFullTensorIntegrationPointData(int block_id, int field_id, nimble::Step step);
 
+  DeviceScalarIntPtView
+  GetDeviceScalarIntegrationPointData(int block_id, int field_id, nimble::Step step);
+
+  DeviceVectorIntPtView
+  GetDeviceVectorIntegrationPointData(int block_id, int field_id, nimble::Step step);
+
   DeviceScalarElemView
   GetDeviceScalarElementData(int block_id, int field_id);
 
@@ -295,6 +301,14 @@ class ModelData : public nimble::ModelDataBase
   /// \param data_manager
   void
   InitializeBlockData(nimble::DataManager& data_manager);
+
+  template <FieldType ft>
+  typename Field<ft>::View
+  GetDeviceElementData(int block_id, int field_id);
+
+  template <FieldType ft>
+  typename Field<ft>::View
+  GetDeviceIntPointData(int block_id, int field_id, nimble::Step step);
 
  protected:
   using Data = std::unique_ptr<FieldBase>;

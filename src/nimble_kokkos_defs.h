@@ -95,6 +95,8 @@ enum class FieldType : int
   DeviceSymTensorIntPt,
   HostFullTensorIntPt,
   DeviceFullTensorIntPt,
+  DeviceScalarIntPt,
+  DeviceVectorIntPt,
   HostScalarElem,
   DeviceScalarElem,
   HostSymTensorElem,
@@ -115,6 +117,8 @@ operator<<(std::ostream& out, const FieldType f)
     case FieldType::DeviceSymTensorIntPt: out << "DeviceSymTensorIntPt"; break;
     case FieldType::HostFullTensorIntPt: out << "HostFullTensorIntPt"; break;
     case FieldType::DeviceFullTensorIntPt: out << "DeviceFullTensorIntPt"; break;
+    case FieldType::DeviceScalarIntPt: out << "DeviceScalarIntPt"; break;
+    case FieldType::DeviceVectorIntPt: out << "DeviceVectorIntPt"; break;
     case FieldType::HostScalarElem: out << "HostScalarElem"; break;
     case FieldType::DeviceScalarElem: out << "DeviceScalarElem"; break;
     case FieldType::HostSymTensorElem: out << "HostSymTensorElem"; break;
@@ -366,6 +370,58 @@ class Field<FieldType::DeviceFullTensorIntPt> : public FieldBase
 };
 
 template <>
+class Field<FieldType::DeviceScalarIntPt> : public FieldBase
+{
+ public:
+  // (elem, ipt, scalar)
+  using View            = Kokkos::View<double* [NUM_INTEGRATION_POINTS_IN_HEX][1], kokkos_layout, kokkos_device>;
+  using SubView         = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
+  using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));
+
+  Field(const std::string& name, int num_entries)
+      : FieldBase(name, FieldType::DeviceFullTensorIntPt), data_(name, num_entries)
+  {
+  }
+
+  Field(View const& v) : FieldBase(v.label(), FieldType::DeviceFullTensorIntPt), data_(v) {}
+
+  View
+  data() const noexcept
+  {
+    return data_;
+  }
+
+ private:
+  View data_;
+};
+
+template <>
+class Field<FieldType::DeviceVectorIntPt> : public FieldBase
+{
+ public:
+  // (elem, ipt, vector_index)
+  using View            = Kokkos::View<double* [NUM_INTEGRATION_POINTS_IN_HEX][3], kokkos_layout, kokkos_device>;
+  using SubView         = decltype(Kokkos::subview(*(View*)(0), (int)(0), Kokkos::ALL, Kokkos::ALL));
+  using SingleEntryView = decltype(Kokkos::subview(*(View*)(0), (int)(0), (int)(0), Kokkos::ALL));
+
+  Field(const std::string& name, int num_entries)
+      : FieldBase(name, FieldType::DeviceFullTensorIntPt), data_(name, num_entries)
+  {
+  }
+
+  Field(View const& v) : FieldBase(v.label(), FieldType::DeviceFullTensorIntPt), data_(v) {}
+
+  View
+  data() const noexcept
+  {
+    return data_;
+  }
+
+ private:
+  View data_;
+};
+
+template <>
 class Field<FieldType::HostScalarElem> : public FieldBase
 {
  public:
@@ -535,6 +591,12 @@ typedef Field<FieldType::DeviceFullTensorIntPt>::SingleEntryView DeviceFullTenso
 typedef Field<FieldType::DeviceSymTensorIntPt>::View             DeviceSymTensorIntPtView;
 typedef Field<FieldType::DeviceSymTensorIntPt>::SubView          DeviceSymTensorIntPtSubView;
 typedef Field<FieldType::DeviceSymTensorIntPt>::SingleEntryView  DeviceSymTensorIntPtSingleEntryView;
+typedef Field<FieldType::DeviceScalarIntPt>::View                DeviceScalarIntPtView;
+typedef Field<FieldType::DeviceScalarIntPt>::SubView             DeviceScalarIntPtSubView;
+typedef Field<FieldType::DeviceScalarIntPt>::SingleEntryView     DeviceScalarIntPtSingleEntryView;
+typedef Field<FieldType::DeviceVectorIntPt>::View                DeviceVectorIntPtView;
+typedef Field<FieldType::DeviceVectorIntPt>::SubView             DeviceVectorIntPtSubView;
+typedef Field<FieldType::DeviceVectorIntPt>::SingleEntryView     DeviceVectorIntPtSingleEntryView;
 typedef Field<FieldType::DeviceScalarElem>::View                 DeviceScalarElemView;
 typedef Field<FieldType::DeviceScalarElem>::SingleEntryView      DeviceScalarElemSingleEntryView;
 typedef Field<FieldType::DeviceFullTensorElem>::View             DeviceFullTensorElemView;
