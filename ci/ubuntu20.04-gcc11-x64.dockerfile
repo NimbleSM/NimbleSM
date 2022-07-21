@@ -84,4 +84,5 @@ FROM build_nimble-stage as test-stage
 RUN bash /opt/src/NimbleSM/ci/test.sh
 
 FROM test-stage as export-stage
+ARG EXPORT_DIR
 COPY --from=test-stage /tmp/artifacts $EXPORT_DIR/artifacts
