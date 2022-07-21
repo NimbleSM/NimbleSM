@@ -54,6 +54,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-
       - name: Build the Docker image and code
+        id: docker_build
+        continue-on-error: true
         uses: docker/build-push-action@v3
         with:
           push: false
