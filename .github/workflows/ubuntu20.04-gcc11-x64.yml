@@ -17,8 +17,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      EXPORT_DIR: ${{ github.workspace }}
     strategy:
       fail-fast: false
       matrix:
@@ -56,7 +54,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-
       - name: Build the Docker image and code
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: false
           tags: ${{ steps.vars.outputs.docker_tag }}
@@ -70,13 +68,13 @@ jobs:
             NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
             NimbleSM_ENABLE_UQ=OFF
             NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
-            EXPORT_DIR=${{ github.workspace }}
+          outputs: type=local,dest=/tmp/out
       - name: Collect test log files
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: ${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-LastTestLogs
-          path: ${{ env.EXPORT_DIR }}/artifacts
+          path: /tmp/out
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache

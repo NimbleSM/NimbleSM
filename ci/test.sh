@@ -10,5 +10,5 @@ ctest --output-on-failure
 mkdir -p /tmp/artifacts/
 cp /opt/build/NimbleSM/Testing/Temporary/LastTest.log /tmp/artifacts/
 cp /opt/build/NimbleSM/test/*/*/*.log /tmp/artifacts/
-
+ls /tmp/artifacts
 popd

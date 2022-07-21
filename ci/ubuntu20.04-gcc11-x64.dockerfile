@@ -5,7 +5,6 @@ ARG NimbleSM_ENABLE_KOKKOS
 ARG NimbleSM_ENABLE_TRILINOS
 ARG NimbleSM_ENABLE_UQ
 ARG NimbleSM_ENABLE_ARBORX
-ARG EXPORT_DIR
 
 RUN apt-get update \
   && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
@@ -83,6 +82,5 @@ FROM build_nimble-stage as test-stage
 
 RUN bash /opt/src/NimbleSM/ci/test.sh
 
-FROM test-stage as export-stage
-ARG EXPORT_DIR
-COPY --from=test-stage /tmp/artifacts $EXPORT_DIR/artifacts
+FROM scratch as export-stage
+COPY --from=test-stage /tmp/artifacts /tmp/artifacts
