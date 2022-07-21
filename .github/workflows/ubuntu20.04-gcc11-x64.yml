@@ -45,14 +45,20 @@ jobs:
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+      - name: Prepare caching timestamp
+        id: cache_ts
+        shell: cmake -P {0}
+        run: |
+          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+          message("::set-output name=timestamp::${current_date}")
       - name: Cache Docker layers
         uses: actions/cache@v3
         id: cache
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-
+            ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
       - name: Build the Docker image and code
         id: docker_build
         continue-on-error: true
@@ -75,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-LastTestLogs
+          name: m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-LastTestLogs
           path: /tmp/out
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
