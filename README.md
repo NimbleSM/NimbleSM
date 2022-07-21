@@ -1,3 +1,5 @@
+[![Build and Test Ubuntu 20.04 gcc 11 x64](https://github.com/NimbleSM/NimbleSM/actions/workflows/ubuntu20.04-gcc11-x64.yml/badge.svg?branch=develop)](https://github.com/NimbleSM/NimbleSM/actions/workflows/ubuntu20.04-gcc11-x64.yml)
+
 # NimbleSM
 NimbleSM is a Lagrangian finite-element code for solid mechanics.  Its primary application is the solution of mechanics problems on nonuniform, three-dimensional meshes using either explicit transient dynamic or implicit quasi-static time integration.  Additional features include multiscale modeling and the simulation of contact.  The NimbleSM code base is designed for performance portability across varying hardware architectures.
 
