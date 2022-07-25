@@ -8,7 +8,7 @@
 #include <nimble_contact_entity.h>
 #include <nimble_kokkos_defs.h>
 
-#include <Kokkos_View.hpp>
+#include <Kokkos_Core.hpp>
 
 namespace nimble_kokkos {
 
