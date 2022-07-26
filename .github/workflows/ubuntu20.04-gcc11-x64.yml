@@ -29,6 +29,8 @@ jobs:
             trilinos: {name: " + Trilinos", value: "ON"}
           - arborx: {name: " + ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
+    env:
+      OUTPUT_DIR: '/tmp/out'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v2
@@ -76,13 +78,21 @@ jobs:
             NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
             NimbleSM_ENABLE_UQ=OFF
             NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
-          outputs: type=local,dest=/tmp/out
-      - name: Collect test log files
+          outputs: type=local,dest=${{ env.OUTPUT_DIR }}
+      - name: Upload Test Log Files
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-LastTestLogs
-          path: /tmp/out
+          path: ${{ env.OUTPUT_DIR }}
+      - name: Determine Job Failure or Success
+        run: |
+          echo "Success Flag with 0 pass and 1 fail:"
+          cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt
+          echo "docker_build_outcome:  ${{ steps.docker_build.outcome }}"
+          echo "docker_build_conclusion:  ${{ steps.docker_build.conclusion }}"
+          if [[  $(cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt) -eq 0 ]]; then exit 0; else exit 1; fi
+        shell: bash
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
       - name: Move cache
