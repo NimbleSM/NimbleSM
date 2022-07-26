@@ -46,7 +46,7 @@
 
 TEST(nimble_utils, invert_3x3_matrix)
 {
-
+  EXPECT_TRUE(false);
   std::vector<double> mat(9);
   std::vector<double> inv(9), ref_inv(9);
 
