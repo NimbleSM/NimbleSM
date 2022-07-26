@@ -31,6 +31,8 @@ jobs:
             kokkos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
+      CACHE_FROM: '/tmp/.buildx-cache'
+      CACHE_TO: '/tmp/.buildx-cache-new'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v2
@@ -57,7 +59,7 @@ jobs:
         uses: actions/cache@v3
         id: cache
         with:
-          path: /tmp/.buildx-cache
+          path: ${{ env.CACHE_FROM }}
           key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
           restore-keys: |
             ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
@@ -70,8 +72,8 @@ jobs:
           tags: ${{ steps.vars.outputs.docker_tag }}
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
+          cache-from: type=local,src=${{ env.CACHE_FROM }}
+          cache-to: type=local,dest=${{ env.CACHE_TO }}
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
@@ -85,6 +87,13 @@ jobs:
         with:
           name: m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-LastTestLogs
           path: ${{ env.OUTPUT_DIR }}
+      # This helps prevent the cache from growing...
+      # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
+      - name: Move cache
+        if: always() # Cache the partial image even if building it fails
+        run: |
+          rm -rf ${{ env.CACHE_FROM }}
+          mv ${{ env.CACHE_TO }} ${{ env.CACHE_FROM }}
       - name: Determine Job Failure or Success
         run: |
           echo "Success Flag with 0 pass and 1 fail:"
@@ -93,10 +102,3 @@ jobs:
           echo "docker_build_conclusion:  ${{ steps.docker_build.conclusion }}"
           if [[  $(cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt) -eq 0 ]]; then exit 0; else exit 1; fi
         shell: bash
-      # This helps prevent the cache from growing...
-      # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
-      - name: Move cache
-        if: always() # Cache the partial image even if building it fails
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
