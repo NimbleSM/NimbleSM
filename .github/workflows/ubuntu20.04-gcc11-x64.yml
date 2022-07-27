@@ -42,20 +42,20 @@ jobs:
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
-      - name: Inspect builder
+      - name: Inspect Builder
         run: |
           echo "Name:      ${{ steps.buildx.outputs.name }}"
           echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-      - name: Prepare caching timestamp
+      - name: Prepare Caching Timestamp
         id: cache_ts
         shell: cmake -P {0}
         run: |
           string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
           message("::set-output name=timestamp::${current_date}")
-      - name: Cache Docker layers
+      - name: Cache Docker Layers
         uses: actions/cache@v3
         id: cache
         with:
@@ -63,7 +63,7 @@ jobs:
           key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
           restore-keys: |
             ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
-      - name: Build the Docker image and code
+      - name: Build the Docker Image and Code
         id: docker_build
         continue-on-error: true
         uses: docker/build-push-action@v3
@@ -89,7 +89,7 @@ jobs:
           path: ${{ env.OUTPUT_DIR }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
-      - name: Move cache
+      - name: Move Cache
         if: always() # Cache the partial image even if building it fails
         run: |
           rm -rf ${{ env.CACHE_FROM }}
