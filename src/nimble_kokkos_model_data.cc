@@ -938,6 +938,20 @@ ModelData::InitializeBlocks(
     if (parser_.GetOutputFieldString().find("volume") != std::string::npos) {
       AllocateElementData(block_id, nimble::SCALAR, "volume", num_elements_in_block);
     }
+
+    if (blocks_.at(block_id).GetMaterialPointer()->NumStateVariables() > 0) {
+      //
+      // Verify which state variables are actually needed
+      //
+      field_ids_.state_sym_tensor =
+          AllocateIntegrationPointData(block_id, nimble::SYMMETRIC_TENSOR, "state_sym_tensor", num_elements_in_block);
+      field_ids_.state_full_tensor =
+          AllocateIntegrationPointData(block_id, nimble::FULL_TENSOR, "state_full_tensor", num_elements_in_block);
+      field_ids_.state_scalar =
+          AllocateIntegrationPointData(block_id, nimble::SCALAR, "state_scalar", num_elements_in_block);
+      field_ids_.state_vec3D =
+          AllocateIntegrationPointData(block_id, nimble::VECTOR, "state_vec3D", num_elements_in_block);
+    }
   }
 
   // Initialize gathered containers when using explicit scheme
@@ -968,6 +982,40 @@ ModelData::UpdateStates(const nimble::DataManager& data_manager)
     Kokkos::deep_copy(deformation_gradient_step_n_d, deformation_gradient_step_np1_d);
     Kokkos::deep_copy(unrotated_stress_step_n_d, unrotated_stress_step_np1_d);
     Kokkos::deep_copy(stress_step_n_d, stress_step_np1_d);
+    //
+    if (blocks_.at(block_id).GetMaterialPointer()->NumStateVariables() > 0) {
+      if (field_ids_.state_sym_tensor >= 0) {
+        auto state_sym_tensor_n =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_sym_tensor, nimble::STEP_N);
+        auto state_sym_tensor_np1 =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_sym_tensor, nimble::STEP_NP1);
+        Kokkos::deep_copy(state_sym_tensor_n, state_sym_tensor_np1);
+      }
+      //
+      if (field_ids_.state_full_tensor >= 0) {
+        auto state_full_tensor_n =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_full_tensor, nimble::STEP_N);
+        auto state_full_tensor_np1 =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_full_tensor, nimble::STEP_NP1);
+        Kokkos::deep_copy(state_full_tensor_n, state_full_tensor_np1);
+      }
+      //
+      if (field_ids_.state_scalar >= 0) {
+        auto state_scalar_n =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_scalar, nimble::STEP_N);
+        auto state_scalar_np1 =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_scalar, nimble::STEP_NP1);
+        Kokkos::deep_copy(state_scalar_n, state_scalar_np1);
+      }
+      //
+      if (field_ids_.state_vec3D >= 0) {
+        auto state_vector_n = GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_vec3D, nimble::STEP_N);
+        auto state_vector_np1 =
+            GetDeviceFullTensorIntegrationPointData(block_id, field_ids_.state_vec3D, nimble::STEP_NP1);
+        Kokkos::deep_copy(state_vector_n, state_vector_np1);
+      }
+    }
+    //
     block_index += 1;
   }
 }
@@ -1171,6 +1219,11 @@ ModelData::ComputeInternalForce(
           element_d->ComputeDeformationGradients(
               element_reference_coordinate_d, element_displacement_d, element_deformation_gradient_step_np1_d);
         });
+
+    //
+    // Insert the update for the state variables
+    //
+
     block_index += 1;
   }
 
@@ -1472,6 +1525,33 @@ ModelData::GetHostFullTensorElementData(int block_id, int field_id)
   return derived_field_ptr->data();
 }
 
+template <FieldType ft>
+typename Field<ft>::View
+ModelData::GetDeviceElementData(int block_id, int field_id)
+{
+  int  block_index       = block_id_to_element_data_index_.at(block_id);
+  int  data_index        = field_id_to_device_element_data_index_.at(block_index).at(field_id);
+  auto base_field_ptr    = device_element_data_.at(block_index).at(data_index).get();
+  auto derived_field_ptr = dynamic_cast<Field<ft>*>(base_field_ptr);
+  return derived_field_ptr->data();
+}
+
+template <FieldType ft>
+typename Field<ft>::View
+ModelData::GetDeviceIntPointData(int block_id, int field_id, nimble::Step step)
+{
+  int        block_index    = block_id_to_integration_point_data_index_.at(block_id);
+  int        data_index     = field_id_to_device_integration_point_data_index_.at(block_index).at(field_id);
+  FieldBase* base_field_ptr = nullptr;
+  if (step == nimble::STEP_N) {
+    base_field_ptr = device_integration_point_data_step_n_.at(block_index).at(data_index).get();
+  } else if (step == nimble::STEP_NP1) {
+    base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
+  }
+  auto derived_field_ptr = dynamic_cast<Field<ft>*>(base_field_ptr);
+  return derived_field_ptr->data();
+}
+
 DeviceScalarNodeView
 ModelData::GetDeviceScalarNodeData(int field_id)
 {
@@ -1493,64 +1573,43 @@ ModelData::GetDeviceVectorNodeData(int field_id)
 DeviceSymTensorIntPtView
 ModelData::GetDeviceSymTensorIntegrationPointData(int block_id, int field_id, nimble::Step step)
 {
-  int        block_index    = block_id_to_integration_point_data_index_.at(block_id);
-  int        data_index     = field_id_to_device_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr = nullptr;
-  if (step == nimble::STEP_N) {
-    base_field_ptr = device_integration_point_data_step_n_.at(block_index).at(data_index).get();
-  } else if (step == nimble::STEP_NP1) {
-    base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
-  }
-  auto derived_field_ptr = dynamic_cast<Field<FieldType::DeviceSymTensorIntPt>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  return GetDeviceIntPointData<FieldType::DeviceSymTensorIntPt>(block_id, field_id, step);
 }
 
 DeviceFullTensorIntPtView
 ModelData::GetDeviceFullTensorIntegrationPointData(int block_id, int field_id, nimble::Step step)
 {
-  int        block_index    = block_id_to_integration_point_data_index_.at(block_id);
-  int        data_index     = field_id_to_device_integration_point_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr = nullptr;
-  if (step == nimble::STEP_N) {
-    base_field_ptr = device_integration_point_data_step_n_.at(block_index).at(data_index).get();
-  } else if (step == nimble::STEP_NP1) {
-    base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
-  }
-  auto derived_field_ptr = dynamic_cast<Field<FieldType::DeviceFullTensorIntPt>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  return GetDeviceIntPointData<FieldType::DeviceFullTensorIntPt>(block_id, field_id, step);
+}
+
+DeviceScalarIntPtView
+ModelData::GetDeviceScalarIntegrationPointData(int block_id, int field_id, nimble::Step step)
+{
+  return GetDeviceIntPointData<FieldType::DeviceScalarIntPt>(block_id, field_id, step);
+}
+
+DeviceVectorIntPtView
+ModelData::GetDeviceVectorIntegrationPointData(int block_id, int field_id, nimble::Step step)
+{
+  return GetDeviceIntPointData<FieldType::DeviceVectorIntPt>(block_id, field_id, step);
 }
 
 DeviceScalarElemView
 ModelData::GetDeviceScalarElementData(int block_id, int field_id)
 {
-  int        block_index    = block_id_to_element_data_index_.at(block_id);
-  int        data_index     = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr = nullptr;
-  base_field_ptr            = device_element_data_.at(block_index).at(data_index).get();
-  auto derived_field_ptr    = dynamic_cast<Field<FieldType::DeviceScalarElem>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  return GetDeviceElementData<FieldType::DeviceScalarElem>(block_id, field_id);
 }
 
 DeviceSymTensorElemView
 ModelData::GetDeviceSymTensorElementData(int block_id, int field_id)
 {
-  int        block_index    = block_id_to_element_data_index_.at(block_id);
-  int        data_index     = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr = nullptr;
-  base_field_ptr            = device_element_data_.at(block_index).at(data_index).get();
-  auto derived_field_ptr    = dynamic_cast<Field<FieldType::DeviceSymTensorElem>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  return GetDeviceElementData<FieldType::DeviceSymTensorElem>(block_id, field_id);
 }
 
 DeviceFullTensorElemView
 ModelData::GetDeviceFullTensorElementData(int block_id, int field_id)
 {
-  int        block_index    = block_id_to_element_data_index_.at(block_id);
-  int        data_index     = field_id_to_device_element_data_index_.at(block_index).at(field_id);
-  FieldBase* base_field_ptr = nullptr;
-  base_field_ptr            = device_element_data_.at(block_index).at(data_index).get();
-  auto derived_field_ptr    = dynamic_cast<Field<FieldType::DeviceFullTensorElem>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  return GetDeviceElementData<FieldType::DeviceFullTensorElem>(block_id, field_id);
 }
 
 DeviceScalarNodeGatheredView
