@@ -31,8 +31,8 @@ jobs:
             kokkos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
-      CACHE_FROM: '/tmp/buildx-cache'
-      CACHE_TO: '/tmp/buildx-cache-new'
+      CACHE_FROM: '/tmp/.buildx-cache'
+      CACHE_TO: '/tmp/.buildx-cache-new'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v2
@@ -73,7 +73,7 @@ jobs:
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
           cache-from: type=local,src=${{ env.CACHE_FROM }}
-          cache-to: type=local,dest=${{ env.CACHE_TO }}
+          cache-to: type=local,dest=${{ env.CACHE_TO }},mode=max
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
