@@ -334,7 +334,7 @@ Protected Attributes</h2></td></tr>
 <div class="line"><span class="lineno">   89</span>  bc-&gt;ApplyInitialConditions(reference_coordinate, velocity);</div>
 <div class="line"><span class="lineno">   90</span>}</div>
 <div class="ttc" id="aclassnimble_1_1_data_manager_html_a300e826fde0b5fea3f3819cb852f48cb"><div class="ttname"><a href="classnimble_1_1_data_manager.html#a300e826fde0b5fea3f3819cb852f48cb">nimble::DataManager::GetBoundaryConditionManager</a></div><div class="ttdeci">std::shared_ptr&lt; nimble::BoundaryConditionManager &gt; GetBoundaryConditionManager()</div><div class="ttdoc">Return shared pointer to BoundaryConditionManager object.</div><div class="ttdef"><b>Definition:</b> nimble_data_manager.h:180</div></div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a44ba4fc5c0a2519a0dbbce0481bcb73b"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a44ba4fc5c0a2519a0dbbce0481bcb73b">nimble::ModelDataBase::GetVectorNodeData</a></div><div class="ttdeci">nimble::Viewify&lt; 2 &gt; GetVectorNodeData(const std::string &amp;label)</div><div class="ttdoc">Get view of vector quantity defined on nodes.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:158</div></div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a44ba4fc5c0a2519a0dbbce0481bcb73b"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a44ba4fc5c0a2519a0dbbce0481bcb73b">nimble::ModelDataBase::GetVectorNodeData</a></div><div class="ttdeci">nimble::Viewify&lt; 2 &gt; GetVectorNodeData(const std::string &amp;label)</div><div class="ttdoc">Get view of vector quantity defined on nodes.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:163</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -448,7 +448,7 @@ Protected Attributes</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>This routine is a placeholder. </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classnimble_1_1_model_data.html#accd919ac76b8d4265e2f9b063063d69b">nimble::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  205</span>                                          {};</div>
+<div class="fragment"><div class="line"><span class="lineno">  210</span>                                          {};</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -524,7 +524,7 @@ Protected Attributes</h2></td></tr>
 </dl>
 
 <p>Reimplemented in <a class="el" href="classnimble__kokkos_1_1_model_data.html#a3b838517f801141dc5a0436d3ebb65ca">nimble_kokkos::ModelData</a>, and <a class="el" href="classnimble_1_1_model_data.html#a17972f644e32d48fa66086a81185d338">nimble::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  222</span>                                    {};</div>
+<div class="fragment"><div class="line"><span class="lineno">  227</span>                                    {};</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -589,10 +589,10 @@ Protected Attributes</h2></td></tr>
 
 <p>Get the critical time step. </p>
 <dl class="section return"><dt>Returns</dt><dd>Time step </dd></dl>
-<div class="fragment"><div class="line"><span class="lineno">  293</span>  {</div>
-<div class="line"><span class="lineno">  294</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">critical_time_step_</a>;</div>
-<div class="line"><span class="lineno">  295</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_ab317cf5fbe3fbed8df9979271baa8304"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">nimble::ModelDataBase::critical_time_step_</a></div><div class="ttdeci">double critical_time_step_</div><div class="ttdoc">Critical time step.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:326</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  298</span>  {</div>
+<div class="line"><span class="lineno">  299</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">critical_time_step_</a>;</div>
+<div class="line"><span class="lineno">  300</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_ab317cf5fbe3fbed8df9979271baa8304"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">nimble::ModelDataBase::critical_time_step_</a></div><div class="ttdeci">double critical_time_step_</div><div class="ttdoc">Critical time step.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:331</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -618,10 +618,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  317</span>  {</div>
-<div class="line"><span class="lineno">  318</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a9d7bf01ce5d2eef15ab6d7b1fc8e324a">derived_output_element_data_labels_</a>;</div>
-<div class="line"><span class="lineno">  319</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a9d7bf01ce5d2eef15ab6d7b1fc8e324a"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a9d7bf01ce5d2eef15ab6d7b1fc8e324a">nimble::ModelDataBase::derived_output_element_data_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; derived_output_element_data_labels_</div><div class="ttdoc">Output labels for derived element data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:339</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  322</span>  {</div>
+<div class="line"><span class="lineno">  323</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a9d7bf01ce5d2eef15ab6d7b1fc8e324a">derived_output_element_data_labels_</a>;</div>
+<div class="line"><span class="lineno">  324</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a9d7bf01ce5d2eef15ab6d7b1fc8e324a"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a9d7bf01ce5d2eef15ab6d7b1fc8e324a">nimble::ModelDataBase::derived_output_element_data_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; derived_output_element_data_labels_</div><div class="ttdoc">Output labels for derived element data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:344</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -650,10 +650,10 @@ Protected Attributes</h2></td></tr>
 
 <p>Get the spatial dimension. </p>
 <dl class="section return"><dt>Returns</dt><dd>Spatial dimension </dd></dl>
-<div class="fragment"><div class="line"><span class="lineno">  263</span>  {</div>
-<div class="line"><span class="lineno">  264</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a0ac6353f78dfe30d4e6f9acfa04470a3">dim_</a>;</div>
-<div class="line"><span class="lineno">  265</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a0ac6353f78dfe30d4e6f9acfa04470a3"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a0ac6353f78dfe30d4e6f9acfa04470a3">nimble::ModelDataBase::dim_</a></div><div class="ttdeci">int dim_</div><div class="ttdoc">Problem dimension, either 2 or 3.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:323</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  268</span>  {</div>
+<div class="line"><span class="lineno">  269</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a0ac6353f78dfe30d4e6f9acfa04470a3">dim_</a>;</div>
+<div class="line"><span class="lineno">  270</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a0ac6353f78dfe30d4e6f9acfa04470a3"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a0ac6353f78dfe30d4e6f9acfa04470a3">nimble::ModelDataBase::dim_</a></div><div class="ttdeci">int dim_</div><div class="ttdoc">Problem dimension, either 2 or 3.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:328</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -679,10 +679,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  305</span>  {</div>
-<div class="line"><span class="lineno">  306</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#add66a05b675ba6b5b376791b0bdab8af">element_component_labels_</a>;</div>
-<div class="line"><span class="lineno">  307</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_add66a05b675ba6b5b376791b0bdab8af"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#add66a05b675ba6b5b376791b0bdab8af">nimble::ModelDataBase::element_component_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; element_component_labels_</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:333</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  310</span>  {</div>
+<div class="line"><span class="lineno">  311</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#add66a05b675ba6b5b376791b0bdab8af">element_component_labels_</a>;</div>
+<div class="line"><span class="lineno">  312</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_add66a05b675ba6b5b376791b0bdab8af"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#add66a05b675ba6b5b376791b0bdab8af">nimble::ModelDataBase::element_component_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; element_component_labels_</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:338</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -708,10 +708,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  311</span>  {</div>
-<div class="line"><span class="lineno">  312</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a750258c4f0e8be7fdff561626a361e08">output_element_component_labels_</a>;</div>
-<div class="line"><span class="lineno">  313</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a750258c4f0e8be7fdff561626a361e08"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a750258c4f0e8be7fdff561626a361e08">nimble::ModelDataBase::output_element_component_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; output_element_component_labels_</div><div class="ttdoc">Output labels for element data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:336</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  316</span>  {</div>
+<div class="line"><span class="lineno">  317</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a750258c4f0e8be7fdff561626a361e08">output_element_component_labels_</a>;</div>
+<div class="line"><span class="lineno">  318</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a750258c4f0e8be7fdff561626a361e08"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a750258c4f0e8be7fdff561626a361e08">nimble::ModelDataBase::output_element_component_labels_</a></div><div class="ttdeci">std::map&lt; int, std::vector&lt; std::string &gt; &gt; output_element_component_labels_</div><div class="ttdoc">Output labels for element data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:341</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -775,15 +775,15 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  104</span>  {</div>
-<div class="line"><span class="lineno">  105</span>    <span class="keywordtype">int</span> <span class="keywordtype">id</span> = <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a9531776bf57c6ed581fd826b01c2cd02">GetFieldId</a>(field_label);</div>
-<div class="line"><span class="lineno">  106</span>    <span class="keywordflow">if</span> (<span class="keywordtype">id</span> &lt; 0) {</div>
-<div class="line"><span class="lineno">  107</span>      std::ostringstream errc;</div>
-<div class="line"><span class="lineno">  108</span>      errc &lt;&lt; <span class="stringliteral">&quot;Field \&quot;&quot;</span> &lt;&lt; field_label &lt;&lt; <span class="stringliteral">&quot;\&quot; not allocated&quot;</span>;</div>
-<div class="line"><span class="lineno">  109</span>      <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(errc.str());</div>
-<div class="line"><span class="lineno">  110</span>    }</div>
-<div class="line"><span class="lineno">  111</span>    <span class="keywordflow">return</span> id;</div>
-<div class="line"><span class="lineno">  112</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  109</span>  {</div>
+<div class="line"><span class="lineno">  110</span>    <span class="keywordtype">int</span> <span class="keywordtype">id</span> = <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a9531776bf57c6ed581fd826b01c2cd02">GetFieldId</a>(field_label);</div>
+<div class="line"><span class="lineno">  111</span>    <span class="keywordflow">if</span> (<span class="keywordtype">id</span> &lt; 0) {</div>
+<div class="line"><span class="lineno">  112</span>      std::ostringstream errc;</div>
+<div class="line"><span class="lineno">  113</span>      errc &lt;&lt; <span class="stringliteral">&quot;Field \&quot;&quot;</span> &lt;&lt; field_label &lt;&lt; <span class="stringliteral">&quot;\&quot; not allocated&quot;</span>;</div>
+<div class="line"><span class="lineno">  114</span>      <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(errc.str());</div>
+<div class="line"><span class="lineno">  115</span>    }</div>
+<div class="line"><span class="lineno">  116</span>    <span class="keywordflow">return</span> id;</div>
+<div class="line"><span class="lineno">  117</span>  }</div>
 <div class="ttc" id="aclassnimble_1_1_model_data_base_html_a9531776bf57c6ed581fd826b01c2cd02"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a9531776bf57c6ed581fd826b01c2cd02">nimble::ModelDataBase::GetFieldId</a></div><div class="ttdeci">virtual int GetFieldId(const std::string &amp;field_label) const =0</div><div class="ttdoc">Returns the field ID for a specific label.</div></div>
 <div class="ttc" id="animble__macros_8h_html_af9b42a568a58a4fec3697ddab61ba880"><div class="ttname"><a href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a></div><div class="ttdeci">#define NIMBLE_ABORT(...)</div><div class="ttdef"><b>Definition:</b> nimble_macros.h:87</div></div>
 </div><!-- fragment -->
@@ -811,10 +811,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  299</span>  {</div>
-<div class="line"><span class="lineno">  300</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a9236d2478c1703da798bfa2d82d9346b">output_node_component_labels_</a>;</div>
-<div class="line"><span class="lineno">  301</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a9236d2478c1703da798bfa2d82d9346b"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a9236d2478c1703da798bfa2d82d9346b">nimble::ModelDataBase::output_node_component_labels_</a></div><div class="ttdeci">std::vector&lt; std::string &gt; output_node_component_labels_</div><div class="ttdoc">Output labels for node data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:329</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  304</span>  {</div>
+<div class="line"><span class="lineno">  305</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#a9236d2478c1703da798bfa2d82d9346b">output_node_component_labels_</a>;</div>
+<div class="line"><span class="lineno">  306</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a9236d2478c1703da798bfa2d82d9346b"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a9236d2478c1703da798bfa2d82d9346b">nimble::ModelDataBase::output_node_component_labels_</a></div><div class="ttdeci">std::vector&lt; std::string &gt; output_node_component_labels_</div><div class="ttdoc">Output labels for node data that will be written to disk.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:334</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -850,11 +850,11 @@ Protected Attributes</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Viewify&lt;1&gt; object for scalar quantity </dd></dl>
-<div class="fragment"><div class="line"><span class="lineno">  142</span>  {</div>
-<div class="line"><span class="lineno">  143</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a69fdef223bd16dc2bc7b0cb19d88395a">GetScalarNodeData</a>(<a class="code hl_function" href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">GetFieldIdChecked</a>(label));</div>
-<div class="line"><span class="lineno">  144</span>  };</div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a69fdef223bd16dc2bc7b0cb19d88395a"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a69fdef223bd16dc2bc7b0cb19d88395a">nimble::ModelDataBase::GetScalarNodeData</a></div><div class="ttdeci">nimble::Viewify&lt; 1 &gt; GetScalarNodeData(const std::string &amp;label)</div><div class="ttdoc">Get view of scalar quantity defined on nodes.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:141</div></div>
-<div class="ttc" id="aclassnimble_1_1_model_data_base_html_aeb83a197f3fe7657144f78a95526b574"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">nimble::ModelDataBase::GetFieldIdChecked</a></div><div class="ttdeci">int GetFieldIdChecked(const std::string &amp;field_label) const</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:103</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  147</span>  {</div>
+<div class="line"><span class="lineno">  148</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a69fdef223bd16dc2bc7b0cb19d88395a">GetScalarNodeData</a>(<a class="code hl_function" href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">GetFieldIdChecked</a>(label));</div>
+<div class="line"><span class="lineno">  149</span>  };</div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_a69fdef223bd16dc2bc7b0cb19d88395a"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#a69fdef223bd16dc2bc7b0cb19d88395a">nimble::ModelDataBase::GetScalarNodeData</a></div><div class="ttdeci">nimble::Viewify&lt; 1 &gt; GetScalarNodeData(const std::string &amp;label)</div><div class="ttdoc">Get view of scalar quantity defined on nodes.</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:146</div></div>
+<div class="ttc" id="aclassnimble_1_1_model_data_base_html_aeb83a197f3fe7657144f78a95526b574"><div class="ttname"><a href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">nimble::ModelDataBase::GetFieldIdChecked</a></div><div class="ttdeci">int GetFieldIdChecked(const std::string &amp;field_label) const</div><div class="ttdef"><b>Definition:</b> nimble_model_data_base.h:108</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -927,9 +927,9 @@ Protected Attributes</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Viewify&lt;2&gt; object for vector quantity </dd></dl>
-<div class="fragment"><div class="line"><span class="lineno">  159</span>  {</div>
-<div class="line"><span class="lineno">  160</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a44ba4fc5c0a2519a0dbbce0481bcb73b">GetVectorNodeData</a>(<a class="code hl_function" href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">GetFieldIdChecked</a>(label));</div>
-<div class="line"><span class="lineno">  161</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  164</span>  {</div>
+<div class="line"><span class="lineno">  165</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classnimble_1_1_model_data_base.html#a44ba4fc5c0a2519a0dbbce0481bcb73b">GetVectorNodeData</a>(<a class="code hl_function" href="classnimble_1_1_model_data_base.html#aeb83a197f3fe7657144f78a95526b574">GetFieldIdChecked</a>(label));</div>
+<div class="line"><span class="lineno">  166</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1042,9 +1042,9 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Reimplemented in <a class="el" href="classnimble__kokkos_1_1_model_data.html#af4f7d7272981f7007a744e5c7ca137cd">nimble_kokkos::ModelData</a>, and <a class="el" href="classnimble_1_1_model_data.html#ad5f82ba9807a4b6b0c81ea405eaa2aff">nimble::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  178</span>  {</div>
-<div class="line"><span class="lineno">  179</span>    <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot; Exodus Output Not Implemented \n&quot;</span>);</div>
-<div class="line"><span class="lineno">  180</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  183</span>  {</div>
+<div class="line"><span class="lineno">  184</span>    <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot; Exodus Output Not Implemented \n&quot;</span>);</div>
+<div class="line"><span class="lineno">  185</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1079,9 +1079,9 @@ Protected Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
-<div class="fragment"><div class="line"><span class="lineno">  272</span>  {</div>
-<div class="line"><span class="lineno">  273</span>    <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">critical_time_step_</a> = time_step;</div>
-<div class="line"><span class="lineno">  274</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  277</span>  {</div>
+<div class="line"><span class="lineno">  278</span>    <a class="code hl_variable" href="classnimble_1_1_model_data_base.html#ab317cf5fbe3fbed8df9979271baa8304">critical_time_step_</a> = time_step;</div>
+<div class="line"><span class="lineno">  279</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1248,8 +1248,8 @@ Protected Attributes</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>This routine is usually empty. The UQ model data is one case using this routine. </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classnimble__kokkos_1_1_model_data.html#af168939aab6b8149eacb4985fce8b93b">nimble_kokkos::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  253</span>  {</div>
-<div class="line"><span class="lineno">  254</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  258</span>  {</div>
+<div class="line"><span class="lineno">  259</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1298,8 +1298,8 @@ Protected Attributes</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>This routine is usually empty. The UQ model data is one case using this routine. </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classnimble__kokkos_1_1_model_data.html#a06aabed7f2bfff44e0dca70d8c331668">nimble_kokkos::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  241</span>  {</div>
-<div class="line"><span class="lineno">  242</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  246</span>  {</div>
+<div class="line"><span class="lineno">  247</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1347,9 +1347,9 @@ Protected Attributes</h2></td></tr>
 </dl>
 
 <p>Reimplemented in <a class="el" href="classnimble__kokkos_1_1_model_data.html#ad89e76a7daac7e88535d51ab729e3608">nimble_kokkos::ModelData</a>, and <a class="el" href="classnimble_1_1_model_data.html#a0d21158a0b3738149ab1e241b2158220">nimble::ModelData</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  188</span>  {</div>
-<div class="line"><span class="lineno">  189</span>    <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot; Exodus Output Not Implemented \n&quot;</span>);</div>
-<div class="line"><span class="lineno">  190</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  193</span>  {</div>
+<div class="line"><span class="lineno">  194</span>    <a class="code hl_define" href="nimble__macros_8h.html#af9b42a568a58a4fec3697ddab61ba880">NIMBLE_ABORT</a>(<span class="stringliteral">&quot; Exodus Output Not Implemented \n&quot;</span>);</div>
+<div class="line"><span class="lineno">  195</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
