@@ -29,6 +29,10 @@ jobs:
             trilinos: {name: " + Trilinos", value: "ON"}
           - arborx: {name: " + ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
+    env:
+      OUTPUT_DIR: '/tmp/out'
+      CACHE_FROM: '/tmp/.buildx-cache'
+      CACHE_TO: '/tmp/.buildx-cache-new'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v2
@@ -38,40 +42,63 @@ jobs:
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
-      - name: Inspect builder
+      - name: Inspect Builder
         run: |
           echo "Name:      ${{ steps.buildx.outputs.name }}"
           echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-      - name: Cache Docker layers
+      - name: Prepare Caching Timestamp
+        id: cache_ts
+        shell: cmake -P {0}
+        run: |
+          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+          message("::set-output name=timestamp::${current_date}")
+      - name: Cache Docker Layers
         uses: actions/cache@v3
         id: cache
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-${{ github.sha }}
+          path: ${{ env.CACHE_FROM }}
+          key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.mpi.value }}-${{ matrix.kokkos.value }}-${{ matrix.trilinos.value }}-${{ matrix.arborx.value }}-
-      - name: Build the Docker image and code
-        uses: docker/build-push-action@v2
+            ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
+      - name: Build the Docker Image and Code
+        id: docker_build
+        continue-on-error: true
+        uses: docker/build-push-action@v3
         with:
           push: false
           tags: ${{ steps.vars.outputs.docker_tag }}
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
+          cache-from: type=local,src=${{ env.CACHE_FROM }}
+          cache-to: type=local,dest=${{ env.CACHE_TO }},mode=max
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
             NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
             NimbleSM_ENABLE_UQ=OFF
             NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
+          outputs: type=local,dest=${{ env.OUTPUT_DIR }}
+      - name: Upload Test Log Files
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-LastTestLogs
+          path: ${{ env.OUTPUT_DIR }}
       # This helps prevent the cache from growing...
       # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
-      - name: Move cache
+      - name: Move Cache
         if: always() # Cache the partial image even if building it fails
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          rm -rf ${{ env.CACHE_FROM }}
+          mv ${{ env.CACHE_TO }} ${{ env.CACHE_FROM }}
+      - name: Determine Job Failure or Success
+        run: |
+          echo "Success Flag with 0 pass and 1 fail:"
+          cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt
+          echo "docker_build_outcome:  ${{ steps.docker_build.outcome }}"
+          echo "docker_build_conclusion:  ${{ steps.docker_build.conclusion }}"
+          if [[  $(cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt) -eq 0 ]]; then exit 0; else exit 1; fi
+        shell: bash
