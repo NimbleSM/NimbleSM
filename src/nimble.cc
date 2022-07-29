@@ -138,14 +138,15 @@ NimbleApplication::Run(int argc, char **argv) {
     return 1;
   }
 
-  // We're done, finalize
-  FinalizeSubsystems();
-
   // Run is technically re-entrant so make sure contact interface is de-initialized
-  // because if the aprser changes it could end up with strange results
+  // because if the parser changes it could end up with strange results
   // We don't need to do it for the factories since they will be overwritten if
   // run() is called again
   impl_->contact_interface_ = {};
+
+
+  // We're done, finalize
+  FinalizeSubsystems();
 
   return status;
 }
