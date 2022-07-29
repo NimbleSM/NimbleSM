@@ -66,14 +66,14 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=PIPE, text=True)
+    p = Popen(command, stdout=logfile, stderr=logfile)
     err = p.communicate()[1]
     return_code = p.returncode
     if return_code != 0:
         print(err, file=sys.stderr)
         logfile.write(err)
         result = return_code
-
+    logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
     # run epu
     if epu_required:
         command = ["epu", \
@@ -87,7 +87,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
         return_code = p.wait()
         if return_code != 0:
             result = return_code
-
+    logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
     # run exodiff
     command = ["exodiff", \
                "-stat", \
