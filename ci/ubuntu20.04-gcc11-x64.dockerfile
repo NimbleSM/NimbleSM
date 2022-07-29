@@ -70,6 +70,12 @@ RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack 
 
 
 FROM build_dependencies-stage as build_nimble-stage
+# need to be repeated in the new stage
+ARG NimbleSM_ENABLE_MPI
+ARG NimbleSM_ENABLE_KOKKOS
+ARG NimbleSM_ENABLE_TRILINOS
+ARG NimbleSM_ENABLE_UQ
+ARG NimbleSM_ENABLE_ARBORX
 
 # Add current source dir into the image
 COPY . /opt/src/NimbleSM
