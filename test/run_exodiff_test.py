@@ -67,11 +67,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
 
     # run the code
     p = Popen(command, stdout=logfile, stderr=logfile)
-    err = p.communicate()[1]
-    return_code = p.returncode
+    return_code = p.wait()
     if return_code != 0:
-        print(err, file=sys.stderr)
-        logfile.write(err)
         result = return_code
     logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
     # run epu
