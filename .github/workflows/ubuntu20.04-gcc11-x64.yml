@@ -49,20 +49,6 @@ jobs:
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-      - name: Prepare Caching Timestamp
-        id: cache_ts
-        shell: cmake -P {0}
-        run: |
-          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("::set-output name=timestamp::${current_date}")
-      # - name: Cache Docker Layers
-      #   uses: actions/cache@v3
-      #   id: cache
-      #   with:
-      #     path: ${{ env.CACHE_FROM }}
-      #     key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
       - name: Build the Docker Image and Code
         id: docker_build
         continue-on-error: true
