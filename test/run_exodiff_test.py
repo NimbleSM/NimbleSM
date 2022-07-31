@@ -5,7 +5,7 @@ import os
 import string
 import glob
 import argparse as ap
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, run
 
 def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openmpi=False):
 
@@ -66,11 +66,12 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=logfile)
-    return_code = p.wait()
+    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+    return_code = p.returncode
     if return_code != 0:
         result = return_code
     logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
+
     # run epu
     if epu_required:
         command = ["epu", \
@@ -80,8 +81,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    epu_output_extension, \
                    nimble_output_name]
         print("EPU COMMAND", command)
-        p = Popen(command, stdout=logfile, stderr=logfile)
-        return_code = p.wait()
+        p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+        return_code = p.returncode
         if return_code != 0:
             result = return_code
     logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
@@ -92,8 +93,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".exodiff", \
                base_name+".gold.e", \
                epu_exodus_output_name]
-    p = Popen(command, stdout=logfile, stderr=logfile)
-    return_code = p.wait()
+    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+    return_code = p.returncode
     if return_code != 0:
         result = return_code
 
