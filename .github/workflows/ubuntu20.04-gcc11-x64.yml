@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}-LastTestLogs
+          name: NimbleSM-${{ matrix.mpi.name }}-${{ matrix.kokkos.name }}-${{ matrix.trilinos.name }}-${{ matrix.arborx.name }}-LastTestLogs
           path: ${{ env.OUTPUT_DIR }}
       - name: Determine Job Failure or Success
         run: |
