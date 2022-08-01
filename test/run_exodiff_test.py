@@ -6,6 +6,7 @@ import string
 import glob
 import argparse as ap
 from subprocess import Popen, PIPE, run
+import time
 
 def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openmpi=False):
 
@@ -71,7 +72,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     if return_code != 0:
         result = return_code
     logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
-
+    logfile.flush()
+    time.sleep(2)
     # run epu
     if epu_required:
         command = ["epu", \
@@ -86,6 +88,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
         if return_code != 0:
             result = return_code
     logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
+    logfile.flush()
+    time.sleep(2)
     # run exodiff
     command = ["exodiff", \
                "-stat", \
@@ -99,6 +103,8 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
         result = return_code
 
     logfile.write("FINAL TEST RESULT " + str(result) + "\n\n")
+    logfile.flush()
+    time.sleep(2)
 
     logfile.close()
 
