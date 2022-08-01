@@ -59,7 +59,7 @@ jobs:
           tags: ${{ env.DOCKER_TAG }}
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
-          cache-from: type=gha,scope=${{ env.SCOPE_NAME }}"
+          cache-from: type=gha,scope=${{ env.SCOPE_NAME }}
           cache-to: type=gha,mode=max,scope=${{ env.SCOPE_NAME }}
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
