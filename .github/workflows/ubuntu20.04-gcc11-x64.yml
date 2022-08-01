@@ -21,17 +21,17 @@ jobs:
       fail-fast: false
       matrix:
         mpi: [{name: "MPI", value: "ON"}, {name: "Serial", value: "OFF"}]
-        kokkos: [{name: " + Kokkos", value: "ON"}, {name: "", value: "OFF"}]
-        trilinos: [{name: " + Trilinos", value: "ON"}, {name: "", value: "OFF"}]
-        arborx: [{name: " + ArborX", value: "ON"}, {name: "", value: "OFF"}]
+        kokkos: [{name: "+Kokkos", value: "ON"}, {name: "", value: "OFF"}]
+        trilinos: [{name: "+Trilinos", value: "ON"}, {name: "", value: "OFF"}]
+        arborx: [{name: "+ArborX", value: "ON"}, {name: "", value: "OFF"}]
         exclude:
-          - kokkos: {name: " + Kokkos", value: "ON"}
-            trilinos: {name: " + Trilinos", value: "ON"}
-          - arborx: {name: " + ArborX", value: "ON"}
+          - kokkos: {name: "+Kokkos", value: "ON"}
+            trilinos: {name: "+Trilinos", value: "ON"}
+          - arborx: {name: "+ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
-      SCOPE_NAME: 'NimbleSM-${{ matrix.mpi.name }}-${{ matrix.kokkos.name }}-${{ matrix.trilinos.name }}-${{ matrix.arborx.name }}'
+      SCOPE_NAME: 'NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v3
@@ -60,7 +60,7 @@ jobs:
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
           cache-from: type=gha,scope=${{ env.SCOPE_NAME }}"
-          cache-to: type=gha,mode=max,scope=${{ env.SCOPE_NAME }}"
+          cache-to: type=gha,mode=max,scope=${{ env.SCOPE_NAME }}
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
@@ -72,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: NimbleSM-${{ matrix.mpi.name }}-${{ matrix.kokkos.name }}-${{ matrix.trilinos.name }}-${{ matrix.arborx.name }}-LastTestLogs
+          name: NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}-LastTestLogs
           path: ${{ env.OUTPUT_DIR }}
       - name: Determine Job Failure or Success
         run: |
