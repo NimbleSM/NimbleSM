@@ -31,6 +31,7 @@ jobs:
             kokkos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
+      SCOPE_NAME: 'NimbleSM-${{ matrix.mpi.name }}-${{ matrix.kokkos.name }}-${{ matrix.trilinos.name }}-${{ matrix.arborx.name }}'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v3
@@ -48,6 +49,7 @@ jobs:
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
           echo "DOCKER_TAG: ${{ env.DOCKER_TAG }}"
+          echo "SCOPE_NAME  ${{ env.SCOPE_NAME }}"
       - name: Build the Docker Image and Code
         id: docker_build
         continue-on-error: true
@@ -57,8 +59,8 @@ jobs:
           tags: ${{ env.DOCKER_TAG }}
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ env.SCOPE_NAME }}"
+          cache-to: type=gha,mode=max,scope=${{ env.SCOPE_NAME }}"
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
