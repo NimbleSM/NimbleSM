@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as build_dependencies-stage
 
 ARG NimbleSM_ENABLE_MPI
 ARG NimbleSM_ENABLE_KOKKOS
@@ -68,11 +68,19 @@ RUN . /opt/spack/share/spack/setup-env.sh && spack env create nimble /opt/spack/
 # activate nimble env and install
 RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack install --fail-fast && spack gc -y
 
+
+FROM build_dependencies-stage as build_nimble-stage
+
 # Add current source dir into the image
-ADD . /opt/src/NimbleSM
+COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # Build using the spack environment we created
 RUN bash /opt/src/NimbleSM/ci/build.sh
 
+FROM build_nimble-stage as test-stage
+
 RUN bash /opt/src/NimbleSM/ci/test.sh
+
+FROM scratch as export-stage
+COPY --from=test-stage /tmp/artifacts /tmp/artifacts

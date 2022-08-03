@@ -77,6 +77,11 @@ struct FieldIds
   int internal_force = -1;
   int contact_force  = -1;
   int external_force = -1;
+
+  int state_scalar      = -1;
+  int state_vec3D       = -1;
+  int state_sym_tensor  = -1;
+  int state_full_tensor = -1;
 };
 
 class ModelDataBase
