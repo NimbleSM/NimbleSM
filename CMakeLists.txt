@@ -96,9 +96,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 enable_testing()
 
-set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
+set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
@@ -295,8 +295,8 @@ configure_package_config_file(cmake/NimbleSMConfig.cmake.in
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/NimbleSMSettings.cmake
-  ${CMAKE_SOURCE_DIR}/cmake/FindDARMA.cmake
-  ${CMAKE_SOURCE_DIR}/cmake/FindExodus.cmake
-  ${CMAKE_SOURCE_DIR}/cmake/FindQThreads.cmake
-  ${CMAKE_SOURCE_DIR}/cmake/FindTrilinos.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/FindDARMA.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/FindExodus.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/FindQThreads.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/FindTrilinos.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NimbleSM)
