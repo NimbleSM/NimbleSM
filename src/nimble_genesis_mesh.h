@@ -221,8 +221,8 @@ class GenesisMesh
     return &block_elem_connectivity_.at(block_id)[0];
   }
 
-  std::map<int, std::vector<int>>&
-  GetConnectivity()
+  const std::map<int, std::vector<int>>&
+  GetConnectivity() const
   {
     return block_elem_connectivity_;
   }
