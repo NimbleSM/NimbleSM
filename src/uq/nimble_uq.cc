@@ -288,6 +288,7 @@ UqModel::Allocate()
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_displacement_" + tag, nnodes_);
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_velocity_" + tag, nnodes_);
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_force_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_acceleration_" + tag, nnodes_);
   }
  prefix = "sample";
   for (int i = 0; i < napprox_samples_; i++) {
@@ -295,6 +296,7 @@ UqModel::Allocate()
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_displacement_" + tag, nnodes_);
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_velocity_" + tag, nnodes_);
     data_->AllocateNodeData(nimble::VECTOR, prefix+"_force_" + tag, nnodes_);
+    data_->AllocateNodeData(nimble::VECTOR, prefix+"_acceleration_" + tag, nnodes_);
   }
 //std::cout << " DONE Allocate\n" << std::flush;
 }
