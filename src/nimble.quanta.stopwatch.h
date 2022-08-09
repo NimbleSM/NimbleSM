@@ -45,6 +45,8 @@
 #define NIMBLE_LIGHTWEIGHT_STOPWATCH_H
 
 #include <chrono>
+#include <string>
+#include <utility>
 
 namespace nimble {
 namespace quanta {
