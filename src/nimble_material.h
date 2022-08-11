@@ -633,7 +633,7 @@ ViscoplasticStress(Properties const props, double const delta_eqps, double const
   double const& m        = props.m;
   double const& eps_dot0 = props.eps_dot0;
 
-  if (Svis0 <= 0.0) return 0.0;
+  if (Svis0 <= 0.0 || m <= 0.0) return 0.0;
 
   double Svis = 0;
   if (delta_eqps > 0) {
@@ -687,25 +687,25 @@ class J2PlasticityMaterial : public Material
   {
     switch (index) {
     case 0:
-      return std::make_pair("plastic deformation gradient xx", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_xx", nimble::SCALAR);
     case 1:
-      return std::make_pair("plastic deformation gradient xy", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_yy", nimble::SCALAR);
     case 2:
-      return std::make_pair("plastic deformation gradient xz", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_zz", nimble::SCALAR);
     case 3:
-      return std::make_pair("plastic deformation gradient yx", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_xy", nimble::SCALAR);
     case 4:
-      return std::make_pair("plastic deformation gradient yy", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_yz", nimble::SCALAR);
     case 5:
-      return std::make_pair("plastic deformation gradient yz", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_zx", nimble::SCALAR);
     case 6:
-      return std::make_pair("plastic deformation gradient zx", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_yx", nimble::SCALAR);
     case 7:
-      return std::make_pair("plastic deformation gradient zy", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_zy", nimble::SCALAR);
     case 8:
-      return std::make_pair("plastic deformation gradient zz", nimble::SCALAR);
+      return std::make_pair("plastic_deformation_gradient_xz", nimble::SCALAR);
     case 9:
-      return std::make_pair("equivalent plastic strain", nimble::SCALAR);
+      return std::make_pair("equivalent_plastic_strain", nimble::SCALAR);
     default:
       std::cerr << std::endl << "**** Error, bad index in " << __PRETTY_FUNCTION__ << std::endl;
       exit(1);
@@ -721,13 +721,13 @@ class J2PlasticityMaterial : public Material
     case 0:
       return 1.0;
     case 1:
-      return 0.0;
+      return 1.0;
     case 2:
-      return 0.0;
+      return 1.0;
     case 3:
       return 0.0;
     case 4:
-      return 1.0;
+      return 0.0;
     case 5:
       return 0.0;
     case 6:
@@ -735,7 +735,7 @@ class J2PlasticityMaterial : public Material
     case 7:
       return 0.0;
     case 8:
-      return 1.0;
+      return 0.0;
     case 9:
       return 0.0;
     default:

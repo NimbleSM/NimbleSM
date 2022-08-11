@@ -62,6 +62,7 @@
 int
 main(int argc, char* argv[])
 {
+  NIMBLE_TRAP_FPE();
   //
   // Quick parsing of command line to check whether Kokkos, Tpetra, or VT is used.
   //
