@@ -254,6 +254,9 @@ if(NOT NimbleSM_ENABLE_TRILINOS OR NOT NimbleSM_USE_TRILINOS_EXODUS)
   endif()
 endif()
 
+find_package(p3a REQUIRED)
+target_link_libraries(nimble PUBLIC p3a::p3a)
+
 # Optional ArborX dependency
 if (NimbleSM_ENABLE_ARBORX)
   message(STATUS "Compiling with ArborX:")
