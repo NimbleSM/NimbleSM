@@ -1,0 +1,10 @@
+Input FEM file                   = wave_in_bar.g
+LB file                          = wave_in_bar.g.nem
+Parallel Results File Base Name  = wave_in_bar
+File Extension for Spread Files  = .g
+Number of Processors             = 4 
+------------------------------------------------------------
+                Parallel I/O section
+------------------------------------------------------------
+Parallel Disk Info= number=1, offset=1, zeros, nosubdirectory
+Parallel file location = root=/home/rjones/repo/NimbleSM/test/dynamics/wave_in_bar_plasticity/, subdir=.
