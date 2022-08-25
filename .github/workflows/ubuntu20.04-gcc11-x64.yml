@@ -21,24 +21,23 @@ jobs:
       fail-fast: false
       matrix:
         mpi: [{name: "MPI", value: "ON"}, {name: "Serial", value: "OFF"}]
-        kokkos: [{name: " + Kokkos", value: "ON"}, {name: "", value: "OFF"}]
-        trilinos: [{name: " + Trilinos", value: "ON"}, {name: "", value: "OFF"}]
-        arborx: [{name: " + ArborX", value: "ON"}, {name: "", value: "OFF"}]
+        kokkos: [{name: "+Kokkos", value: "ON"}, {name: "", value: "OFF"}]
+        trilinos: [{name: "+Trilinos", value: "ON"}, {name: "", value: "OFF"}]
+        arborx: [{name: "+ArborX", value: "ON"}, {name: "", value: "OFF"}]
         exclude:
-          - kokkos: {name: " + Kokkos", value: "ON"}
-            trilinos: {name: " + Trilinos", value: "ON"}
-          - arborx: {name: " + ArborX", value: "ON"}
+          - kokkos: {name: "+Kokkos", value: "ON"}
+            trilinos: {name: "+Trilinos", value: "ON"}
+          - arborx: {name: "+ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
-      CACHE_FROM: '/tmp/.buildx-cache'
-      CACHE_TO: '/tmp/.buildx-cache-new'
+      SCOPE_NAME: 'NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: CI Variables
         id: vars
-        run: echo "::set-output name=docker_tag::$(git rev-parse --abbrev-ref ${{ github.head_ref || github.ref || 'HEAD' }} | sed 's/[^a-z0-9_-]/__/gi')"
+        run: echo "DOCKER_TAG=$(echo ${{ github.ref }} | cut -d'/' -f3- | sed 's/[^a-z0-9_-]/__/gi')" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
@@ -49,31 +48,19 @@ jobs:
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-      - name: Prepare Caching Timestamp
-        id: cache_ts
-        shell: cmake -P {0}
-        run: |
-          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("::set-output name=timestamp::${current_date}")
-      - name: Cache Docker Layers
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: ${{ env.CACHE_FROM }}
-          key: ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-${{ github.sha }}-${{ steps.cache_ts.outputs.timestamp }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-
+          echo "DOCKER_TAG: ${{ env.DOCKER_TAG }}"
+          echo "SCOPE_NAME  ${{ env.SCOPE_NAME }}"
       - name: Build the Docker Image and Code
         id: docker_build
         continue-on-error: true
         uses: docker/build-push-action@v3
         with:
           push: false
-          tags: ${{ steps.vars.outputs.docker_tag }}
+          tags: ${{ env.DOCKER_TAG }}
           context: .
           file: ./ci/ubuntu20.04-gcc11-x64.dockerfile
-          cache-from: type=local,src=${{ env.CACHE_FROM }}
-          cache-to: type=local,dest=${{ env.CACHE_TO }},mode=max
+          cache-from: type=gha,scope=${{ env.SCOPE_NAME }}
+          cache-to: type=gha,mode=max,scope=${{ env.SCOPE_NAME }}
           build-args: |
             NimbleSM_ENABLE_MPI=${{ matrix.mpi.value }}
             NimbleSM_ENABLE_KOKKOS=${{ matrix.kokkos.value }}
@@ -85,15 +72,8 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: m${{ matrix.mpi.value }}-k${{ matrix.kokkos.value }}-t${{ matrix.trilinos.value }}-a${{ matrix.arborx.value }}-LastTestLogs
+          name: NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}-LastTestLogs
           path: ${{ env.OUTPUT_DIR }}
-      # This helps prevent the cache from growing...
-      # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
-      - name: Move Cache
-        if: always() # Cache the partial image even if building it fails
-        run: |
-          rm -rf ${{ env.CACHE_FROM }}
-          mv ${{ env.CACHE_TO }} ${{ env.CACHE_FROM }}
       - name: Determine Job Failure or Success
         run: |
           echo "Success Flag with 0 pass and 1 fail:"
