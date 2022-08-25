@@ -488,8 +488,9 @@ variational_J2_update(
     eqps += delta_eqps;
   }
   auto const Ee_correction = delta_eqps * Np;
-  auto const dev_sigma     = 1.0 / J * p3a::transpose(p3a::inverse(Fe_tr)) * (dev_M_tr - 2.0 * G * Ee_correction) * p3a::transpose(Fe_tr);
-  sigma = dev_sigma + p * Tensor(1, 0, 0, 0, 1, 0, 0, 0, 1);
+  auto const sigma_dev     = 1.0 / J * p3a::transpose(p3a::inverse(Fe_tr)) * (dev_M_tr - 2.0 * G * Ee_correction) * p3a::transpose(Fe_tr);
+  auto const sigma_vol     = p * Tensor(1, 0, 0, 0, 1, 0, 0, 0, 1);
+  sigma = sigma_dev + sigma_vol;
 }
 
 void
@@ -548,29 +549,30 @@ J2PlasticityMaterial::GetStress(
   bool          is_output_step)
 {
   auto const num_ivs = NumStateVariables();
-  auto const sq_dim = dim_ * dim_;
+  auto const defgrad_dim = dim_ * dim_;
+  auto const sigma_dim = 2 * dim_;
   for (auto point = 0; point < num_pts; ++point) {
     Tensor F(
-      deformation_gradient_np1[sq_dim * point + 0],
-      deformation_gradient_np1[sq_dim * point + 3],
-      deformation_gradient_np1[sq_dim * point + 8],
-      deformation_gradient_np1[sq_dim * point + 6],
-      deformation_gradient_np1[sq_dim * point + 1],
-      deformation_gradient_np1[sq_dim * point + 4],
-      deformation_gradient_np1[sq_dim * point + 5],
-      deformation_gradient_np1[sq_dim * point + 7],
-      deformation_gradient_np1[sq_dim * point + 2]
+      deformation_gradient_np1[defgrad_dim * point + K_F_XX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_XY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_XZ],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YZ],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZZ]
     );
     Tensor Fp(
-      state_data_n[num_ivs * point + 0],
-      state_data_n[num_ivs * point + 3],
-      state_data_n[num_ivs * point + 8],
-      state_data_n[num_ivs * point + 6],
-      state_data_n[num_ivs * point + 1],
-      state_data_n[num_ivs * point + 4],
-      state_data_n[num_ivs * point + 5],
-      state_data_n[num_ivs * point + 7],
-      state_data_n[num_ivs * point + 2]
+      state_data_n[num_ivs * point + K_F_XX],
+      state_data_n[num_ivs * point + K_F_XY],
+      state_data_n[num_ivs * point + K_F_XZ],
+      state_data_n[num_ivs * point + K_F_YX],
+      state_data_n[num_ivs * point + K_F_YY],
+      state_data_n[num_ivs * point + K_F_YZ],
+      state_data_n[num_ivs * point + K_F_ZX],
+      state_data_n[num_ivs * point + K_F_ZY],
+      state_data_n[num_ivs * point + K_F_ZZ]
     );
 
     double eqps = state_data_n[num_ivs * point + 9];
@@ -581,25 +583,22 @@ J2PlasticityMaterial::GetStress(
 
     variational_J2_update(props_, dt, F, Fp, sigma, eqps);
 
-    stress_np1[sq_dim * point + 0] = sigma(0, 0);
-    stress_np1[sq_dim * point + 3] = sigma(0, 1);
-    stress_np1[sq_dim * point + 8] = sigma(0, 2);
-    stress_np1[sq_dim * point + 6] = sigma(1, 0);
-    stress_np1[sq_dim * point + 1] = sigma(1, 1);
-    stress_np1[sq_dim * point + 4] = sigma(1, 2);
-    stress_np1[sq_dim * point + 5] = sigma(2, 0);
-    stress_np1[sq_dim * point + 7] = sigma(2, 1);
-    stress_np1[sq_dim * point + 2] = sigma(2, 2);
+    stress_np1[sigma_dim * point + K_S_XX] = sigma(0, 0);
+    stress_np1[sigma_dim * point + K_S_YY] = sigma(1, 1);
+    stress_np1[sigma_dim * point + K_S_ZZ] = sigma(2, 2);
+    stress_np1[sigma_dim * point + K_S_XY] = sigma(0, 1);
+    stress_np1[sigma_dim * point + K_S_YZ] = sigma(1, 2);
+    stress_np1[sigma_dim * point + K_S_ZX] = sigma(2, 0);
 
-    state_data_np1[num_ivs * point + 0] = Fp(0, 0);
-    state_data_np1[num_ivs * point + 3] = Fp(0, 1);
-    state_data_np1[num_ivs * point + 8] = Fp(0, 2);
-    state_data_np1[num_ivs * point + 6] = Fp(1, 0);
-    state_data_np1[num_ivs * point + 1] = Fp(1, 1);
-    state_data_np1[num_ivs * point + 4] = Fp(1, 2);
-    state_data_np1[num_ivs * point + 5] = Fp(2, 0);
-    state_data_np1[num_ivs * point + 7] = Fp(2, 1);
-    state_data_np1[num_ivs * point + 2] = Fp(2, 2);
+    state_data_np1[num_ivs * point + K_F_XX] = Fp(0, 0);
+    state_data_np1[num_ivs * point + K_F_XY] = Fp(0, 1);
+    state_data_np1[num_ivs * point + K_F_XZ] = Fp(0, 2);
+    state_data_np1[num_ivs * point + K_F_YX] = Fp(1, 0);
+    state_data_np1[num_ivs * point + K_F_YY] = Fp(1, 1);
+    state_data_np1[num_ivs * point + K_F_YZ] = Fp(1, 2);
+    state_data_np1[num_ivs * point + K_F_ZX] = Fp(2, 0);
+    state_data_np1[num_ivs * point + K_F_ZY] = Fp(2, 1);
+    state_data_np1[num_ivs * point + K_F_ZZ] = Fp(2, 2);
 
     state_data_np1[num_ivs * point + 9] = eqps;
   }
