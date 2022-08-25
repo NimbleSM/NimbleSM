@@ -1,0 +1,12 @@
+genesis input file:               cube.g
+exodus output file:               cube.e
+final time:                       1.0e-00
+number of load steps:             10000
+output frequency:                 1000
+output fields:                    displacement velocity deformation_gradient ipt01_deformation_gradient ipt02_deformation_gradient ipt03_deformation_gradient ipt04_deformation_gradient ipt05_deformation_gradient ipt06_deformation_gradient ipt07_deformation_gradient ipt08_deformation_gradient stress ipt01_stress ipt02_stress ipt03_stress ipt04_stress ipt05_stress ipt06_stress ipt07_stress ipt08_stress equivalent_plastic_strain
+material parameters:              material_1 j2-plasticity elastic_modulus 1.0e+09 poissons_ratio 0.0 density 1000 yield_stress 1.0e+06 hardening_exponent 0 reference_plastic_strain 0.01 reference_viscoplastic_stress 1.0e+06 rate_dependence_exponent 0 reference_plastic_strain_rate 1e+04
+element block:                    block_1 material_1
+boundary condition:               prescribed_velocity nodelist_1 x 0.0
+boundary condition:               prescribed_velocity nodelist_3 y 0.0
+boundary condition:               prescribed_velocity nodelist_5 z 0.0
+boundary condition:               prescribed_velocity nodelist_6 z 1.0
