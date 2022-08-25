@@ -505,11 +505,6 @@ J2PlasticityMaterial::register_supported_material_parameters(MaterialFactoryBase
   factory.add_valid_double_parameter_name("reference_viscoplastic_stress");
   factory.add_valid_double_parameter_name("rate_dependence_exponent");
   factory.add_valid_double_parameter_name("reference_plastic_strain_rate");
-  factory.add_valid_double_parameter_name("reference_temperature");
-  factory.add_valid_double_parameter_name("melting_temperature");
-  factory.add_valid_double_parameter_name("temperature_exponent");
-  factory.add_valid_double_parameter_name("specific_heat");
-  factory.add_valid_double_parameter_name("taylor_quinney_coefficient");
 }
 
 J2PlasticityMaterial::J2PlasticityMaterial(MaterialParameters const& material_parameters)
@@ -524,11 +519,6 @@ J2PlasticityMaterial::J2PlasticityMaterial(MaterialParameters const& material_pa
   props_.Svis0 = material_parameters.GetParameterValue("reference_viscoplastic_stress");
   props_.m = material_parameters.GetParameterValue("rate_dependence_exponent");
   props_.eps_dot0 = material_parameters.GetParameterValue("reference_plastic_strain_rate");
-  props_.Tref = material_parameters.GetParameterValue("reference_temperature");
-  props_.Tmelt = material_parameters.GetParameterValue("melting_temperature");
-  props_.M = material_parameters.GetParameterValue("temperature_exponent");
-  props_.Cp = material_parameters.GetParameterValue("specific_heat");
-  props_.beta = material_parameters.GetParameterValue("taylor_quinney_coefficient");
   props_.kappa = props_.E / (1.0 - 2.0 * props_.nu) / 3.0;
   props_.mu  = props_.E / (1.0 + props_.nu) / 2.0;
 }
@@ -549,6 +539,7 @@ J2PlasticityMaterial::GetStress(
   bool          is_output_step)
 {
   auto const num_ivs = NumStateVariables();
+  auto const EQPS_OFFSET = num_ivs - 1;
   auto const defgrad_dim = dim_ * dim_;
   auto const sigma_dim = 2 * dim_;
   for (auto point = 0; point < num_pts; ++point) {
@@ -575,7 +566,7 @@ J2PlasticityMaterial::GetStress(
       state_data_n[num_ivs * point + K_F_ZZ]
     );
 
-    double eqps = state_data_n[num_ivs * point + 9];
+    double eqps = state_data_n[num_ivs * point + EQPS_OFFSET];
 
     Tensor sigma(0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -600,13 +591,14 @@ J2PlasticityMaterial::GetStress(
     state_data_np1[num_ivs * point + K_F_ZY] = Fp(2, 1);
     state_data_np1[num_ivs * point + K_F_ZZ] = Fp(2, 2);
 
-    state_data_np1[num_ivs * point + 9] = eqps;
+    state_data_np1[num_ivs * point + EQPS_OFFSET] = eqps;
   }
 }
 
 void
 J2PlasticityMaterial::GetTangent(int num_pts, double* material_tangent) const
 {
+  NIMBLE_ABORT("Tangent for J2 plasticity not implemented.");
 }
 
 #ifdef NIMBLE_HAVE_UQ

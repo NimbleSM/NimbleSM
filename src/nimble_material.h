@@ -538,6 +538,8 @@ namespace j2 {
 
 struct Properties
 {
+  double rho0{0.0};
+
   double E{0.0};
   double nu{0.0};
 
@@ -551,25 +553,7 @@ struct Properties
   double Svis0{0.0};
   double m{0.0};
   double eps_dot0{0.0};
-
-  double Cp{0.0};
-  double beta{0.9};
-  double rho0{0.0};
-
-  double Tref{293.15};
-  double Tmelt{293.15};
-  double M{0.0};
 };
-
-inline double
-temperature_multiplier(Properties const& props, double const T)
-{
-  double const& Tref  = props.Tref;
-  double const& Tmelt = props.Tmelt;
-  double const& M     = props.M;
-  if (M <= 0.0) return 1.0;
-  return 1.0 - std::pow((T - Tref) / (Tmelt - Tref), M);
-}
 
 inline double
 HardeningPotential(Properties const props, double const eqps)
