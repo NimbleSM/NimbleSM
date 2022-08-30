@@ -73,7 +73,8 @@ class BvhContactManager : public ParallelContactManager
   BvhContactManager(
       std::shared_ptr<ContactInterface> interface,
       nimble::DataManager&              data_manager,
-      std::size_t                       _overdecomposition);
+      std::size_t                       _overdecomposition,
+      std::string                       splitting_alg);
 
   BvhContactManager(const BvhContactManager&) = delete;
   BvhContactManager(BvhContactManager&&)      = delete;
