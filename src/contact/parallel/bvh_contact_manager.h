@@ -45,6 +45,8 @@
 #define NIMBLE_BVH_CONTACT_MANAGER_H
 
 #include <bvh/collision_world.hpp>
+#include <bvh/types.hpp>
+
 #include <memory>
 
 #include "parallel_contact_manager.h"
@@ -94,6 +96,8 @@ class BvhContactManager : public ParallelContactManager
   bvh::collision_object* m_nodes;
   bvh::collision_object* m_faces;
 
+  bvh::split_algorithm m_split_alg = bvh::geom_axis;
+  
   std::vector<NarrowphaseResult> m_last_results;
 };
 }  // namespace nimble
