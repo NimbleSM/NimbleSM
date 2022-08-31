@@ -403,6 +403,12 @@ class Parser
   {
     return contact_dicing_;
   }
+
+  std::string
+  ContactSplitting() const noexcept
+  {
+    return contact_splitting_;
+  }
 #endif
 
 #ifdef NIMBLE_HAVE_UQ
@@ -457,6 +463,7 @@ class Parser
 
 #ifdef NIMBLE_HAVE_BVH
   int contact_dicing_ = 1;
+  std::string contact_splitting_ = "geom_axis";
 #endif
 
 #ifdef NIMBLE_HAVE_UQ

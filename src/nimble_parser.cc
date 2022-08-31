@@ -333,6 +333,15 @@ Parser::ParseKeyValue(const std::string& key, const std::string& value)
 #else
     std::cout << " **** Parser::ReadFile(), skipping key " + key + "\n";
 #endif
+  } else if (key == "contact splitting") {
+    size_t      space_pos     = value.find(" ");
+    std::string split_key     = value.substr(0, space_pos);
+    std::string split_alg     = value.substr(space_pos + 1, value.size());
+#ifdef NIMBLE_HAVE_BVH
+    contact_splitting_ = split_alg;
+#else
+    std::cout << " **** Parser::ReadFile(), skipping key " + key + "\n";
+#endif
   }
 #ifdef NIMBLE_HAVE_UQ
   else if (key == "uq parameters") {

@@ -253,6 +253,18 @@ class Material
       bool          is_output_step) = 0;
 
 #ifdef NIMBLE_HAVE_KOKKOS
+  struct DeviceElemState
+  {
+    //-- Variable to store one scalar per integration point
+    nimble_kokkos::DeviceScalarIntPtSingleEntryView scalar;
+    //-- Variable to store one vector (dim 3) per integration point
+    nimble_kokkos::DeviceVectorIntPtSingleEntryView vec3D;
+    //-- Variable to store one symmetric tensor (6 entries) per integration point
+    nimble_kokkos::DeviceSymTensorIntPtSingleEntryView sym_tensor;
+    //-- Variable to store one full tensor (9 entries) per integration point
+    nimble_kokkos::DeviceFullTensorIntPtSingleEntryView full_tensor;
+  };
+
   NIMBLE_FUNCTION
   virtual void
   GetStress(
@@ -261,7 +273,9 @@ class Material
       const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& deformation_gradient_n,
       const nimble_kokkos::DeviceFullTensorIntPtSingleEntryView& deformation_gradient_np1,
       const nimble_kokkos::DeviceSymTensorIntPtSingleEntryView&  stress_n,
-      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView         stress_np1) const
+      nimble_kokkos::DeviceSymTensorIntPtSingleEntryView         stress_np1,
+      const nimble::Material::DeviceElemState&                   state_n,
+      nimble::Material::DeviceElemState&                         state_np1) const
   {
     const int                        def_g_len = 9, stress_len = 6;
     nimble::Viewify<1, const double> def_g_n(deformation_gradient_n.data(), def_g_len);

@@ -1,11 +1,11 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 from __future__ import print_function
 import sys
 import os
 import string
 import glob
 import argparse as ap
-from subprocess import Popen, PIPE
+from subprocess import run
 
 def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openmpi=False):
 
@@ -66,14 +66,12 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = Popen(command, stdout=logfile, stderr=PIPE, text=True)
-    err = p.communicate()[1]
+    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
     return_code = p.returncode
     if return_code != 0:
-        print(err, file=sys.stderr)
-        logfile.write(err)
         result = return_code
-
+    logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
+    logfile.flush()
     # run epu
     if epu_required:
         command = ["epu", \
@@ -83,11 +81,12 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    epu_output_extension, \
                    nimble_output_name]
         print("EPU COMMAND", command)
-        p = Popen(command, stdout=logfile, stderr=logfile)
-        return_code = p.wait()
+        p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+        return_code = p.returncode
         if return_code != 0:
             result = return_code
-
+    logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
+    logfile.flush()
     # run exodiff
     command = ["exodiff", \
                "-stat", \
@@ -95,12 +94,13 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".exodiff", \
                base_name+".gold.e", \
                epu_exodus_output_name]
-    p = Popen(command, stdout=logfile, stderr=logfile)
-    return_code = p.wait()
+    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+    return_code = p.returncode
     if return_code != 0:
         result = return_code
 
     logfile.write("FINAL TEST RESULT " + str(result) + "\n\n")
+    logfile.flush()
 
     logfile.close()
 

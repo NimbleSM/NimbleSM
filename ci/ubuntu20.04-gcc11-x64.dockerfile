@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as build_dependencies-stage
 
 ARG NimbleSM_ENABLE_MPI
 ARG NimbleSM_ENABLE_KOKKOS
@@ -10,6 +10,7 @@ RUN apt-get update \
   && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
       git \
       python3 \
+      python3-pip \
       python3-distutils \
       xz-utils \
       bzip2 \
@@ -45,7 +46,7 @@ RUN apt-get update \
      m4 \
      perl \
   && rm -rf /var/lib/apt/lists/*
-
+RUN pip install clingo
 # Now we install spack and find compilers/externals
 RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
@@ -58,17 +59,28 @@ RUN if [ "$NimbleSM_ENABLE_MPI" = "ON" ]; then \
     else \
         mv /opt/spack-environment/spack-serial.yaml /opt/spack-environment/spack.yaml && rm /opt/spack-environment/spack-mpi.yaml; \
     fi
+# create pre_nimble environment from spack.yaml and concretize
 RUN cd /opt/spack-environment \
-  && . /opt/spack/share/spack/setup-env.sh \
-  && spack env activate . \
-  && spack install --fail-fast \
-  && spack gc -y
+  && . /opt/spack/share/spack/setup-env.sh && spack env create pre_nimble /opt/spack-environment/spack.yaml\
+  && spack env activate pre_nimble && spack concretize && spack env deactivate
+# make nimble env from lock
+RUN . /opt/spack/share/spack/setup-env.sh && spack env create nimble /opt/spack/var/spack/environments/pre_nimble/spack.lock
+# activate nimble env and install
+RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack install --fail-fast && spack gc -y
+
+
+FROM build_dependencies-stage as build_nimble-stage
 
 # Add current source dir into the image
-ADD . /opt/src/NimbleSM
+COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # Build using the spack environment we created
 RUN bash /opt/src/NimbleSM/ci/build.sh
 
+FROM build_nimble-stage as test-stage
+
 RUN bash /opt/src/NimbleSM/ci/test.sh
+
+FROM scratch as export-stage
+COPY --from=test-stage /tmp/artifacts /tmp/artifacts
