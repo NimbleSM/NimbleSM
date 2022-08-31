@@ -162,6 +162,7 @@ struct NarrowphaseFunc
   bvh::narrowphase_result_pair
   operator()(const bvh::broadphase_collision<ContactEntity>& _a, const bvh::broadphase_collision<ContactEntity>& _b)
   {
+    contact_manager->startTimer("BVH::FinishIteration::ArborX::Def");
     auto res   = bvh::narrowphase_result_pair();
     res.a      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
@@ -173,6 +174,7 @@ struct NarrowphaseFunc
     //
     using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
+    contact_manager->stopTimer("BVH::FinishIteration::ArborX::Def");
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     //
@@ -183,13 +185,17 @@ struct NarrowphaseFunc
     //
     // ArborX::Experimental::TraversalPolicy policy;
     //
+    contact_manager->startTimer("BVH::FinishIteration::ArborX::Query");
     a_bvh.query(
         nimble_kokkos::kokkos_host_execution_space{},
         view_b,
         details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
+    contact_manager->stopTimer("BVH::FinishIteration::ArborX::Query");
     //
+    contact_manager->startTimer("BVH::FinishIteration::ArborX::SetData");
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
+    contact_manager->stopTimer("BVH::FinishIteration::ArborX::SetData");
 
     /*
     static int iter_count = 0;
@@ -211,13 +217,18 @@ struct NarrowphaseFunc
 BvhContactManager::BvhContactManager(
     std::shared_ptr<ContactInterface> interface,
     nimble::DataManager&              data_manager,
-    std::size_t                       _overdecomposition)
+    std::size_t                       _overdecomposition,
+    std::string                       splitting_alg)
     : ParallelContactManager(interface, data_manager),
       m_world{_overdecomposition},
       m_nodes{&m_world.create_collision_object()},
       m_faces{&m_world.create_collision_object()}
 {
   m_world.set_narrowphase_functor<ContactEntity>(NarrowphaseFunc{this});
+  if (splitting_alg == "geom_axis")
+    m_split_alg = bvh::geom_axis;
+  else
+    m_split_alg = bvh::ml_geom_axis;
 }
 
 void
@@ -250,9 +261,17 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   // Update collision objects, this will build the trees
   ComputeBoundingVolumes();
 
-  m_nodes->set_entity_data(contact_nodes_);
-  m_faces->set_entity_data(contact_faces_);
+  this->startTimer("BVH::SetEntity::Nodes");
+  m_nodes->set_entity_data(contact_nodes_, m_split_alg);
+  this->stopTimer("BVH::SetEntity::Nodes");
 
+  this->startTimer("BVH::SetEntity::Faces");
+  m_faces->set_entity_data(contact_faces_, m_split_alg);
+  this->stopTimer("BVH::SetEntity::Faces");
+
+  m_nodes->init_broadphase();
+  m_faces->init_broadphase();
+  
   m_faces->broadphase(*m_nodes);
 
   m_last_results.clear();
@@ -262,10 +281,6 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   m_world.finish_iteration();
   total_search_time.Stop();
 
-  // event = vt::theTrace()->registerUserEventColl(“name”)
-  // tr = vt::trace::TraceScopedNote scope{“my node”, event};
-  // theTrace()->addUserEventBracketed(event, start, stop)
-  // theTrace()->addUserBracketedNote(start, stop, “my node”, event)
   total_enforcement_time.Start();
   for (auto& f : force_) f = 0.0;
 
