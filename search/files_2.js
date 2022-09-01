@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['kokkos_5fcontact_5fmanager_2ecc_0',['kokkos_contact_manager.cc',['../kokkos__contact__manager_8cc.html',1,'']]],
-  ['kokkos_5fcontact_5fmanager_2eh_1',['kokkos_contact_manager.h',['../kokkos__contact__manager_8h.html',1,'']]]
+  ['explicit_5ftime_5fintegrator_2ecc_0',['explicit_time_integrator.cc',['../explicit__time__integrator_8cc.html',1,'']]],
+  ['explicit_5ftime_5fintegrator_2eh_1',['explicit_time_integrator.h',['../explicit__time__integrator_8h.html',1,'']]]
 ];

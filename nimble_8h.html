@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.5"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>NimbleSM: src/nimble_main.h File Reference</title>
+<title>NimbleSM: src/nimble.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -76,39 +76,23 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">nimble_main.h File Reference</div></div>
+<a href="#namespaces">Namespaces</a>  </div>
+  <div class="headertitle"><div class="title">nimble.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;memory&gt;</code><br />
-<code>#include &lt;string&gt;</code><br />
-<code>#include &quot;<a class="el" href="nimble__defs_8h_source.html">nimble_defs.h</a>&quot;</code><br />
 </div>
-<p><a href="nimble__main_8h_source.html">Go to the source code of this file.</a></p>
+<p><a href="nimble_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_nimble_application.html">nimble::NimbleApplication</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacenimble"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html">nimble</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:a0429015785e1a8ac533dd63b7ce5f239"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">nimble::parseCommandLine</a> (int argc, char **argv, <a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a> &amp;myFlags)</td></tr>
-<tr class="memdesc:a0429015785e1a8ac533dd63b7ce5f239"><td class="mdescLeft">&#160;</td><td class="mdescRight">Routine to parse command-line input parameters.  <a href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">More...</a><br /></td></tr>
-<tr class="separator:a0429015785e1a8ac533dd63b7ce5f239"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a371180ad7cc5062737af671d2b0f04bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a371180ad7cc5062737af671d2b0f04bf">nimble::NimbleInitializeAndGetInput</a> (int argc, char **argv, <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser)</td></tr>
-<tr class="memdesc:a371180ad7cc5062737af671d2b0f04bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialization routine that parses the input parameters.  <a href="namespacenimble.html#a371180ad7cc5062737af671d2b0f04bf">More...</a><br /></td></tr>
-<tr class="separator:a371180ad7cc5062737af671d2b0f04bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf35040a6aa9213856cba9d0e760c0ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#abf35040a6aa9213856cba9d0e760c0ca">nimble::NimbleMain</a> (const std::shared_ptr&lt; <a class="el" href="classnimble_1_1_material_factory_base.html">nimble::MaterialFactoryBase</a> &gt; &amp;material_factory_base, std::shared_ptr&lt; <a class="el" href="classnimble_1_1_contact_interface.html">nimble::ContactInterface</a> &gt; contact_interface, const std::shared_ptr&lt; <a class="el" href="classnimble_1_1_block_material_interface_factory_base.html">nimble::BlockMaterialInterfaceFactoryBase</a> &gt; &amp;block_material, const <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser)</td></tr>
-<tr class="separator:abf35040a6aa9213856cba9d0e760c0ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac70d8d5c320e23f5a3e6ee5451b8ae60"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#ac70d8d5c320e23f5a3e6ee5451b8ae60">nimble::NimbleFinalize</a> (const <a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a> &amp;env_flags)</td></tr>
-<tr class="separator:ac70d8d5c320e23f5a3e6ee5451b8ae60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->

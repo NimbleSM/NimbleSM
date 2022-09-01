@@ -14,7 +14,7 @@ var searchData=
   ['exodusfilename_11',['ExodusFileName',['../classnimble_1_1_parser.html#a26b9a918b21f050ecce51051165b6d6c',1,'nimble::Parser']]],
   ['exodusoutput_12',['ExodusOutput',['../classnimble_1_1_exodus_output.html#a8761d406d96954f95114352184249100',1,'nimble::ExodusOutput']]],
   ['exodusoutputmanager_13',['ExodusOutputManager',['../classnimble__kokkos_1_1_exodus_output_manager.html#a76c7d96126f15137bf40d916cc2978aa',1,'nimble_kokkos::ExodusOutputManager']]],
-  ['explicittimeintegrator_14',['ExplicitTimeIntegrator',['../namespacenimble_1_1details.html#af82834a448cfbd0fa84f3d8996eb4642',1,'nimble::details']]],
+  ['explicittimeintegrator_14',['ExplicitTimeIntegrator',['../classnimble_1_1_explicit_time_integrator.html#a22e5c7713dacc3ea641612690b4a299c',1,'nimble::ExplicitTimeIntegrator']]],
   ['exportgeometryinto_15',['ExportGeometryInto',['../classnimble_1_1_contact_entity.html#a7d75951c6fe8623883ece6957ad8d013',1,'nimble::ContactEntity']]],
   ['extent_16',['extent',['../classnimble_1_1_view.html#a96cf42d6c8a4bba68d51cbcaf09998d4',1,'nimble::View']]]
 ];

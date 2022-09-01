@@ -38,6 +38,6 @@ var searchData=
   ['num_5fnodes_5fin_5fhex_35',['NUM_NODES_IN_HEX',['../classnimble__kokkos_1_1_field_base.html#a1371a8acadf5258abf1fc7e3b3255999',1,'nimble_kokkos::FieldBase']]],
   ['num_5fpoints_5fper_5felem_36',['num_points_per_elem',['../structnimble_1_1_block_data.html#ae7236ebdace16d6f3f9a7150229fef8b',1,'nimble::BlockData']]],
   ['num_5franks_37',['num_ranks',['../structnimble_1_1_timing_info.html#a06bd8338eaff1f359198066447c37ee9',1,'nimble::TimingInfo']]],
-  ['num_5franks_5f_38',['num_ranks_',['../classnimble_1_1_parser.html#a8c62048ba0a907d60d27d8b3216e01ee',1,'nimble::Parser']]],
+  ['num_5franks_5f_38',['num_ranks_',['../structnimble_1_1_nimble_application_1_1impl.html#a8d9ac9225643bb6cc3f25565fd29c3de',1,'nimble::NimbleApplication::impl::num_ranks_()'],['../classnimble_1_1_parser.html#a8c62048ba0a907d60d27d8b3216e01ee',1,'nimble::Parser::num_ranks_()']]],
   ['num_5fside_5fsets_5f_39',['num_side_sets_',['../classnimble_1_1_exodus_output.html#a0057de17de2eb65be5fb796be5251af8',1,'nimble::ExodusOutput']]]
 ];

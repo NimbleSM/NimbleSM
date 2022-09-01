@@ -75,67 +75,55 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">nimble_main.cc File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="nimble__main_8h_source.html">nimble_main.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble_8quanta_8stopwatch_8h_source.html">nimble.quanta.stopwatch.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__block__material__interface__factory__base_8h_source.html">nimble_block_material_interface_factory_base.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__boundary__condition__manager_8h_source.html">nimble_boundary_condition_manager.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__contact__interface_8h_source.html">nimble_contact_interface.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__contact__manager_8h_source.html">nimble_contact_manager.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__data__manager_8h_source.html">nimble_data_manager.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__genesis__mesh_8h_source.html">nimble_genesis_mesh.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__linear__solver_8h_source.html">nimble_linear_solver.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__material__factory_8h_source.html">nimble_material_factory.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__mesh__utils_8h_source.html">nimble_mesh_utils.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__model__data_8h_source.html">nimble_model_data.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__parser_8h_source.html">nimble_parser.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__profiling__timer_8h_source.html">nimble_profiling_timer.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__timing__utils_8h_source.html">nimble_timing_utils.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__utils_8h_source.html">nimble_utils.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__vector__communicator_8h_source.html">nimble_vector_communicator.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__version_8h_source.html">nimble_version.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="nimble__view_8h_source.html">nimble_view.h</a>&quot;</code><br />
-<code>#include &lt;cmath&gt;</code><br />
-<code>#include &lt;fstream&gt;</code><br />
-<code>#include &lt;iomanip&gt;</code><br />
-<code>#include &lt;iostream&gt;</code><br />
-<code>#include &lt;limits&gt;</code><br />
-<code>#include &lt;random&gt;</code><br />
-<code>#include &lt;sstream&gt;</code><br />
-<code>#include &quot;<a class="el" href="nimble__timer_8h_source.html">nimble_timer.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="nimble_8h_source.html">nimble.h</a>&quot;</code><br />
 </div><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:namespacenimble"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html">nimble</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacenimble_1_1details"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble_1_1details.html">nimble::details</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a0429015785e1a8ac533dd63b7ce5f239"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">nimble::parseCommandLine</a> (int argc, char **argv, <a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a> &amp;myFlags)</td></tr>
-<tr class="memdesc:a0429015785e1a8ac533dd63b7ce5f239"><td class="mdescLeft">&#160;</td><td class="mdescRight">Routine to parse command-line input parameters.  <a href="namespacenimble.html#a0429015785e1a8ac533dd63b7ce5f239">More...</a><br /></td></tr>
-<tr class="separator:a0429015785e1a8ac533dd63b7ce5f239"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af82834a448cfbd0fa84f3d8996eb4642"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble_1_1details.html#af82834a448cfbd0fa84f3d8996eb4642">nimble::details::ExplicitTimeIntegrator</a> (const <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser, <a class="el" href="classnimble_1_1_genesis_mesh.html">nimble::GenesisMesh</a> &amp;mesh, <a class="el" href="classnimble_1_1_data_manager.html">nimble::DataManager</a> &amp;data_manager, std::shared_ptr&lt; <a class="el" href="classnimble_1_1_contact_interface.html">nimble::ContactInterface</a> &gt; contact_interface)</td></tr>
-<tr class="separator:af82834a448cfbd0fa84f3d8996eb4642"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5be3e43712e9e458f7fede4159de9a8b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble_1_1details.html#a5be3e43712e9e458f7fede4159de9a8b">nimble::details::QuasistaticTimeIntegrator</a> (const <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser, <a class="el" href="classnimble_1_1_genesis_mesh.html">nimble::GenesisMesh</a> &amp;mesh, <a class="el" href="classnimble_1_1_data_manager.html">nimble::DataManager</a> &amp;data_manager)</td></tr>
-<tr class="separator:a5be3e43712e9e458f7fede4159de9a8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65cec513bbd3023a28dd5dc4c8d9ba48"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble_1_1details.html#a65cec513bbd3023a28dd5dc4c8d9ba48">nimble::details::ComputeQuasistaticResidual</a> (<a class="el" href="classnimble_1_1_genesis_mesh.html">nimble::GenesisMesh</a> &amp;mesh, <a class="el" href="classnimble_1_1_data_manager.html">nimble::DataManager</a> &amp;data_manager, <a class="el" href="classnimble_1_1_boundary_condition_manager.html">nimble::BoundaryConditionManager</a> &amp;bc, int linear_system_num_unknowns, std::vector&lt; int &gt; &amp;linear_system_global_node_ids, double time_previous, double time_current, const <a class="el" href="classnimble_1_1_viewify.html">nimble::Viewify</a>&lt; 2 &gt; &amp;displacement, <a class="el" href="classnimble_1_1_viewify.html">nimble::Viewify</a>&lt; 2 &gt; &amp;internal_force, double *residual_vector, bool is_output_step)</td></tr>
-<tr class="separator:a65cec513bbd3023a28dd5dc4c8d9ba48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d81a4fc4d935474597869ba36925635"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble_1_1details.html#a6d81a4fc4d935474597869ba36925635">nimble::details::parseCommandLine</a> (int argc, char **argv, <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser)</td></tr>
-<tr class="separator:a6d81a4fc4d935474597869ba36925635"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a371180ad7cc5062737af671d2b0f04bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#a371180ad7cc5062737af671d2b0f04bf">nimble::NimbleInitializeAndGetInput</a> (int argc, char **argv, <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser)</td></tr>
-<tr class="memdesc:a371180ad7cc5062737af671d2b0f04bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialization routine that parses the input parameters.  <a href="namespacenimble.html#a371180ad7cc5062737af671d2b0f04bf">More...</a><br /></td></tr>
-<tr class="separator:a371180ad7cc5062737af671d2b0f04bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf35040a6aa9213856cba9d0e760c0ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#abf35040a6aa9213856cba9d0e760c0ca">nimble::NimbleMain</a> (const std::shared_ptr&lt; <a class="el" href="classnimble_1_1_material_factory_base.html">nimble::MaterialFactoryBase</a> &gt; &amp;material_factory_base, std::shared_ptr&lt; <a class="el" href="classnimble_1_1_contact_interface.html">nimble::ContactInterface</a> &gt; contact_interface, const std::shared_ptr&lt; <a class="el" href="classnimble_1_1_block_material_interface_factory_base.html">nimble::BlockMaterialInterfaceFactoryBase</a> &gt; &amp;block_material, const <a class="el" href="classnimble_1_1_parser.html">nimble::Parser</a> &amp;parser)</td></tr>
-<tr class="separator:abf35040a6aa9213856cba9d0e760c0ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac70d8d5c320e23f5a3e6ee5451b8ae60"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenimble.html#ac70d8d5c320e23f5a3e6ee5451b8ae60">nimble::NimbleFinalize</a> (const <a class="el" href="structnimble_1_1_environment_flags.html">nimble::EnvironmentFlags</a> &amp;env_flags)</td></tr>
-<tr class="separator:ac70d8d5c320e23f5a3e6ee5451b8ae60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nimble__main_8cc.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (int argc, char **argv)</td></tr>
+<tr class="separator:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a3c04138a5bfe5d72780bb7e82a18e627" name="a3c04138a5bfe5d72780bb7e82a18e627"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c04138a5bfe5d72780bb7e82a18e627">&#9670;&#160;</a></span>main()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int main </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="fragment"><div class="line"><span class="lineno">   48</span>{</div>
+<div class="line"><span class="lineno">   49</span>  <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespacenimble.html">nimble</a>;</div>
+<div class="line"><span class="lineno">   50</span> </div>
+<div class="line"><span class="lineno">   51</span>  <a class="code hl_class" href="classnimble_1_1_nimble_application.html">NimbleApplication</a> app;</div>
+<div class="line"><span class="lineno">   52</span>  <span class="keywordflow">return</span> app.<a class="code hl_function" href="classnimble_1_1_nimble_application.html#a85c3baa3d1f44d836712cc4193079c40">Run</a>(argc, argv);</div>
+<div class="line"><span class="lineno">   53</span>}</div>
+<div class="ttc" id="aclassnimble_1_1_nimble_application_html"><div class="ttname"><a href="classnimble_1_1_nimble_application.html">nimble::NimbleApplication</a></div><div class="ttdef"><b>Definition:</b> nimble.h:60</div></div>
+<div class="ttc" id="aclassnimble_1_1_nimble_application_html_a85c3baa3d1f44d836712cc4193079c40"><div class="ttname"><a href="classnimble_1_1_nimble_application.html#a85c3baa3d1f44d836712cc4193079c40">nimble::NimbleApplication::Run</a></div><div class="ttdeci">int Run(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> nimble.cc:106</div></div>
+<div class="ttc" id="anamespacenimble_html"><div class="ttname"><a href="namespacenimble.html">nimble</a></div><div class="ttdef"><b>Definition:</b> kokkos_contact_manager.h:49</div></div>
+</div><!-- fragment -->
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

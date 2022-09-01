@@ -1,9 +1,9 @@
 var searchData=
 [
   ['s_0',['s',['../structnimble_1_1_c_g_scratch_space.html#afa07a9ac8948412c9254be753f3e109e',1,'nimble::CGScratchSpace']]],
-  ['scalar_1',['Scalar',['../nimble__view_8h.html#a4f60f902380ca276516182ecfe0dc3d0af60357a8d17e45793298323f1b372a74',1,'nimble_view.h']]],
-  ['scalar_2',['scalar',['../nimble__kokkos__block__material__interface_8cc.html#ab47d616476d086bfc6d8ca48862aa861',1,'nimble_kokkos_block_material_interface.cc']]],
-  ['scalar_3',['SCALAR',['../namespacenimble.html#a66cdfe6c32a387ab01fc3c74e154877ba529d7d4e572f54176684087260d18e0f',1,'nimble']]],
+  ['scalar_1',['SCALAR',['../namespacenimble.html#a66cdfe6c32a387ab01fc3c74e154877ba529d7d4e572f54176684087260d18e0f',1,'nimble']]],
+  ['scalar_2',['Scalar',['../nimble__view_8h.html#a4f60f902380ca276516182ecfe0dc3d0af60357a8d17e45793298323f1b372a74',1,'nimble_view.h']]],
+  ['scalar_3',['scalar',['../nimble__kokkos__block__material__interface_8cc.html#ab47d616476d086bfc6d8ca48862aa861',1,'nimble_kokkos_block_material_interface.cc']]],
   ['scaleparameters_4',['ScaleParameters',['../classnimble_1_1_uq_model.html#abfaddf8ea38b324cf533092467358268',1,'nimble::UqModel']]],
   ['scatter_5',['scatter',['../classnimble_1_1mpicontext.html#a73814b1a2bb354ffb0d8e1c48d7cdffa',1,'nimble::mpicontext']]],
   ['scatterforcetocontactmanagerforcevector_6',['ScatterForceToContactManagerForceVector',['../classnimble_1_1_contact_entity.html#ac87c024a3d505efad7bfc3635ef93a70',1,'nimble::ContactEntity']]],
