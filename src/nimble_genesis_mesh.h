@@ -215,6 +215,24 @@ class GenesisMesh
     return &node_z_[0];
   }
 
+  double*
+  GetCoordinatesX()
+  {
+    return &node_x_[0];
+  }
+
+  double*
+  GetCoordinatesY()
+  {
+    return &node_y_[0];
+  }
+
+  double*
+  GetCoordinatesZ()
+  {
+    return &node_z_[0];
+  }
+
   const int*
   GetConnectivity(int block_id) const
   {
