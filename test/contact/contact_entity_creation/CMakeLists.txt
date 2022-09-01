@@ -3,7 +3,7 @@ set(prefix "contact_entity_creation")
 
 set(inputfile "${prefix}.in")
 
-if (NIMBLE_HAVE_KOKKOS)
+if (NimbleSM_ENABLE_KOKKOS)
 
   foreach (ext "in" "g" "gold.e" "exodiff")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${prefix}.${ext}
