@@ -162,7 +162,6 @@ struct NarrowphaseFunc
   bvh::narrowphase_result_pair
   operator()(const bvh::broadphase_collision<ContactEntity>& _a, const bvh::broadphase_collision<ContactEntity>& _b)
   {
-    contact_manager->startTimer("BVH::FinishIteration::ArborX::Def");
     auto res   = bvh::narrowphase_result_pair();
     res.a      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
@@ -174,7 +173,6 @@ struct NarrowphaseFunc
     //
     using memory_space = nimble_kokkos::kokkos_host_mirror_memory_space;
     ArborX::BVH<memory_space> a_bvh{nimble_kokkos::kokkos_host_execution_space{}, view_a};
-    contact_manager->stopTimer("BVH::FinishIteration::ArborX::Def");
     //
     std::vector<NarrowphaseResult> resa_vec, resb_vec;
     //
@@ -185,28 +183,21 @@ struct NarrowphaseFunc
     //
     // ArborX::Experimental::TraversalPolicy policy;
     //
-    contact_manager->startTimer("BVH::FinishIteration::ArborX::Query");
     a_bvh.query(
         nimble_kokkos::kokkos_host_execution_space{},
         view_b,
         details::ArborXCallback{view_a, view_b, contact_manager->GetPenaltyForceParam(), resa_vec, resb_vec});
-    contact_manager->stopTimer("BVH::FinishIteration::ArborX::Query");
     //
-    contact_manager->startTimer("BVH::FinishIteration::ArborX::SetData");
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
-    contact_manager->stopTimer("BVH::FinishIteration::ArborX::SetData");
-
     /*
     static int iter_count = 0;
-
     if ( resa.size() > 0 )
       std::cout << iter_count << ". resa = " << resa.size() << "\n";
     if ( resb.size() > 0 )
       std::cout << iter_count << ". resb = " << resb.size() << "\n";
     ++iter_count;
      */
-
     return {resa, resb};
   }
 #endif
