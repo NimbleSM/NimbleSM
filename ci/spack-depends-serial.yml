@@ -1,6 +1,6 @@
 spack:
   definitions:
-    - arch: [haswell]
+    - arch: [x86_64_v3]
     - compilers: [gcc@11.1.0]
     - packages: []
     - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"

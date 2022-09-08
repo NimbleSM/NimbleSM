@@ -1,6 +1,6 @@
 spack:
   definitions:
-    - arch: [haswell]
+    - arch: [x86_64]
     - compilers: [gcc@11.1.0]
     - mpis:
         - mpich@3.4.2
