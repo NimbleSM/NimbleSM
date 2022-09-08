@@ -287,9 +287,7 @@ class Parser
   void
   SetToUseKokkos()
   {
-    if ((env_set_) && (!use_kokkos_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_kokkos_ = true;
-    env_set_    = true;
   }
 
   /// \brief Set that Tpetra is used for the simulation
@@ -299,9 +297,7 @@ class Parser
   void
   SetToUseTpetra()
   {
-    if ((env_set_) && (!use_tpetra_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_tpetra_ = true;
-    env_set_    = true;
   }
 
   /// \brief Set that UQ is used for the simulation
@@ -319,9 +315,7 @@ class Parser
   void
   SetToUseVT()
   {
-    if ((env_set_) && (!use_vt_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_vt_  = true;
-    env_set_ = true;
   }
 
   bool

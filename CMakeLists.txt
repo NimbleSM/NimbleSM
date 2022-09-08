@@ -90,7 +90,7 @@ endif()
 
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -269,6 +269,7 @@ endif()
 
 include_directories(src)
 
+add_subdirectory(tpl)
 add_subdirectory(src)
 add_subdirectory(test)
 
