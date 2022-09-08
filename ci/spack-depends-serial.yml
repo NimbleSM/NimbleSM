@@ -22,6 +22,7 @@ spack:
     - matrix:
         - [$packages]
         - [$%compilers]
+        - [$arch]
   concretizer:
     unify: true
   config:

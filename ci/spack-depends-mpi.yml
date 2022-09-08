@@ -25,13 +25,16 @@ spack:
     - matrix:
         - [$mpis]
         - [$%compilers]
+        - [$arch]
     - matrix:
         - [$core-packages]
         - [$%compilers]
+        - [$arch]
     - matrix:
         - [$packages]
         - [$^mpis]
         - [$%compilers]
+        - [$arch]
   concretizer:
     unify: true
   config:
