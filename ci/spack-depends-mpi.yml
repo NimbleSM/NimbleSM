@@ -1,6 +1,5 @@
 spack:
   definitions:
-    - arch: [x86_64]
     - compilers: [gcc@11.1.0]
     - mpis:
         - mpich@3.4.2
@@ -25,16 +24,16 @@ spack:
     - matrix:
         - [$mpis]
         - [$%compilers]
-        - [$arch]
+        - [arch=linux-ubuntu20.04-x86_64_v3]
     - matrix:
         - [$core-packages]
         - [$%compilers]
-        - [$arch]
+        - [arch=linux-ubuntu20.04-x86_64_v3]
     - matrix:
         - [$packages]
         - [$^mpis]
         - [$%compilers]
-        - [$arch]
+        - [arch=linux-ubuntu20.04-x86_64_v3]
   concretizer:
     unify: true
   config:
