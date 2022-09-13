@@ -1,0 +1,44 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.92) Modified: 2018-06-27
+#             Authors:  Richard Drake, rrdrake@sandia.gov
+#                       Greg Sjaardema, gdsjaar@sandia.gov
+#             Run on    2019/04/01   10:52:50 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NimbleSM/test/contact_entity_creation/contact_entity_creation.gold.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 2, Nodes = 6778, Elements = 2554, Nodesets = 0, Sidesets = 0
+#          Vars: Global = 0, Nodal = 3, Element = 0, Nodeset = 0, Sideset = 0, Times = 7
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           2e-09 @ t7
+
+
+# No GLOBAL VARIABLES
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x   absolute 1.000000000000e-8
+	displacement_y   absolute 1.000000000000e-8
+	displacement_z   absolute 1.000000000000e-8
+	contact_force_x  absolute 2.000000000000e-3
+	contact_force_y  absolute 2.000000000000e-2
+	contact_force_z  absolute 2.000000000000e-3
+
+# No ELEMENT VARIABLES
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+
