@@ -78,7 +78,5 @@ jobs:
         run: |
           echo "Success Flag with 0 pass and 1 fail:"
           cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt
-          echo "docker_build_outcome:  ${{ steps.docker_build.outcome }}"
-          echo "docker_build_conclusion:  ${{ steps.docker_build.conclusion }}"
           if [[  $(cat ${{ env.OUTPUT_DIR }}/tmp/artifacts/success_flag.txt) -eq 0 ]]; then exit 0; else exit 1; fi
         shell: bash
