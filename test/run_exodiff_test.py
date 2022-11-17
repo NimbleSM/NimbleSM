@@ -66,12 +66,14 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+    p = run(command, capture_output=True, text=True, check=True)
     return_code = p.returncode
     if return_code != 0:
         result = return_code
-    logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
-    logfile.flush()
+    print("stdout:", p.stdout)
+    print("stderr:", p.stderr)
+    # logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
+    # logfile.flush()
     # run epu
     if epu_required:
         command = ["epu", \
@@ -81,12 +83,16 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    epu_output_extension, \
                    nimble_output_name]
         print("EPU COMMAND", command)
-        p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+        p = run(command, capture_output=True, text=True, check=True)
         return_code = p.returncode
         if return_code != 0:
             result = return_code
-    logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
-    logfile.flush()
+
+    # logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
+    # logfile.flush()
+    print("stdout:", p.stdout)
+    print("stderr:", p.stderr)
+
     # run exodiff
     command = ["exodiff", \
                "-stat", \
@@ -94,15 +100,16 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".exodiff", \
                base_name+".gold.e", \
                epu_exodus_output_name]
-    p = run(command, stdout=logfile, stderr=logfile, text=True, check=True)
+    p = run(command, capture_output=True, text=True, check=True)
     return_code = p.returncode
     if return_code != 0:
         result = return_code
+    print("stdout:", p.stdout)
+    print("stderr:", p.stderr)
+    # logfile.write("FINAL TEST RESULT " + str(result) + "\n\n")
+    # logfile.flush()
 
-    logfile.write("FINAL TEST RESULT " + str(result) + "\n\n")
-    logfile.flush()
-
-    logfile.close()
+    # logfile.close()
 
     return result
 
