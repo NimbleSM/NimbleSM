@@ -14,4 +14,6 @@ cp /opt/build/NimbleSM/Testing/Temporary/LastTest.log /tmp/artifacts/
 cp /opt/build/NimbleSM/test/*/*/*.log /tmp/artifacts/
 echo ${success_flag} > /tmp/artifacts/success_flag.txt
 ls /tmp/artifacts
+# Simply output the LastTest.log to screen
+cat /opt/build/NimbleSM/Testing/Temporary/LastTest.log
 popd
