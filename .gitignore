@@ -5,10 +5,10 @@ docs/doxygen/xml
 docs/doxygen/latex
 docs/doxygen/html
 docs/sphinx/build
-CMakeCache.txt 
+CMakeCache.txt
 CMakeFiles/
 src/mpi-buckets/Makefile
-cmake_install.cmake 
+cmake_install.cmake
 *.log
 .vscode
 *.gch
@@ -29,3 +29,8 @@ cmake-build-*/
 *.swp
 *.swo
 
+# QT Creator ID stuff
+*.user
+
+# CMake
+CMakeUserPresets.json
