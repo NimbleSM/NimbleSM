@@ -209,7 +209,7 @@ class ContactManager
   /// \return Number of contact faces
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
-  std::size_t
+  size_t
   numContactFaces() const;
 
   /// \brief Returns the number of contact nodes
@@ -217,7 +217,7 @@ class ContactManager
   /// \return Number of contact nodes
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
-  std::size_t
+  size_t
   numContactNodes() const;
 
   /// \brief Returns the number of contact faces "actively" in collision
@@ -225,7 +225,7 @@ class ContactManager
   /// \return Number of active contact faces
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
-  std::size_t
+  size_t
   numActiveContactFaces() const;
 
   /// \brief Returns the number of contact nodes "actively" in collision
@@ -233,7 +233,7 @@ class ContactManager
   /// \return Number of active contact nodes
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
-  std::size_t
+  size_t
   numActiveContactNodes() const;
 
   /// \brief Return timing information
