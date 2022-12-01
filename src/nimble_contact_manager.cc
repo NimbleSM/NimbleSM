@@ -713,52 +713,52 @@ ContactManager::WriteVisualizationData(double t)
       derived_elem_data);
 }
 
-std::size_t
+size_t
 ContactManager::numContactFaces() const 
 {
 #ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParse().UseKokkos())
+  if (data_manager_.GetParser().UseKokkos())
     return contact_faces_h_.extent(0);
 #endif
   return contact_faces_.size();
 }
 
-std::size_t
+size_t
 ContactManager::numContactNodes() const 
 {
 #ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParse().UseKokkos())
+  if (data_manager_.GetParser().UseKokkos())
     return contact_nodes_h_.extent(0);
 #endif
   return contact_nodes_.size();
 }
 
-std::size_t
+size_t
 ContactManager::numActiveContactFaces() const 
 {
   std::size_t num_contacts = 0;
   const std::size_t total_num_contact_faces = numContactFaces();
   for (std::size_t i = 0; i < total_num_contact_faces; ++i) {
-    const auto &myface = getContactFace(ii);
-    num_contacts += static_cast<std::size_t>(myface.contact_status());
+    const auto &myface = getContactFace(i);
+    num_contacts += static_cast<size_t>(myface.contact_status());
   }
   return num_contacts;
 }
 
-std::size_t
+size_t
 ContactManager::numActiveContactNodes() const 
 {
   std::size_t num_contacts = 0;
   const std::size_t total_num_contact_nodes = numContactNodes();
   for (std::size_t i = 0; i < total_num_contact_nodes; ++i) {
-    const auto &mynode = getContactNode(ii);
-    num_contacts += static_cast<std::size_t>(mynode.contact_status());
+    const auto &mynode = getContactNode(i);
+    num_contacts += static_cast<size_t>(mynode.contact_status());
   }
   return num_contacts;
 }
 
 const ContactEntity&
-ContactManager::getContactFace(std::size iface) const 
+ContactManager::getContactFace(size_t iface) const 
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos())
@@ -768,7 +768,7 @@ ContactManager::getContactFace(std::size iface) const
 }
 
 const ContactEntity&
-ContactManager::getContactNode(std::size inode) const 
+ContactManager::getContactNode(size_t inode) const 
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos())
