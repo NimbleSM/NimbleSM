@@ -762,7 +762,7 @@ ContactManager::getContactFace(size_t iface) const
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos())
-    return contact_faces_h(iface);
+    return contact_faces_h_(iface);
 #endif
   return contact_faces_[iface];
 }
@@ -772,7 +772,7 @@ ContactManager::getContactNode(size_t inode) const
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos())
-    return contact_nodes_h(inode);
+    return contact_nodes_h_(inode);
 #endif
   return contact_nodes_[inode];
 }
