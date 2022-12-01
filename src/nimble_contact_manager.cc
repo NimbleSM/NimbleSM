@@ -719,10 +719,8 @@ ContactManager::numContactFaces() const
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParse().UseKokkos())
     return contact_faces_h_.extent(0);
-  else
-    return contact_faces_.size();
-#else
-    return contact_faces_.size();    
+#endif
+  return contact_faces_.size();
 }
 
 std::size_t
@@ -731,10 +729,8 @@ ContactManager::numContactNodes() const
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParse().UseKokkos())
     return contact_nodes_h_.extent(0);
-  else
-    return contact_nodes_.size();
-#else
-    return contact_nodes_.size();    
+#endif
+  return contact_nodes_.size();
 }
 
 std::size_t
