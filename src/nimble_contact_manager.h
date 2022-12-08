@@ -210,14 +210,7 @@ class ContactManager
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
   size_t
-  numContactFaces() const
-  {
-#ifdef NIMBLE_HAVE_KOKKOS
-    return contact_faces_h_.extent(0);
-#else
-    return contact_faces_.size();
-#endif
-  }
+  numContactFaces() const;
 
   /// \brief Returns the number of contact nodes
   ///
@@ -225,30 +218,23 @@ class ContactManager
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
   size_t
-  numContactNodes() const
-  {
-#ifdef NIMBLE_HAVE_KOKKOS
-    return contact_nodes_h_.extent(0);
-#else
-    return contact_nodes_.size();
-#endif
-  }
+  numContactNodes() const;
 
   /// \brief Returns the number of contact faces "actively" in collision
   ///
   /// \return Number of active contact faces
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
-  std::size_t
-  numActiveContactFaces() const
-  {
-    std::size_t num_contacts = 0;
-    for (size_t i = 0; i < numContactFaces(); ++i) {
-      const auto& myface = getContactFace(i);
-      num_contacts += static_cast<size_t>(myface.contact_status());
-    }
-    return num_contacts;
-  }
+  size_t
+  numActiveContactFaces() const;
+
+  /// \brief Returns the number of contact nodes "actively" in collision
+  ///
+  /// \return Number of active contact nodes
+  ///
+  /// \note When using Kokkos, the data is extracted from the "host".
+  size_t
+  numActiveContactNodes() const;
 
   /// \brief Return timing information
   /// \return Reference to map of strings to time value
@@ -401,14 +387,7 @@ class ContactManager
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
   const ContactEntity&
-  getContactFace(size_t i_face) const
-  {
-#ifdef NIMBLE_HAVE_KOKKOS
-    return contact_faces_h_(i_face);
-#else
-    return contact_faces_[i_face];
-#endif
-  }
+  getContactFace(size_t i_face) const;
 
   /// \brief Returns a read-only reference to contact node entity
   ///
@@ -417,14 +396,7 @@ class ContactManager
   ///
   /// \note When using Kokkos, the data is extracted from the "host".
   const ContactEntity&
-  getContactNode(size_t i_node) const
-  {
-#ifdef NIMBLE_HAVE_KOKKOS
-    return contact_nodes_h_(i_node);
-#else
-    return contact_nodes_[i_node];
-#endif
-  }
+  getContactNode(size_t i_node) const;
 
   /// \brief Zero the contact forces
   void
