@@ -1017,29 +1017,29 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  165</span>{</div>
-<div class="line"><span class="lineno">  166</span>  <span class="keywordflow">if</span> (!data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#a3d8140d6b10a93d03120b927a64aac74">HasContact</a>()) <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><span class="lineno">  167</span> </div>
-<div class="line"><span class="lineno">  168</span><span class="preprocessor">#if defined(NIMBLE_HAVE_ARBORX)</span></div>
-<div class="line"><span class="lineno">  169</span>  <span class="keywordflow">if</span> (data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#a96da354a8f3ee9e67bc1269b086d11f1">UseKokkos</a>()) {</div>
-<div class="line"><span class="lineno">  170</span><span class="preprocessor">#if defined(ARBORX_ENABLE_MPI) &amp;&amp; defined(NIMBLE_HAVE_MPI)</span></div>
-<div class="line"><span class="lineno">  171</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::ArborXParallelContactManager&gt;(interface, data_manager);</div>
-<div class="line"><span class="lineno">  172</span><span class="preprocessor">#else</span></div>
-<div class="line"><span class="lineno">  173</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::ArborXSerialContactManager&gt;(interface, data_manager);</div>
-<div class="line"><span class="lineno">  174</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno">  175</span>  }</div>
-<div class="line"><span class="lineno">  176</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno">  177</span> </div>
-<div class="line"><span class="lineno">  178</span><span class="preprocessor">#ifdef NIMBLE_HAVE_BVH</span></div>
-<div class="line"><span class="lineno">  179</span>  <span class="keywordflow">if</span> (data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#ae39c3e933a113ce168a365c009ae83ab">UseVT</a>()) {</div>
-<div class="line"><span class="lineno">  180</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::BvhContactManager&gt;(</div>
-<div class="line"><span class="lineno">  181</span>        interface, data_manager, data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().ContactDicing(),</div>
-<div class="line"><span class="lineno">  182</span>        data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().ContactSplitting());</div>
-<div class="line"><span class="lineno">  183</span>  }</div>
-<div class="line"><span class="lineno">  184</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno">  185</span> </div>
-<div class="line"><span class="lineno">  186</span>  <span class="keywordflow">return</span> std::make_shared&lt;nimble::ContactManager&gt;(interface, data_manager);</div>
-<div class="line"><span class="lineno">  187</span>}</div>
+<div class="fragment"><div class="line"><span class="lineno">  153</span>{</div>
+<div class="line"><span class="lineno">  154</span>  <span class="keywordflow">if</span> (!data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#a3d8140d6b10a93d03120b927a64aac74">HasContact</a>()) <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
+<div class="line"><span class="lineno">  155</span> </div>
+<div class="line"><span class="lineno">  156</span><span class="preprocessor">#if defined(NIMBLE_HAVE_ARBORX)</span></div>
+<div class="line"><span class="lineno">  157</span>  <span class="keywordflow">if</span> (data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#a96da354a8f3ee9e67bc1269b086d11f1">UseKokkos</a>()) {</div>
+<div class="line"><span class="lineno">  158</span><span class="preprocessor">#if defined(ARBORX_ENABLE_MPI) &amp;&amp; defined(NIMBLE_HAVE_MPI)</span></div>
+<div class="line"><span class="lineno">  159</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::ArborXParallelContactManager&gt;(interface, data_manager);</div>
+<div class="line"><span class="lineno">  160</span><span class="preprocessor">#else</span></div>
+<div class="line"><span class="lineno">  161</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::ArborXSerialContactManager&gt;(interface, data_manager);</div>
+<div class="line"><span class="lineno">  162</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno">  163</span>  }</div>
+<div class="line"><span class="lineno">  164</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno">  165</span> </div>
+<div class="line"><span class="lineno">  166</span><span class="preprocessor">#ifdef NIMBLE_HAVE_BVH</span></div>
+<div class="line"><span class="lineno">  167</span>  <span class="keywordflow">if</span> (data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().<a class="code hl_function" href="classnimble_1_1_parser.html#ae39c3e933a113ce168a365c009ae83ab">UseVT</a>()) {</div>
+<div class="line"><span class="lineno">  168</span>    <span class="keywordflow">return</span> std::make_shared&lt;nimble::BvhContactManager&gt;(</div>
+<div class="line"><span class="lineno">  169</span>        interface, data_manager, data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().ContactDicing(),</div>
+<div class="line"><span class="lineno">  170</span>        data_manager.<a class="code hl_function" href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">GetParser</a>().ContactSplitting());</div>
+<div class="line"><span class="lineno">  171</span>  }</div>
+<div class="line"><span class="lineno">  172</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno">  173</span> </div>
+<div class="line"><span class="lineno">  174</span>  <span class="keywordflow">return</span> std::make_shared&lt;nimble::ContactManager&gt;(interface, data_manager);</div>
+<div class="line"><span class="lineno">  175</span>}</div>
 <div class="ttc" id="aclassnimble_1_1_data_manager_html_a4e1dc1e0ff6db0e28d6c6ca16b832cdc"><div class="ttname"><a href="classnimble_1_1_data_manager.html#a4e1dc1e0ff6db0e28d6c6ca16b832cdc">nimble::DataManager::GetParser</a></div><div class="ttdeci">const nimble::Parser &amp; GetParser() const</div><div class="ttdoc">Return constant reference to parser information.</div><div class="ttdef"><b>Definition:</b> nimble_data_manager.h:101</div></div>
 <div class="ttc" id="aclassnimble_1_1_parser_html_a3d8140d6b10a93d03120b927a64aac74"><div class="ttname"><a href="classnimble_1_1_parser.html#a3d8140d6b10a93d03120b927a64aac74">nimble::Parser::HasContact</a></div><div class="ttdeci">bool HasContact() const</div><div class="ttdef"><b>Definition:</b> nimble_parser.h:210</div></div>
 <div class="ttc" id="aclassnimble_1_1_parser_html_a96da354a8f3ee9e67bc1269b086d11f1"><div class="ttname"><a href="classnimble_1_1_parser.html#a96da354a8f3ee9e67bc1269b086d11f1">nimble::Parser::UseKokkos</a></div><div class="ttdeci">bool UseKokkos() const</div><div class="ttdef"><b>Definition:</b> nimble_parser.h:322</div></div>
@@ -1885,55 +1885,55 @@ template&lt;std::size_t N&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  113</span>{</div>
-<div class="line"><span class="lineno">  114</span>  std::string contact_primary_key;</div>
-<div class="line"><span class="lineno">  115</span>  std::string contact_secondary_key;</div>
-<div class="line"><span class="lineno">  116</span> </div>
-<div class="line"><span class="lineno">  117</span>  std::stringstream ss(command);</div>
-<div class="line"><span class="lineno">  118</span> </div>
-<div class="line"><span class="lineno">  119</span>  ss &gt;&gt; contact_primary_key;</div>
-<div class="line"><span class="lineno">  120</span>  <span class="keywordflow">if</span> ((contact_primary_key != <span class="stringliteral">&quot;primary_blocks&quot;</span>) &amp;&amp; (contact_primary_key != <span class="stringliteral">&quot;master_blocks&quot;</span>)) {</div>
-<div class="line"><span class="lineno">  121</span>    std::stringstream error_ss;</div>
-<div class="line"><span class="lineno">  122</span>    error_ss &lt;&lt; <span class="stringliteral">&quot;\n**** Error processing contact command, unknown key: &quot;</span> &lt;&lt; contact_primary_key &lt;&lt; std::endl;</div>
-<div class="line"><span class="lineno">  123</span>    <span class="keywordflow">throw</span> std::invalid_argument(error_ss.str());</div>
-<div class="line"><span class="lineno">  124</span>  }</div>
-<div class="line"><span class="lineno">  125</span> </div>
-<div class="line"><span class="lineno">  126</span>  <span class="keywordtype">bool</span> secondary_key_found = <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  127</span>  <span class="keywordflow">while</span> (ss.good() &amp;&amp; !secondary_key_found) {</div>
-<div class="line"><span class="lineno">  128</span>    std::string temp;</div>
-<div class="line"><span class="lineno">  129</span>    ss &gt;&gt; temp;</div>
-<div class="line"><span class="lineno">  130</span>    <span class="keywordflow">if</span> ((temp == <span class="stringliteral">&quot;secondary_blocks&quot;</span>) || (temp == <span class="stringliteral">&quot;slave_blocks&quot;</span>)) {</div>
-<div class="line"><span class="lineno">  131</span>      secondary_key_found = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  132</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  133</span>      primary_block_names.push_back(temp);</div>
-<div class="line"><span class="lineno">  134</span>    }</div>
-<div class="line"><span class="lineno">  135</span>  }</div>
-<div class="line"><span class="lineno">  136</span> </div>
-<div class="line"><span class="lineno">  137</span>  <span class="keywordflow">if</span> (!secondary_key_found) {</div>
-<div class="line"><span class="lineno">  138</span>    <span class="keywordflow">throw</span> std::invalid_argument(</div>
-<div class="line"><span class="lineno">  139</span>        <span class="stringliteral">&quot;\n**** Error processing contact command, expected &quot;</span></div>
-<div class="line"><span class="lineno">  140</span>        <span class="stringliteral">&quot;\&quot;secondary_blocks\&quot; or \&quot;slave_blocks\&quot; (deprectated).\n&quot;</span>);</div>
-<div class="line"><span class="lineno">  141</span>  }</div>
-<div class="line"><span class="lineno">  142</span> </div>
-<div class="line"><span class="lineno">  143</span>  <span class="keywordtype">bool</span> penalty_parameter_key_found = <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  144</span>  <span class="keywordflow">while</span> (ss.good() &amp;&amp; !penalty_parameter_key_found) {</div>
-<div class="line"><span class="lineno">  145</span>    std::string temp;</div>
-<div class="line"><span class="lineno">  146</span>    ss &gt;&gt; temp;</div>
-<div class="line"><span class="lineno">  147</span>    <span class="keywordflow">if</span> (temp == <span class="stringliteral">&quot;penalty_parameter&quot;</span>) {</div>
-<div class="line"><span class="lineno">  148</span>      penalty_parameter_key_found = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  149</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  150</span>      secondary_block_names.push_back(temp);</div>
-<div class="line"><span class="lineno">  151</span>    }</div>
-<div class="line"><span class="lineno">  152</span>  }</div>
-<div class="line"><span class="lineno">  153</span> </div>
-<div class="line"><span class="lineno">  154</span>  <span class="keywordflow">if</span> (!penalty_parameter_key_found) {</div>
-<div class="line"><span class="lineno">  155</span>    <span class="keywordflow">throw</span> std::invalid_argument(</div>
-<div class="line"><span class="lineno">  156</span>        <span class="stringliteral">&quot;\n**** Error processing contact command, expected &quot;</span></div>
-<div class="line"><span class="lineno">  157</span>        <span class="stringliteral">&quot;\&quot;penalty_parameter\&quot;.\n&quot;</span>);</div>
-<div class="line"><span class="lineno">  158</span>  }</div>
-<div class="line"><span class="lineno">  159</span> </div>
-<div class="line"><span class="lineno">  160</span>  ss &gt;&gt; penalty_parameter;</div>
-<div class="line"><span class="lineno">  161</span>}</div>
+<div class="fragment"><div class="line"><span class="lineno">  101</span>{</div>
+<div class="line"><span class="lineno">  102</span>  std::string contact_primary_key;</div>
+<div class="line"><span class="lineno">  103</span>  std::string contact_secondary_key;</div>
+<div class="line"><span class="lineno">  104</span> </div>
+<div class="line"><span class="lineno">  105</span>  std::stringstream ss(command);</div>
+<div class="line"><span class="lineno">  106</span> </div>
+<div class="line"><span class="lineno">  107</span>  ss &gt;&gt; contact_primary_key;</div>
+<div class="line"><span class="lineno">  108</span>  <span class="keywordflow">if</span> ((contact_primary_key != <span class="stringliteral">&quot;primary_blocks&quot;</span>) &amp;&amp; (contact_primary_key != <span class="stringliteral">&quot;master_blocks&quot;</span>)) {</div>
+<div class="line"><span class="lineno">  109</span>    std::stringstream error_ss;</div>
+<div class="line"><span class="lineno">  110</span>    error_ss &lt;&lt; <span class="stringliteral">&quot;\n**** Error processing contact command, unknown key: &quot;</span> &lt;&lt; contact_primary_key &lt;&lt; std::endl;</div>
+<div class="line"><span class="lineno">  111</span>    <span class="keywordflow">throw</span> std::invalid_argument(error_ss.str());</div>
+<div class="line"><span class="lineno">  112</span>  }</div>
+<div class="line"><span class="lineno">  113</span> </div>
+<div class="line"><span class="lineno">  114</span>  <span class="keywordtype">bool</span> secondary_key_found = <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  115</span>  <span class="keywordflow">while</span> (ss.good() &amp;&amp; !secondary_key_found) {</div>
+<div class="line"><span class="lineno">  116</span>    std::string temp;</div>
+<div class="line"><span class="lineno">  117</span>    ss &gt;&gt; temp;</div>
+<div class="line"><span class="lineno">  118</span>    <span class="keywordflow">if</span> ((temp == <span class="stringliteral">&quot;secondary_blocks&quot;</span>) || (temp == <span class="stringliteral">&quot;slave_blocks&quot;</span>)) {</div>
+<div class="line"><span class="lineno">  119</span>      secondary_key_found = <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  120</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  121</span>      primary_block_names.push_back(temp);</div>
+<div class="line"><span class="lineno">  122</span>    }</div>
+<div class="line"><span class="lineno">  123</span>  }</div>
+<div class="line"><span class="lineno">  124</span> </div>
+<div class="line"><span class="lineno">  125</span>  <span class="keywordflow">if</span> (!secondary_key_found) {</div>
+<div class="line"><span class="lineno">  126</span>    <span class="keywordflow">throw</span> std::invalid_argument(</div>
+<div class="line"><span class="lineno">  127</span>        <span class="stringliteral">&quot;\n**** Error processing contact command, expected &quot;</span></div>
+<div class="line"><span class="lineno">  128</span>        <span class="stringliteral">&quot;\&quot;secondary_blocks\&quot; or \&quot;slave_blocks\&quot; (deprectated).\n&quot;</span>);</div>
+<div class="line"><span class="lineno">  129</span>  }</div>
+<div class="line"><span class="lineno">  130</span> </div>
+<div class="line"><span class="lineno">  131</span>  <span class="keywordtype">bool</span> penalty_parameter_key_found = <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  132</span>  <span class="keywordflow">while</span> (ss.good() &amp;&amp; !penalty_parameter_key_found) {</div>
+<div class="line"><span class="lineno">  133</span>    std::string temp;</div>
+<div class="line"><span class="lineno">  134</span>    ss &gt;&gt; temp;</div>
+<div class="line"><span class="lineno">  135</span>    <span class="keywordflow">if</span> (temp == <span class="stringliteral">&quot;penalty_parameter&quot;</span>) {</div>
+<div class="line"><span class="lineno">  136</span>      penalty_parameter_key_found = <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  137</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  138</span>      secondary_block_names.push_back(temp);</div>
+<div class="line"><span class="lineno">  139</span>    }</div>
+<div class="line"><span class="lineno">  140</span>  }</div>
+<div class="line"><span class="lineno">  141</span> </div>
+<div class="line"><span class="lineno">  142</span>  <span class="keywordflow">if</span> (!penalty_parameter_key_found) {</div>
+<div class="line"><span class="lineno">  143</span>    <span class="keywordflow">throw</span> std::invalid_argument(</div>
+<div class="line"><span class="lineno">  144</span>        <span class="stringliteral">&quot;\n**** Error processing contact command, expected &quot;</span></div>
+<div class="line"><span class="lineno">  145</span>        <span class="stringliteral">&quot;\&quot;penalty_parameter\&quot;.\n&quot;</span>);</div>
+<div class="line"><span class="lineno">  146</span>  }</div>
+<div class="line"><span class="lineno">  147</span> </div>
+<div class="line"><span class="lineno">  148</span>  ss &gt;&gt; penalty_parameter;</div>
+<div class="line"><span class="lineno">  149</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
