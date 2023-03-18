@@ -61,11 +61,13 @@ class ParallelContactManager : public ContactManager
   void
   ComputeContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override
   {
-    ComputeParallelContactForce(step, debug_output, contact_force);
-  }
+    this->startTimer("Contact:ResetData");
+    ContactManager::ZeroContactForce();
+    ContactManager::ResetContactStatus();
+    this->stopTimer("Contact:ResetData");
 
-  virtual void
-  ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) = 0;
+    this->ComputeParallelContactForce(step, debug_output, contact_force);
+  }
 
   int
   Rank() const noexcept
@@ -79,6 +81,10 @@ class ParallelContactManager : public ContactManager
   }
 
  protected:
+
+  virtual void
+  ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) = 0;
+
   int m_rank      = 0;
   int m_num_ranks = 1;
 };
