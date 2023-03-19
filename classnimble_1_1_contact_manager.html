@@ -195,6 +195,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a2fe4c33f8b5d4c4daec61cf4bb51809c"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classnimble_1_1_contact_entity.html">ContactEntity</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_contact_manager.html#a2fe4c33f8b5d4c4daec61cf4bb51809c">getContactNode</a> (size_t i_node) const</td></tr>
 <tr class="memdesc:a2fe4c33f8b5d4c4daec61cf4bb51809c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only reference to contact node entity.  <br /></td></tr>
 <tr class="separator:a2fe4c33f8b5d4c4daec61cf4bb51809c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1552ab2f599a31d57431afc509ae6774"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_contact_manager.html#a1552ab2f599a31d57431afc509ae6774">ResetContactStatus</a> ()</td></tr>
+<tr class="memdesc:a1552ab2f599a31d57431afc509ae6774"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the contact status for all entities.  <br /></td></tr>
+<tr class="separator:a1552ab2f599a31d57431afc509ae6774"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fc91e9a78532df94ba592142a6cd6a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnimble_1_1_contact_manager.html#a4fc91e9a78532df94ba592142a6cd6a1">ZeroContactForce</a> ()</td></tr>
 <tr class="memdesc:a4fc91e9a78532df94ba592142a6cd6a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero the contact forces.  <br /></td></tr>
 <tr class="separator:a4fc91e9a78532df94ba592142a6cd6a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -320,9 +323,9 @@ Protected Attributes</h2></td></tr>
 <div class="fragment"><div class="line"><span class="lineno">  182</span>    : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#ab7c8c8446bd21d316f70b93ca610319e">data_manager_</a>(data_manager), <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a669abf8e2c434324ff304a6edc524d0f">penalty_parameter_</a>(0.0), <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a3e65e348bba4041642b2525add21a14d">contact_interface</a>(std::move(interface))</div>
 <div class="line"><span class="lineno">  183</span>{</div>
 <div class="line"><span class="lineno">  184</span>}</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a3e65e348bba4041642b2525add21a14d"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a3e65e348bba4041642b2525add21a14d">nimble::ContactManager::contact_interface</a></div><div class="ttdeci">std::shared_ptr&lt; ContactInterface &gt; contact_interface</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:484</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a669abf8e2c434324ff304a6edc524d0f"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a669abf8e2c434324ff304a6edc524d0f">nimble::ContactManager::penalty_parameter_</a></div><div class="ttdeci">double penalty_parameter_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:446</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_ab7c8c8446bd21d316f70b93ca610319e"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#ab7c8c8446bd21d316f70b93ca610319e">nimble::ContactManager::data_manager_</a></div><div class="ttdeci">nimble::DataManager &amp; data_manager_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:437</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a3e65e348bba4041642b2525add21a14d"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a3e65e348bba4041642b2525add21a14d">nimble::ContactManager::contact_interface</a></div><div class="ttdeci">std::shared_ptr&lt; ContactInterface &gt; contact_interface</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:488</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a669abf8e2c434324ff304a6edc524d0f"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a669abf8e2c434324ff304a6edc524d0f">nimble::ContactManager::penalty_parameter_</a></div><div class="ttdeci">double penalty_parameter_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:450</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_ab7c8c8446bd21d316f70b93ca610319e"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#ab7c8c8446bd21d316f70b93ca610319e">nimble::ContactManager::data_manager_</a></div><div class="ttdeci">nimble::DataManager &amp; data_manager_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:441</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -387,11 +390,11 @@ Protected Attributes</h2></td></tr>
 <div class="line"><span class="lineno">  793</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; contact_face : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a915ed318108956e6f6bd10ba612f84bb">contact_faces_</a>) { contact_face.SetCoordinates(<a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a172c6215909dfe12f4c13bd98db82f2a">coord_</a>.data()); }</div>
 <div class="line"><span class="lineno">  794</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; contact_node : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a0fbb89da29be7388cafb05d8977f40a4">contact_nodes_</a>) { contact_node.SetCoordinates(<a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a172c6215909dfe12f4c13bd98db82f2a">coord_</a>.data()); }</div>
 <div class="line"><span class="lineno">  795</span>}</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a0fbb89da29be7388cafb05d8977f40a4"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a0fbb89da29be7388cafb05d8977f40a4">nimble::ContactManager::contact_nodes_</a></div><div class="ttdeci">std::vector&lt; ContactEntity &gt; contact_nodes_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:453</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a172c6215909dfe12f4c13bd98db82f2a"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a172c6215909dfe12f4c13bd98db82f2a">nimble::ContactManager::coord_</a></div><div class="ttdeci">std::vector&lt; double &gt; coord_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:450</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a3cdb2141c549ad991cb0bd1fbca2737a"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a3cdb2141c549ad991cb0bd1fbca2737a">nimble::ContactManager::model_coord_</a></div><div class="ttdeci">std::vector&lt; double &gt; model_coord_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:449</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a8ec8bbe4c8d988a444dd08c20fca6447"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a8ec8bbe4c8d988a444dd08c20fca6447">nimble::ContactManager::node_ids_</a></div><div class="ttdeci">std::vector&lt; int &gt; node_ids_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:448</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a915ed318108956e6f6bd10ba612f84bb"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a915ed318108956e6f6bd10ba612f84bb">nimble::ContactManager::contact_faces_</a></div><div class="ttdeci">std::vector&lt; ContactEntity &gt; contact_faces_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:452</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a0fbb89da29be7388cafb05d8977f40a4"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a0fbb89da29be7388cafb05d8977f40a4">nimble::ContactManager::contact_nodes_</a></div><div class="ttdeci">std::vector&lt; ContactEntity &gt; contact_nodes_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:457</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a172c6215909dfe12f4c13bd98db82f2a"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a172c6215909dfe12f4c13bd98db82f2a">nimble::ContactManager::coord_</a></div><div class="ttdeci">std::vector&lt; double &gt; coord_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:454</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a3cdb2141c549ad991cb0bd1fbca2737a"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a3cdb2141c549ad991cb0bd1fbca2737a">nimble::ContactManager::model_coord_</a></div><div class="ttdeci">std::vector&lt; double &gt; model_coord_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:453</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a8ec8bbe4c8d988a444dd08c20fca6447"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a8ec8bbe4c8d988a444dd08c20fca6447">nimble::ContactManager::node_ids_</a></div><div class="ttdeci">std::vector&lt; int &gt; node_ids_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:452</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a915ed318108956e6f6bd10ba612f84bb"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a915ed318108956e6f6bd10ba612f84bb">nimble::ContactManager::contact_faces_</a></div><div class="ttdeci">std::vector&lt; ContactEntity &gt; contact_faces_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:456</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1070,7 +1073,7 @@ Protected Attributes</h2></td></tr>
 <div class="fragment"><div class="line"><span class="lineno">  158</span>  {</div>
 <div class="line"><span class="lineno">  159</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#aca452ee246ccf9c29526c017a44fcba4">contact_enabled_</a>;</div>
 <div class="line"><span class="lineno">  160</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_aca452ee246ccf9c29526c017a44fcba4"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#aca452ee246ccf9c29526c017a44fcba4">nimble::ContactManager::contact_enabled_</a></div><div class="ttdeci">bool contact_enabled_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:445</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_aca452ee246ccf9c29526c017a44fcba4"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#aca452ee246ccf9c29526c017a44fcba4">nimble::ContactManager::contact_enabled_</a></div><div class="ttdeci">bool contact_enabled_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:449</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1388,7 +1391,7 @@ Protected Attributes</h2></td></tr>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_a72865ef1a2ea968023baf52177151ccf"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a72865ef1a2ea968023baf52177151ccf">nimble::ContactManager::SkinBlocks</a></div><div class="ttdeci">static void SkinBlocks(GenesisMesh const &amp;mesh, std::vector&lt; int &gt; const &amp;block_ids, int entity_id_offset, std::vector&lt; std::vector&lt; int &gt; &gt; &amp;skin_faces, std::vector&lt; int &gt; &amp;entity_ids)</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:867</div></div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_aa96b574be76d650a50d3bc452f8795ee"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#aa96b574be76d650a50d3bc452f8795ee">nimble::ContactManager::CreateContactNodesAndFaces</a></div><div class="ttdeci">void CreateContactNodesAndFaces(std::vector&lt; std::vector&lt; int &gt; &gt; const &amp;primary_skin_faces, std::vector&lt; int &gt; const &amp;primary_skin_entity_ids, std::vector&lt; int &gt; const &amp;secondary_node_ids, std::vector&lt; int &gt; const &amp;secondary_node_entity_ids, std::map&lt; int, double &gt; const &amp;secondary_node_char_lens, ArgT &amp;contact_nodes, ArgT &amp;contact_faces) const</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:1123</div></div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_ad1d6589ce24b68f1fd4c411cfb0b1025"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#ad1d6589ce24b68f1fd4c411cfb0b1025">nimble::ContactManager::RemoveInternalSkinFaces</a></div><div class="ttdeci">static void RemoveInternalSkinFaces(GenesisMesh const &amp;mesh, std::vector&lt; std::vector&lt; int &gt; &gt; &amp;faces, std::vector&lt; int &gt; &amp;entity_ids)</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:1016</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_afee0de96a09acdc6dc59e65d50709f68"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#afee0de96a09acdc6dc59e65d50709f68">nimble::ContactManager::force_</a></div><div class="ttdeci">std::vector&lt; double &gt; force_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:451</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_afee0de96a09acdc6dc59e65d50709f68"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#afee0de96a09acdc6dc59e65d50709f68">nimble::ContactManager::force_</a></div><div class="ttdeci">std::vector&lt; double &gt; force_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:455</div></div>
 <div class="ttc" id="anamespacenimble__kokkos_html_aef0b77079d765acb87fd8fe22c6bba40"><div class="ttname"><a href="namespacenimble__kokkos.html#aef0b77079d765acb87fd8fe22c6bba40">nimble_kokkos::HostIntegerArrayView</a></div><div class="ttdeci">Kokkos::View&lt; int *, kokkos_host &gt; HostIntegerArrayView</div><div class="ttdef"><b>Definition:</b> nimble_kokkos_defs.h:577</div></div>
 </div><!-- fragment -->
 </div>
@@ -1676,10 +1679,10 @@ template&lt;typename VecType &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  414</span>  {</div>
-<div class="line"><span class="lineno">  415</span>    <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a0143e8d9d9c7e202f582677f2f4cc516">enforcement</a>.<a class="code hl_function" href="structnimble_1_1_penalty_contact_enforcement.html#a458b221e3477c6ed4e5c3f8820373112">EnforceContact</a>&lt;VecType&gt;(node, face, gap, direction, facet_coordinates, full_contact_force);</div>
-<div class="line"><span class="lineno">  416</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a0143e8d9d9c7e202f582677f2f4cc516"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a0143e8d9d9c7e202f582677f2f4cc516">nimble::ContactManager::enforcement</a></div><div class="ttdeci">PenaltyContactEnforcement enforcement</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:443</div></div>
+<div class="fragment"><div class="line"><span class="lineno">  418</span>  {</div>
+<div class="line"><span class="lineno">  419</span>    <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a0143e8d9d9c7e202f582677f2f4cc516">enforcement</a>.<a class="code hl_function" href="structnimble_1_1_penalty_contact_enforcement.html#a458b221e3477c6ed4e5c3f8820373112">EnforceContact</a>&lt;VecType&gt;(node, face, gap, direction, facet_coordinates, full_contact_force);</div>
+<div class="line"><span class="lineno">  420</span>  }</div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a0143e8d9d9c7e202f582677f2f4cc516"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a0143e8d9d9c7e202f582677f2f4cc516">nimble::ContactManager::enforcement</a></div><div class="ttdeci">PenaltyContactEnforcement enforcement</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:447</div></div>
 <div class="ttc" id="astructnimble_1_1_penalty_contact_enforcement_html_a458b221e3477c6ed4e5c3f8820373112"><div class="ttname"><a href="structnimble_1_1_penalty_contact_enforcement.html#a458b221e3477c6ed4e5c3f8820373112">nimble::PenaltyContactEnforcement::EnforceContact</a></div><div class="ttdeci">NIMBLE_INLINE_FUNCTION void EnforceContact(const ContactEntity &amp;node, ContactEntity &amp;face, const double gap, const double normal[3], const double barycentric_coordinates[3], VecType &amp;full_contact_force) const</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:96</div></div>
 </div><!-- fragment -->
 </div>
@@ -1851,17 +1854,17 @@ template&lt;typename VecType &gt; </div>
 
 <p>Return timing information. </p>
 <dl class="section return"><dt>Returns</dt><dd>Reference to map of strings to time value </dd></dl>
-<div class="fragment"><div class="line"><span class="lineno"> 1760</span>{</div>
-<div class="line"><span class="lineno"> 1761</span>  <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>.clear();</div>
-<div class="line"><span class="lineno"> 1762</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
-<div class="line"><span class="lineno"> 1763</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> st_pair : watch_.timers_) {</div>
-<div class="line"><span class="lineno"> 1764</span>    <span class="keyword">auto</span> name = st_pair.first;</div>
-<div class="line"><span class="lineno"> 1765</span>    <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>.insert(std::make_pair(name, st_pair.second.GetElapsedTime()));</div>
-<div class="line"><span class="lineno"> 1766</span>  }</div>
-<div class="line"><span class="lineno"> 1767</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno"> 1768</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>;</div>
-<div class="line"><span class="lineno"> 1769</span>}</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a4a1dd3e11f28b21d44c786c889ee3091"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">nimble::ContactManager::timers_</a></div><div class="ttdeci">std::unordered_map&lt; std::string, double &gt; timers_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:479</div></div>
+<div class="fragment"><div class="line"><span class="lineno"> 1773</span>{</div>
+<div class="line"><span class="lineno"> 1774</span>  <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>.clear();</div>
+<div class="line"><span class="lineno"> 1775</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
+<div class="line"><span class="lineno"> 1776</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> st_pair : watch_.timers_) {</div>
+<div class="line"><span class="lineno"> 1777</span>    <span class="keyword">auto</span> name = st_pair.first;</div>
+<div class="line"><span class="lineno"> 1778</span>    <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>.insert(std::make_pair(name, st_pair.second.GetElapsedTime()));</div>
+<div class="line"><span class="lineno"> 1779</span>  }</div>
+<div class="line"><span class="lineno"> 1780</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno"> 1781</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">timers_</a>;</div>
+<div class="line"><span class="lineno"> 1782</span>}</div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a4a1dd3e11f28b21d44c786c889ee3091"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091">nimble::ContactManager::timers_</a></div><div class="ttdeci">std::unordered_map&lt; std::string, double &gt; timers_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:483</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2067,8 +2070,8 @@ template&lt;typename VecType &gt; </div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_a2fe4c33f8b5d4c4daec61cf4bb51809c"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a2fe4c33f8b5d4c4daec61cf4bb51809c">nimble::ContactManager::getContactNode</a></div><div class="ttdeci">const ContactEntity &amp; getContactNode(size_t i_node) const</div><div class="ttdoc">Returns a read-only reference to contact node entity.</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:771</div></div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_a5b823bc6eb7ac20486ee0109087d87fb"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a5b823bc6eb7ac20486ee0109087d87fb">nimble::ContactManager::numContactFaces</a></div><div class="ttdeci">size_t numContactFaces() const</div><div class="ttdoc">Returns the number of contact faces.</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:717</div></div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_aa84963b8d1bd06abc603d8c6ab4e2efd"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#aa84963b8d1bd06abc603d8c6ab4e2efd">nimble::ContactManager::getContactFace</a></div><div class="ttdeci">const ContactEntity &amp; getContactFace(size_t i_face) const</div><div class="ttdoc">Returns a read-only reference to contact face entity.</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:761</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_abbbaa5e5722a3f56777d4282cbdc7b7d"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#abbbaa5e5722a3f56777d4282cbdc7b7d">nimble::ContactManager::genesis_mesh_for_contact_visualization_</a></div><div class="ttdeci">nimble::GenesisMesh genesis_mesh_for_contact_visualization_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:456</div></div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_af55e8376a4bac5a892cbe18174007e78"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#af55e8376a4bac5a892cbe18174007e78">nimble::ContactManager::exodus_output_for_contact_visualization_</a></div><div class="ttdeci">nimble::ExodusOutput exodus_output_for_contact_visualization_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:457</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_abbbaa5e5722a3f56777d4282cbdc7b7d"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#abbbaa5e5722a3f56777d4282cbdc7b7d">nimble::ContactManager::genesis_mesh_for_contact_visualization_</a></div><div class="ttdeci">nimble::GenesisMesh genesis_mesh_for_contact_visualization_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:460</div></div>
+<div class="ttc" id="aclassnimble_1_1_contact_manager_html_af55e8376a4bac5a892cbe18174007e78"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#af55e8376a4bac5a892cbe18174007e78">nimble::ContactManager::exodus_output_for_contact_visualization_</a></div><div class="ttdeci">nimble::ExodusOutput exodus_output_for_contact_visualization_</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.h:461</div></div>
 <div class="ttc" id="aclassnimble_1_1_contact_manager_html_af77e406e95cb0ad82457193dac8fbcea"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#af77e406e95cb0ad82457193dac8fbcea">nimble::ContactManager::numContactNodes</a></div><div class="ttdeci">size_t numContactNodes() const</div><div class="ttdoc">Returns the number of contact nodes.</div><div class="ttdef"><b>Definition:</b> nimble_contact_manager.cc:727</div></div>
 <div class="ttc" id="aclassnimble_1_1_exodus_output_html"><div class="ttname"><a href="classnimble_1_1_exodus_output.html">nimble::ExodusOutput</a></div><div class="ttdef"><b>Definition:</b> nimble_exodus_output.h:59</div></div>
 <div class="ttc" id="aclassnimble_1_1_exodus_output_html_af1d6e79c1c7b1f522a7288ff4b7d31bd"><div class="ttname"><a href="classnimble_1_1_exodus_output.html#af1d6e79c1c7b1f522a7288ff4b7d31bd">nimble::ExodusOutput::Initialize</a></div><div class="ttdeci">void Initialize(std::string const &amp;filename, GenesisMesh const &amp;genesis_mesh)</div><div class="ttdef"><b>Definition:</b> nimble_exodus_output.cc:65</div></div>
@@ -2493,6 +2496,43 @@ template&lt;typename VecType &gt; </div>
 </div><!-- fragment -->
 </div>
 </div>
+<a id="a1552ab2f599a31d57431afc509ae6774" name="a1552ab2f599a31d57431afc509ae6774"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1552ab2f599a31d57431afc509ae6774">&#9670;&#160;</a></span>ResetContactStatus()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void nimble::ContactManager::ResetContactStatus </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reset the contact status for all entities. </p>
+<div class="fragment"><div class="line"><span class="lineno"> 1726</span>{</div>
+<div class="line"><span class="lineno"> 1727</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> &amp;face : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a915ed318108956e6f6bd10ba612f84bb">contact_faces_</a>) face.ResetContactData();</div>
+<div class="line"><span class="lineno"> 1728</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span> &amp;node : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#a0fbb89da29be7388cafb05d8977f40a4">contact_nodes_</a>) node.ResetContactData();</div>
+<div class="line"><span class="lineno"> 1729</span>    </div>
+<div class="line"><span class="lineno"> 1730</span><span class="preprocessor">#ifdef NIMBLE_HAVE_KOKKOS</span></div>
+<div class="line"><span class="lineno"> 1731</span>  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> jj = 0; jj &lt; contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();</div>
+<div class="line"><span class="lineno"> 1732</span> </div>
+<div class="line"><span class="lineno"> 1733</span>  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> jj = 0; jj &lt; contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();</div>
+<div class="line"><span class="lineno"> 1734</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno"> 1735</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a7c90b61bcfbaa3df48113bbd7b333380" name="a7c90b61bcfbaa3df48113bbd7b333380"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7c90b61bcfbaa3df48113bbd7b333380">&#9670;&#160;</a></span>SetPenaltyParameter()</h2>
 
@@ -2890,11 +2930,11 @@ template&lt;typename VecType &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  421</span>  {</div>
-<div class="line"><span class="lineno">  422</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
-<div class="line"><span class="lineno">  423</span>    watch_.Start(str_val);</div>
-<div class="line"><span class="lineno">  424</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno">  425</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  425</span>  {</div>
+<div class="line"><span class="lineno">  426</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
+<div class="line"><span class="lineno">  427</span>    watch_.Start(str_val);</div>
+<div class="line"><span class="lineno">  428</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno">  429</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2921,11 +2961,11 @@ template&lt;typename VecType &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><span class="lineno">  430</span>  {</div>
-<div class="line"><span class="lineno">  431</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
-<div class="line"><span class="lineno">  432</span>    watch_.Stop(str_val);</div>
-<div class="line"><span class="lineno">  433</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno">  434</span>  }</div>
+<div class="fragment"><div class="line"><span class="lineno">  434</span>  {</div>
+<div class="line"><span class="lineno">  435</span><span class="preprocessor">#ifdef NIMBLE_TIME_CONTACT</span></div>
+<div class="line"><span class="lineno">  436</span>    watch_.Stop(str_val);</div>
+<div class="line"><span class="lineno">  437</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno">  438</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -3066,37 +3106,37 @@ template&lt;typename VecType &gt; </div>
 </div><div class="memdoc">
 
 <p>Zero the contact forces. </p>
-<div class="fragment"><div class="line"><span class="lineno"> 1726</span>{</div>
-<div class="line"><span class="lineno"> 1727</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; fval : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#afee0de96a09acdc6dc59e65d50709f68">force_</a>) fval = 0.0;</div>
-<div class="line"><span class="lineno"> 1728</span> </div>
-<div class="line"><span class="lineno"> 1729</span><span class="preprocessor">#ifdef NIMBLE_HAVE_KOKKOS</span></div>
-<div class="line"><span class="lineno"> 1730</span>  Kokkos::deep_copy(force_d_, 0.0);</div>
-<div class="line"><span class="lineno"> 1731</span>  <span class="comment">//</span></div>
-<div class="line"><span class="lineno"> 1732</span>  <a class="code hl_typedef" href="namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06">nimble_kokkos::DeviceContactEntityArrayView</a> contact_faces = contact_faces_d_;</div>
-<div class="line"><span class="lineno"> 1733</span>  <span class="keyword">auto</span>                                        numFaces      = contact_faces_d_.extent(0);</div>
-<div class="line"><span class="lineno"> 1734</span>  Kokkos::parallel_for(</div>
-<div class="line"><span class="lineno"> 1735</span>      <span class="stringliteral">&quot;Zero Face Force&quot;</span>, numFaces, KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">int</span> i_face) {</div>
-<div class="line"><span class="lineno"> 1736</span>        contact_faces(i_face).force_1_x_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1737</span>        contact_faces(i_face).force_1_y_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1738</span>        contact_faces(i_face).force_1_z_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1739</span>        contact_faces(i_face).force_2_x_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1740</span>        contact_faces(i_face).force_2_y_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1741</span>        contact_faces(i_face).force_2_z_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1742</span>        contact_faces(i_face).force_3_x_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1743</span>        contact_faces(i_face).force_3_y_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1744</span>        contact_faces(i_face).force_3_z_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1745</span>      });</div>
-<div class="line"><span class="lineno"> 1746</span>  <span class="comment">//</span></div>
-<div class="line"><span class="lineno"> 1747</span>  <a class="code hl_typedef" href="namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06">nimble_kokkos::DeviceContactEntityArrayView</a> contact_nodes = contact_nodes_d_;</div>
-<div class="line"><span class="lineno"> 1748</span>  <span class="keyword">auto</span>                                        numNodes      = contact_nodes_d_.extent(0);</div>
-<div class="line"><span class="lineno"> 1749</span>  Kokkos::parallel_for(</div>
-<div class="line"><span class="lineno"> 1750</span>      <span class="stringliteral">&quot;Zero Node Force&quot;</span>, numNodes, KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">int</span> i_node) {</div>
-<div class="line"><span class="lineno"> 1751</span>        contact_nodes(i_node).force_1_x_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1752</span>        contact_nodes(i_node).force_1_y_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1753</span>        contact_nodes(i_node).force_1_z_ = 0.0;</div>
-<div class="line"><span class="lineno"> 1754</span>      });</div>
-<div class="line"><span class="lineno"> 1755</span><span class="preprocessor">#endif</span></div>
-<div class="line"><span class="lineno"> 1756</span>}</div>
+<div class="fragment"><div class="line"><span class="lineno"> 1739</span>{</div>
+<div class="line"><span class="lineno"> 1740</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; fval : <a class="code hl_variable" href="classnimble_1_1_contact_manager.html#afee0de96a09acdc6dc59e65d50709f68">force_</a>) fval = 0.0;</div>
+<div class="line"><span class="lineno"> 1741</span> </div>
+<div class="line"><span class="lineno"> 1742</span><span class="preprocessor">#ifdef NIMBLE_HAVE_KOKKOS</span></div>
+<div class="line"><span class="lineno"> 1743</span>  Kokkos::deep_copy(force_d_, 0.0);</div>
+<div class="line"><span class="lineno"> 1744</span>  <span class="comment">//</span></div>
+<div class="line"><span class="lineno"> 1745</span>  <a class="code hl_typedef" href="namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06">nimble_kokkos::DeviceContactEntityArrayView</a> contact_faces = contact_faces_d_;</div>
+<div class="line"><span class="lineno"> 1746</span>  <span class="keyword">auto</span>                                        numFaces      = contact_faces_d_.extent(0);</div>
+<div class="line"><span class="lineno"> 1747</span>  Kokkos::parallel_for(</div>
+<div class="line"><span class="lineno"> 1748</span>      <span class="stringliteral">&quot;Zero Face Force&quot;</span>, numFaces, KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">int</span> i_face) {</div>
+<div class="line"><span class="lineno"> 1749</span>        contact_faces(i_face).force_1_x_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1750</span>        contact_faces(i_face).force_1_y_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1751</span>        contact_faces(i_face).force_1_z_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1752</span>        contact_faces(i_face).force_2_x_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1753</span>        contact_faces(i_face).force_2_y_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1754</span>        contact_faces(i_face).force_2_z_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1755</span>        contact_faces(i_face).force_3_x_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1756</span>        contact_faces(i_face).force_3_y_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1757</span>        contact_faces(i_face).force_3_z_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1758</span>      });</div>
+<div class="line"><span class="lineno"> 1759</span>  <span class="comment">//</span></div>
+<div class="line"><span class="lineno"> 1760</span>  <a class="code hl_typedef" href="namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06">nimble_kokkos::DeviceContactEntityArrayView</a> contact_nodes = contact_nodes_d_;</div>
+<div class="line"><span class="lineno"> 1761</span>  <span class="keyword">auto</span>                                        numNodes      = contact_nodes_d_.extent(0);</div>
+<div class="line"><span class="lineno"> 1762</span>  Kokkos::parallel_for(</div>
+<div class="line"><span class="lineno"> 1763</span>      <span class="stringliteral">&quot;Zero Node Force&quot;</span>, numNodes, KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">int</span> i_node) {</div>
+<div class="line"><span class="lineno"> 1764</span>        contact_nodes(i_node).force_1_x_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1765</span>        contact_nodes(i_node).force_1_y_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1766</span>        contact_nodes(i_node).force_1_z_ = 0.0;</div>
+<div class="line"><span class="lineno"> 1767</span>      });</div>
+<div class="line"><span class="lineno"> 1768</span><span class="preprocessor">#endif</span></div>
+<div class="line"><span class="lineno"> 1769</span>}</div>
 <div class="ttc" id="anamespacenimble__kokkos_html_a971213f494ae394e351c4f41bde9bb06"><div class="ttname"><a href="namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06">nimble_kokkos::DeviceContactEntityArrayView</a></div><div class="ttdeci">Kokkos::View&lt; nimble::ContactEntity *, nimble_kokkos::kokkos_layout, nimble_kokkos::kokkos_device &gt; DeviceContactEntityArrayView</div><div class="ttdef"><b>Definition:</b> nimble_kokkos_contact_defs.h:16</div></div>
 </div><!-- fragment -->
 </div>
