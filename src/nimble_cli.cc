@@ -45,12 +45,7 @@
 
 #include "nimble_parser.h"
 
-#ifdef NIMBLE_HAVE_VT
-// From VT, if not we get some nasty conflicting symbols
-#include <CLI/CLI11.hpp>
-#else
-#include <../tpl/CLI11/CLI11.hpp>
-#endif
+#include <tpl_include/CLI11/CLI11.hpp>
 
 namespace nimble {
 
