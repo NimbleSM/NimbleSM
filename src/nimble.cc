@@ -224,7 +224,7 @@ Kokkos::initialize(impl_->cli_config_->ArgC(), impl_->cli_config_->ArgV());
     MPI_Comm vt_comm = MPI_COMM_WORLD;
     int argc = impl_->cli_config_->ArgC();
     char **argv = impl_->cli_config_->ArgV();
-    impl_->vt_rt_    = ::vt::CollectiveOps::initialize(argc, argv, ::vt::no_workers, true, &vt_comm);
+    impl_->vt_rt_ = ::vt::CollectiveOps::initialize(argc, argv, true, &vt_comm);
   }
 #endif
 
