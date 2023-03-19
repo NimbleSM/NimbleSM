@@ -86,10 +86,10 @@ class BvhContactManager : public ParallelContactManager
 
   ~BvhContactManager() = default;
 
+ protected:
   void
   ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force) override;
 
- private:
   void
   ComputeBoundingVolumes();
 

@@ -398,6 +398,10 @@ class ContactManager
   const ContactEntity&
   getContactNode(size_t i_node) const;
 
+  /// \brief Reset the contact status for all entities
+  void
+  ResetContactStatus();
+
   /// \brief Zero the contact forces
   void
   ZeroContactForce();

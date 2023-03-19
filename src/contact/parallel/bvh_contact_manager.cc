@@ -273,8 +273,6 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   total_search_time.Stop();
 
   total_enforcement_time.Start();
-  for (auto& f : force_) f = 0.0;
-
   // Update contact entities
   for (auto&& r : m_last_results) {
     if (r.node) {
@@ -293,7 +291,6 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
       face.ScatterForceToContactManagerForceVector(force_);
     }
   }
-
   total_num_contacts += m_last_results.size();
   total_enforcement_time.Stop();
 

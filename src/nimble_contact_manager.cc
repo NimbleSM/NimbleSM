@@ -1722,6 +1722,19 @@ ContactManager::Projection(
 }
 
 void
+ContactManager::ResetContactStatus()
+{
+  for (auto &face : contact_faces_) face.ResetContactData();
+  for (auto &node : contact_nodes_) node.ResetContactData();
+    
+#ifdef NIMBLE_HAVE_KOKKOS
+  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
+
+  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();
+#endif
+}
+
+void
 ContactManager::ZeroContactForce()
 {
   for (auto& fval : force_) fval = 0.0;
