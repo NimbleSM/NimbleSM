@@ -254,9 +254,6 @@ if(NOT NimbleSM_ENABLE_TRILINOS OR NOT NimbleSM_USE_TRILINOS_EXODUS)
   endif()
 endif()
 
-find_package(p3a REQUIRED)
-target_link_libraries(nimble PUBLIC p3a::p3a)
-
 # Optional ArborX dependency
 if (NimbleSM_ENABLE_ARBORX)
   message(STATUS "Compiling with ArborX:")
@@ -281,12 +278,12 @@ endif()
 
 # Optional P3A dependency
 if (NimbleSM_ENABLE_P3A)
-  message(STATUS "Compiling with P3A:")
-  find_package(P3A REQUIRED)
+  message(STATUS "Compiling with p3a:")
+  find_package(p3a REQUIRED)
   #
-  add_definitions(-DNIMBLE_HAVE_P3A)
-  include_directories(${p3a_INCLUDE_DIR})
   set(NIMBLE_HAVE_P3A TRUE)
+  add_definitions(-DNIMBLE_HAVE_P3A)
+  target_link_libraries(nimble PUBLIC p3a::p3a)
   target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_P3A)
   #
   message("       P3A_DIR: ${P3A_DIR}")
