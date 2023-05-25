@@ -62,6 +62,10 @@
 #include "nimble_version.h"
 #include "nimble_view.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
 #endif
