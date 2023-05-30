@@ -81,19 +81,7 @@
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
-#include <bvh/kdop.hpp>
-#include <bvh/patch.hpp>
-#include <bvh/perf/instrument.hpp>
-#include <bvh/tree.hpp>
-
 #include "contact/parallel/bvh_contact_manager.h"
-//---
-#ifdef BVH_ENABLE_VT
-#include <bvh/vt/collection.hpp>
-#include <bvh/vt/collision_world.hpp>
-#include <bvh/vt/helpers.hpp>
-#endif
-//---
 #endif
 
 #include <algorithm>
@@ -178,7 +166,8 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 #ifdef NIMBLE_HAVE_BVH
   if (data_manager.GetParser().UseVT()) {
     return std::make_shared<nimble::BvhContactManager>(
-        interface, data_manager, data_manager.GetParser().ContactDicing());
+        interface, data_manager, data_manager.GetParser().ContactDicing(),
+        data_manager.GetParser().ContactSplitting());
   }
 #endif
 
@@ -642,7 +631,7 @@ ContactManager::ContactVisualizationWriteStep(double time_current)
 {
 #ifdef NIMBLE_HAVE_KOKKOS
   if (data_manager_.GetParser().UseKokkos()) {
-    // copy contact entities from host to device
+    // copy contact entities from device (*d) to host (*h)
     Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
     Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
   }
@@ -722,6 +711,70 @@ ContactManager::WriteVisualizationData(double t)
       elem_data_for_output,
       derived_elem_data_labels,
       derived_elem_data);
+}
+
+size_t
+ContactManager::numContactFaces() const 
+{
+#ifdef NIMBLE_HAVE_KOKKOS
+  if (data_manager_.GetParser().UseKokkos())
+    return contact_faces_h_.extent(0);
+#endif
+  return contact_faces_.size();
+}
+
+size_t
+ContactManager::numContactNodes() const 
+{
+#ifdef NIMBLE_HAVE_KOKKOS
+  if (data_manager_.GetParser().UseKokkos())
+    return contact_nodes_h_.extent(0);
+#endif
+  return contact_nodes_.size();
+}
+
+size_t
+ContactManager::numActiveContactFaces() const 
+{
+  std::size_t num_contacts = 0;
+  const std::size_t total_num_contact_faces = numContactFaces();
+  for (std::size_t i = 0; i < total_num_contact_faces; ++i) {
+    const auto &myface = getContactFace(i);
+    num_contacts += static_cast<size_t>(myface.contact_status());
+  }
+  return num_contacts;
+}
+
+size_t
+ContactManager::numActiveContactNodes() const 
+{
+  std::size_t num_contacts = 0;
+  const std::size_t total_num_contact_nodes = numContactNodes();
+  for (std::size_t i = 0; i < total_num_contact_nodes; ++i) {
+    const auto &mynode = getContactNode(i);
+    num_contacts += static_cast<size_t>(mynode.contact_status());
+  }
+  return num_contacts;
+}
+
+const ContactEntity&
+ContactManager::getContactFace(size_t iface) const 
+{
+#ifdef NIMBLE_HAVE_KOKKOS
+  if (data_manager_.GetParser().UseKokkos())
+    return contact_faces_h_(iface);
+#endif
+  return contact_faces_[iface];
+}
+
+const ContactEntity&
+ContactManager::getContactNode(size_t inode) const 
+{
+#ifdef NIMBLE_HAVE_KOKKOS
+  if (data_manager_.GetParser().UseKokkos())
+    return contact_nodes_h_(inode);
+#endif
+  return contact_nodes_[inode];
 }
 
 //
@@ -1666,6 +1719,19 @@ ContactManager::Projection(
       in = true;
     }
   }
+}
+
+void
+ContactManager::ResetContactStatus()
+{
+  for (auto &face : contact_faces_) face.ResetContactData();
+  for (auto &node : contact_nodes_) node.ResetContactData();
+    
+#ifdef NIMBLE_HAVE_KOKKOS
+  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
+
+  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();
+#endif
 }
 
 void

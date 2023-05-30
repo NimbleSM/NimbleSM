@@ -287,9 +287,7 @@ class Parser
   void
   SetToUseKokkos()
   {
-    if ((env_set_) && (!use_kokkos_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_kokkos_ = true;
-    env_set_    = true;
   }
 
   /// \brief Set that Tpetra is used for the simulation
@@ -299,9 +297,7 @@ class Parser
   void
   SetToUseTpetra()
   {
-    if ((env_set_) && (!use_tpetra_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_tpetra_ = true;
-    env_set_    = true;
   }
 
   /// \brief Set that UQ is used for the simulation
@@ -319,9 +315,7 @@ class Parser
   void
   SetToUseVT()
   {
-    if ((env_set_) && (!use_vt_)) NIMBLE_ABORT(" Conflicting Environment Variable ");
     use_vt_  = true;
-    env_set_ = true;
   }
 
   bool
@@ -403,6 +397,12 @@ class Parser
   {
     return contact_dicing_;
   }
+
+  std::string
+  ContactSplitting() const noexcept
+  {
+    return contact_splitting_;
+  }
 #endif
 
 #ifdef NIMBLE_HAVE_UQ
@@ -457,6 +457,7 @@ class Parser
 
 #ifdef NIMBLE_HAVE_BVH
   int contact_dicing_ = 1;
+  std::string contact_splitting_ = "geom_axis";
 #endif
 
 #ifdef NIMBLE_HAVE_UQ

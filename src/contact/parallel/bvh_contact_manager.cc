@@ -190,17 +190,14 @@ struct NarrowphaseFunc
     //
     resa.set_data(resa_vec.data(), resa_vec.size());
     resb.set_data(resb_vec.data(), resb_vec.size());
-
     /*
     static int iter_count = 0;
-
     if ( resa.size() > 0 )
       std::cout << iter_count << ". resa = " << resa.size() << "\n";
     if ( resb.size() > 0 )
       std::cout << iter_count << ". resb = " << resb.size() << "\n";
     ++iter_count;
      */
-
     return {resa, resb};
   }
 #endif
@@ -211,13 +208,18 @@ struct NarrowphaseFunc
 BvhContactManager::BvhContactManager(
     std::shared_ptr<ContactInterface> interface,
     nimble::DataManager&              data_manager,
-    std::size_t                       _overdecomposition)
+    std::size_t                       _overdecomposition,
+    std::string                       splitting_alg)
     : ParallelContactManager(interface, data_manager),
       m_world{_overdecomposition},
       m_nodes{&m_world.create_collision_object()},
       m_faces{&m_world.create_collision_object()}
 {
   m_world.set_narrowphase_functor<ContactEntity>(NarrowphaseFunc{this});
+  if (splitting_alg == "geom_axis")
+    m_split_alg = bvh::geom_axis;
+  else
+    m_split_alg = bvh::ml_geom_axis;
 }
 
 void
@@ -250,9 +252,17 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   // Update collision objects, this will build the trees
   ComputeBoundingVolumes();
 
-  m_nodes->set_entity_data(contact_nodes_);
-  m_faces->set_entity_data(contact_faces_);
+  this->startTimer("BVH::SetEntity::Nodes");
+  m_nodes->set_entity_data(contact_nodes_, m_split_alg);
+  this->stopTimer("BVH::SetEntity::Nodes");
 
+  this->startTimer("BVH::SetEntity::Faces");
+  m_faces->set_entity_data(contact_faces_, m_split_alg);
+  this->stopTimer("BVH::SetEntity::Faces");
+
+  m_nodes->init_broadphase();
+  m_faces->init_broadphase();
+  
   m_faces->broadphase(*m_nodes);
 
   m_last_results.clear();
@@ -262,13 +272,7 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   m_world.finish_iteration();
   total_search_time.Stop();
 
-  // event = vt::theTrace()->registerUserEventColl(“name”)
-  // tr = vt::trace::TraceScopedNote scope{“my node”, event};
-  // theTrace()->addUserEventBracketed(event, start, stop)
-  // theTrace()->addUserBracketedNote(start, stop, “my node”, event)
   total_enforcement_time.Start();
-  for (auto& f : force_) f = 0.0;
-
   // Update contact entities
   for (auto&& r : m_last_results) {
     if (r.node) {
@@ -287,7 +291,6 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
       face.ScatterForceToContactManagerForceVector(force_);
     }
   }
-
   total_num_contacts += m_last_results.size();
   total_enforcement_time.Stop();
 
