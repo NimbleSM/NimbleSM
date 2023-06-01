@@ -8,12 +8,12 @@ endforeach()
 
 set(inputfile "${prefix}.in")
 
-add_test(NAME "${prefix}-serial"
+add_test(NAME "${prefix}_plasticity-serial"
          COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck "${inputfile}" --num-ranks 1
         )
 
 if(NIMBLE_HAVE_KOKKOS)
-  add_test(NAME "${prefix}-serial-kokkos"
+  add_test(NAME "${prefix}_plasticity-serial-kokkos"
            COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
           )
 endif()
@@ -26,12 +26,12 @@ if (NIMBLE_HAVE_MPI)
   endforeach()
 
   foreach (nrank 2 4)
-    add_test(NAME "${prefix}-np${nrank}"
+    add_test(NAME "${prefix}_plasticity-np${nrank}"
              COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck "${inputfile}" --num-ranks ${nrank}
             )
 
     if(NIMBLE_HAVE_KOKKOS)
-      add_test(NAME "${prefix}-np${nrank}-kokkos"
+      add_test(NAME "${prefix}_plasticity-np${nrank}-kokkos"
                COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endif()

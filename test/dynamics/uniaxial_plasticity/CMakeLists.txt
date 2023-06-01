@@ -5,12 +5,12 @@ foreach (ext "in" "g" "gold.e" "exodiff")
                  ${CMAKE_CURRENT_BINARY_DIR}/${prefix}.${ext} COPYONLY)
 endforeach()
 
-add_test(NAME ${cube}-serial
-         COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck ${cube}.in --num-ranks 1
+add_test(NAME uniaxial_plasticity-serial
+         COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck ${prefix}.in --num-ranks 1
         )
 
 if(NIMBLE_HAVE_KOKKOS)
-  add_test(NAME ${cube}-serial-kokkos
-           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck ${cube}.in --num-ranks 1
+  add_test(NAME uniaxial_plasticity-serial-kokkos
+           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck ${prefix}.in --num-ranks 1
           )
 endif()
