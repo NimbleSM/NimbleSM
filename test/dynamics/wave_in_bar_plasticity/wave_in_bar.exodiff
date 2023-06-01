@@ -171,7 +171,7 @@ ELEMENT VARIABLES relative 1.e-6 floor 0.0
 	stress_yz                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     0.022117094 @ t3,b1,e14
 	stress_zx                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     0.075358099 @ t4,b1,e68
 	stress_zz                      absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:       2522389.2 @ t3,b1,e60
-        equivalent_plastic_strain  absolute 1.000000000000e-06
+	equivalent_plastic_strain      absolute 1.000000000000e-06
 
 # No NODESET VARIABLES
 
