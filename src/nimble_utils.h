@@ -858,6 +858,201 @@ Eigen_Sym33_NonUnit(
 
 template <typename ScalarT>
 NIMBLE_INLINE_FUNCTION void
+Eigen_Sym33(
+    const ScalarT* const tensor,
+    ScalarT&             eval0,
+    ScalarT&             eval1,
+    ScalarT&             eval2,
+    ScalarT* const       evec0,
+    ScalarT* const       evec1,
+    ScalarT* const       evec2)
+{
+  ScalarT        cxx = tensor[K_S_XX];
+  ScalarT        cyy = tensor[K_S_YY];
+  ScalarT        czz = tensor[K_S_ZZ];
+  const ScalarT& cxy = tensor[K_S_XY];
+  const ScalarT& cyz = tensor[K_S_YZ];
+  const ScalarT& czx = tensor[K_S_ZX];
+
+  const ScalarT c1 = (cxx + cyy + czz) / ScalarT(3.0);
+
+  cxx -= c1;
+  cyy -= c1;
+  czz -= c1;
+
+  const ScalarT cxy_cxy = cxy * cxy;
+  const ScalarT cyz_cyz = cyz * cyz;
+  const ScalarT czx_czx = czx * czx;
+  const ScalarT cxx_cyy = cxx * cyy;
+
+  const ScalarT c2 = cxx_cyy + cyy * czz + czz * cxx - cxy_cxy - cyz_cyz - czx_czx;
+  const ScalarT c3 = cxx * cyz_cyz + cyy * czx_czx - ScalarT(2.0) * cxy * cyz * czx + czz * (cxy_cxy - cxx_cyy);
+
+  // initialize eigenvalues and eigenvectors to those for the identity matrix
+  eval0 = c1;
+  eval1 = c1;
+  eval2 = c1;
+
+  evec0[0] = ScalarT(1.0);
+  evec0[1] = ScalarT(0.0);
+  evec0[2] = ScalarT(0.0);
+
+  evec1[0] = ScalarT(0.0);
+  evec1[1] = ScalarT(1.0);
+  evec1[2] = ScalarT(0.0);
+
+  evec2[0] = ScalarT(0.0);
+  evec2[1] = ScalarT(0.0);
+  evec2[2] = ScalarT(1.0);
+
+  // if c2 is near zero, then tensor is identity (?); no further comutation needed
+  const ScalarT c2tol = (c1 * c1) * (-1.0e-30);  // DJL where does the magic number come from?
+  const bool c2lsmall_neg = c2 < c2tol;
+  if (!c2lsmall_neg) {
+      return;
+  }
+
+  const ScalarT ThreeOverA     = ScalarT(-3.0) / c2;
+  const ScalarT sqrtThreeOverA = std::sqrt(ThreeOverA);
+
+  const ScalarT rr = ScalarT(-0.5) * c3 * ThreeOverA * sqrtThreeOverA;
+
+  const ScalarT arg = Minimum(std::abs(rr), ScalarT(1.0));
+
+  const ScalarT cos_thd3 = Cos_Of_Acos_Divided_By_3(arg);
+
+  const ScalarT two_cos_thd3 = ScalarT(2.0) * MultiplySign(cos_thd3, rr);
+
+  eval2 = two_cos_thd3 / sqrtThreeOverA;
+
+  ScalarT crow0[3] = {cxx - eval2, cxy, czx};
+  ScalarT crow1[3] = {cxy, cyy - eval2, cyz};
+  ScalarT crow2[3] = {czx, cyz, czz - eval2};
+
+  //
+  // do QR decomposition with column pivoting
+  //
+  const ScalarT k0 = crow0[0] * crow0[0] + cxy_cxy + czx_czx;
+  const ScalarT k1 = cxy_cxy + crow1[1] * crow1[1] + cyz_cyz;
+  const ScalarT k2 = czx_czx + cyz_cyz + crow2[2] * crow2[2];
+
+  ScalarT k_row1[3];
+  ScalarT row2[3];
+  ScalarT row3[3];
+
+  // returns zero or nan
+  const bool k0gk1 = k1 <= k0;
+  const bool k0gk2 = k2 <= k0;
+  const bool k1gk2 = k2 <= k1;
+
+  const bool k0_largest = k0gk1 && k0gk2;
+  const bool k1_largest = k1gk2 && !k0gk1;
+  const bool k2_largest = !(k0_largest || k1_largest);
+
+  k_row1[0] = if_then_else_zero(k0_largest, crow0[0]) + if_then_else_zero(k1_largest, crow1[0]) +
+              if_then_else_zero(k2_largest, crow2[0]);
+
+  k_row1[1] = if_then_else_zero(k0_largest, crow0[1]) + if_then_else_zero(k1_largest, crow1[1]) +
+              if_then_else_zero(k2_largest, crow2[1]);
+
+  k_row1[2] = if_then_else_zero(k0_largest, crow0[2]) + if_then_else_zero(k1_largest, crow1[2]) +
+              if_then_else_zero(k2_largest, crow2[2]);
+
+  row2[0] = if_then_else(k0_largest, crow1[0], crow0[0]);
+  row2[1] = if_then_else(k0_largest, crow1[1], crow0[1]);
+  row2[2] = if_then_else(k0_largest, crow1[2], crow0[2]);
+
+  row3[0] = if_then_else(k2_largest, crow1[0], crow2[0]);
+  row3[1] = if_then_else(k2_largest, crow1[1], crow2[1]);
+  row3[2] = if_then_else(k2_largest, crow1[2], crow2[2]);
+
+  const ScalarT ki_ki = ScalarT(1.0) / (if_then_else_zero(k0_largest, k0) + if_then_else_zero(k1_largest, k1) +
+                                        if_then_else_zero(k2_largest, k2));
+
+  const ScalarT ki_dpr1 = ki_ki * (k_row1[0] * row2[0] + k_row1[1] * row2[1] + k_row1[2] * row2[2]);
+  const ScalarT ki_dpr2 = ki_ki * (k_row1[0] * row3[0] + k_row1[1] * row3[1] + k_row1[2] * row3[2]);
+
+  row2[0] -= ki_dpr1 * k_row1[0];
+  row2[1] -= ki_dpr1 * k_row1[1];
+  row2[2] -= ki_dpr1 * k_row1[2];
+
+  row3[0] -= ki_dpr2 * k_row1[0];
+  row3[1] -= ki_dpr2 * k_row1[1];
+  row3[2] -= ki_dpr2 * k_row1[2];
+
+  const ScalarT a0 = row2[0] * row2[0] + row2[1] * row2[1] + row2[2] * row2[2];
+  const ScalarT a1 = row3[0] * row3[0] + row3[1] * row3[1] + row3[2] * row3[2];
+
+  ScalarT a_row2[3];
+
+  const bool a0lea1 = a0 <= a1;
+
+  a_row2[0]           = if_then_else(a0lea1, row3[0], row2[0]);
+  a_row2[1]           = if_then_else(a0lea1, row3[1], row2[1]);
+  a_row2[2]           = if_then_else(a0lea1, row3[2], row2[2]);
+  const ScalarT ai_ai = ScalarT(1.0) / if_then_else(a0lea1, a1, a0);
+
+  evec2[K_X] = k_row1[1] * a_row2[2] - k_row1[2] * a_row2[1];
+  evec2[K_Y] = k_row1[2] * a_row2[0] - k_row1[0] * a_row2[2];
+  evec2[K_Z] = k_row1[0] * a_row2[1] - k_row1[1] * a_row2[0];
+
+  const ScalarT k_atr11 = cxx * k_row1[0] + cxy * k_row1[1] + czx * k_row1[2];
+  const ScalarT k_atr21 = cxy * k_row1[0] + cyy * k_row1[1] + cyz * k_row1[2];
+  const ScalarT k_atr31 = czx * k_row1[0] + cyz * k_row1[1] + czz * k_row1[2];
+
+  const ScalarT a_atr12 = cxx * a_row2[0] + cxy * a_row2[1] + czx * a_row2[2];
+  const ScalarT a_atr22 = cxy * a_row2[0] + cyy * a_row2[1] + cyz * a_row2[2];
+  const ScalarT a_atr32 = czx * a_row2[0] + cyz * a_row2[1] + czz * a_row2[2];
+
+  ScalarT       rm2xx       = (k_row1[0] * k_atr11 + k_row1[1] * k_atr21 + k_row1[2] * k_atr31) * ki_ki;
+  const ScalarT k_a_rm2xy   = (k_row1[0] * a_atr12 + k_row1[1] * a_atr22 + k_row1[2] * a_atr32);
+  ScalarT       rm2yy       = (a_row2[0] * a_atr12 + a_row2[1] * a_atr22 + a_row2[2] * a_atr32) * ai_ai;
+  const ScalarT rm2xy_rm2xy = k_a_rm2xy * k_a_rm2xy * ai_ai * ki_ki;
+
+  //
+  // Wilkinson shift
+  //
+  const ScalarT b        = ScalarT(0.5) * (rm2xx - rm2yy);
+  const ScalarT sqrtTerm = MultiplySign(std::sqrt(b * b + rm2xy_rm2xy), b);
+  eval0                  = rm2yy + b - sqrtTerm;
+
+  eval1 = rm2xx + rm2yy - eval0;
+
+  rm2xx -= eval0;
+  rm2yy -= eval0;
+
+  const ScalarT rm2xx2 = rm2xx * rm2xx;
+  const ScalarT rm2yy2 = rm2yy * rm2yy;
+
+  const ScalarT fac1 = if_then_else(rm2xx2 < rm2yy2, k_a_rm2xy * ai_ai, rm2xx);
+  const ScalarT fac2 = if_then_else(rm2xx2 < rm2yy2, rm2yy, ki_ki * k_a_rm2xy);
+
+  evec0[0] = fac1 * a_row2[0] - fac2 * k_row1[0];
+  evec0[1] = fac1 * a_row2[1] - fac2 * k_row1[1];
+  evec0[2] = fac1 * a_row2[2] - fac2 * k_row1[2];
+
+  const bool rm2xx2iszero      = rm2xx2 == ScalarT(0.0);
+  const bool rm2xy_rm2xyiszero = rm2xy_rm2xy == ScalarT(0.0);
+  const bool both_zero         = rm2xx2iszero && rm2xy_rm2xyiszero;
+
+  // check degeneracy
+  evec0[0] = if_then_else(both_zero, a_row2[0], evec0[0]);
+  evec0[1] = if_then_else(both_zero, a_row2[1], evec0[1]);
+  evec0[2] = if_then_else(both_zero, a_row2[2], evec0[2]);
+
+  evec1[K_X] = evec2[K_Y] * evec0[K_Z] - evec2[K_Z] * evec0[K_Y];
+  evec1[K_Y] = evec2[K_Z] * evec0[K_X] - evec2[K_X] * evec0[K_Z];
+  evec1[K_Z] = evec2[K_X] * evec0[K_Y] - evec2[K_Y] * evec0[K_X];
+
+  eval0 += c1;
+  eval1 += c1;
+  eval2 += c1;
+
+  return;
+}
+
+template <typename ScalarT>
+NIMBLE_INLINE_FUNCTION void
 Polar_Decomp(
     const ScalarT* const mat,          /* full tensor */
     ScalarT* const       left_stretch, /* symmetric tensor */
@@ -875,7 +1070,8 @@ Polar_Decomp(
   ScalarT vec3[3] = {0.0, 0.0, 0.0};
   ScalarT eval[3] = {0.0, 0.0, 0.0};  // Eigen values of mat_inv_squared
 
-  Eigen_Sym33_NonUnit(mat_inv_squared, eval[0], eval[1], eval[2], vec1, vec2, vec3);
+  // Eigen_Sym33_NonUnit(mat_inv_squared, eval[0], eval[1], eval[2], vec1, vec2, vec3);
+  Eigen_Sym33(mat_inv_squared, eval[0], eval[1], eval[2], vec1, vec2, vec3);
 
   const ScalarT zero = ScalarT(0.0);
 
@@ -927,7 +1123,8 @@ Polar_Left_LogV_Lame(
   ScalarT vec2[3] = {0.0, 0.0, 0.0};
   ScalarT vec3[3] = {0.0, 0.0, 0.0};
   ScalarT eval[3] = {0.0, 0.0, 0.0};  // Eigen values of b
-  Eigen_Sym33_NonUnit(b, eval[0], eval[1], eval[2], vec1, vec2, vec3);
+  // Eigen_Sym33_NonUnit(b, eval[0], eval[1], eval[2], vec1, vec2, vec3);
+  Eigen_Sym33(b, eval[0], eval[1], eval[2], vec1, vec2, vec3);
 
   CheckVectorSanity(3, eval, "Eigenvalues in Polar_Left_LogV_Lame()");
 
