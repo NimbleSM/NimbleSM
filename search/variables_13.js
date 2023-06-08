@@ -8,7 +8,7 @@ var searchData=
   ['time_5fnp1_5',['time_np1',['../classnimble__kokkos_1_1_block_material_interface.html#a54e714360c3992703b7d97ee20b26fcf',1,'nimble_kokkos::BlockMaterialInterface']]],
   ['time_5fprevious_6',['time_previous',['../structnimble_1_1_compute_internal_force_functor.html#ab4a282474964a501839b0b3540ee9530',1,'nimble::ComputeInternalForceFunctor']]],
   ['time_5fstamp_7',['time_stamp',['../structnimble_1_1_timing_info.html#af28447ff5e6bc4cef7f6ddef6d96da9c',1,'nimble::TimingInfo']]],
-  ['timers_5f_8',['timers_',['../classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091',1,'nimble::ContactManager::timers_()'],['../classnimble_1_1_timer.html#ac68fa9b4b7b99369fccc4c1b068cc26e',1,'nimble::Timer::timers_()']]],
+  ['timers_5f_8',['timers_',['../classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091',1,'nimble::ContactManager::timers_'],['../classnimble_1_1_timer.html#ac68fa9b4b7b99369fccc4c1b068cc26e',1,'nimble::Timer::timers_']]],
   ['total_5fcontact_5ftime_9',['total_contact_time',['../structnimble_1_1_timing_info.html#afbb3daf04ec96cc5262ddf6bbc85a036',1,'nimble::TimingInfo']]],
   ['total_5fenforcement_5ftime_10',['total_enforcement_time',['../classnimble_1_1_contact_manager.html#abde56eba20aba1007993332cc43940e7',1,'nimble::ContactManager']]],
   ['total_5fexodus_5fwrite_5ftime_11',['total_exodus_write_time',['../structnimble_1_1_timing_info.html#a790c2ba7100b19d02d886e18ed049c3d',1,'nimble::TimingInfo']]],

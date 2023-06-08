@@ -17,7 +17,7 @@ var searchData=
   ['timeintegrationscheme_14',['TimeIntegrationScheme',['../classnimble_1_1_parser.html#a1dace6dc730adcf84b01ee800cfac4e9',1,'nimble::Parser']]],
   ['timekeeper_15',['TimeKeeper',['../classnimble_1_1_time_keeper.html',1,'nimble::TimeKeeper'],['../classnimble_1_1_time_keeper.html#a1def6999d70e6eda5267b646bab3476c',1,'nimble::TimeKeeper::TimeKeeper()']]],
   ['timer_16',['Timer',['../classnimble_1_1_timer.html',1,'nimble::Timer'],['../classnimble_1_1_timer.html#a6e872fa8e4b63c43adcb95df8ba5a72a',1,'nimble::Timer::Timer()']]],
-  ['timers_5f_17',['timers_',['../classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091',1,'nimble::ContactManager::timers_()'],['../classnimble_1_1_timer.html#ac68fa9b4b7b99369fccc4c1b068cc26e',1,'nimble::Timer::timers_()']]],
+  ['timers_5f_17',['timers_',['../classnimble_1_1_contact_manager.html#a4a1dd3e11f28b21d44c786c889ee3091',1,'nimble::ContactManager::timers_'],['../classnimble_1_1_timer.html#ac68fa9b4b7b99369fccc4c1b068cc26e',1,'nimble::Timer::timers_']]],
   ['timinginfo_18',['TimingInfo',['../structnimble_1_1_timing_info.html',1,'nimble::TimingInfo'],['../structnimble_1_1_timing_info.html#a0067970726deb06f5a7ea2c6e11a38a8',1,'nimble::TimingInfo::TimingInfo()=default'],['../structnimble_1_1_timing_info.html#a08f0545ae6bbc4e80b38468699403b76',1,'nimble::TimingInfo::TimingInfo(int i, std::string basicString, double t_sim, double t_internal, double t_contact, double t_exodus, double t_reduce)']]],
   ['tokenize_5fstring_19',['tokenize_string',['../namespacenimble.html#a2012620f3e870fffe8971267122db3ae',1,'nimble']]],
   ['total_5fcontact_5ftime_20',['total_contact_time',['../structnimble_1_1_timing_info.html#afbb3daf04ec96cc5262ddf6bbc85a036',1,'nimble::TimingInfo']]],
