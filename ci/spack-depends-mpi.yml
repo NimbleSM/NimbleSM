@@ -3,14 +3,12 @@ spack:
     - compilers: [gcc@11.1.0]
     - mpis:
         - mpich@3.4.2
-    - core-packages: []
+    - core-packages:
+        - kokkos@4.0 +openmp +serial
     - packages: []
-    - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
-      core-packages:
-        - kokkos@3.6 +openmp +serial
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
-        - trilinos@13.2.0 +openmp +exodus
+        - trilinos@14.0.0 +openmp +exodus
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       packages:
         - seacas@2022-10-14 -x11 ^hdf5@1.14.0

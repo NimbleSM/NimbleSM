@@ -68,7 +68,6 @@ RUN . /opt/spack/share/spack/setup-env.sh && spack env create nimble /opt/spack/
 # activate nimble env and install
 RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack install --fail-fast && spack gc -y
 
-
 FROM build_dependencies-stage as build_nimble-stage
 # need to be repeated in the new stage
 ARG NimbleSM_ENABLE_MPI
@@ -80,6 +79,10 @@ ARG NimbleSM_ENABLE_ARBORX
 # Add current source dir into the image
 COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
+
+# install mpicpp and p3a
+RUN bash /opt/src/NimbleSM/ci/install-mpicpp.sh
+RUN bash /opt/src/NimbleSM/ci/install-p3a.sh
 
 # Build using the spack environment we created
 RUN bash /opt/src/NimbleSM/ci/build.sh

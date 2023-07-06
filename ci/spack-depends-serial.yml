@@ -1,13 +1,12 @@
 spack:
   definitions:
     - compilers: [gcc@11.1.0]
-    - packages: []
-    - when: env["NimbleSM_ENABLE_KOKKOS"] == "ON"
-      packages:
-        - kokkos@3.6 +openmp
+    - packages:
+        - kokkos@4.0 +openmp +serial
+        - mpich@3.4.2
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
-        - trilinos@13.2.0 +openmp +exodus -mpi ^hdf5~mpi
+        - trilinos@14.0.0 +openmp +exodus -mpi ^hdf5~mpi
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       packages:
         - seacas@2022-10-14 -x11 -mpi ^hdf5@1.14.0
