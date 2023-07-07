@@ -1,5 +1,5 @@
-genesis input file:               wave_in_bar.g
-exodus output file:               wave_in_bar.e
+genesis input file:               wave_in_bar_plasticity.g
+exodus output file:               wave_in_bar_plasticity.e
 final time:                       1.0e-3
 number of load steps:             10000
 output frequency:                 1000
