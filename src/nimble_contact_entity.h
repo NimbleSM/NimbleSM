@@ -387,7 +387,7 @@ class ContactEntity
   void
   RecomputeKdop()
   {
-    const bvh::float_type inflation_length = static_cast<float_type>( inflation_factor * char_len_ );
+    const auto inflation_length = static_cast<bvh::float_type>( inflation_factor * char_len_ );
     if (entity_type_ == NODE) {
       bvh::float_type v[3];
       v[0]  = static_cast<bvh::float_type>(coord_1_x_);
