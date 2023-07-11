@@ -78,6 +78,9 @@ MaterialFactory::create()
   } else if (name_string == "elastic") {
     std::tie(material, material_device) =
         allocate_material_on_host_and_device<nimble::ElasticMaterial>(*material_params);
+  } else if (name_string == "j2-plasticity") {
+    std::tie(material, material_device) =
+        allocate_material_on_host_and_device<nimble::J2PlasticityMaterial>(*material_params);
   } else {
     throw std::invalid_argument(
         "\nError in Block::InstantiateMaterialModel(), invalid material model "
