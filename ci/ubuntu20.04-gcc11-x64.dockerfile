@@ -36,11 +36,11 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 
 RUN apt-get update \
   && apt-get install -y \
-     gcc-11 \
-     g++-11 \
-     gfortran-11 \
-     cmake-data=3.21.3-0kitware1ubuntu20.04.1 \
-     cmake=3.21.3-0kitware1ubuntu20.04.1 \
+     gcc-11=11.4.0-2ubuntu1~20.04 \
+     g++-11=11.4.0-2ubuntu1~20.04 \
+     gfortran-11=11.4.0-2ubuntu1~20.04 \
+     cmake-data=3.26.4-0kitware1ubuntu20.04.1 \
+     cmake=3.26.4-0kitware1ubuntu20.04.1 \
      pkg-config \
      libncurses5-dev \
      m4 \
