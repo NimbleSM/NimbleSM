@@ -6,6 +6,7 @@ cmake -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_C_COMPILER=gcc-11 \
      -DCMAKE_CXX_COMPILER=g++-11 \
      -DCMAKE_CXX_FLAGS="-Werror" \
+     -DCMAKE_PREFIX_PATH=/opt/local \
      -DNimbleSM_ENABLE_UNIT_TESTS=ON \
      -DNimbleSM_ENABLE_MPI=$NimbleSM_ENABLE_MPI \
      -DNimbleSM_ENABLE_KOKKOS=$NimbleSM_ENABLE_KOKKOS \
