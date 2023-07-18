@@ -6,7 +6,7 @@ spack:
         - mpich@3.4.2
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "ON"
       packages:
-        - trilinos@14.0.0 +openmp +exodus -mpi ^hdf5~mpi
+        - trilinos@14.0.0 +openmp +exodus -mpi ^hdf5~mpi ^cgns~mpi
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       packages:
         - seacas@2022-10-14 -x11 -mpi ^hdf5@1.14.1 ^fmt@9.1.0
