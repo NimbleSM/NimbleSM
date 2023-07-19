@@ -11,6 +11,7 @@ spack:
     - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       core-packages:
         - kokkos@4.0 +openmp +serial
+    - when: env["NimbleSM_ENABLE_TRILINOS"] == "OFF"
       packages:
         - seacas@2022-10-14 -x11 ^hdf5@1.14.1 ^fmt@9.1.0
     - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "ON" )
