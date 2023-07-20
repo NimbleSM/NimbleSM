@@ -1,6 +1,6 @@
 spack:
   definitions:
-    - compilers: [gcc@11.1.0]
+    - compilers: [gcc@11.4.0]
     - mpis:
         - mpich@3.4.2
     - core-packages: []
