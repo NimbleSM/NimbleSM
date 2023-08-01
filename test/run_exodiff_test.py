@@ -54,6 +54,8 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
             # Echo to all our logfiles
             for log in logfiles:
                 log.write(contents)
+            q.task_done()
+
 
 def run_cmd(cmd: List[str], logfiles: List[TextIO]) -> None:
     # open the process with text and bufsize=1 (line bufferd)
