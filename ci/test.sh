@@ -16,5 +16,3 @@ cp /opt/build/NimbleSM/test/*/*/*.log /tmp/artifacts/
 echo ${ret_code} > /tmp/artifacts/success_flag.txt
 ls /tmp/artifacts
 popd
-
-exit $ret_code
