@@ -5,7 +5,86 @@ import os
 import string
 import glob
 import argparse as ap
-from subprocess import run
+import subprocess
+import threading
+import queue
+from typing import (
+    List,
+    TextIO,
+    Tuple,
+    Optional
+)
+
+def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
+    try:
+        # Keep polling for input on the pipe until we are done
+        with pipe:
+            for line in pipe:
+                q.put((pipe, line))
+    finally:
+        # Mark the end of the stream
+        q.put((pipe, None))
+
+
+def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subprocess.Popen) -> None:
+    stdout_done = False
+    stderr_done = False
+    while (not stdout_done) or (not stderr_done):
+        entry: Tuple[TextIO, Optional[str]] = q.get()
+        pipe, contents = entry
+
+        # if contents is None, that stream is done
+        if contents is None:
+            if pipe is proc.stdout:
+                stdout_done = True
+            elif pipe is proc.stderr:
+                stderr_done = True
+            else:
+                raise ValueError("invalid pipe")
+            q.task_done()
+        else:
+            # Echo to stdout/stderr
+            if pipe is proc.stdout:
+                sys.stdout.write(contents)
+            elif pipe is proc.stderr:
+                sys.stderr.write(contents)
+            else:
+                raise ValueError("invalid pipe")
+
+            # Echo to all our logfiles
+            for log in logfiles:
+                log.write(contents)
+            q.task_done()
+
+
+def run_cmd(cmd: List[str], logfiles: List[TextIO]) -> None:
+    # open the process with text and bufsize=1 (line bufferd)
+    proc = subprocess.Popen(cmd, text=True, bufsize=1,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+    io_queue = queue.Queue()
+
+    out_thread = threading.Thread(target=_echo_enqueued_output, args=[io_queue, logfiles, proc])
+    stdout_thread = threading.Thread(target=_enqueue_piped_output, args=[io_queue, proc.stdout])
+    stderr_thread = threading.Thread(target=_enqueue_piped_output, args=[io_queue, proc.stderr])
+
+    out_thread.start()
+    stdout_thread.start()
+    stderr_thread.start()
+
+    # We will keep enqueuing work at this point so block until queue is drained
+    io_queue.join()
+
+    # Join all our outstanding threads
+    out_thread.join()
+    stdout_thread.join()
+    stderr_thread.join()
+
+    # Now, just in case our subprocess is still running, wait for it
+    if proc.wait() != 0:
+        raise subprocess.CalledProcessError(proc.returncode, proc.args)
+
 
 def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openmpi=False):
 
@@ -25,9 +104,11 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     #
     command.append(executable_name)
     #
+    command.append(input_deck_name)
     if cli_flag:
         command.append("--" + cli_flag)
-    command.append(input_deck_name)
+        if "use_vt" in cli_flag:
+            command.append("--vt_no_terminate")
 
     # differentiate output files based on type of run
     nimble_output_name = "none"
@@ -66,19 +147,11 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     print("\nCommand:", command)
 
     # run the code
-    p = run(command, capture_output=True, text=True, check=True)
-    print("stdout:", p.stdout)
-    print("stderr:", p.stderr)
-
-    return_code = p.returncode
-    if return_code != 0:
-        result = return_code
-
-    print("------------FIRST TEST RESULT " + str(result) + "\n\n")
-    logfile.write("------------FIRST TEST RESULT " + str(result) + "\n\n")
-    logfile.write(p.stdout)
-    logfile.write(p.stderr)
-    logfile.flush()
+    try:
+        run_cmd(command, [logfile])
+    except subprocess.CalledProcessError as e:
+        print(f"NimbleSM run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
+        return e.returncode
 
     # run epu
     if epu_required:
@@ -89,19 +162,11 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    epu_output_extension, \
                    nimble_output_name]
         print("EPU COMMAND", command)
-        p = run(command, capture_output=True, text=True, check=True)
-        print("stdout:", p.stdout)
-        print("stderr:", p.stderr)
-
-        return_code = p.returncode
-        if return_code != 0:
-            result = return_code
-
-        print("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
-        logfile.write("------------SECOND(MPI) TEST RESULT " + str(result) + "\n\n")
-        logfile.write(p.stdout)
-        logfile.write(p.stderr)
-        logfile.flush()
+        try:
+            run_cmd(command, [logfile])
+        except subprocess.CalledProcessError as e:
+            print(f"epu run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
+            return e.returncode
 
     # run exodiff
     command = ["exodiff", \
@@ -110,19 +175,11 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".exodiff", \
                base_name+".gold.e", \
                epu_exodus_output_name]
-    p = run(command, capture_output=True, text=True, check=True)
-    print("stdout:", p.stdout)
-    print("stderr:", p.stderr)
-
-    return_code = p.returncode
-    if return_code != 0:
-        result = return_code
-
-    print("FINAL TEST RESULT " + str(result) + "\n\n")
-    logfile.write("FINAL TEST RESULT " + str(result) + "\n\n")
-    logfile.write(p.stdout)
-    logfile.write(p.stderr)
-    logfile.flush()
+    try:
+        run_cmd(command, [logfile])
+    except subprocess.CalledProcessError as e:
+        print(f"exodiff run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
+        return e.returncode
 
     logfile.close()
 
