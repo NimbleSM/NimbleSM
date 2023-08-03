@@ -1,4 +1,4 @@
-FROM pierrpebay/nimblesm:latest as build_nimble-stage
+FROM pierrpebay/nimblesm:pr-2 as build_nimble-stage
 
 # Add current source dir into the image
 COPY . /opt/src/NimbleSM
