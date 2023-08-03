@@ -1,3 +1,4 @@
+set -e
 set -x
 . /opt/spack/share/spack/setup-env.sh
 spack env activate nimble
