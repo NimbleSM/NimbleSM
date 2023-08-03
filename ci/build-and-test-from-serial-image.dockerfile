@@ -5,7 +5,7 @@ COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # Build using the spack environment we created
-RUN bash /opt/src/NimbleSM/ci/build.sh
+RUN bash /opt/src/NimbleSM/ci/build-serial.sh
 
 FROM build_nimble-stage as test-stage
 
