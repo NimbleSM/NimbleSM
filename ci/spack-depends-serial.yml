@@ -12,10 +12,10 @@ spack:
         - seacas@2022-10-14 -x11 -mpi ^hdf5@1.14.1 ^fmt@9.1.0
     - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "ON" )
       packages:
-        - arborx@1.1 +openmp -mpi +trilinos
+        - arborx@1.4.1 +openmp -mpi +trilinos
     - when: ( env["NimbleSM_ENABLE_ARBORX"] == "ON" ) and ( env["NimbleSM_ENABLE_TRILINOS"] == "OFF" )
       packages:
-        - arborx@1.1 +openmp -mpi
+        - arborx@1.4.1 +openmp -mpi
   specs:
     - matrix:
         - [$packages]
