@@ -49,6 +49,13 @@ RUN apt-get update \
 RUN pip install clingo
 # Now we install spack and find compilers/externals
 RUN mkdir -p /opt/ && cd /opt/ && git clone --depth 1 --branch "v0.20.1" https://github.com/spack/spack.git
+
+# Add current source dir into the image
+COPY . /opt/src/NimbleSM
+
+# Apply our patch to get more up-to-date packages
+RUN cd /opt/spack && git apply /opt/src/NimbleSM/ci/arborx_spack_package.patch
+
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
 RUN mkdir -p /opt/spack-environment
@@ -76,8 +83,6 @@ ARG NimbleSM_ENABLE_TRILINOS
 ARG NimbleSM_ENABLE_UQ
 ARG NimbleSM_ENABLE_ARBORX
 
-# Add current source dir into the image
-COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # install mpicpp and p3a
