@@ -1,7 +1,28 @@
 set -e
 set -x
+
+if [ "$NimbleSM_CONFIGURATION_NAME" = "NimbleSMMPI+Kokkos+ArborX" ]; then \
+     echo "Using MPI+KOKKOS+ARBORX NimbleSM configuration."; \
+     export NimbleSM_SPACK_ENV_NAME="nimble-mpi-kokkos-arborx"; \
+
+elif [ "$NimbleSM_CONFIGURATION_NAME" = "NimbleSMMPI+Kokkos" ]; then \
+     echo "Using MPI+KOKKOS NimbleSM configuration."; \
+     export NimbleSM_SPACK_ENV_NAME="nimble-mpi-kokkos"; \
+
+elif [ "$NimbleSM_CONFIGURATION_NAME" = "NimbleSMMPI+Trilinos" ]; then \
+     echo "Using MPI+TRILINOS NimbleSM configuration."; \
+     export NimbleSM_SPACK_ENV_NAME="nimble-mpi-trilinos"; \
+
+elif [ "$NimbleSM_CONFIGURATION_NAME" = "NimbleSMMPI" ]; then \
+     echo "Using MPI NimbleSM configuration."; \
+     export NimbleSM_SPACK_ENV_NAME="nimble-mpi"; \
+
+else \
+     echo "No existing NimbleSM configuration with provided arguments. Exiting."; \
+     exit 1; \
+fi
 . /opt/spack/share/spack/setup-env.sh
-spack env activate nimble
+spack env activate $NimbleSM_SPACK_ENV_NAME
 
 cmake -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_C_COMPILER=gcc-11 \
