@@ -57,7 +57,7 @@ main(int argc, char** argv)
   int err = RUN_ALL_TESTS();
 
 #ifdef NIMBLE_HAVE_KOKKOS
-  Kokkos::finalize_all();
+  Kokkos::finalize();
 #endif
 
   return err;

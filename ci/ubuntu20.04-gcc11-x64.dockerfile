@@ -49,6 +49,13 @@ RUN apt-get update \
 RUN pip install clingo
 # Now we install spack and find compilers/externals
 RUN mkdir -p /opt/ && cd /opt/ && git clone --depth 1 --branch "v0.20.1" https://github.com/spack/spack.git
+
+# Add current source dir into the image
+COPY . /opt/src/NimbleSM
+
+# Apply our patch to get more up-to-date packages
+RUN cd /opt/spack && git apply /opt/src/NimbleSM/ci/arborx_spack_package.patch
+
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
 RUN mkdir -p /opt/spack-environment
@@ -68,7 +75,6 @@ RUN . /opt/spack/share/spack/setup-env.sh && spack env create nimble /opt/spack/
 # activate nimble env and install
 RUN . /opt/spack/share/spack/setup-env.sh && spack env activate nimble && spack install --fail-fast && spack gc -y
 
-
 FROM build_dependencies-stage as build_nimble-stage
 # need to be repeated in the new stage
 ARG NimbleSM_ENABLE_MPI
@@ -77,9 +83,11 @@ ARG NimbleSM_ENABLE_TRILINOS
 ARG NimbleSM_ENABLE_UQ
 ARG NimbleSM_ENABLE_ARBORX
 
-# Add current source dir into the image
-COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
+
+# install mpicpp and p3a
+RUN bash /opt/src/NimbleSM/ci/install-mpicpp.sh
+RUN bash /opt/src/NimbleSM/ci/install-p3a.sh
 
 # Build using the spack environment we created
 RUN bash /opt/src/NimbleSM/ci/build.sh
