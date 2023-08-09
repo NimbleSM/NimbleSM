@@ -36,11 +36,11 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 
 RUN apt-get update \
   && apt-get install -y \
-     gcc-11 \
-     g++-11 \
-     gfortran-11 \
-     cmake-data=3.21.3-0kitware1ubuntu20.04.1 \
-     cmake=3.21.3-0kitware1ubuntu20.04.1 \
+     gcc-11=11.4.0-2ubuntu1~20.04 \
+     g++-11=11.4.0-2ubuntu1~20.04 \
+     gfortran-11=11.4.0-2ubuntu1~20.04 \
+     cmake-data=3.26.4-0kitware1ubuntu20.04.1 \
+     cmake=3.26.4-0kitware1ubuntu20.04.1 \
      pkg-config \
      libncurses5-dev \
      m4 \
@@ -48,7 +48,14 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 RUN pip install clingo
 # Now we install spack and find compilers/externals
-RUN mkdir -p /opt/ && cd /opt/ && git clone https://github.com/spack/spack.git
+RUN mkdir -p /opt/ && cd /opt/ && git clone --depth 1 --branch "v0.20.1" https://github.com/spack/spack.git
+
+# Add current source dir into the image
+COPY . /opt/src/NimbleSM
+
+# Apply our patch to get more up-to-date packages
+RUN cd /opt/spack && git apply /opt/src/NimbleSM/ci/arborx_spack_package.patch
+
 RUN . /opt/spack/share/spack/setup-env.sh && spack compiler find
 RUN . /opt/spack/share/spack/setup-env.sh && spack external find --not-buildable && spack external list
 RUN mkdir -p /opt/spack-environment
@@ -76,8 +83,6 @@ ARG NimbleSM_ENABLE_TRILINOS
 ARG NimbleSM_ENABLE_UQ
 ARG NimbleSM_ENABLE_ARBORX
 
-# Add current source dir into the image
-COPY . /opt/src/NimbleSM
 RUN mkdir -p /opt/build/NimbleSM
 
 # install mpicpp and p3a
