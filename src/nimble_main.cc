@@ -49,7 +49,7 @@ main(int argc, char **argv)
 {
   using namespace nimble;
 
-  NIMBLE_TRAP_FPE();
+  // NIMBLE_TRAP_FPE();
 
   NimbleApplication app;
   return app.Run(argc, argv);
