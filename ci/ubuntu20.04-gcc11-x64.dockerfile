@@ -1,4 +1,4 @@
-FROM pierrpebay/nimblesm:pr-2 AS build_nimble-stage
+FROM nmm0/nimblesm-base-env:main AS build_nimble-stage
 # need to be repeated in the new stage
 ARG NimbleSM_ENABLE_MPI
 ARG NimbleSM_ENABLE_KOKKOS
