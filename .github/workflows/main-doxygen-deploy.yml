@@ -1,7 +1,7 @@
 
 name: Doxygen Deploy
 
-# Controls when the action will run. 
+# Controls when the action will run.
 # Triggers the workflow on push event for the `master` and `develop` branch
 # Note that the Deploy action will update the branch `gh-pages`.
 # The webpage `https://nimblesm.github.io/NimbleSM` is linked to the branch `gh-pages`
@@ -22,18 +22,18 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v3
-        
+
     - name: Doxygen Action
       uses: mattnotmitt/doxygen-action@v1.1.0
       with:
         # Path to Doxyfile
         doxyfile-path: "./docs/doxygen/.Doxyfile_for_Deployment" # default is ./Doxyfile
-    
+
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # Default Doxyfile build documentation to html directory. 
+        # Default Doxyfile build documentation to html directory.
         # Change the directory if changes in Doxyfile
         publish_dir: "./doxygen/html"
         publish_branch: gh-pages

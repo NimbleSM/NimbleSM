@@ -1,7 +1,7 @@
 
 name: Check Doxygen Action
 
-# Controls when the action will run. 
+# Controls when the action will run.
 # Triggers the workflow on pull request events.
 # This action does not deploy the updated files to `gh-pages`
 on:
@@ -21,7 +21,7 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v3
-        
+
     - name: Doxygen Action
       uses: mattnotmitt/doxygen-action@v1.9.4
       with:

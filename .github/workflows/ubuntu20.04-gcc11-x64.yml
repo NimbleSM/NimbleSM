@@ -29,6 +29,7 @@ jobs:
             trilinos: {name: "+Trilinos", value: "ON"}
           - arborx: {name: "+ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
+          - mpi: {name: "Serial", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
       SCOPE_NAME: 'NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}'
@@ -67,6 +68,7 @@ jobs:
             NimbleSM_ENABLE_TRILINOS=${{ matrix.trilinos.value }}
             NimbleSM_ENABLE_UQ=OFF
             NimbleSM_ENABLE_ARBORX=${{ matrix.arborx.value }}
+            NimbleSM_CONFIGURATION_NAME=${{ env.SCOPE_NAME }}
           outputs: type=local,dest=${{ env.OUTPUT_DIR }}
       - name: Upload Test Log Files
         uses: actions/upload-artifact@v3
