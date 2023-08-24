@@ -88,6 +88,14 @@ if (TIME_CONTACT)
 endif()
 #------
 
+option(NimbleSM_ENABLE_P3A "Whether to use p3a" OFF)
+option(HAVE_P3A "Whether to use p3a" OFF)
+if (HAVE_P3A)
+  set(NimbleSM_ENABLE_P3A TRUE)
+  message(DEPRECATION "Flag HAVE_P3A is deprecated. Use NimbleSM_ENABLE_P3A instead.")
+endif()
+#------
+
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -102,6 +110,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 add_library(nimble)
 add_library(nimble::nimble ALIAS nimble)
+target_compile_features(nimble PUBLIC cxx_std_17)
 
 # Enhanced debugging option
 OPTION(NimbleSM_ENABLE_DEBUG "Flag to turn on enhanced debugging info" OFF)
@@ -265,6 +274,22 @@ else()
   message(STATUS "ArborX is NOT enabled.")
   SET(NIMBLE_HAVE_ARBORX FALSE)
   set(ArborX_LIBS)
+endif()
+
+# Optional P3A dependency
+if (NimbleSM_ENABLE_P3A)
+  message(STATUS "Compiling with p3a:")
+  find_package(p3a REQUIRED)
+  #
+  set(NIMBLE_HAVE_P3A TRUE)
+  add_definitions(-DNIMBLE_HAVE_P3A)
+  target_link_libraries(nimble PUBLIC p3a::p3a)
+  target_compile_definitions(nimble PUBLIC NIMBLE_HAVE_P3A)
+  #
+  message("       P3A_DIR: ${P3A_DIR}")
+else()
+  message(STATUS "P3A is NOT enabled.")
+  SET(NIMBLE_HAVE_P3A FALSE)
 endif()
 
 include_directories(src)

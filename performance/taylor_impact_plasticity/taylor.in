@@ -1,0 +1,10 @@
+genesis input file:               taylor.g
+exodus output file:               taylor.e
+final time:                       20.0e-6
+number of load steps:             2000
+output frequency:                 100
+output fields:                    displacement velocity deformation_gradient ipt01_deformation_gradient ipt02_deformation_gradient ipt03_deformation_gradient ipt04_deformation_gradient ipt05_deformation_gradient ipt06_deformation_gradient ipt07_deformation_gradient ipt08_deformation_gradient stress ipt01_stress ipt02_stress ipt03_stress ipt04_stress ipt05_stress ipt06_stress ipt07_stress ipt08_stress equivalent_plastic_strain
+material parameters:              material_1 j2-plasticity elastic_modulus 130.6e+09 poissons_ratio 0.343 density 8960 yield_stress 89.7e+06 hardening_exponent 0 reference_plastic_strain 0.02 reference_viscoplastic_stress 89.7e+06 rate_dependence_exponent 0 reference_plastic_strain_rate 1e+04
+element block:                    block_1 material_1
+boundary condition:               initial_velocity nodelist_1 z 227.0
+boundary condition:               prescribed_velocity nodelist_2 z 0
