@@ -1724,13 +1724,31 @@ ContactManager::Projection(
 void
 ContactManager::ResetContactStatus()
 {
+#ifdef NIMBLE_HAVE_KOKKOS
+  Kokkos::parallel_for("ResetContactFace", contact_faces_d_.extent(0),
+       KOKKOS_LAMBDA(int i) {
+         contact_faces_d_(i).ResetContactData();
+       });
+  Kokkos::parallel_for("ResetContactNode", contact_nodes_d_.extent(0),
+       KOKKOS_LAMBDA(int i) {
+         contact_nodes_d_(i).ResetContactData();
+       });
+  //---
+  if (contact_faces_.size() > 0) {
+    Kokkos::parallel_for("ResetContactFace", contact_faces_.size(),
+       [&](int i) {
+         contact_faces_[i].ResetContactData();
+       });
+  }
+  if (contact_nodes_.size() > 0) {
+    Kokkos::parallel_for("ResetContactNode", contact_nodes_.size(),
+       [&](int i) {
+           contact_nodes_[i].ResetContactData();
+       });
+  }
+#else
   for (auto &face : contact_faces_) face.ResetContactData();
   for (auto &node : contact_nodes_) node.ResetContactData();
-    
-#ifdef NIMBLE_HAVE_KOKKOS
-  for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
-
-  for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();
 #endif
 }
 

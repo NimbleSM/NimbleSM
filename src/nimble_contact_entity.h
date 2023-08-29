@@ -387,25 +387,25 @@ class ContactEntity
   void
   RecomputeKdop()
   {
-    const double inflation_length = inflation_factor * char_len_;
+    const auto inflation_length = static_cast<bvh::float_type>( inflation_factor * char_len_ );
     if (entity_type_ == NODE) {
-      vertex v;
-      v[0]  = coord_1_x_;
-      v[1]  = coord_1_y_;
-      v[2]  = coord_1_z_;
+      bvh::float_type v[3];
+      v[0]  = static_cast<bvh::float_type>(coord_1_x_);
+      v[1]  = static_cast<bvh::float_type>(coord_1_y_);
+      v[2]  = static_cast<bvh::float_type>(coord_1_z_);
       kdop_ = bvh::bphase_kdop::from_vertices(&v, &v + 1, inflation_length);
     } else {
       // entity_type_ == TRIANGLE
-      vertex v[3];
-      v[0][0] = coord_1_x_;
-      v[0][1] = coord_1_y_;
-      v[0][2] = coord_1_z_;
-      v[1][0] = coord_2_x_;
-      v[1][1] = coord_2_y_;
-      v[1][2] = coord_2_z_;
-      v[2][0] = coord_3_x_;
-      v[2][1] = coord_3_y_;
-      v[2][2] = coord_3_z_;
+      bvh::float_type v[3][3];
+      v[0][0] = static_cast<bvh::float_type>(coord_1_x_);
+      v[0][1] = static_cast<bvh::float_type>(coord_1_y_);
+      v[0][2] = static_cast<bvh::float_type>(coord_1_z_);
+      v[1][0] = static_cast<bvh::float_type>(coord_2_x_);
+      v[1][1] = static_cast<bvh::float_type>(coord_2_y_);
+      v[1][2] = static_cast<bvh::float_type>(coord_2_z_);
+      v[2][0] = static_cast<bvh::float_type>(coord_3_x_);
+      v[2][1] = static_cast<bvh::float_type>(coord_3_y_);
+      v[2][2] = static_cast<bvh::float_type>(coord_3_z_);
       kdop_   = bvh::bphase_kdop::from_vertices(v, v + 3, inflation_length);
     }
   }
