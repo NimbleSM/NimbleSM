@@ -280,16 +280,6 @@ class Parser
     return output_field_string_;
   }
 
-  /// \brief Set that Kokkos is used for the simulation
-  ///
-  /// \note The function will abort when an environment
-  /// has been set previously
-  void
-  SetToUseKokkos()
-  {
-    use_kokkos_ = true;
-  }
-
   /// \brief Set that Tpetra is used for the simulation
   ///
   /// \note The function will abort when an environment
@@ -316,12 +306,6 @@ class Parser
   SetToUseVT()
   {
     use_vt_  = true;
-  }
-
-  bool
-  UseKokkos() const
-  {
-    return use_kokkos_;
   }
 
   /// \brief Indicate whether Tpetra is used for the simulation
@@ -475,9 +459,6 @@ class Parser
 
   /// \brief Boolean setting the usage of VT
   bool use_vt_ = false;
-
-  /// \brief Boolean setting the usage of Kokkos
-  bool use_kokkos_ = false;
 
   /// \brief Boolean setting the usage of Tpetra
   bool use_tpetra_ = false;

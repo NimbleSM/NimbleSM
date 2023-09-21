@@ -336,12 +336,6 @@ class ContactManager
   BoundingBoxAverageCharacteristicLengthOverAllRanks() const;
 
   void
-  ApplyDisplacements(const double* displacement);
-
-  void
-  GetForces(double* contact_force) const;
-
-  void
   ComputeContactForce(int step, bool debug_output)
   {
     if (penalty_parameter_ <= 0.0) {
@@ -353,13 +347,10 @@ class ContactManager
 #endif
   }
 
-#ifdef NIMBLE_HAVE_KOKKOS
-  // Kokkos versions of ApplyDisplacements and GetForces
   void
   ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacement_d);
   void
   GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const;
-#endif
 
   void
   BruteForceBoxIntersectionSearch(std::vector<ContactEntity> const& nodes, std::vector<ContactEntity> const& triangles);
@@ -460,7 +451,6 @@ class ContactManager
   nimble::GenesisMesh  genesis_mesh_for_contact_visualization_;
   nimble::ExodusOutput exodus_output_for_contact_visualization_;
 
-#ifdef NIMBLE_HAVE_KOKKOS
   nimble_kokkos::DeviceIntegerArrayView node_ids_d_  = nimble_kokkos::DeviceIntegerArrayView("contact node_ids_d", 1);
   nimble_kokkos::DeviceScalarNodeView model_coord_d_ = nimble_kokkos::DeviceScalarNodeView("contact model_coord_d", 1);
   nimble_kokkos::DeviceScalarNodeView coord_d_       = nimble_kokkos::DeviceScalarNodeView("contact coord_d", 1);
@@ -478,7 +468,6 @@ class ContactManager
       nimble_kokkos::HostContactEntityArrayView("contact_nodes_h", 1);
 
   nimble_kokkos::ModelData* model_data_ = nullptr;
-#endif
 
   std::unordered_map<std::string, double> timers_;
 #ifdef NIMBLE_TIME_CONTACT

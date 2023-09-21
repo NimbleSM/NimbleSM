@@ -133,12 +133,6 @@ CommandLineConfiguration::ParseAndGetErrorCode() {
 }
 
 bool
-CommandLineConfiguration::UseKokkos() const noexcept
-{
-  return impl_->use_kokkos_;
-}
-
-bool
 CommandLineConfiguration::UseTpetra() const noexcept
 {
   return impl_->use_tpetra_;

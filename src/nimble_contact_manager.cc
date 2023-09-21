@@ -154,13 +154,11 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
   if (!data_manager.GetParser().HasContact()) return nullptr;
 
 #if defined(NIMBLE_HAVE_ARBORX)
-  if (data_manager.GetParser().UseKokkos()) {
 #if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
-    return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
+  return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
 #else
-    return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
+  return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
 #endif
-  }
 #endif
 
 #ifdef NIMBLE_HAVE_BVH
@@ -345,28 +343,25 @@ ContactManager::CreateContactEntities(
       contact_nodes_,
       contact_faces_);
 
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos()) {
-    nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
-    for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) { node_ids_h[i_node] = node_ids_[i_node]; }
+  nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
+  for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) { node_ids_h[i_node] = node_ids_[i_node]; }
 
-    nimble_kokkos::HostScalarNodeView model_coord_h("contact_model_coord_h", array_len);
-    for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
-      model_coord_h[3 * i_node]     = coord_x[node_ids_[i_node]];
-      model_coord_h[3 * i_node + 1] = coord_y[node_ids_[i_node]];
-      model_coord_h[3 * i_node + 2] = coord_z[node_ids_[i_node]];
-    }
-
-    Kokkos::resize(node_ids_d_, node_ids_.size());
-    Kokkos::resize(model_coord_d_, array_len);
-    Kokkos::resize(coord_d_, array_len);
-    Kokkos::resize(force_d_, array_len);
-
-    Kokkos::deep_copy(node_ids_d_, node_ids_h);
-    Kokkos::deep_copy(model_coord_d_, model_coord_h);
-    Kokkos::deep_copy(coord_d_, model_coord_h);
-    Kokkos::deep_copy(force_d_, 0.0);
+  nimble_kokkos::HostScalarNodeView model_coord_h("contact_model_coord_h", array_len);
+  for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
+    model_coord_h[3 * i_node]     = coord_x[node_ids_[i_node]];
+    model_coord_h[3 * i_node + 1] = coord_y[node_ids_[i_node]];
+    model_coord_h[3 * i_node + 2] = coord_z[node_ids_[i_node]];
   }
+
+  Kokkos::resize(node_ids_d_, node_ids_.size());
+  Kokkos::resize(model_coord_d_, array_len);
+  Kokkos::resize(coord_d_, array_len);
+  Kokkos::resize(force_d_, array_len);
+
+  Kokkos::deep_copy(node_ids_d_, node_ids_h);
+  Kokkos::deep_copy(model_coord_d_, model_coord_h);
+  Kokkos::deep_copy(coord_d_, model_coord_h);
+  Kokkos::deep_copy(force_d_, 0.0);
 
   //
   // Create Kokkos::View objects for contact nodes and faces
@@ -387,8 +382,6 @@ ContactManager::CreateContactEntities(
   Kokkos::resize(contact_faces_d_, 4 * primary_skin_faces.size());
   Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
   Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
-
-#endif
 
   int num_contact_faces = contact_faces_.size();
   int num_contact_nodes = contact_nodes_.size();
@@ -416,45 +409,27 @@ ContactManager::ComputeContactForce(int step, bool debug_output, nimble::Viewify
   }
 
   const auto& parser = data_manager_.GetParser();
-  if (parser.UseKokkos()) {
-#ifdef NIMBLE_HAVE_KOKKOS
-    std::cout << " Enter if section .. ComputeContactForce \n";
-    auto model_ptr       = data_manager_.GetModelData();
-    auto model_data      = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
-    auto field_ids       = data_manager_.GetFieldIDs();
-    auto displacement_d  = model_data->GetDeviceVectorNodeData(field_ids.displacement);
-    auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
-    Kokkos::deep_copy(contact_force_d, (double)(0.0));
-    //
-    ApplyDisplacements(displacement_d);
-    //
-    ComputeContactForce(step, debug_output);
-    //
-    GetForces(contact_force_d);
-    //
-    auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
-    Kokkos::deep_copy(contact_force_h, contact_force_d);
-#ifdef NIMBLE_HAVE_MPI
-    auto          myVectorCommunicator = data_manager_.GetVectorCommunicator();
-    constexpr int vector_dim           = 3;
-    myVectorCommunicator->VectorReduction(vector_dim, contact_force_h);
-#endif
-    return;
-#endif
-  }
 
-  auto model_data   = data_manager_.GetModelData();
-  auto displacement = model_data->GetVectorNodeData("displacement");
-  ApplyDisplacements(displacement.data());
-
+  std::cout << " Enter if section .. ComputeContactForce \n";
+  auto model_ptr       = data_manager_.GetModelData();
+  auto model_data      = dynamic_cast<nimble_kokkos::ModelData*>(model_ptr.get());
+  auto field_ids       = data_manager_.GetFieldIDs();
+  auto displacement_d  = model_data->GetDeviceVectorNodeData(field_ids.displacement);
+  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  Kokkos::deep_copy(contact_force_d, (double)(0.0));
+  //
+  ApplyDisplacements(displacement_d);
+  //
   ComputeContactForce(step, debug_output);
+  //
+  GetForces(contact_force_d);
+  //
+  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
+  Kokkos::deep_copy(contact_force_h, contact_force_d);
 
-  GetForces(contact_force.data());
-#ifdef NIMBLE_HAVE_MPI
   auto          myVectorCommunicator = data_manager_.GetVectorCommunicator();
   constexpr int vector_dim           = 3;
-  myVectorCommunicator->VectorReduction(vector_dim, contact_force.data());
-#endif
+  myVectorCommunicator->VectorReduction(vector_dim, contact_force_h);
 }
 
 /*!
@@ -629,13 +604,9 @@ ContactManager::InitializeContactVisualization(std::string const& contact_visual
 void
 ContactManager::ContactVisualizationWriteStep(double time_current)
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos()) {
-    // copy contact entities from device (*d) to host (*h)
-    Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
-    Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
-  }
-#endif
+  // copy contact entities from device (*d) to host (*h)
+  Kokkos::deep_copy(contact_nodes_h_, contact_nodes_d_);
+  Kokkos::deep_copy(contact_faces_h_, contact_faces_d_);
   WriteVisualizationData(time_current);
 }
 
@@ -654,6 +625,7 @@ ContactManager::WriteVisualizationData(double t)
 
   // Get the number of contacts from one block
   auto num_contacts = numActiveContactFaces();
+  std::cout << "======== vis num_contacts: " << num_contacts << '\n';
   global_data.push_back(static_cast<double>(num_contacts));
 
   std::vector<int> const& block_ids = mesh.GetBlockIds();
@@ -714,27 +686,19 @@ ContactManager::WriteVisualizationData(double t)
 }
 
 size_t
-ContactManager::numContactFaces() const 
+ContactManager::numContactFaces() const
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos())
-    return contact_faces_h_.extent(0);
-#endif
-  return contact_faces_.size();
+  return contact_faces_h_.extent(0);
 }
 
 size_t
-ContactManager::numContactNodes() const 
+ContactManager::numContactNodes() const
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos())
-    return contact_nodes_h_.extent(0);
-#endif
-  return contact_nodes_.size();
+  return contact_nodes_h_.extent(0);
 }
 
 size_t
-ContactManager::numActiveContactFaces() const 
+ContactManager::numActiveContactFaces() const
 {
   std::size_t num_contacts = 0;
   const std::size_t total_num_contact_faces = numContactFaces();
@@ -746,7 +710,7 @@ ContactManager::numActiveContactFaces() const
 }
 
 size_t
-ContactManager::numActiveContactNodes() const 
+ContactManager::numActiveContactNodes() const
 {
   std::size_t num_contacts = 0;
   const std::size_t total_num_contact_nodes = numContactNodes();
@@ -758,52 +722,21 @@ ContactManager::numActiveContactNodes() const
 }
 
 const ContactEntity&
-ContactManager::getContactFace(size_t iface) const 
+ContactManager::getContactFace(size_t iface) const
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos())
-    return contact_faces_h_(iface);
-#endif
-  return contact_faces_[iface];
+  return contact_faces_h_(iface);
 }
 
 const ContactEntity&
-ContactManager::getContactNode(size_t inode) const 
+ContactManager::getContactNode(size_t inode) const
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (data_manager_.GetParser().UseKokkos())
-    return contact_nodes_h_(inode);
-#endif
-  return contact_nodes_[inode];
+  return contact_nodes_h_(inode);
 }
 
 //
 // Protected functions
 //
 
-void
-ContactManager::ApplyDisplacements(const double* displacement)
-{
-  for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
-    int node_id = node_ids_[i_node];
-    for (int i = 0; i < 3; i++) {
-      coord_[3 * i_node + i] = model_coord_[3 * i_node + i] + displacement[3 * node_id + i];
-    }
-  }
-  for (auto& contact_face : contact_faces_) { contact_face.SetCoordinates(coord_.data()); }
-  for (auto& contact_node : contact_nodes_) { contact_node.SetCoordinates(coord_.data()); }
-}
-
-void
-ContactManager::GetForces(double* contact_force) const
-{
-  for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) {
-    int node_id = node_ids_[i_node];
-    for (int i = 0; i < 3; i++) { contact_force[3 * node_id + i] = force_[3 * i_node + i]; }
-  }
-}
-
-#ifdef NIMBLE_HAVE_KOKKOS
 // Kokkos Versions of GetForces and ApplyDisplacements
 void
 ContactManager::GetForces(nimble_kokkos::DeviceVectorNodeView contact_force_d) const
@@ -859,8 +792,6 @@ ContactManager::ApplyDisplacements(nimble_kokkos::DeviceVectorNodeView displacem
       num_contact_face_entities,
       KOKKOS_LAMBDA(const int i_face) { contact_faces(i_face).SetCoordinates(coord); });
 }
-
-#endif  // NIMBLE_HAVE_KOKKOS
 
 // static
 void
@@ -1288,63 +1219,39 @@ ContactManager::BoundingBox(double& x_min, double& x_max, double& y_min, double&
 {
   double big = std::numeric_limits<double>::max();
 
-  if (data_manager_.GetParser().UseKokkos()) {
-#ifdef NIMBLE_HAVE_KOKKOS
-    nimble_kokkos::DeviceScalarNodeView contact_bounding_box_d("contact_bounding_box_d", 6);
-    nimble_kokkos::HostScalarNodeView   contact_bounding_box_h("contact_bounding_box_h", 6);
-    contact_bounding_box_h(0) = big;         // x_min
-    contact_bounding_box_h(1) = -1.0 * big;  // x_max
-    contact_bounding_box_h(2) = big;         // y_min
-    contact_bounding_box_h(3) = -1.0 * big;  // y_max
-    contact_bounding_box_h(4) = big;         // z_min
-    contact_bounding_box_h(5) = -1.0 * big;  // z_max
-    Kokkos::deep_copy(contact_bounding_box_d, contact_bounding_box_h);
+  nimble_kokkos::DeviceScalarNodeView contact_bounding_box_d("contact_bounding_box_d", 6);
+  nimble_kokkos::HostScalarNodeView   contact_bounding_box_h("contact_bounding_box_h", 6);
+  contact_bounding_box_h(0) = big;         // x_min
+  contact_bounding_box_h(1) = -1.0 * big;  // x_max
+  contact_bounding_box_h(2) = big;         // y_min
+  contact_bounding_box_h(3) = -1.0 * big;  // y_max
+  contact_bounding_box_h(4) = big;         // z_min
+  contact_bounding_box_h(5) = -1.0 * big;  // z_max
+  Kokkos::deep_copy(contact_bounding_box_d, contact_bounding_box_h);
 
-    nimble_kokkos::DeviceScalarNodeView coord_d             = coord_d_;
-    auto                                contact_vector_size = static_cast<int>(coord_d.extent(0) / 3);
+  nimble_kokkos::DeviceScalarNodeView coord_d             = coord_d_;
+  auto                                contact_vector_size = static_cast<int>(coord_d.extent(0) / 3);
 
-    Kokkos::parallel_for(
-        "Contact Bounding Box", contact_vector_size, KOKKOS_LAMBDA(const int i) {
-          double x = coord_d(3 * i);
-          double y = coord_d(3 * i + 1);
-          double z = coord_d(3 * i + 2);
-          Kokkos::atomic_min_fetch(&contact_bounding_box_d(0), x);
-          Kokkos::atomic_max_fetch(&contact_bounding_box_d(1), x);
-          Kokkos::atomic_min_fetch(&contact_bounding_box_d(2), y);
-          Kokkos::atomic_max_fetch(&contact_bounding_box_d(3), y);
-          Kokkos::atomic_min_fetch(&contact_bounding_box_d(4), z);
-          Kokkos::atomic_max_fetch(&contact_bounding_box_d(5), z);
-        });
+  Kokkos::parallel_for(
+      "Contact Bounding Box", contact_vector_size, KOKKOS_LAMBDA(const int i) {
+        double x = coord_d(3 * i);
+        double y = coord_d(3 * i + 1);
+        double z = coord_d(3 * i + 2);
+        Kokkos::atomic_min_fetch(&contact_bounding_box_d(0), x);
+        Kokkos::atomic_max_fetch(&contact_bounding_box_d(1), x);
+        Kokkos::atomic_min_fetch(&contact_bounding_box_d(2), y);
+        Kokkos::atomic_max_fetch(&contact_bounding_box_d(3), y);
+        Kokkos::atomic_min_fetch(&contact_bounding_box_d(4), z);
+        Kokkos::atomic_max_fetch(&contact_bounding_box_d(5), z);
+      });
 
-    Kokkos::deep_copy(contact_bounding_box_h, contact_bounding_box_d);
-    x_min = contact_bounding_box_h(0);
-    x_max = contact_bounding_box_h(1);
-    y_min = contact_bounding_box_h(2);
-    y_max = contact_bounding_box_h(3);
-    z_min = contact_bounding_box_h(4);
-    z_max = contact_bounding_box_h(5);
-
-    return;
-#endif
-  }
-
-  x_min = big;
-  x_max = -1.0 * big;
-  y_min = big;
-  y_max = -1.0 * big;
-  z_min = big;
-  z_max = -1.0 * big;
-  for (unsigned int i = 0; i < coord_.size() / 3; i++) {
-    double x = coord_[i * 3];
-    double y = coord_[i * 3 + 1];
-    double z = coord_[i * 3 + 2];
-    if (x < x_min) x_min = x;
-    if (x > x_max) x_max = x;
-    if (y < y_min) y_min = y;
-    if (y > y_max) y_max = y;
-    if (z < z_min) z_min = z;
-    if (z > z_max) z_max = z;
-  }
+  Kokkos::deep_copy(contact_bounding_box_h, contact_bounding_box_d);
+  x_min = contact_bounding_box_h(0);
+  x_max = contact_bounding_box_h(1);
+  y_min = contact_bounding_box_h(2);
+  y_max = contact_bounding_box_h(3);
+  z_min = contact_bounding_box_h(4);
+  z_max = contact_bounding_box_h(5);
 }
 
 double
@@ -1726,7 +1633,7 @@ ContactManager::ResetContactStatus()
 {
   for (auto &face : contact_faces_) face.ResetContactData();
   for (auto &node : contact_nodes_) node.ResetContactData();
-    
+
 #ifdef NIMBLE_HAVE_KOKKOS
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
 

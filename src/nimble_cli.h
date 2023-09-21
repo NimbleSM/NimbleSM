@@ -64,7 +64,6 @@ class CommandLineConfiguration
 
   int ParseAndGetErrorCode();
 
-  bool UseKokkos() const noexcept;
   bool UseTpetra() const noexcept;
   bool UseVT() const noexcept;
   bool UseUQ() const noexcept;
