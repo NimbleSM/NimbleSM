@@ -292,14 +292,14 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   for (auto&& r : m_last_results) {
     if (r.node) {
       if (r.local_index >= contact_nodes_d_.extent( 0 ))
-        std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_.size() << ")\n";
+        std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_d_.extent( 0 ) << ")\n";
       auto& node = contact_nodes_d_(r.local_index);
       node.set_contact_status(true);
       node.SetNodalContactForces(r.contact_force);
       node.ScatterForceToContactManagerForceVector(force_d_);
     } else {
       if (r.local_index >= contact_faces_d_.extent( 0 ))
-        std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_.size() << ")\n";
+        std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_d_.extent( 0 ) << ")\n";
       auto& face = contact_faces_d_(r.local_index);
       face.set_contact_status(true);
       face.SetNodalContactForces(r.contact_force, r.bary);

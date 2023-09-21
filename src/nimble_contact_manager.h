@@ -444,8 +444,6 @@ class ContactManager
   std::vector<double>        model_coord_;
   std::vector<double>        coord_;
   std::vector<double>        force_;
-  std::vector<ContactEntity> contact_faces_;
-  std::vector<ContactEntity> contact_nodes_;
 
   double               contact_visualization_model_coord_bounding_box_[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   nimble::GenesisMesh  genesis_mesh_for_contact_visualization_;

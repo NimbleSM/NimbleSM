@@ -332,16 +332,9 @@ ContactManager::CreateContactEntities(
     }
   }
 
-  contact_nodes_.resize(secondary_node_ids.size());
-  contact_faces_.resize(4 * primary_skin_faces.size());
-  CreateContactNodesAndFaces(
-      primary_skin_faces,
-      primary_skin_entity_ids,
-      secondary_node_ids,
-      secondary_node_entity_ids,
-      secondary_node_char_lens,
-      contact_nodes_,
-      contact_faces_);
+
+  int num_contact_nodes = secondary_node_ids.size();
+  int num_contact_faces = 4 * primary_skin_faces.size();
 
   nimble_kokkos::HostIntegerArrayView node_ids_h("contact_node_ids_h", node_ids_.size());
   for (unsigned int i_node = 0; i_node < node_ids_.size(); i_node++) { node_ids_h[i_node] = node_ids_[i_node]; }
@@ -367,8 +360,8 @@ ContactManager::CreateContactEntities(
   // Create Kokkos::View objects for contact nodes and faces
   //
 
-  Kokkos::resize(contact_nodes_h_, secondary_node_ids.size());
-  Kokkos::resize(contact_faces_h_, 4 * primary_skin_faces.size());
+  Kokkos::resize(contact_nodes_h_, num_contact_nodes);
+  Kokkos::resize(contact_faces_h_, num_contact_faces);
   CreateContactNodesAndFaces(
       primary_skin_faces,
       primary_skin_entity_ids,
@@ -378,13 +371,11 @@ ContactManager::CreateContactEntities(
       contact_nodes_h_,
       contact_faces_h_);
 
-  Kokkos::resize(contact_nodes_d_, secondary_node_ids.size());
-  Kokkos::resize(contact_faces_d_, 4 * primary_skin_faces.size());
+  Kokkos::resize(contact_nodes_d_, num_contact_nodes);
+  Kokkos::resize(contact_faces_d_, num_contact_faces);
   Kokkos::deep_copy(contact_nodes_d_, contact_nodes_h_);
   Kokkos::deep_copy(contact_faces_d_, contact_faces_h_);
 
-  int num_contact_faces = contact_faces_.size();
-  int num_contact_nodes = contact_nodes_.size();
 #ifdef NIMBLE_HAVE_MPI
   std::vector<int> input(2);
   std::vector<int> output(2);
@@ -1631,14 +1622,9 @@ ContactManager::Projection(
 void
 ContactManager::ResetContactStatus()
 {
-  for (auto &face : contact_faces_) face.ResetContactData();
-  for (auto &node : contact_nodes_) node.ResetContactData();
-
-#ifdef NIMBLE_HAVE_KOKKOS
   for (size_t jj = 0; jj < contact_faces_d_.extent(0); ++jj) contact_faces_d_(jj).ResetContactData();
 
   for (size_t jj = 0; jj < contact_nodes_d_.extent(0); ++jj) contact_nodes_d_(jj).ResetContactData();
-#endif
 }
 
 void
