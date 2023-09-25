@@ -153,20 +153,20 @@ GetContactManager(std::shared_ptr<ContactInterface> interface, nimble::DataManag
 {
   if (!data_manager.GetParser().HasContact()) return nullptr;
 
-#if defined(NIMBLE_HAVE_ARBORX)
-#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
-  return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
-#else
-  return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
-#endif
-#endif
-
 #ifdef NIMBLE_HAVE_BVH
   if (data_manager.GetParser().UseVT()) {
     return std::make_shared<nimble::BvhContactManager>(
         interface, data_manager, data_manager.GetParser().ContactDicing(),
         data_manager.GetParser().ContactSplitting());
   }
+#endif
+
+#if defined(NIMBLE_HAVE_ARBORX)
+#if defined(ARBORX_ENABLE_MPI) && defined(NIMBLE_HAVE_MPI)
+  return std::make_shared<nimble::ArborXParallelContactManager>(interface, data_manager);
+#else
+  return std::make_shared<nimble::ArborXSerialContactManager>(interface, data_manager);
+#endif
 #endif
 
   return std::make_shared<nimble::ContactManager>(interface, data_manager);
