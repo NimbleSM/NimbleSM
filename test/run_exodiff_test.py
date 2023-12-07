@@ -16,28 +16,40 @@ from typing import (
 )
 
 def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
+    counts = 0
+    fileno = pipe.fileno()
     try:
         # Keep polling for input on the pipe until we are done
         with pipe:
             for line in pipe:
+                counts += 1
                 q.put((pipe, line))
+                print(f"count for {fileno}: {counts}")
     finally:
         # Mark the end of the stream
+        print(f"end of stream for {fileno}")
         q.put((pipe, None))
 
 
 def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subprocess.Popen) -> None:
     stdout_done = False
     stderr_done = False
+    stdout_count = 0
+    stderr_count = 0
+    stdout_fileno = proc.stdout.fileno()
+    stderr_fileno = proc.stderr.fileno()
     while (not stdout_done) or (not stderr_done):
         entry: Tuple[TextIO, Optional[str]] = q.get()
         pipe, contents = entry
 
         # if contents is None, that stream is done
         if contents is None:
+            print(f"pipe: {pipe} stdout: {proc.stdout} stderr: {proc.stderr}")
             if pipe is proc.stdout:
+                print(f"stdout ({stdout_fileno}) done")
                 stdout_done = True
             elif pipe is proc.stderr:
+                print(f"stderr ({stderr_fileno}) done")
                 stderr_done = True
             else:
                 raise ValueError("invalid pipe")
@@ -45,8 +57,12 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
         else:
             # Echo to stdout/stderr
             if pipe is proc.stdout:
+                stdout_count += 1
+                print(f"got stdout ({stdout_fileno}) count {stdout_count}")
                 sys.stdout.write(contents)
             elif pipe is proc.stderr:
+                stderr_count += 1
+                print(f"got stderr ({stderr_fileno}) count {stderr_count}")
                 sys.stderr.write(contents)
             else:
                 raise ValueError("invalid pipe")
