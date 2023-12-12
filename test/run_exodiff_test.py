@@ -24,10 +24,8 @@ def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
             for line in pipe:
                 counts += 1
                 q.put((pipe, line))
-                print(f"count for {fileno}: {counts}")
     finally:
         # Mark the end of the stream
-        print(f"end of stream for {fileno}")
         q.put((pipe, None))
 
 
@@ -44,12 +42,9 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
 
         # if contents is None, that stream is done
         if contents is None:
-            print(f"pipe: {pipe} stdout: {proc.stdout} stderr: {proc.stderr}")
             if pipe is proc.stdout:
-                print(f"stdout ({stdout_fileno}) done")
                 stdout_done = True
             elif pipe is proc.stderr:
-                print(f"stderr ({stderr_fileno}) done")
                 stderr_done = True
             else:
                 raise ValueError("invalid pipe")
@@ -58,11 +53,9 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
             # Echo to stdout/stderr
             if pipe is proc.stdout:
                 stdout_count += 1
-                print(f"got stdout ({stdout_fileno}) count {stdout_count}")
                 sys.stdout.write(contents)
             elif pipe is proc.stderr:
                 stderr_count += 1
-                print(f"got stderr ({stderr_fileno}) count {stderr_count}")
                 sys.stderr.write(contents)
             else:
                 raise ValueError("invalid pipe")
