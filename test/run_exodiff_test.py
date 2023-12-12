@@ -16,13 +16,10 @@ from typing import (
 )
 
 def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
-    counts = 0
-    fileno = pipe.fileno()
     try:
         # Keep polling for input on the pipe until we are done
         with pipe:
             for line in pipe:
-                counts += 1
                 q.put((pipe, line))
     finally:
         # Mark the end of the stream
@@ -32,10 +29,6 @@ def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
 def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subprocess.Popen) -> None:
     stdout_done = False
     stderr_done = False
-    stdout_count = 0
-    stderr_count = 0
-    stdout_fileno = proc.stdout.fileno()
-    stderr_fileno = proc.stderr.fileno()
     while (not stdout_done) or (not stderr_done):
         entry: Tuple[TextIO, Optional[str]] = q.get()
         pipe, contents = entry
@@ -52,10 +45,8 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
         else:
             # Echo to stdout/stderr
             if pipe is proc.stdout:
-                stdout_count += 1
                 sys.stdout.write(contents)
             elif pipe is proc.stderr:
-                stderr_count += 1
                 sys.stderr.write(contents)
             else:
                 raise ValueError("invalid pipe")
