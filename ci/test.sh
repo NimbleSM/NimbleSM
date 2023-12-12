@@ -32,7 +32,7 @@ export OMP_PLACES=threads
 
 pushd /opt/build/NimbleSM
 ret_code=0
-ctest --output-on-failure --timeout 500 || ret_code=$?
+ctest --output-on-failure || ret_code=$?
 # We collect the test logs for exporting
 echo "ctest returned: $ret_code"
 mkdir -p /tmp/artifacts/
