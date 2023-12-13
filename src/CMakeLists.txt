@@ -107,6 +107,11 @@ IF(NIMBLE_HAVE_KOKKOS)
   )
 ENDIF()
 
+if (NimbleSM_PRESKIN)
+  message(STATUS "Building NimbleSM preskin tool")
+  add_subdirectory(preskin)
+endif()
+
 add_executable(NimbleSM nimble_main.cc)
 target_link_libraries(NimbleSM PRIVATE nimble::nimble)
 

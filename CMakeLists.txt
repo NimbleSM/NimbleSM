@@ -88,9 +88,12 @@ if (TIME_CONTACT)
 endif()
 #------
 
+option(NimbleSM_PRESKIN "Whether to build the preskin preprocessor" OFF)
+#------
+
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -236,10 +239,10 @@ endif()
 # Exodus library dependencies
 message(STATUS "HAVE_TRILINOS: ${HAVE_TRILINOS}")
 if(NOT NimbleSM_ENABLE_TRILINOS OR NOT NimbleSM_USE_TRILINOS_EXODUS)
-  find_package(Exodus REQUIRED)
+  find_package(SEACASExodus REQUIRED)
   set(NIMBLE_HAVE_EXODUS TRUE)
   target_compile_definitions(nimble PRIVATE NIMBLE_HAVE_EXODUS)
-  target_link_libraries(nimble PRIVATE Exodus::ExodusII)
+  target_link_libraries(nimble PRIVATE SEACASExodus::exodus)
   if(CRAY)
     target_link_libraries(nimble PRIVATE hdf5_hl hdf5 z)
   endif()
@@ -265,6 +268,10 @@ else()
   message(STATUS "ArborX is NOT enabled.")
   SET(NIMBLE_HAVE_ARBORX FALSE)
   set(ArborX_LIBS)
+endif()
+
+if (NimbleSM_PRESKIN)
+  find_package(SEACASIoss REQUIRED)
 endif()
 
 include_directories(src)
