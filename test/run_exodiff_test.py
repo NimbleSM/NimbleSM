@@ -19,7 +19,10 @@ def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
     try:
         # Keep polling for input on the pipe until we are done
         with pipe:
-            for line in iter(pipe.readline, b''):
+            while True:
+                line = pipe.readline()
+                if not line:
+                    break
                 q.put((pipe, line))
     finally:
         # Mark the end of the stream
