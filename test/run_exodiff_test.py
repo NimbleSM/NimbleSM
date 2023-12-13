@@ -8,6 +8,7 @@ import argparse as ap
 import subprocess
 import threading
 import queue
+import multiprocessing
 from typing import (
     List,
     TextIO,
@@ -60,11 +61,12 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
             q.task_done()
 
 
-def run_cmd(cmd: List[str], logfiles: List[TextIO]) -> None:
+def run_cmd(cmd: List[str], logfiles: List[TextIO], env: dict) -> None:
     # open the process with text and bufsize=1 (line bufferd)
     proc = subprocess.Popen(cmd, text=True, bufsize=1,
                             stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+                            stderr=subprocess.PIPE,
+                            env=env)
 
     io_queue = queue.Queue()
 
@@ -149,9 +151,13 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
 
     print("\nCommand:", command)
 
+    env = os.environ
+
     # run the code
     try:
-        run_cmd(command, [logfile])
+        num_threads = int(multiprocessing.cpu_count() / num_ranks)
+        print(f"num threads: {num_threads}")
+        run_cmd(command, [logfile], {"OMP_NUM_THREADS": str(num_threads), **env})
     except subprocess.CalledProcessError as e:
         print(f"NimbleSM run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
         return e.returncode
@@ -166,7 +172,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    nimble_output_name]
         print("EPU COMMAND", command)
         try:
-            run_cmd(command, [logfile])
+            run_cmd(command, [logfile], env)
         except subprocess.CalledProcessError as e:
             print(f"epu run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
             return e.returncode
@@ -179,7 +185,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".gold.e", \
                epu_exodus_output_name]
     try:
-        run_cmd(command, [logfile])
+        run_cmd(command, [logfile], env)
     except subprocess.CalledProcessError as e:
         print(f"exodiff run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
         return e.returncode
