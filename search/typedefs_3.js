@@ -1,7 +1,7 @@
 var searchData=
 [
   ['data_0',['Data',['../classnimble__kokkos_1_1_model_data.html#afb5adc9f3ffb383c8a59e23f6467cb02',1,'nimble_kokkos::ModelData']]],
-  ['devicecontactentityarrayview_1',['DeviceContactEntityArrayView',['../namespacenimble__kokkos.html#a971213f494ae394e351c4f41bde9bb06',1,'nimble_kokkos']]],
+  ['devicecontactentityarrayview_1',['DeviceContactEntityArrayView',['../namespacenimble__kokkos.html#ab32264236f1957dd39f0a8fdaa6252f7',1,'nimble_kokkos']]],
   ['deviceelementconnectivityview_2',['DeviceElementConnectivityView',['../namespacenimble__kokkos.html#aa29eafa85435a042b92bec6f2f6dd16b',1,'nimble_kokkos']]],
   ['devicefulltensorelemsingleentryview_3',['DeviceFullTensorElemSingleEntryView',['../namespacenimble__kokkos.html#a32e48c4553dd28cd1c86cada166ca3b3',1,'nimble_kokkos']]],
   ['devicefulltensorelemview_4',['DeviceFullTensorElemView',['../namespacenimble__kokkos.html#aa8e34b3a4fb0442fca9fa01bea232690',1,'nimble_kokkos']]],

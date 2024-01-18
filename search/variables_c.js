@@ -21,8 +21,9 @@ var searchData=
   ['mesh_5f_18',['mesh_',['../classnimble_1_1_data_manager.html#a89f7dbc0ed4b58ceee355db038944469',1,'nimble::DataManager']]],
   ['model_5fblocks_5f_19',['model_blocks_',['../classnimble_1_1_parser.html#ae40c8c72fc952ea0140638af0bb039c9',1,'nimble::Parser']]],
   ['model_5fcoord_5f_20',['model_coord_',['../classnimble_1_1_contact_manager.html#a3cdb2141c549ad991cb0bd1fbca2737a',1,'nimble::ContactManager']]],
-  ['model_5fdata_21',['model_data',['../classnimble__kokkos_1_1_block_material_interface.html#a83ba104a4ff89d912e889850c6a95323',1,'nimble_kokkos::BlockMaterialInterface']]],
-  ['model_5fdata_5f_22',['model_data_',['../classnimble_1_1_data_manager.html#a34a532b0f68e25ece32e07faf3108db6',1,'nimble::DataManager']]],
-  ['model_5fmaterial_5fparameters_5f_23',['model_material_parameters_',['../classnimble_1_1_block_base.html#a0830cffdc8f64e65b72a54add652ab0c',1,'nimble::BlockBase']]],
-  ['my_5frank_5f_24',['my_rank_',['../classnimble_1_1_parser.html#ad0f9600eeab3e5b9445f72bc261604d6',1,'nimble::Parser']]]
+  ['model_5fcoord_5fd_5f_21',['model_coord_d_',['../classnimble_1_1_contact_manager.html#a8d8cf5c023fa02c01c5c1aa978ed48ee',1,'nimble::ContactManager']]],
+  ['model_5fdata_22',['model_data',['../classnimble__kokkos_1_1_block_material_interface.html#a83ba104a4ff89d912e889850c6a95323',1,'nimble_kokkos::BlockMaterialInterface']]],
+  ['model_5fdata_5f_23',['model_data_',['../classnimble_1_1_contact_manager.html#a4f54ba2ff55d4ddd3568a838ddc1b510',1,'nimble::ContactManager::model_data_'],['../classnimble_1_1_data_manager.html#a34a532b0f68e25ece32e07faf3108db6',1,'nimble::DataManager::model_data_']]],
+  ['model_5fmaterial_5fparameters_5f_24',['model_material_parameters_',['../classnimble_1_1_block_base.html#a0830cffdc8f64e65b72a54add652ab0c',1,'nimble::BlockBase']]],
+  ['my_5frank_5f_25',['my_rank_',['../classnimble_1_1_parser.html#ad0f9600eeab3e5b9445f72bc261604d6',1,'nimble::Parser']]]
 ];

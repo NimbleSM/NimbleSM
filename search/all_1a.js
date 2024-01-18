@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['_7eblock_0',['~Block',['../classnimble__kokkos_1_1_block.html#ad9bb47d5c160a1d1b04009f047d707fb',1,'nimble_kokkos::Block::~Block()'],['../classnimble_1_1_block.html#a05a9f2d733246173de614d4778c9763f',1,'nimble::Block::~Block()']]],
+  ['_7eblock_0',['~Block',['../classnimble_1_1_block.html#a05a9f2d733246173de614d4778c9763f',1,'nimble::Block::~Block()'],['../classnimble__kokkos_1_1_block.html#ad9bb47d5c160a1d1b04009f047d707fb',1,'nimble_kokkos::Block::~Block()']]],
   ['_7eblockbase_1',['~BlockBase',['../classnimble_1_1_block_base.html#aacab1506dea3d37bd632dea7ea786315',1,'nimble::BlockBase']]],
   ['_7eblockmaterialinterface_2',['~BlockMaterialInterface',['../classnimble__kokkos_1_1_block_material_interface.html#a7938cc85d3f2458b6b166751f5960892',1,'nimble_kokkos::BlockMaterialInterface']]],
   ['_7eblockmaterialinterfacebase_3',['~BlockMaterialInterfaceBase',['../classnimble_1_1_block_material_interface_base.html#a39e7ea73a3c71ec9641dbcd4710e55bd',1,'nimble::BlockMaterialInterfaceBase']]],
@@ -30,7 +30,7 @@ var searchData=
   ['_7ematerialparameters_27',['~MaterialParameters',['../classnimble_1_1_material_parameters.html#a3782eb14916c7f1a3eb1244906208e8a',1,'nimble::MaterialParameters']]],
   ['_7ematrixcontainer_28',['~MatrixContainer',['../classnimble_1_1_matrix_container.html#a9e46264e02114f4db64eba460eac4d04',1,'nimble::MatrixContainer']]],
   ['_7ememorymanager_29',['~MemoryManager',['../class_expression_parsing_1_1_memory_manager.html#a2d7b9f0de211b442e145eea44c4b74f3',1,'ExpressionParsing::MemoryManager']]],
-  ['_7emodeldata_30',['~ModelData',['../classnimble_1_1_model_data.html#a51cfc2a20572902800043c823f74d2f1',1,'nimble::ModelData::~ModelData()'],['../classnimble__kokkos_1_1_model_data.html#afc2e407c99301e1b5f980170155c4de3',1,'nimble_kokkos::ModelData::~ModelData()']]],
+  ['_7emodeldata_30',['~ModelData',['../classnimble__kokkos_1_1_model_data.html#afc2e407c99301e1b5f980170155c4de3',1,'nimble_kokkos::ModelData::~ModelData()'],['../classnimble_1_1_model_data.html#a51cfc2a20572902800043c823f74d2f1',1,'nimble::ModelData::~ModelData()']]],
   ['_7emodeldatabase_31',['~ModelDataBase',['../classnimble_1_1_model_data_base.html#a2c1098bb4247bd2adff07c83b50401ea',1,'nimble::ModelDataBase']]],
   ['_7enimbleapplication_32',['~NimbleApplication',['../classnimble_1_1_nimble_application.html#ae1bbafedea0ff77dfe4802241ac9229b',1,'nimble::NimbleApplication']]],
   ['_7eparser_33',['~Parser',['../classnimble_1_1_parser.html#a0a2414e3c71fed0c13b5a5888b830ea7',1,'nimble::Parser']]],
