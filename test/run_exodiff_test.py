@@ -195,21 +195,18 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
 if __name__ == "__main__":
 
     parser = ap.ArgumentParser(description='run_test.py', prefix_chars='-')
-    parser.add_argument('--executable', required=True, action='store', nargs=1, metavar='executable', help='Name of NimbleSM executable')
-    parser.add_argument('--cli-flag', required=True, action='store', nargs=1, metavar='cli_flag', help='Command Line flags')
-    parser.add_argument('--input-deck', required=True, action='store', nargs=1, metavar='input_deck', help='NimbleSM input deck (*.in)')
-    parser.add_argument('--num-ranks', required=False, type=int, action='store', nargs=1, metavar='num_ranks', help='Number of physical ranks')
+    parser.add_argument('--executable', required=True, help='Name of NimbleSM executable')
+    parser.add_argument('--cli-flag', required=False, default="", help='Command Line flags')
+    parser.add_argument('--input-deck', required=True, help='NimbleSM input deck (*.in)')
+    parser.add_argument('--num-ranks', required=False, type=int, default=1, help='Number of physical ranks')
 
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
     print(args)
 
-    executable = args['executable'][0]
-    cli_flag = args['cli_flag'][0]
-    input_deck = args['input_deck'][0]
-
-    num_ranks = 1
-    if args['num_ranks'] != None:
-        num_ranks = args['num_ranks'][0]
+    executable = args.executable
+    cli_flag = args.cli_flag
+    input_deck = args.input_deck
+    num_ranks = args.num_ranks
 
     result = runtestdiff(executable,
                      cli_flag,
