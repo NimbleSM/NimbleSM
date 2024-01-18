@@ -72,9 +72,7 @@ else()
     target_link_libraries(NimbleSM_Unit MPI::MPI_CXX)
   endif()
 
-  if(NIMBLE_HAVE_KOKKOS)
-    target_link_libraries(NimbleSM_Unit Kokkos::kokkos)
-  endif()
+  target_link_libraries(NimbleSM_Unit Kokkos::kokkos)
 endif()
 
 message("### UNIT TESTS CONFIGURATION COMPLETED ###")

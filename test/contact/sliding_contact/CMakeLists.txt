@@ -23,7 +23,7 @@ if (NIMBLE_HAVE_ARBORX)
 
     foreach (nrank 2 4)
       add_test(NAME "${prefix}-np${nrank}-kokkos"
-               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
+               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --input-deck "${inputfile}" --num-ranks ${nrank}
               )
     endforeach()
 

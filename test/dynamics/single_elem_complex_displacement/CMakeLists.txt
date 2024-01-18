@@ -11,9 +11,3 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/single_elem_complex_displacement.exod
 add_test(NAME single_elem_complex_displacement-serial
          COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck single_elem_complex_displacement.in --num-ranks 1
         )
-
-if(NIMBLE_HAVE_KOKKOS)
-  add_test(NAME single_elem_complex_displacement-serial-kokkos
-           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck single_elem_complex_displacement.in --num-ranks 1
-          )
-endif()
