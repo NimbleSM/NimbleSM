@@ -30,6 +30,8 @@ jobs:
           - arborx: {name: "+ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
           - mpi: {name: "Serial", value: "OFF"}
+          - kokkos: {name: "", value: "OFF"}
+            trilinos: {name: "", value: "OFF"}
     env:
       OUTPUT_DIR: '/tmp/out'
       SCOPE_NAME: 'NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}'

@@ -59,13 +59,11 @@ set(NIMBLE_PUBLIC_HEADERS
   ${CMAKE_CURRENT_LIST_DIR}/nimble_version.h
   ${CMAKE_CURRENT_LIST_DIR}/nimble_view.h)
 
-if(NIMBLE_HAVE_KOKKOS)
-  set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_defs.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h)
-endif()
+set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_defs.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_contact_defs.h)
 
 if(NIMBLE_HAVE_MPI)
   target_sources(nimble PRIVATE
@@ -91,29 +89,26 @@ IF(NIMBLE_HAVE_UQ)
   add_subdirectory(uq)
 ENDIF()
 
-IF(NIMBLE_HAVE_KOKKOS)
-  target_sources(nimble PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.cc
-  )
 
-  set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.h
-    ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
-  )
-ENDIF()
+target_sources(nimble PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface.cc
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block_material_interface_factory.cc
+)
+
+set(NIMBLE_PUBLIC_HEADERS ${NIMBLE_PUBLIC_HEADERS}
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_material_factory.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_model_data.h
+  ${CMAKE_CURRENT_LIST_DIR}/nimble_kokkos_block.h
+)
 
 add_executable(NimbleSM nimble_main.cc)
 target_link_libraries(NimbleSM PRIVATE nimble::nimble)
 
-IF(NIMBLE_HAVE_KOKKOS)
-  IF (NIMBLE_HAVE_ARBORX)
-    target_link_libraries(NimbleSM PRIVATE ArborX::ArborX)
-  ENDIF()
+IF (NIMBLE_HAVE_ARBORX)
+  target_link_libraries(NimbleSM PRIVATE ArborX::ArborX)
 ENDIF()
 
 set_target_properties(nimble PROPERTIES PUBLIC_HEADER "${NIMBLE_PUBLIC_HEADERS}")

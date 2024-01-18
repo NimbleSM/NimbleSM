@@ -55,7 +55,6 @@ struct CommandLineConfiguration::impl
   int argc_ = 0;
   char **argv_ = nullptr;
 
-  bool use_kokkos_ = false;
   bool use_tpetra_ = false;
   bool use_vt_ = false;
   bool use_uq_ = false;
@@ -80,14 +79,6 @@ void
 CommandLineConfiguration::ConfigureCommandLineArguments() {
   impl_->cli_app_.allow_extras();
 
-  auto* kokkos_opt = impl_->cli_app_.add_flag("--use_kokkos", impl_->use_kokkos_, "Use Kokkos for parallel compute")
-                         ->check([](const std::string&) -> std::string {
-#ifdef NIMBLE_HAVE_KOKKOS
-                           return {};  // Empty string on success
-#else
-                           return "NimbleSM was not built with Kokkos support";
-#endif
-                         });
 
   auto* tpetra_opt = impl_->cli_app_.add_flag("--use_tpetra", impl_->use_tpetra_, "Use TPetra solvers")
                          ->check([](const std::string&) -> std::string {
@@ -116,9 +107,6 @@ CommandLineConfiguration::ConfigureCommandLineArguments() {
   });
 
   impl_->cli_app_.add_option( "INPUT_FILE", impl_->input_filename_)->required()->check(CLI::ExistingFile);
-
-  kokkos_opt->excludes(tpetra_opt);
-  tpetra_opt->excludes(kokkos_opt);
 }
 
 int
@@ -130,12 +118,6 @@ CommandLineConfiguration::ParseAndGetErrorCode() {
   }
 
   return 0;
-}
-
-bool
-CommandLineConfiguration::UseKokkos() const noexcept
-{
-  return impl_->use_kokkos_;
 }
 
 bool

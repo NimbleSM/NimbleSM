@@ -113,8 +113,6 @@ NimbleApplication::Run(int argc, char **argv) {
 
   impl_->parser_ = CreateParser();
 
-  if (impl_->cli_config_->UseKokkos())
-    impl_->parser_->SetToUseKokkos();
   if (impl_->cli_config_->UseTpetra())
     impl_->parser_->SetToUseTpetra();
   if (impl_->cli_config_->UseVT())
@@ -205,9 +203,7 @@ Kokkos::initialize(impl_->cli_config_->ArgC(), impl_->cli_config_->ArgV());
   if (impl_->rank_ == 0) {
     std::cout << "\n-- NimbleSM" << std::endl;
     std::cout << "-- version " << nimble::NimbleVersion() << "\n";
-    if (impl_->parser_->UseKokkos()) {
-      std::cout << "-- Using Kokkos interface \n";
-    }
+    std::cout << "-- Using Kokkos interface \n";
     if (impl_->parser_->UseTpetra()) {
       std::cout << "-- Using Tpetra interface \n";
     }
@@ -247,10 +243,7 @@ void NimbleApplication::FinalizeSubsystems()
     ::vt::finalize(std::move(impl_->vt_rt_));
 #endif
 
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (impl_->parser_->UseKokkos())
-    Kokkos::finalize();
-#endif
+  Kokkos::finalize();
 
 #ifdef NIMBLE_HAVE_TRILINOS
   if (!impl_->parser_->UseTpetra()) {
@@ -280,27 +273,13 @@ NimbleApplication::CreateCLI(int argc, char **argv)
 std::unique_ptr< MaterialFactoryBase >
 NimbleApplication::CreateMaterialFactory()
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (impl_->parser_->UseKokkos()) {
-    return std::make_unique<nimble_kokkos::MaterialFactory>();
-  } else
-#endif
-  {
-    return std::make_unique<nimble::MaterialFactory>();
-  }
+  return std::make_unique<nimble_kokkos::MaterialFactory>();
 }
 
 std::unique_ptr< BlockMaterialInterfaceFactoryBase >
 NimbleApplication::CreateBlockMaterialInterfaceFactory()
 {
-#ifdef NIMBLE_HAVE_KOKKOS
-  if (impl_->parser_->UseKokkos()) {
-    return std::make_unique<nimble_kokkos::BlockMaterialInterfaceFactory>();
-  } else
-#endif
-  {
-    return {};
-  }
+  return std::make_unique<nimble_kokkos::BlockMaterialInterfaceFactory>();
 }
 
 std::unique_ptr< ContactInterface >

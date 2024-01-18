@@ -97,8 +97,8 @@ class BvhContactManager : public ParallelContactManager
   bvh::collision_object* m_nodes;
   bvh::collision_object* m_faces;
 
-  bvh::split_algorithm m_split_alg = bvh::geom_axis;
-  
+  bvh::split_algorithm m_split_alg = bvh::split_algorithm::geom_axis;
+
   std::vector<NarrowphaseResult> m_last_results;
 };
 }  // namespace nimble

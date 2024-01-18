@@ -110,26 +110,6 @@ class Parser
 
   virtual ~Parser() = default;
 
-#ifdef NIMBLE_HAVE_DARMA
-  template <typename ArchiveType>
-  void
-  serialize(ArchiveType& ar)
-  {
-    ar | file_name_ | genesis_file_name_;
-    ar | exodus_file_name_ | use_two_level_mesh_decomposition_;
-    ar | write_timing_data_file_ | time_integration_scheme_;
-    ar | nonlinear_solver_relative_tolerance_ | nonlinear_solver_max_iterations_;
-    ar | initial_time_ | final_time_ | num_load_steps_ | output_frequency_ | reduction_version_;
-    ar | contact_string_ | visualize_contact_entities_ | visualize_contact_bounding_boxes_;
-    ar | contact_visualization_file_name_ | material_strings_;
-    ar | model_blocks_;
-    ar | boundary_condition_strings_ | output_field_string_;
-    ar | file_name_;
-    ar | env_set_ | use_kokkos_ | use_tpetra_ | use_vt_;
-    ar | my_rank_ | num_ranks_;
-  }
-#endif
-
   void
   Initialize();
 
@@ -280,16 +260,6 @@ class Parser
     return output_field_string_;
   }
 
-  /// \brief Set that Kokkos is used for the simulation
-  ///
-  /// \note The function will abort when an environment
-  /// has been set previously
-  void
-  SetToUseKokkos()
-  {
-    use_kokkos_ = true;
-  }
-
   /// \brief Set that Tpetra is used for the simulation
   ///
   /// \note The function will abort when an environment
@@ -316,12 +286,6 @@ class Parser
   SetToUseVT()
   {
     use_vt_  = true;
-  }
-
-  bool
-  UseKokkos() const
-  {
-    return use_kokkos_;
   }
 
   /// \brief Indicate whether Tpetra is used for the simulation
@@ -475,9 +439,6 @@ class Parser
 
   /// \brief Boolean setting the usage of VT
   bool use_vt_ = false;
-
-  /// \brief Boolean setting the usage of Kokkos
-  bool use_kokkos_ = false;
 
   /// \brief Boolean setting the usage of Tpetra
   bool use_tpetra_ = false;

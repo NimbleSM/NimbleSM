@@ -109,14 +109,8 @@ DataManager::Initialize()
 #else
     NIMBLE_ABORT(" Wrong environment !\n");
 #endif
-  } else if (parser_.UseKokkos()) {
-#ifdef NIMBLE_HAVE_KOKKOS
-    model_data_ = std::make_shared<nimble_kokkos::ModelData>();
-#else
-    NIMBLE_ABORT(" Wrong environment !\n");
-#endif
   } else {
-    model_data_ = std::make_shared<nimble::ModelData>();
+    model_data_ = std::make_shared<nimble_kokkos::ModelData>();
   }
 
   model_data_->SetDimension(dim);

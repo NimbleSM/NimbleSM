@@ -24,6 +24,8 @@ jobs:
             trilinos: {name: " + Trilinos", value: "ON"}
           - arborx: {name: " + ArborX", value: "ON"}
             kokkos: {name: "", value: "OFF"}
+          - kokkos: {name: "+Kokkos", value: "OFF"}
+            trilinos: {name: "+Trilinos", value: "OFF"}
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.uq.name }}${{ matrix.arborx.name }}
     steps:
       - uses: actions/checkout@v3

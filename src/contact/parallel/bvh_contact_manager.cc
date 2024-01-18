@@ -45,6 +45,7 @@
 
 #include <vt/transport.h>
 
+#include <bvh/types.hpp>
 #include <fstream>
 #include <iomanip>
 
@@ -55,6 +56,8 @@
 #ifdef NIMBLE_HAVE_KOKKOS
 #include <bvh/narrowphase/kokkos.hpp>
 #endif
+
+#include "nimble_kokkos_model_data.h"
 
 #ifdef NIMBLE_HAVE_ARBORX
 #include <ArborX.hpp>
@@ -217,34 +220,46 @@ BvhContactManager::BvhContactManager(
 {
   m_world.set_narrowphase_functor<ContactEntity>(NarrowphaseFunc{this});
   if (splitting_alg == "geom_axis")
-    m_split_alg = bvh::geom_axis;
+    m_split_alg = bvh::split_algorithm::geom_axis;
+  else if (splitting_alg == "ml_geom_axis")
+    m_split_alg = bvh::split_algorithm::ml_geom_axis;
+  else if (splitting_alg == "clustering")
+    m_split_alg = bvh::split_algorithm::clustering;
   else
-    m_split_alg = bvh::ml_geom_axis;
+    throw std::runtime_error("invalid splitting algorithm");
 }
 
 void
 BvhContactManager::ComputeBoundingVolumes()
 {
-  for (auto&& node : contact_nodes_) {
+  Kokkos::parallel_for( contact_nodes_d_.extent( 0 ), KOKKOS_LAMBDA( int _i ) {
+    auto &node = contact_nodes_d_( _i );
     const double           inflation_length = node.inflation_factor * node.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&node.coord_1_x_);
     node.kdop_                              = bvh::bphase_kdop::from_sphere(*v, inflation_length);
-  }
-  for (auto&& face : contact_faces_) {
+  } );
+  Kokkos::parallel_for( contact_faces_d_.extent( 0 ), KOKKOS_LAMBDA( int _i ) {
+    auto &face = contact_faces_d_( _i );
     const double           inflation_length = face.inflation_factor * face.char_len_;
     ContactEntity::vertex* v                = reinterpret_cast<ContactEntity::vertex*>(&face.coord_1_x_);
     face.kdop_                              = bvh::bphase_kdop::from_vertices(v, v + 3, inflation_length);
-  }
+  } );
 }
 
 void
 BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimble::Viewify<2> contact_force)
 {
   auto model_ptr = this->data_manager_.GetModelData();
+  auto model_data = &dynamic_cast<nimble_kokkos::ModelData &>(*model_ptr);
 
   auto field_ids    = this->data_manager_.GetFieldIDs();
-  auto displacement = model_ptr->GetVectorNodeData(field_ids.displacement);
-  this->ApplyDisplacements(displacement.data());
+  auto displacement_d = model_data->GetDeviceVectorNodeData(field_ids.displacement);
+
+  auto contact_force_h = model_data->GetHostVectorNodeData(field_ids.contact_force);
+  auto contact_force_d = model_data->GetDeviceVectorNodeData(field_ids.contact_force);
+  Kokkos::deep_copy(contact_force_d, 0.0);
+
+  this->ApplyDisplacements(displacement_d);
 
   total_search_time.Start();
   m_world.start_iteration();
@@ -253,16 +268,16 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   ComputeBoundingVolumes();
 
   this->startTimer("BVH::SetEntity::Nodes");
-  m_nodes->set_entity_data(contact_nodes_, m_split_alg);
+  m_nodes->set_entity_data(contact_nodes_d_, m_split_alg);
   this->stopTimer("BVH::SetEntity::Nodes");
 
   this->startTimer("BVH::SetEntity::Faces");
-  m_faces->set_entity_data(contact_faces_, m_split_alg);
+  m_faces->set_entity_data(contact_faces_d_, m_split_alg);
   this->stopTimer("BVH::SetEntity::Faces");
 
   m_nodes->init_broadphase();
   m_faces->init_broadphase();
-  
+
   m_faces->broadphase(*m_nodes);
 
   m_last_results.clear();
@@ -276,29 +291,30 @@ BvhContactManager::ComputeParallelContactForce(int step, bool debug_output, nimb
   // Update contact entities
   for (auto&& r : m_last_results) {
     if (r.node) {
-      if (r.local_index >= contact_nodes_.size())
-        std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_.size() << ")\n";
-      auto& node = contact_nodes_.at(r.local_index);
+      if (r.local_index >= contact_nodes_d_.extent( 0 ))
+        std::cerr << "contact node index " << r.local_index << " is out of bounds (" << contact_nodes_d_.extent( 0 ) << ")\n";
+      auto& node = contact_nodes_d_(r.local_index);
       node.set_contact_status(true);
       node.SetNodalContactForces(r.contact_force);
-      node.ScatterForceToContactManagerForceVector(force_);
+      node.ScatterForceToContactManagerForceVector(force_d_);
     } else {
-      if (r.local_index >= contact_faces_.size())
-        std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_.size() << ")\n";
-      auto& face = contact_faces_.at(r.local_index);
+      if (r.local_index >= contact_faces_d_.extent( 0 ))
+        std::cerr << "contact face index " << r.local_index << " is out of bounds (" << contact_faces_d_.extent( 0 ) << ")\n";
+      auto& face = contact_faces_d_(r.local_index);
       face.set_contact_status(true);
       face.SetNodalContactForces(r.contact_force, r.bary);
-      face.ScatterForceToContactManagerForceVector(force_);
+      face.ScatterForceToContactManagerForceVector(force_d_);
     }
   }
   total_num_contacts += m_last_results.size();
   total_enforcement_time.Stop();
 
-  this->GetForces(contact_force.data());
+  this->GetForces(contact_force_d);
+  Kokkos::deep_copy(contact_force_h, contact_force_d);
 
   constexpr int vector_dim           = 3;
   auto          myVectorCommunicator = this->data_manager_.GetVectorCommunicator();
-  myVectorCommunicator->VectorReduction(vector_dim, contact_force.data());
+  myVectorCommunicator->VectorReduction(vector_dim, contact_force_h);
 }
 
 namespace {

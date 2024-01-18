@@ -26,6 +26,10 @@ fi
 . /opt/spack/share/spack/setup-env.sh
 spack env activate $NimbleSM_SPACK_ENV_NAME
 
+# Ensure that OpenMP environment is set up correctly
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
 pushd /opt/build/NimbleSM
 ret_code=0
 ctest --output-on-failure || ret_code=$?

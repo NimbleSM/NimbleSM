@@ -1,8 +1,8 @@
 # Running NimbleSM
 
 ## Creating an input file
- 
-Examples of input files with the extension `.in` can be found 
+
+Examples of input files with the extension `.in` can be found
 in [the test directory](https://github.com/NimbleSM/NimbleSM/tree/develop/test).
 The four subfolders, namely `contact`, `dynamics`, `quasistatic`, and `uq`, contain input files for four
 different types of simulations.
@@ -36,9 +36,6 @@ which runs with `mpirun` the executable, `NimbleSM`.
 
 ### FLAG list
 
-* `--use_kokkos`
-   * This flag activates a simulation that employs Kokkos objects. In particular, the `OpenMP` environment can be exploited.
-   * Requirement: `NimbleSM` has to be linked to the [Kokkos library](https://github.com/Kokkos/kokkos).
 * `--use_tpetra`
    * This flag activates a simulation that employs Tpetra objects. The simulation can use the explicit time integrator
      or a quasistatic time integration.

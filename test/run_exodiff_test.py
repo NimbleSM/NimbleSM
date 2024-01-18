@@ -8,6 +8,7 @@ import argparse as ap
 import subprocess
 import threading
 import queue
+import multiprocessing
 from typing import (
     List,
     TextIO,
@@ -19,7 +20,10 @@ def _enqueue_piped_output(q: queue.Queue, pipe: TextIO):
     try:
         # Keep polling for input on the pipe until we are done
         with pipe:
-            for line in pipe:
+            while True:
+                line = pipe.readline()
+                if not line:
+                    break
                 q.put((pipe, line))
     finally:
         # Mark the end of the stream
@@ -57,11 +61,12 @@ def _echo_enqueued_output(q: queue.Queue, logfiles: List[TextIO], proc: subproce
             q.task_done()
 
 
-def run_cmd(cmd: List[str], logfiles: List[TextIO]) -> None:
+def run_cmd(cmd: List[str], logfiles: List[TextIO], env: dict) -> None:
     # open the process with text and bufsize=1 (line bufferd)
     proc = subprocess.Popen(cmd, text=True, bufsize=1,
                             stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+                            stderr=subprocess.PIPE,
+                            env=env)
 
     io_queue = queue.Queue()
 
@@ -121,8 +126,6 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
     nimble_output_name = base_name + ".out"
     if not cli_flag:
         log_file_name = base_name + ".mpi.np" + str(num_ranks) + ".log"
-    if "use_kokkos" in cli_flag:
-        log_file_name = base_name + ".kokkos.np" + str(num_ranks) + ".log"
     if "use_vt" in cli_flag:
         log_file_name = base_name + ".vt.np" + str(num_ranks) + ".log"
     if "use_tpetra" in cli_flag:
@@ -146,9 +149,13 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
 
     print("\nCommand:", command)
 
+    env = os.environ
+
     # run the code
     try:
-        run_cmd(command, [logfile])
+        num_threads = int(multiprocessing.cpu_count() / num_ranks)
+        print(f"num threads: {num_threads}")
+        run_cmd(command, [logfile], {"OMP_NUM_THREADS": str(num_threads), **env})
     except subprocess.CalledProcessError as e:
         print(f"NimbleSM run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
         return e.returncode
@@ -163,7 +170,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                    nimble_output_name]
         print("EPU COMMAND", command)
         try:
-            run_cmd(command, [logfile])
+            run_cmd(command, [logfile], env)
         except subprocess.CalledProcessError as e:
             print(f"epu run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
             return e.returncode
@@ -176,7 +183,7 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
                base_name+".gold.e", \
                epu_exodus_output_name]
     try:
-        run_cmd(command, [logfile])
+        run_cmd(command, [logfile], env)
     except subprocess.CalledProcessError as e:
         print(f"exodiff run failed with args {e.args} and with exit code {e.returncode}", file=sys.stdout)
         return e.returncode
@@ -188,21 +195,18 @@ def runtestdiff(executable_name, cli_flag, input_deck_name, num_ranks, use_openm
 if __name__ == "__main__":
 
     parser = ap.ArgumentParser(description='run_test.py', prefix_chars='-')
-    parser.add_argument('--executable', required=True, action='store', nargs=1, metavar='executable', help='Name of NimbleSM executable')
-    parser.add_argument('--cli-flag', required=True, action='store', nargs=1, metavar='cli_flag', help='Command Line flags')
-    parser.add_argument('--input-deck', required=True, action='store', nargs=1, metavar='input_deck', help='NimbleSM input deck (*.in)')
-    parser.add_argument('--num-ranks', required=False, type=int, action='store', nargs=1, metavar='num_ranks', help='Number of physical ranks')
+    parser.add_argument('--executable', required=True, help='Name of NimbleSM executable')
+    parser.add_argument('--cli-flag', required=False, default="", help='Command Line flags')
+    parser.add_argument('--input-deck', required=True, help='NimbleSM input deck (*.in)')
+    parser.add_argument('--num-ranks', required=False, type=int, default=1, help='Number of physical ranks')
 
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
     print(args)
 
-    executable = args['executable'][0]
-    cli_flag = args['cli_flag'][0]
-    input_deck = args['input_deck'][0]
-
-    num_ranks = 1
-    if args['num_ranks'] != None:
-        num_ranks = args['num_ranks'][0]
+    executable = args.executable
+    cli_flag = args.cli_flag
+    input_deck = args.input_deck
+    num_ranks = args.num_ranks
 
     result = runtestdiff(executable,
                      cli_flag,

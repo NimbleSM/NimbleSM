@@ -12,12 +12,6 @@ add_test(NAME "${prefix}-serial"
          COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck "${inputfile}" --num-ranks 1
         )
 
-if(NIMBLE_HAVE_KOKKOS)
-  add_test(NAME "${prefix}-serial-kokkos"
-           COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks 1
-          )
-endif()
-
 if (NIMBLE_HAVE_MPI)
 
   foreach (ext "g.2.0" "g.2.1" "g.4.0" "g.4.1" "g.4.2" "g.4.3")
@@ -29,13 +23,6 @@ if (NIMBLE_HAVE_MPI)
     add_test(NAME "${prefix}-np${nrank}"
              COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "" --input-deck "${inputfile}" --num-ranks ${nrank}
             )
-
-    if(NIMBLE_HAVE_KOKKOS)
-      add_test(NAME "${prefix}-np${nrank}-kokkos"
-               COMMAND Python::Interpreter ../../run_exodiff_test.py --executable "${nimble_exe}" --cli-flag "use_kokkos" --input-deck "${inputfile}" --num-ranks ${nrank}
-              )
-    endif()
-
   endforeach()
 
 endif()
