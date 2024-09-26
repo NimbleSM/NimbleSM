@@ -51,6 +51,9 @@
 
 #include "parallel_contact_manager.h"
 
+#include "penalty_contact_force_calculator.h"
+
+
 namespace bvh {
 
 class collision_object;

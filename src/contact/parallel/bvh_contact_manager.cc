@@ -96,7 +96,7 @@ struct ArborXCallback
     NarrowphaseResult entry;
     ContactManager::Projection(myNode, myFace, inside, entry.gap, &normal[0], entry.bary);
     if (inside) {
-      details::getContactForce(enforcement_penalty, entry.gap, normal, entry.contact_force);
+      details::getContactForce(enforcement_penalty, entry.gap, normal, entry.contact_force, std::make_shared<PenaltyContactForceCalculator>());
       //
       entry.local_index = myFace.local_id();
       entry.node        = false;
