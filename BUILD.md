@@ -154,11 +154,13 @@ $NIMBLESM_INSTALL_DIR
 ```bat
 cd $WORKDIR
 
-mkdir spack && cd spack
-
 git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 
-source $HOME/dev/spack/share/spack/setup-env.sh
+cd spack/bin
+
+./spack install zlib
+
+source $WORKDIR/spack/share/spack/setup-env.sh
 ```
 Since we want to build all the dependencies with the same version of gcc, **ensure to only have** in ~/.spack/linux/compilers.yaml:
 
