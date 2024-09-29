@@ -180,7 +180,7 @@ compilers:
     environment: {}
     extra_rpaths: []
 ```
-If not do : `spack install gcc@11` and check again the file.
+If not do : `spack install gcc@11.4.0` and check again the file.
 
 Install dependencies via Spack
 ```bat
@@ -219,7 +219,7 @@ cd $VT_SOURCE_DIR
 
 git clone git@github.com:DARMA-tasking/vt.git
 
-export fmt_DIR=$FMT_BUILD_DIR/lib/cmake/fmt/
+export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
 
 CC=gcc-11 \
 CXX=g++-11 \
