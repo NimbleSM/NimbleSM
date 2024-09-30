@@ -1,6 +1,6 @@
 # Installing NimbleSM
 
-A very basic installation for Ubuntu 24.04 is performed by downloading the install_nimble.sh file:
+A very basic installation for **Ubuntu 24.04** is performed by downloading the install_nimble.sh file:
 ````
 wget https://github.com/NimbleSM/NimbleSM/blob/develop/install_nimble.sh
 chmod +x install_nimble.sh
