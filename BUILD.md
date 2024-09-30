@@ -1,18 +1,14 @@
 # Installing NimbleSM
 
-⚠️ WARNING:
-
-The build instructions below are outdated and no longer valid for the latest versions of NimbleSM and its dependencies. A new, updated procedure has been tested and validated on Ubuntu 24.04. Please refer to the new instructions provided at the end of this document for a working example [here](#examples-of-scripts-or-configuration-steps)
-
-## Configuring CMake
-
-A very basic installation is done with:
+A very basic installation for Ubuntu 24.04 is performed by downloading the install_nimble.sh file:
 ````
-cmake ${srcdir}
+wget https://github.com/NimbleSM/NimbleSM/blob/develop/install_nimble.sh
+chmod +x install_nimble.sh
+./install_nimble.sh
 ````
-which builds and installs a default NimbleSM when you run `make`.
+which builds and installs a default NimbleSM with the necessary dependencies (it may take a while, don't worry).
 
-The full keyword listing is below.
+You can generate you own cmake using the list of keywords below and the following example [here](#examples-of-scripts-or-configuration-steps).
 
 ## NimbleSM CMake Option Listing
 
@@ -100,7 +96,7 @@ Create the necessary directories for the project and set environment variables:
 
 Set your working directory:
 ```bat
-export WORKDIR=$HOME/dev/NGA/NimbleSM
+export WORKDIR=$HOME/dev/NimbleSM
 
 export VT_SOURCE_DIR=$WORKDIR/vt
 export VT_BUILD_DIR=$VT_SOURCE_DIR/build
@@ -129,24 +125,12 @@ export NIMBLESM_INSTALL_DIR=$NIMBLESM_SOURCE_DIR/install
 Create the directories:
 ```bat
 mkdir -p $WORKDIR \
-$VT_SOURCE_DIR \
-$VT_BUILD_DIR \
-$VT_INSTALL_DIR \
-$FMT_SOURCE_DIR \
-$FMT_BUILD_DIR \
-$FMT_INSTALL_DIR \
-$SPDLOG_SOURCE_DIR \
-$SPDLOG_BUILD_DIR \
-$SPDLOG_INSTALL_DIR \
-$VTK_SOURCE_DIR \
-$VTK_BUILD_DIR \
-$VTK_INSTALL_DIR \
-$BVH_SOURCE_DIR \
-$BVH_BUILD_DIR \
-$BVH_INSTALL_DIR \
-$NIMBLESM_SOURCE_DIR \
-$NIMBLESM_BUILD_DIR \
-$NIMBLESM_INSTALL_DIR
+$VT_SOURCE_DIR $VT_BUILD_DIR $VT_INSTALL_DIR \
+$FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR \
+$SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR \
+$VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR \
+$BVH_SOURCE_DIR $BVH_BUILD_DIR $BVH_INSTALL_DIR \
+$NIMBLESM_SOURCE_DIR $NIMBLESM_BUILD_DIR $NIMBLESM_INSTALL_DIR
 ```
 
 ## Step 2: Install Spack and Dependencies
@@ -156,11 +140,9 @@ cd $WORKDIR
 
 git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 
-cd spack/bin
-
-./spack install zlib
-
 source $WORKDIR/spack/share/spack/setup-env.sh
+
+spack install zlib
 ```
 Since we want to build all the dependencies with the same version of gcc, **ensure to only have** in ~/.spack/linux/compilers.yaml:
 
@@ -180,7 +162,7 @@ compilers:
     environment: {}
     extra_rpaths: []
 ```
-If not do : `spack install gcc@11.4.0` and check again the file.
+If not do : `spack install gcc@11.4.0` (or `sudo apt install gcc-11` and `sudo apt install gfortran-11`) and check again the file (the second option may be quicker).
 
 Install dependencies via Spack
 ```bat
@@ -323,17 +305,14 @@ cd $NIMBLESM_SOURCE_DIR
 
 git clone git@github.com:NimbleSM/NimbleSM.git
 ```
-Update CMakeLists.txt in $(NIMBLESM_SOURCE_DIR)/unit_tests line 20:
 
-```python
-  FetchContent_Declare(
-    googletest
-    # URL https://github.com/google/googletest/archive/refs/tags/release-1.15.2.tar.gz
-    # URL_HASH MD5=ecd1fa65e7de707cd5c00bdac56022cd
-    URL https://github.com/google/googletest/releases/download/v1.15.2/googletest-1.15.2.tar.gz       
-  )
+Export some path for the build:
+```bat
+export PATH=$(spack location -i mpi)/bin:$PATH
+export PATH=$(spack location -i seacas)/bin:$PATH
 ```
 
+Build NimbleSM:
 ```bat
 cmake -S NimbleSM \
     -B $NIMBLESM_BUILD_DIR \
@@ -368,18 +347,6 @@ export test_folder=$NIMBLESM_SOURCE_DIR/NimbleSM/test/contact/sphere_plate_conta
 cd $test_folder
 
 mpirun -n 4 $NIMBLESM_BUILD_DIR/src/NimbleSM $test_folder/sphere_plate_contact.in
-```
-
-## Different troubleshooting :
-
-unknown command mpi:
-```bat
-export PATH=$(spack location -i mpi)/bin:$PATH
-```
-
-exodiff not found:
-```bat
-export PATH=$(spack location -i seacas)/bin:$PATH
 ```
 
 
