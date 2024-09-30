@@ -80,8 +80,8 @@ class VectorCommunicator;
 namespace details {
 
 template <typename ContactForceCalculator>
-inline void getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3], const ContactForceCalculator& calculator) {
-    calculator.ComputeContactForce(penalty, gap, normal, contact_force);
+inline void getContactForce(const double penalty, const double gap, const double normal[3], double mass1, std::array<double, 3> a1, std::array<double, 3> a2, std::array<double, 3> N2, std::array<double, 3>& contact_force, const ContactForceCalculator& calculator) {
+    calculator.ComputeContactForce(penalty, gap, normal, mass1, a1, a2, N2, contact_force);
 }
 
 }  // namespace details
