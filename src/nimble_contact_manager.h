@@ -79,17 +79,9 @@ class VectorCommunicator;
 
 namespace details {
 
-inline void
-getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3], const std::shared_ptr<ContactForceCalculator>& calculator = nullptr)
-{
-  if (calculator) {
-    calculator->ComputeContactForce(penalty, gap, normal, contact_force);
-  } else {
-    const double scale = penalty * gap;
-    for (int i = 0; i < 3; ++i) {
-      contact_force[i] = scale * normal[i];
-    }
-  }
+template <typename ContactForceCalculator>
+inline void getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3], const ContactForceCalculator& calculator) {
+    calculator.ComputeContactForce(penalty, gap, normal, contact_force);
 }
 
 }  // namespace details
