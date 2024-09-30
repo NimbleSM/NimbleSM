@@ -20,7 +20,7 @@ else()
   FetchContent_Declare(
           googletest
           URL https://github.com/google/googletest/releases/download/v1.15.2/googletest-1.15.2.tar.gz
-          # URL_HASH MD5=ecd1fa65e7de707cd5c00bdac56022cd
+          URL_HASH MD5=7e11f6cfcf6498324ac82d567dcb891e
   )
 
   FetchContent_MakeAvailable(googletest)
