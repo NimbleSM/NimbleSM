@@ -21,11 +21,8 @@ namespace nimble {
         predict_force[i] = -penalty * gap * normal[i];
       }
 
-      double cross_product[3];
-      CrossProduct(N2, a2, cross_product);
-
       for (int i = 0; i < 3; ++i) {
-        double correction_factor = std::max(0.0, (cross_product[i] - a1[i]) * normal[i]);
+        double correction_factor = std::max(0.0, (N[i]*a2[i] - a1[i]) * normal[i]);
         correct_force[i] = -mass1 * correction_factor * normal[i];
       }
 
