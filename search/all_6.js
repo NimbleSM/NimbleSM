@@ -52,6 +52,5 @@ var searchData=
   ['force_5fd_5f_49',['force_d_',['../classnimble_1_1_contact_manager.html#a75c9e981f80ced0f49b47c8974cfb1ae',1,'nimble::ContactManager']]],
   ['forces_50',['Forces',['../classnimble_1_1_uq_model.html#a8046c726abc98412decc85095fff8441',1,'nimble::UqModel']]],
   ['full_5ftensor_51',['FULL_TENSOR',['../namespacenimble.html#a66cdfe6c32a387ab01fc3c74e154877bae70e1801adb9e5400547dcc71129ed17',1,'nimble']]],
-  ['full_5ftensor_52',['full_tensor',['../nimble__kokkos__block__material__interface_8cc.html#a1067f591f6762bb4b315ff04d479fd71',1,'nimble_kokkos_block_material_interface.cc']]],
-  ['fulltensor_53',['FullTensor',['../nimble__view_8h.html#a4f60f902380ca276516182ecfe0dc3d0afc1c67b5df88338720aa265d5c6de21c',1,'nimble_view.h']]]
+  ['fulltensor_52',['FullTensor',['../nimble__view_8h.html#a4f60f902380ca276516182ecfe0dc3d0afc1c67b5df88338720aa265d5c6de21c',1,'nimble_view.h']]]
 ];

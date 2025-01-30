@@ -12,7 +12,10 @@ var searchData=
   ['serial_3c_20t_20_2a_2c_20true_20_3e_9',['serial&lt; T *, true &gt;',['../structnimble_1_1serialization_1_1serial_3_01_t_01_5_00_01true_01_4.html',1,'nimble::serialization']]],
   ['serial_3c_20t_2c_20false_20_3e_10',['serial&lt; T, false &gt;',['../structnimble_1_1serialization_1_1serial_3_01_t_00_01false_01_4.html',1,'nimble::serialization']]],
   ['serial_3c_20t_2c_20true_20_3e_11',['serial&lt; T, true &gt;',['../structnimble_1_1serialization_1_1serial_3_01_t_00_01true_01_4.html',1,'nimble::serialization']]],
-  ['serialcontactmanager_12',['SerialContactManager',['../classnimble_1_1_serial_contact_manager.html',1,'nimble']]],
-  ['spanarray_13',['spanarray',['../classnimble_1_1quanta_1_1spanarray.html',1,'nimble::quanta']]],
-  ['stopwatch_14',['stopwatch',['../structnimble_1_1quanta_1_1stopwatch.html',1,'nimble::quanta']]]
+  ['serial_3c_20typename_20std_3a_3aremove_5fcv_3c_20t_20_3e_3a_3atype_2c_20meta_3c_20t_20_3e_3a_3amem_20_3e_12',['serial&lt; typename std::remove_cv&lt; T &gt;::type, meta&lt; T &gt;::mem &gt;',['../structnimble_1_1serialization_1_1serial.html',1,'nimble::serialization']]],
+  ['serialcontactmanager_13',['SerialContactManager',['../classnimble_1_1_serial_contact_manager.html',1,'nimble']]],
+  ['singleentryview_14',['SingleEntryView',['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceFullTensorElem &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceFullTensorIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceScalarElem &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceScalarIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceSymTensorElem &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceSymTensorIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SingleEntryView&lt; DeviceVectorIntPt &gt;']]],
+  ['spanarray_15',['spanarray',['../classnimble_1_1quanta_1_1spanarray.html',1,'nimble::quanta']]],
+  ['stopwatch_16',['stopwatch',['../structnimble_1_1quanta_1_1stopwatch.html',1,'nimble::quanta']]],
+  ['subview_17',['SubView',['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SubView&lt; DeviceFullTensorIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SubView&lt; DeviceScalarIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SubView&lt; DeviceSymTensorIntPt &gt;'],['../classnimble__kokkos_1_1_field.html',1,'nimble_kokkos::SubView&lt; DeviceVectorIntPt &gt;']]]
 ];

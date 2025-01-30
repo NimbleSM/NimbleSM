@@ -24,7 +24,7 @@ var searchData=
   ['_7egenesismesh_21',['~GenesisMesh',['../classnimble_1_1_genesis_mesh.html#a17a3fb90b2fb414d99d1da5b7584661f',1,'nimble::GenesisMesh']]],
   ['_7ehexelement_22',['~HexElement',['../classnimble_1_1_hex_element.html#a45948f12697545fc2437dde44c4822da',1,'nimble::HexElement']]],
   ['_7eintegratorbase_23',['~IntegratorBase',['../classnimble_1_1_integrator_base.html#a7c42a5df44eb0b16edeab367bebff28a',1,'nimble::IntegratorBase']]],
-  ['_7ematerial_24',['~Material',['../classnimble_1_1_material.html#a28359854e8cae3ea8572e0f8077edaf5',1,'nimble::Material']]],
+  ['_7ematerial_24',['~Material',['../classnimble_1_1_material.html#a28359854e8cae3ea8572e0f8077edaf5',1,'nimble::Material::~Material()'],['../classnimble__kokkos_1_1_material.html#a28359854e8cae3ea8572e0f8077edaf5',1,'nimble_kokkos::Material::~Material()']]],
   ['_7ematerialfactory_25',['~MaterialFactory',['../classnimble__kokkos_1_1_material_factory.html#aca5cafe65e5fbc6ce3bd3eba871d88ac',1,'nimble_kokkos::MaterialFactory::~MaterialFactory()'],['../classnimble_1_1_material_factory.html#ae5840b69e051d34e71a99a894160f617',1,'nimble::MaterialFactory::~MaterialFactory()']]],
   ['_7ematerialfactorybase_26',['~MaterialFactoryBase',['../classnimble_1_1_material_factory_base.html#a6ba4bbf541e1cef15941ca1fe3098c0c',1,'nimble::MaterialFactoryBase']]],
   ['_7ematerialparameters_27',['~MaterialParameters',['../classnimble_1_1_material_parameters.html#a3782eb14916c7f1a3eb1244906208e8a',1,'nimble::MaterialParameters']]],

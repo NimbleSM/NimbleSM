@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['material_0',['Material',['../classnimble_1_1_material.html',1,'nimble']]],
+  ['material_0',['Material',['../classnimble_1_1_material.html',1,'nimble::Material'],['../classnimble__kokkos_1_1_material.html',1,'nimble_kokkos::Material']]],
   ['materialfactory_1',['MaterialFactory',['../classnimble_1_1_material_factory.html',1,'nimble::MaterialFactory'],['../classnimble__kokkos_1_1_material_factory.html',1,'nimble_kokkos::MaterialFactory']]],
   ['materialfactorybase_2',['MaterialFactoryBase',['../classnimble_1_1_material_factory_base.html',1,'nimble']]],
   ['materialparameters_3',['MaterialParameters',['../classnimble_1_1_material_parameters.html',1,'nimble']]],
