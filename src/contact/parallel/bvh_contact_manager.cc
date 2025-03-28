@@ -131,7 +131,7 @@ struct NarrowphaseFunc
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
     auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
-    auto  tree = build_snapshot_tree_top_down(_a.elements);
+    auto  tree = bvh::build_snapshot_tree_top_down(_a.elements);
 
     std::size_t j = 0;
     for (auto&& elb : _b.elements) {
