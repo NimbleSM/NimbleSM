@@ -134,7 +134,8 @@ struct NarrowphaseFunc
     auto  tree = bvh::build_snapshot_tree_top_down(_a.elements);
 
     std::size_t j = 0;
-    for (auto&& elb : _b.elements) {
+    Kokkos::parallel_for(_b.elements.extent(0), [=, &resa, &resb, &j](int i) {
+      auto elb = _b.elements(i);
       query_tree_local(tree, elb, [&_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
         const auto&       face = _a.elements[_i];
         const auto&       node = elb;
@@ -157,7 +158,7 @@ struct NarrowphaseFunc
         }
       });
       ++j;
-    }
+    });
 
     return {resa, resb};
   }
