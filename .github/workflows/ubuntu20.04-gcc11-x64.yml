@@ -37,7 +37,7 @@ jobs:
       SCOPE_NAME: 'NimbleSM${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}'
     name: NimbleSM ${{ matrix.mpi.name }}${{ matrix.kokkos.name }}${{ matrix.trilinos.name }}${{ matrix.arborx.name }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: CI Variables
         id: vars
         run: echo "DOCKER_TAG=$(echo ${{ github.ref }} | cut -d'/' -f3- | sed 's/[^a-z0-9_-]/__/gi')" >> $GITHUB_ENV
