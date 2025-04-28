@@ -133,7 +133,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <div class="fragment"><div class="line"><span class="lineno">  123</span>: <a class="code hl_variable" href="#a58e002d2c715c7a0a02fddb7aace110d">contact_manager</a>{cm} {}</div>
-<div class="ttc" id="astructnimble_1_1_narrowphase_func_html_a58e002d2c715c7a0a02fddb7aace110d"><div class="ttname"><a href="#a58e002d2c715c7a0a02fddb7aace110d">nimble::NarrowphaseFunc::contact_manager</a></div><div class="ttdeci">BvhContactManager * contact_manager</div><div class="ttdef"><b>Definition</b> bvh_contact_manager.cc:208</div></div>
+<div class="ttc" id="astructnimble_1_1_narrowphase_func_html_a58e002d2c715c7a0a02fddb7aace110d"><div class="ttname"><a href="#a58e002d2c715c7a0a02fddb7aace110d">nimble::NarrowphaseFunc::contact_manager</a></div><div class="ttdeci">BvhContactManager * contact_manager</div><div class="ttdef"><b>Definition</b> bvh_contact_manager.cc:209</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -170,38 +170,37 @@ Public Attributes</h2></td></tr>
 <div class="line"><span class="lineno">  131</span>    res.b      = bvh::narrowphase_result(<span class="keyword">sizeof</span>(NarrowphaseResult));</div>
 <div class="line"><span class="lineno">  132</span>    <span class="keyword">auto</span>&amp; resa = <span class="keyword">static_cast&lt;</span>bvh::typed_narrowphase_result&lt;NarrowphaseResult&gt;&amp;<span class="keyword">&gt;</span>(res.a);</div>
 <div class="line"><span class="lineno">  133</span>    <span class="keyword">auto</span>&amp; resb = <span class="keyword">static_cast&lt;</span>bvh::typed_narrowphase_result&lt;NarrowphaseResult&gt;&amp;<span class="keyword">&gt;</span>(res.b);</div>
-<div class="line"><span class="lineno">  134</span>    <span class="keyword">auto</span>  tree = build_snapshot_tree_top_down(_a.elements);</div>
+<div class="line"><span class="lineno">  134</span>    <span class="keyword">auto</span>  tree = bvh::build_snapshot_tree_top_down(_a.elements);</div>
 <div class="line"><span class="lineno">  135</span> </div>
 <div class="line"><span class="lineno">  136</span>    std::size_t j = 0;</div>
-<div class="line"><span class="lineno">  137</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; elb : _b.elements) {</div>
-<div class="line"><span class="lineno">  138</span>      query_tree_local(tree, elb, [&amp;_a, &amp;_b, &amp;elb, &amp;resa, &amp;resb, <span class="keyword">this</span>, j](std::size_t _i) {</div>
-<div class="line"><span class="lineno">  139</span>        <span class="keyword">const</span> <span class="keyword">auto</span>&amp;       face = _a.elements[_i];</div>
-<div class="line"><span class="lineno">  140</span>        <span class="keyword">const</span> <span class="keyword">auto</span>&amp;       node = elb;</div>
-<div class="line"><span class="lineno">  141</span>        NarrowphaseResult entry;</div>
-<div class="line"><span class="lineno">  142</span> </div>
-<div class="line"><span class="lineno">  143</span>        <span class="keywordtype">bool</span>   hit = <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  144</span>        <span class="keywordtype">double</span> norm[3];</div>
-<div class="line"><span class="lineno">  145</span>        <a class="code hl_function" href="classnimble_1_1_contact_manager.html#a71c65d431c27cf647882e5d7178e5b55">ContactManager::Projection</a>(node, face, hit, entry.gap, norm, entry.bary);</div>
-<div class="line"><span class="lineno">  146</span> </div>
-<div class="line"><span class="lineno">  147</span>        <span class="keywordflow">if</span> (hit) {</div>
-<div class="line"><span class="lineno">  148</span>          <a class="code hl_function" href="namespacenimble_1_1details.html#afdcbbd03643368c0654d6218fc44d7b0">details::getContactForce</a>(<a class="code hl_variable" href="#a58e002d2c715c7a0a02fddb7aace110d">contact_manager</a>-&gt;GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);</div>
-<div class="line"><span class="lineno">  149</span> </div>
-<div class="line"><span class="lineno">  150</span>          entry.local_index = face.local_id();</div>
-<div class="line"><span class="lineno">  151</span>          entry.node        = <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  152</span>          resa.emplace_back(entry);</div>
-<div class="line"><span class="lineno">  153</span> </div>
-<div class="line"><span class="lineno">  154</span>          entry.local_index = node.local_id();</div>
-<div class="line"><span class="lineno">  155</span>          entry.node        = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  156</span>          resb.emplace_back(entry);</div>
-<div class="line"><span class="lineno">  157</span>        }</div>
-<div class="line"><span class="lineno">  158</span>      });</div>
-<div class="line"><span class="lineno">  159</span>      ++j;</div>
-<div class="line"><span class="lineno">  160</span>    }</div>
-<div class="line"><span class="lineno">  161</span> </div>
-<div class="line"><span class="lineno">  162</span>    <span class="keywordflow">return</span> {resa, resb};</div>
-<div class="line"><span class="lineno">  163</span>  }</div>
-<div class="ttc" id="aclassnimble_1_1_contact_manager_html_a71c65d431c27cf647882e5d7178e5b55"><div class="ttname"><a href="classnimble_1_1_contact_manager.html#a71c65d431c27cf647882e5d7178e5b55">nimble::ContactManager::Projection</a></div><div class="ttdeci">static void Projection(const ContactEntity &amp;node, const ContactEntity &amp;tri, bool &amp;in, double &amp;gap, double *normal, double *barycentric_coordinates, double tolerance=1.e-8)</div><div class="ttdoc">Compute the projection of a point onto a triangular face.</div><div class="ttdef"><b>Definition</b> nimble_contact_manager.cc:1550</div></div>
-<div class="ttc" id="anamespacenimble_1_1details_html_afdcbbd03643368c0654d6218fc44d7b0"><div class="ttname"><a href="namespacenimble_1_1details.html#afdcbbd03643368c0654d6218fc44d7b0">nimble::details::getContactForce</a></div><div class="ttdeci">void getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3])</div><div class="ttdef"><b>Definition</b> nimble_contact_manager.h:82</div></div>
+<div class="line"><span class="lineno">  137</span>    Kokkos::parallel_for(_b.elements.extent(0), [=, &amp;resa, &amp;resb, &amp;j](<span class="keywordtype">int</span> i) {</div>
+<div class="line"><span class="lineno">  138</span>      auto elb = _b.elements(i);</div>
+<div class="line"><span class="lineno">  139</span>      query_tree_local(tree, elb, [&amp;_a, &amp;_b, &amp;elb, &amp;resa, &amp;resb, this, j](std::size_t _i) {</div>
+<div class="line"><span class="lineno">  140</span>        const auto&amp;       face = _a.elements[_i];</div>
+<div class="line"><span class="lineno">  141</span>        const auto&amp;       node = elb;</div>
+<div class="line"><span class="lineno">  142</span>        NarrowphaseResult entry;</div>
+<div class="line"><span class="lineno">  143</span> </div>
+<div class="line"><span class="lineno">  144</span>        bool   hit = false;</div>
+<div class="line"><span class="lineno">  145</span>        double norm[3];</div>
+<div class="line"><span class="lineno">  146</span>        ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary);</div>
+<div class="line"><span class="lineno">  147</span> </div>
+<div class="line"><span class="lineno">  148</span>        if (hit) {</div>
+<div class="line"><span class="lineno">  149</span>          details::getContactForce(contact_manager-&gt;GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);</div>
+<div class="line"><span class="lineno">  150</span> </div>
+<div class="line"><span class="lineno">  151</span>          entry.local_index = face.local_id();</div>
+<div class="line"><span class="lineno">  152</span>          entry.node        = false;</div>
+<div class="line"><span class="lineno">  153</span>          resa.emplace_back(entry);</div>
+<div class="line"><span class="lineno">  154</span> </div>
+<div class="line"><span class="lineno">  155</span>          entry.local_index = node.local_id();</div>
+<div class="line"><span class="lineno">  156</span>          entry.node        = true;</div>
+<div class="line"><span class="lineno">  157</span>          resb.emplace_back(entry);</div>
+<div class="line"><span class="lineno">  158</span>        }</div>
+<div class="line"><span class="lineno">  159</span>      });</div>
+<div class="line"><span class="lineno">  160</span>      ++j;</div>
+<div class="line"><span class="lineno">  161</span>    });</div>
+<div class="line"><span class="lineno">  162</span> </div>
+<div class="line"><span class="lineno">  163</span>    <span class="keywordflow">return</span> {resa, resb};</div>
+<div class="line"><span class="lineno">  164</span>  }</div>
 </div><!-- fragment -->
 </div>
 </div>
