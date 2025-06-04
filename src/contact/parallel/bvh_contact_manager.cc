@@ -151,11 +151,11 @@ struct NarrowphaseFunc
 
           entry.local_index = face.local_id();
           entry.node        = false;
-          resa.append_data(&entry, 1);
+          resa.emplace_back(entry);
 
           entry.local_index = node.local_id();
           entry.node        = true;
-          resb.append_data(&entry, 1);
+          resb.emplace_back(entry);
         }
       });
       ++j;
