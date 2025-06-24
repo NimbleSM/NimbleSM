@@ -4,7 +4,7 @@ A very basic installation for **Ubuntu 24.04** is performed by downloading the i
 ````
 wget https://github.com/NimbleSM/NimbleSM/blob/develop/install_nimble.sh
 chmod +x install_nimble.sh
-./install_nimble.sh
+./install_nimble.sh 6 --all
 ````
 which builds and installs a default NimbleSM with the necessary dependencies (it may take a while, don't worry).
 
@@ -100,7 +100,7 @@ export WORKDIR=$HOME/dev/NimbleSM
 
 export VT_SOURCE_DIR=$WORKDIR/vt
 export VT_BUILD_DIR=$VT_SOURCE_DIR/build
-export VT_INSTALL_DIR=$VT_SOURCE_DIR/install
+export VT_INSTALL_DIR=$VT_BUILD_DIR/install
 
 export FMT_SOURCE_DIR=$WORKDIR/fmt
 export FMT_BUILD_DIR=$FMT_SOURCE_DIR/build
