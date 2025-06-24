@@ -269,7 +269,7 @@ install_vt(){
 
 show_help() {
     echo "Usage: $0 <WORKDIR> <nproc> [options]"
-    echo "For example ./install_nimble.sh $HOME/NimbleSM 6 --all"
+    echo "For example ./install_nimble.sh 6 --all"
     echo "Options:"
     echo "  --all          Install all dependencies"
     echo "In case of the modification of this script by yourself to change a version of dependence, you can run the following options to rebuilt   "
@@ -287,9 +287,9 @@ if [ "$#" -lt 1 ]; then
     show_help
     exit 1
 else
-    WORKDIR=$(dirname "$0")/dependencies
-    nproc=$2
-    shift 2
+    WORKDIR=$(pwd "$0")/dependencies
+    nproc=$1
+    shift 1
 fi
 
 # Parse optional dependencies
