@@ -275,7 +275,6 @@ show_help() {
     echo "In case of the modification of this script by yourself to change a version of dependence, you can run the following options to rebuilt   "
     echo "  --fmt          Install FMT"
     echo "  --spdlog       Install spdlog"
-    echo "  --magistrate   Install magistrate"
     echo "  --vt           Install DARMA-vt"
     echo "  --vtk          Install VTK"
     echo "  --bvh          Install BVH"
@@ -284,11 +283,11 @@ show_help() {
 }
 
 # Default WORKDIR and nproc
-if [ "$#" -lt 2 ]; then
+if [ "$#" -lt 1 ]; then
     show_help
     exit 1
 else
-    WORKDIR=$1
+    WORKDIR=$(dirname "$0")/dependencies
     nproc=$2
     shift 2
 fi
@@ -304,7 +303,6 @@ while [[ $# -gt 0 ]]; do
         --spack) INSTALL_LIST+=("spack"); shift ;;    
         --fmt) INSTALL_LIST+=("fmt"); shift ;;
         --spdlog) INSTALL_LIST+=("spdlog"); shift ;;
-        --magistrate) INSTALL_LIST+=("magistrate"); shift ;;
         --vt) INSTALL_LIST+=("vt"); shift ;;
         --vtk) INSTALL_LIST+=("vtk"); shift ;;
         --bvh) INSTALL_LIST+=("bvh"); shift ;;
@@ -393,10 +391,6 @@ export FMT_SOURCE_DIR=$WORKDIR/fmt
 export FMT_BUILD_DIR=$FMT_SOURCE_DIR/build
 export FMT_INSTALL_DIR=$FMT_SOURCE_DIR/install
 
-export MAGISTRATE_SOURCE_DIR=$WORKDIR/magistrate
-export MAGISTRATE_BUILD_DIR=$MAGISTRATE_SOURCE_DIR/build
-export MAGISTRATE_INSTALL_DIR=$MAGISTRATE_SOURCE_DIR/install
-
 export VT_SOURCE_DIR=$WORKDIR/vt
 export VT_BUILD_DIR=$VT_SOURCE_DIR/build
 export VT_INSTALL_DIR=$VT_BUILD_DIR/install
@@ -413,7 +407,7 @@ export VTK_SOURCE_DIR=$WORKDIR/vtk
 export VTK_BUILD_DIR=$VTK_SOURCE_DIR/build
 export VTK_INSTALL_DIR=$VTK_SOURCE_DIR/install
 
-export NIMBLESM_SOURCE_DIR=$WORKDIR/NimbleSM
+export NIMBLESM_SOURCE_DIR=$WORKDIR
 export NIMBLESM_BUILD_DIR=$NIMBLESM_SOURCE_DIR/build
 export NIMBLESM_INSTALL_DIR=$NIMBLESM_SOURCE_DIR/install
 
@@ -488,19 +482,6 @@ if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
 	make -j$(nproc) install
 fi
 
-if [[ " ${INSTALL_LIST[@]} " =~ " magistrate " ]]; then
-	echo "==================================="
-	echo "=     MAGISTRATE INSTALLATION     ="
-	echo "==================================="
-	
-	cd $MAGISTRATE_SOURCE_DIR
-	git clone https://github.com/DARMA-tasking/magistrate.git
-	cmake -S magistrate -B $MAGISTRATE_BUILD_DIR \
-	-DCMAKE_INSTALL_PREFIX=$MAGISTRATE_INSTALL_DIR \
-	-DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
-	cd $MAGISTRATE_BUILD_DIR
-	make -j$(nproc) install
-fi
 
 if [[ " ${INSTALL_LIST[@]} " =~ " vt " ]]; then
 	echo "==================================="
@@ -599,7 +580,6 @@ if [[ " ${INSTALL_LIST[@]} " =~ " nimble " ]]; then
 	echo "==================================="
 
 	cd $NIMBLESM_SOURCE_DIR
-	git clone git@github.com:NimbleSM/NimbleSM.git
 	export PATH=$(spack location -i mpi)/bin:$PATH
 	export PATH=$(spack location -i seacas)/bin:$PATH
 	cmake -S NimbleSM \
