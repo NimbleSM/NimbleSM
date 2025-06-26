@@ -287,7 +287,7 @@ if [ "$#" -lt 1 ]; then
     show_help
     exit 1
 else
-    WORKDIR=$(pwd "$0")/dependencies
+    export WORKDIR=$(pwd "$0")/dependencies
     nproc=$1
     shift 1
 fi
@@ -393,7 +393,7 @@ export FMT_INSTALL_DIR=$FMT_SOURCE_DIR/install
 
 export VT_SOURCE_DIR=$WORKDIR/vt
 export VT_BUILD_DIR=$VT_SOURCE_DIR/build
-export VT_INSTALL_DIR=$VT_BUILD_DIR/install
+export VT_INSTALL_DIR=$VT_BUILD_DIR/vt/install
 
 export SPDLOG_SOURCE_DIR=$WORKDIR/spdlog
 export SPDLOG_BUILD_DIR=$SPDLOG_SOURCE_DIR/build
@@ -407,14 +407,15 @@ export VTK_SOURCE_DIR=$WORKDIR/vtk
 export VTK_BUILD_DIR=$VTK_SOURCE_DIR/build
 export VTK_INSTALL_DIR=$VTK_SOURCE_DIR/install
 
-export NIMBLESM_SOURCE_DIR=$WORKDIR
+export NIMBLESM_SOURCE_DIR=$(pwd "$0")
+echo $NIMBLESM_SOURCE_DIR
 export NIMBLESM_BUILD_DIR=$NIMBLESM_SOURCE_DIR/build
 export NIMBLESM_INSTALL_DIR=$NIMBLESM_SOURCE_DIR/install
 
 
 
 mkdir -p $WORKDIR \
-$VT_SOURCE_DIR $VT_BUILD_DIR $VT_INSTALL_DIR \
+$VT_SOURCE_DIR $VT_BUILD_DIR \
 $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR \
 $SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR \
 $VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR \
@@ -495,13 +496,14 @@ if [[ " ${INSTALL_LIST[@]} " =~ " vt " ]]; then
 	cd $VT_SOURCE_DIR
 	export VT_VERSION=1.5.0
 	git clone git@github.com:DARMA-tasking/vt.git
-	cd vt
+	#cd vt
 	git checkout tags/${VT_VERSION}
 	
-	#export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
+	export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
 	
 	
 	install_vt $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
+	#vt/ci/build_cpp.sh $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
 	
 	
 fi
@@ -551,7 +553,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " bvh " ]]; then
 	echo "==================================="
 	echo "=         BVH INSTALLATION        ="
 	echo "==================================="
-
+	export $VT_INSTALL_DIR="/home/logan/Documents/NimbleSM/dependencies/vt/build/vt/install"
 	cd $BVH_SOURCE_DIR
 	git clone git@github.com:sandialabs/distBVH.git
 	export PATH=$(spack location -i openmpi)/bin:$PATH
@@ -559,7 +561,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " bvh " ]]; then
 	-DCMAKE_INSTALL_PREFIX=$BVH_INSTALL_DIR \
 	-DCMAKE_BUILD_TYPE=Debug \
 	-DKokkos_ROOT=$(spack location -i kokkos@4.4.00)/lib/cmake \
-	-Dvt_DIR=$VT_INSTALL_DIR/cmake \
+	-Dvt_DIR=/home/logan/Documents/NimbleSM/dependencies/vt/build/vt/install/cmake \
 	-DVTK_DIR=$VTK_INSTALL_DIR \
 	-DBVH_DEBUG_LEVEL=5 \
 	-Dspdlog_DIR=$SPDLOG_INSTALL_DIR/lib/cmake/spdlog \
@@ -582,7 +584,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " nimble " ]]; then
 	cd $NIMBLESM_SOURCE_DIR
 	export PATH=$(spack location -i mpi)/bin:$PATH
 	export PATH=$(spack location -i seacas)/bin:$PATH
-	cmake -S NimbleSM \
+	cmake -S . \
 	    -B $NIMBLESM_BUILD_DIR \
 	    -DCMAKE_INSTALL_PREFIX=$NIMBLESM_INSTALL_DIR \
 	    -DKokkos_DIR=$(spack location -i kokkos@4.4.00)/lib/cmake \
