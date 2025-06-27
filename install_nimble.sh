@@ -274,6 +274,7 @@ show_help() {
     echo "  --all          Install all dependencies"
     echo "In case of the modification of this script by yourself to change a version of dependence, you can run the following options to rebuilt   "
     echo "  --fmt          Install FMT"
+    echo "  --kokkos       Install Kokkos"
     echo "  --spdlog       Install spdlog"
     echo "  --vt           Install DARMA-vt"
     echo "  --vtk          Install VTK"
@@ -299,7 +300,8 @@ while [[ $# -gt 0 ]]; do
         --all)
             INSTALL_LIST=(fmt spdlog magistrate vt vtk bvh nimble)
             shift ;;
-        --update) INSTALL_LIST+=("update"); shift ;;    
+        --update) INSTALL_LIST+=("update"); shift ;;
+        --kokkos) INSTALL_LIST+=("kokkos"); shift ;;
         --spack) INSTALL_LIST+=("spack"); shift ;;    
         --fmt) INSTALL_LIST+=("fmt"); shift ;;
         --spdlog) INSTALL_LIST+=("spdlog"); shift ;;
@@ -412,6 +414,9 @@ echo $NIMBLESM_SOURCE_DIR
 export NIMBLESM_BUILD_DIR=$NIMBLESM_SOURCE_DIR/build
 export NIMBLESM_INSTALL_DIR=$NIMBLESM_SOURCE_DIR/install
 
+export KOKKOS_SOURCE_DIR=$WORKDIR/kokkos
+export KOKKOS_BUILD_DIR=$KOKKOS_SOURCE_DIR/build
+export KOKKOS_INSTALL_DIR=$KOKKOS_SOURCE_DIR/install
 
 
 mkdir -p $WORKDIR \
@@ -420,6 +425,7 @@ $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR \
 $SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR \
 $VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR \
 $BVH_SOURCE_DIR $BVH_BUILD_DIR $BVH_INSTALL_DIR \
+$KOKKOS_SOURCE_DIR $KOKKOS_BUILD_DIR $KOKKOS_INSTALL_DIR \
 $NIMBLESM_SOURCE_DIR $NIMBLESM_BUILD_DIR $NIMBLESM_INSTALL_DIR
 
 cd $WORKDIR
@@ -465,6 +471,62 @@ if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
 	spack install arborx@1.4.1
 	spack install seacas
 fi
+
+if [[ " ${INSTALL_LIST[@]} " =~ " kokkos " ]]; then
+    echo "==================================="
+    echo "=       KOKKOS INSTALLATION       ="
+    echo "==================================="
+
+    # Mettre à jour les variables d'environnement CUDA
+    export PATH=/usr/local/cuda/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export CUDA_HOME=/usr/local/cuda
+
+    # Définir les répertoires de Kokkos
+    KOKKOS_SOURCE_DIR=/home/logan/Documents/NimbleSM/dependencies/kokkos
+    KOKKOS_INSTALL_DIR=/home/logan/Documents/NimbleSM/dependencies/kokkos/install
+    KOKKOS_BUILD_DIR=$KOKKOS_SOURCE_DIR/build
+
+    # Cloner Kokkos si nécessaire
+    if [ ! -d "$KOKKOS_SOURCE_DIR/kokkos" ]; then
+        echo "Clonage du dépôt Kokkos..."
+        git clone -b master https://github.com/kokkos/kokkos.git $KOKKOS_SOURCE_DIR/kokkos
+    else
+        echo "Kokkos déjà cloné, passage de l'étape du clonage."
+    fi
+
+    # Créer le répertoire de construction
+    mkdir -p $KOKKOS_BUILD_DIR
+    cd $KOKKOS_BUILD_DIR
+
+    # Configuration de Kokkos avec CMake pour l'architecture CUDA Ampere (RTX 5070)
+    echo "Configuration de Kokkos avec CMake..."
+    cmake -G "Ninja" \
+        -S $KOKKOS_SOURCE_DIR/kokkos/ \
+        -DCMAKE_INSTALL_PREFIX="$KOKKOS_INSTALL_DIR" \
+        -DCMAKE_CXX_COMPILER=g++-11 \
+        -DCMAKE_C_COMPILER=gcc-11 \
+        -DKokkos_ENABLE_CUDA=ON \
+        -DKokkos_CUDA_ARCH="80" \
+        -DKokkos_ARCH_AMPERE80=ON \
+        -DCMAKE_BUILD_TYPE=Release
+
+    # Vérification des cibles disponibles dans le Makefile
+    echo "Vérification des cibles disponibles dans le Makefile..."
+    make help
+
+    # Compilation de Kokkos
+    echo "Compilation de Kokkos..."
+    cmake --build . -j$(nproc)
+
+    # Installation de Kokkos
+    echo "Installation de Kokkos..."
+    cmake --install . --prefix $KOKKOS_INSTALL_DIR
+
+    # Vérification des tests (optionnel)
+    # cmake --build . -j$(nproc) && ctest --test-dir . --output-on-failure
+fi
+
 
 if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
 	echo "==================================="
@@ -560,7 +622,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " bvh " ]]; then
 	cmake -S distBVH -B $BVH_BUILD_DIR \
 	-DCMAKE_INSTALL_PREFIX=$BVH_INSTALL_DIR \
 	-DCMAKE_BUILD_TYPE=Debug \
-	-DKokkos_ROOT=$(spack location -i kokkos@4.4.00)/lib/cmake \
+	-DKokkos_ROOT=$KOKKOS_INSTALL_DIR/lib/cmake/Kokkos \
 	-Dvt_DIR=/home/logan/Documents/NimbleSM/dependencies/vt/build/vt/install/cmake \
 	-DVTK_DIR=$VTK_INSTALL_DIR \
 	-DBVH_DEBUG_LEVEL=5 \
@@ -587,7 +649,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " nimble " ]]; then
 	cmake -S . \
 	    -B $NIMBLESM_BUILD_DIR \
 	    -DCMAKE_INSTALL_PREFIX=$NIMBLESM_INSTALL_DIR \
-	    -DKokkos_DIR=$(spack location -i kokkos@4.4.00)/lib/cmake \
+	    -DKokkos_DIR=$KOKKOS_INSTALL_DIR/lib/cmake/Kokkos \
 	    -Dspdlog_DIR=$SPDLOG_INSTALL_DIR/lib/cmake/spdlog \
 	    -Dbvh_DIR=$BVH_INSTALL_DIR/cmake \
 	    -DArborX_DIR=$(spack location -i arborx)/lib/cmake/ArborX \
