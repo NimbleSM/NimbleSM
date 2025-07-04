@@ -1,6 +1,111 @@
 #!/bin/bash
 
 install_vt(){
+    set -ex
+
+    export CC=gcc-11
+    export CXX=g++-11
+    export MPICC=$(spack location -i openmpi)/bin/mpicc
+    export MPICXX=$(spack location -i openmpi)/bin/mpicxx
+    export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
+    export VT_EXTENDED_TESTS_ENABLED=0
+    export VT_EXTERNAL_FMT=1
+    export VT_TRACE_ENABLED=1
+    
+    source_dir=${1}
+    build_dir=${2}
+
+    # Dependency versions, when fetched via git.
+    checkpoint_rev=develop
+
+    if test "${VT_DOXYGEN_ENABLED:-0}" -eq 1
+    then
+        token=${3}
+    else
+        target=${3:-install}
+    fi
+
+    if [ -z ${4} ]; then
+        dashj=""
+    else
+        dashj="-j ${4}"
+    fi
+
+    if hash ccache &>/dev/null
+    then
+        use_ccache=true
+    fi
+
+    if test "$use_ccache"
+    then
+        { echo -e "===\n=== ccache statistics before build\n==="; } 2>/dev/null
+        ccache -s
+    else
+        { echo -e "===\n=== ccache not found, compiling without it\n==="; } 2>/dev/null
+    fi
+
+    mkdir -p "${build_dir}"
+    pushd "${build_dir}"
+
+    # Match `nvcc_wrapper` and also a path ending with 'nvcc_wrapper'
+    case $CXX in
+        *nvcc_wrapper)
+        NVCC_WRAPPER_DEFAULT_COMPILER="$(which g++-"$(echo "${HOST_COMPILER}" | cut -d- -f2)")" \
+        && export NVCC_WRAPPER_DEFAULT_COMPILER;;
+    esac
+
+    # Set up the environment variables for the VT build
+    export VT=${source_dir}
+    export VT_BUILD=${build_dir}/vt
+    mkdir -p "$VT_BUILD"
+    cd "$VT_BUILD"
+    rm -Rf ./*
+    
+    cmake -G "${CMAKE_GENERATOR:-Ninja}" \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -Dvt_trace_enabled=ON \
+        -Dvt_lb_enabled=ON \
+        -Dvt_external_fmt=ON \
+        -Dvt_doxygen_enabled=OFF \
+        -DCMAKE_CXX_FLAGS="-Wno-maybe-uninitialized" \
+        -Dfmt_ROOT="${fmt_DIR}" \
+        -DCMAKE_CXX_COMPILER="${CXX}" \
+        -DCMAKE_C_COMPILER="${CC}" \
+        "$VT"
+    
+    cmake_conf_ret=$?
+
+    if test "$cmake_conf_ret" -ne 0
+    then
+        echo "There was an error during CMake configuration"
+        exit "$cmake_conf_ret"
+    fi
+
+    # Compilation
+    time cmake --build . ${dashj} --target "${target}"
+
+    # Handle ccache after build
+    if test "$use_ccache"
+    then
+        { echo -e "===\n=== ccache statistics after build\n==="; } 2>/dev/null
+        ccache -s
+    fi
+
+    # Exit with error code if there was any
+    if test "$cmake_conf_ret" -ne 0
+    then
+        echo "There was an error during CMake configuration"
+        exit "$cmake_conf_ret"
+    elif test "$compilation_ret" -ne 0
+    then
+        echo "There was an error during compilation"
+        exit "$compilation_ret"
+    fi
+}
+
+
+
+install_vt_old(){
 	set -ex
 
 	export CC=gcc-11 
@@ -269,17 +374,21 @@ install_vt(){
 
 show_help() {
     echo "Usage: $0 <WORKDIR> <nproc> [options]"
-    echo "For example ./install_nimble.sh 6 --all"
+    echo "For example ./install_nimble.sh 6 --nimbleSM"
     echo "Options:"
-    echo "  --all          Install all dependencies"
+    echo "  --nimbleSM     Install all dependencies for NimbleSM"
+    echo "  --all          Install all dependencies and update git and compiler"
     echo "In case of the modification of this script by yourself to change a version of dependence, you can run the following options to rebuilt   "
-    echo "  --fmt          Install FMT"
-    echo "  --kokkos       Install Kokkos"
-    echo "  --spdlog       Install spdlog"
-    echo "  --vt           Install DARMA-vt"
-    echo "  --vtk          Install VTK"
-    echo "  --bvh          Install BVH"
-    echo "  --nimble       Install NimbleSM"
+    echo "  --update       Update sytem and install compiler g++ and gcc 11"
+    echo "  --git          Install and check the ssh key"
+    echo "  --spack        Install or reinstall spack, arborx and seacas"
+    echo "  --fmt          Install or reinstall FMT only"
+    echo "  --kokkos       Install or reinstall Kokkos only"
+    echo "  --spdlog       Install or reinstall spdlog only"
+    echo "  --vt           Install or reinstall DARMA-vt only"
+    echo "  --vtk          Install or reinstall VTK only"
+    echo "  --bvh          Install or reinstall BVH only"
+    echo "  --nimble       Install or reinstall NimbleSM only"
     echo "  -h, --help     Show this help message and exit"
 }
 
@@ -297,10 +406,9 @@ fi
 INSTALL_LIST=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --all)
-            INSTALL_LIST=(fmt spdlog magistrate vt vtk bvh nimble)
-            shift ;;
+        --all) INSTALL_LIST=(update git kokkos spack fmt spdlog vt vtk bvh nimble); shift ;;
         --update) INSTALL_LIST+=("update"); shift ;;
+        --git) INSTALL_LIST+=("git"); shift ;;
         --kokkos) INSTALL_LIST+=("kokkos"); shift ;;
         --spack) INSTALL_LIST+=("spack"); shift ;;    
         --fmt) INSTALL_LIST+=("fmt"); shift ;;
@@ -309,8 +417,8 @@ while [[ $# -gt 0 ]]; do
         --vtk) INSTALL_LIST+=("vtk"); shift ;;
         --bvh) INSTALL_LIST+=("bvh"); shift ;;
         --nimble) INSTALL_LIST+=("nimble"); shift ;;
-        -h|--help)
-            show_help
+        --nimbleSM) INSTALL_LIST+=(kokkos spack fmt spdlog vt vtk bvh nimble); shift ;;
+        -h|--help) show_help
             exit 0 ;;
         *)
             echo "Unknown option: $1"
@@ -318,72 +426,6 @@ while [[ $# -gt 0 ]]; do
             exit 1 ;;
     esac
 done
-
-sudo apt install git -y
-
-echo "Testing SSH connection to GitHub..."
-
-ssh -T git@github.com 2>&1 | grep "successfully authenticated" > /dev/null
-
-if [ $? -eq 0 ]; then
-    echo "Success: SSH key is correctly linked to GitHub."
-else
-    # Path to the .ssh directory
-    SSH_DIR="$HOME/.ssh"
-
-    # Check if the .ssh directory exists
-    if [ -d "$SSH_DIR" ]; then
-        echo ".ssh directory exists."
-    else
-        echo ".ssh directory does not exist, creating it..."
-        mkdir -p "$SSH_DIR"
-        chmod 700 "$SSH_DIR"
-    fi
-
-    # Check if an SSH key pair already exists
-    if [ -f "$SSH_DIR/id_rsa" ] && [ -f "$SSH_DIR/id_rsa.pub" ]; then
-        echo "An existing SSH key pair found:"
-        ls "$SSH_DIR/id_rsa" "$SSH_DIR/id_rsa.pub"
-
-        echo "To add this key to GitHub, follow these steps:"
-        echo "1. Copy your public SSH key:"
-        echo ""
-        echo "   cat ~/.ssh/id_rsa.pub"
-        echo ""
-        echo "2. Go to GitHub and log in."
-        echo "3. In the upper-right corner of any page, click your profile photo, then click 'Settings'."
-        echo "4. In the 'Access' section of the sidebar, click 'SSH and GPG keys'."
-        echo "5. Click 'New SSH key' or 'Add SSH key'."
-        echo "6. Paste your public key into the 'Key' field."
-        echo "7. Click 'Add SSH key'."
-        echo "8. Confirm your GitHub password if prompted."
-        
-        # Continue with installations or other tasks
-        echo "Proceeding with installations..."
-        
-        # Add your installation commands here
-        
-    else
-        echo "No SSH key found, generating a new SSH key..."
-        ssh-keygen -t rsa -b 4096 -f "$SSH_DIR/id_rsa" -N ""
-        echo "SSH key successfully generated."
-        
-        # Display instructions for adding the newly generated key to GitHub
-        echo "To add this newly generated key to GitHub, follow these steps:"
-        echo "1. Copy your public SSH key:"
-        echo ""
-        echo "   cat ~/.ssh/id_rsa.pub"
-        echo ""
-        echo "2. Go to GitHub and log in."
-        echo "3. In the upper-right corner of any page, click your profile photo, then click 'Settings'."
-        echo "4. In the 'Access' section of the sidebar, click 'SSH and GPG keys'."
-        echo "5. Click 'New SSH key' or 'Add SSH key'."
-        echo "6. Paste your public key into the 'Key' field."
-        echo "7. Click 'Add SSH key'."
-        echo "8. Confirm your GitHub password if prompted."
-    fi
-    exit 1
-fi
 
 #Create all the repository
 echo "Working Directory: $WORKDIR"
@@ -420,18 +462,16 @@ export KOKKOS_INSTALL_DIR=$KOKKOS_SOURCE_DIR/install
 
 
 mkdir -p $WORKDIR \
-$VT_SOURCE_DIR $VT_BUILD_DIR \
-$FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR \
-$SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR \
-$VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR \
-$BVH_SOURCE_DIR $BVH_BUILD_DIR $BVH_INSTALL_DIR \
-$KOKKOS_SOURCE_DIR $KOKKOS_BUILD_DIR $KOKKOS_INSTALL_DIR \
 $NIMBLESM_SOURCE_DIR $NIMBLESM_BUILD_DIR $NIMBLESM_INSTALL_DIR
 
 cd $WORKDIR
 
 
 if [[ " ${INSTALL_LIST[@]} " =~ " update " ]]; then
+	echo "==================================="
+	echo "=         UPDATE COMPILER         ="
+	echo "==================================="
+	
 	sudo apt-get update -y
 
 	sudo apt install -y gcc-11
@@ -442,8 +482,82 @@ if [[ " ${INSTALL_LIST[@]} " =~ " update " ]]; then
 	sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
 fi
 
+if [[ " ${INSTALL_LIST[@]} " =~ " git " ]]; then
+	echo "==================================="
+	echo "=         GIT INSTALLATION        ="
+	echo "==================================="
+	
+	sudo apt install git -y
+
+	echo "Testing SSH connection to GitHub..."
+
+	ssh -T git@github.com 2>&1 | grep "successfully authenticated" > /dev/null
+
+	if [ $? -eq 0 ]; then
+	    echo "Success: SSH key is correctly linked to GitHub."
+	else
+	    # Path to the .ssh directory
+	    SSH_DIR="$HOME/.ssh"
+
+	    # Check if the .ssh directory exists
+	    if [ -d "$SSH_DIR" ]; then
+		echo ".ssh directory exists."
+	    else
+		echo ".ssh directory does not exist, creating it..."
+		mkdir -p "$SSH_DIR"
+		chmod 700 "$SSH_DIR"
+	    fi
+
+	    # Check if an SSH key pair already exists
+	    if [ -f "$SSH_DIR/id_rsa" ] && [ -f "$SSH_DIR/id_rsa.pub" ]; then
+		echo "An existing SSH key pair found:"
+		ls "$SSH_DIR/id_rsa" "$SSH_DIR/id_rsa.pub"
+
+		echo "To add this key to GitHub, follow these steps:"
+		echo "1. Copy your public SSH key:"
+		echo ""
+		echo "   cat ~/.ssh/id_rsa.pub"
+		echo ""
+		echo "2. Go to GitHub and log in."
+		echo "3. In the upper-right corner of any page, click your profile photo, then click 'Settings'."
+		echo "4. In the 'Access' section of the sidebar, click 'SSH and GPG keys'."
+		echo "5. Click 'New SSH key' or 'Add SSH key'."
+		echo "6. Paste your public key into the 'Key' field."
+		echo "7. Click 'Add SSH key'."
+		echo "8. Confirm your GitHub password if prompted."
+		
+		# Continue with installations or other tasks
+		echo "Proceeding with installations..."
+		
+		# Add your installation commands here
+		
+	    else
+		echo "No SSH key found, generating a new SSH key..."
+		ssh-keygen -t rsa -b 4096 -f "$SSH_DIR/id_rsa" -N ""
+		echo "SSH key successfully generated."
+		
+		# Display instructions for adding the newly generated key to GitHub
+		echo "To add this newly generated key to GitHub, follow these steps:"
+		echo "1. Copy your public SSH key:"
+		echo ""
+		echo "   cat ~/.ssh/id_rsa.pub"
+		echo ""
+		echo "2. Go to GitHub and log in."
+		echo "3. In the upper-right corner of any page, click your profile photo, then click 'Settings'."
+		echo "4. In the 'Access' section of the sidebar, click 'SSH and GPG keys'."
+		echo "5. Click 'New SSH key' or 'Add SSH key'."
+		echo "6. Paste your public key into the 'Key' field."
+		echo "7. Click 'Add SSH key'."
+		echo "8. Confirm your GitHub password if prompted."
+	    fi
+	    exit 1
+	fi
+fi
 
 if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
+	echo "==================================="
+	echo "=        SPACK INSTALLATION       ="
+	echo "==================================="
 	git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 
 	source $WORKDIR/spack/share/spack/setup-env.sh
@@ -467,39 +581,37 @@ if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
 	    environment: {}
 	    extra_rpaths: []" > ~/.spack/linux/compilers.yaml
 
-	spack install kokkos@4.4.00
+	#spack install kokkos@4.4.00
 	spack install arborx@1.4.1
 	spack install seacas
 fi
 
 if [[ " ${INSTALL_LIST[@]} " =~ " kokkos " ]]; then
+#
+#Kokkos should be build with gcc bellow gcc 12 version. That's why gcc 11 is used.
+#
     echo "==================================="
     echo "=       KOKKOS INSTALLATION       ="
     echo "==================================="
 
-    # Mettre à jour les variables d'environnement CUDA
+	rm -rf $KOKKOS_SOURCE_DIR $KOKKOS_BUILD_DIR $KOKKOS_INSTALL_DIR && mkdir -p $KOKKOS_SOURCE_DIR $KOKKOS_BUILD_DIR $KOKKOS_INSTALL_DIR
+	
+    # Update CUDA environment variables
     export PATH=/usr/local/cuda/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
     export CUDA_HOME=/usr/local/cuda
 
-    # Définir les répertoires de Kokkos
-    KOKKOS_SOURCE_DIR=/home/logan/Documents/NimbleSM/dependencies/kokkos
-    KOKKOS_INSTALL_DIR=/home/logan/Documents/NimbleSM/dependencies/kokkos/install
-    KOKKOS_BUILD_DIR=$KOKKOS_SOURCE_DIR/build
 
-    # Cloner Kokkos si nécessaire
     if [ ! -d "$KOKKOS_SOURCE_DIR/kokkos" ]; then
-        echo "Clonage du dépôt Kokkos..."
+        echo "Cloning the Kokkos repository..."
         git clone -b master https://github.com/kokkos/kokkos.git $KOKKOS_SOURCE_DIR/kokkos
     else
-        echo "Kokkos déjà cloné, passage de l'étape du clonage."
+        echo "Kokkos already cloned, passing the cloning stage."
     fi
 
-    # Créer le répertoire de construction
-    mkdir -p $KOKKOS_BUILD_DIR
     cd $KOKKOS_BUILD_DIR
 
-    # Configuration de Kokkos avec CMake pour l'architecture CUDA Ampere (RTX 5070)
+    # Kokkos configuration with CMake for CUDA Ampere architecture (RTX 5070)
     echo "Configuration de Kokkos avec CMake..."
     cmake -G "Ninja" \
         -S $KOKKOS_SOURCE_DIR/kokkos/ \
@@ -511,19 +623,10 @@ if [[ " ${INSTALL_LIST[@]} " =~ " kokkos " ]]; then
         -DKokkos_ARCH_AMPERE80=ON \
         -DCMAKE_BUILD_TYPE=Release
 
-    # Vérification des cibles disponibles dans le Makefile
-    echo "Vérification des cibles disponibles dans le Makefile..."
-    make help
-
-    # Compilation de Kokkos
-    echo "Compilation de Kokkos..."
     cmake --build . -j$(nproc)
-
-    # Installation de Kokkos
-    echo "Installation de Kokkos..."
     cmake --install . --prefix $KOKKOS_INSTALL_DIR
 
-    # Vérification des tests (optionnel)
+    # Test verification
     # cmake --build . -j$(nproc) && ctest --test-dir . --output-on-failure
 fi
 
@@ -532,7 +635,9 @@ if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
 	echo "==================================="
 	echo "=         FMT INSTALLATION        ="
 	echo "==================================="
-
+	
+	rm -rf $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR && mkdir -p $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR
+	
 	cd $FMT_SOURCE_DIR
 	export FMT_VERSION=10.2.1
 	wget https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.tar.gz
@@ -546,36 +651,32 @@ if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
 fi
 
 
+
 if [[ " ${INSTALL_LIST[@]} " =~ " vt " ]]; then
 	echo "==================================="
 	echo "=         VT INSTALLATION         ="
 	echo "==================================="
 	
+	rm -rf $VT_SOURCE_DIR $VT_BUILD_DIR && mkdir -p $VT_SOURCE_DIR $VT_BUILD_DIR
+	
 	source $WORKDIR/spack/share/spack/setup-env.sh
-	
-	echo $VT_SOURCE_DIR
-	
 	cd $VT_SOURCE_DIR
 	export VT_VERSION=1.5.0
 	git clone git@github.com:DARMA-tasking/vt.git
-	#cd vt
 	git checkout tags/${VT_VERSION}
-	
-	export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
-	
-	
-	install_vt $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
-	#vt/ci/build_cpp.sh $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
-	
-	
+	#export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
+	vt/ci/build_cpp.sh $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
 fi
   
+
 
 
 if [[ " ${INSTALL_LIST[@]} " =~ " spdlog " ]]; then
 	echo "==================================="
 	echo "=       SPDLOG INSTALLATION       ="
 	echo "==================================="
+	
+	rm -rf $SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR && mkdir -p $SPDLOG_SOURCE_DIR $SPDLOG_BUILD_DIR $SPDLOG_INSTALL_DIR
 	
 	cd $SPDLOG_SOURCE_DIR
 	export SPDLOG_VERSION=1.13.0
@@ -591,14 +692,18 @@ if [[ " ${INSTALL_LIST[@]} " =~ " spdlog " ]]; then
 	-DCMAKE_CXX_COMPILER=g++-11
 	cd $SPDLOG_BUILD_DIR
 	make -j$(nproc) install
-
 fi
+
+
+
 
 if [[ " ${INSTALL_LIST[@]} " =~ " vtk " ]]; then
 	echo "==================================="
 	echo "=         VTK INSTALLATION        ="
 	echo "==================================="
-
+	
+	rm -rf $VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR && mkdir -p $VTK_SOURCE_DIR $VTK_BUILD_DIR $VTK_INSTALL_DIR
+	
 	cd $VTK_SOURCE_DIR
 	export VTK_VERSION=9.3.1
 	wget https://www.vtk.org/files/release/9.3/VTK-${VTK_VERSION}.tar.gz
@@ -611,19 +716,27 @@ if [[ " ${INSTALL_LIST[@]} " =~ " vtk " ]]; then
 	make -j$(nproc) install
 fi
 
+
 if [[ " ${INSTALL_LIST[@]} " =~ " bvh " ]]; then
 	echo "==================================="
 	echo "=         BVH INSTALLATION        ="
 	echo "==================================="
-	export $VT_INSTALL_DIR="/home/logan/Documents/NimbleSM/dependencies/vt/build/vt/install"
+	
+	rm -rf $BVH_SOURCE_DIR $BVH_BUILD_DIR $BVH_INSTALL_DIR && mkdir -p $BVH_SOURCE_DIR $BVH_BUILD_DIR $BVH_INSTALL_DIR
+	
+	source $WORKDIR/spack/share/spack/setup-env.sh
+	
 	cd $BVH_SOURCE_DIR
 	git clone git@github.com:sandialabs/distBVH.git
 	export PATH=$(spack location -i openmpi)/bin:$PATH
+	
+
 	cmake -S distBVH -B $BVH_BUILD_DIR \
 	-DCMAKE_INSTALL_PREFIX=$BVH_INSTALL_DIR \
 	-DCMAKE_BUILD_TYPE=Debug \
 	-DKokkos_ROOT=$KOKKOS_INSTALL_DIR/lib/cmake/Kokkos \
-	-Dvt_DIR=/home/logan/Documents/NimbleSM/dependencies/vt/build/vt/install/cmake \
+	-DVT_EXTERNAL_FMT=ON \
+	-Dvt_DIR=$VT_INSTALL_DIR/cmake \
 	-DVTK_DIR=$VTK_INSTALL_DIR \
 	-DBVH_DEBUG_LEVEL=5 \
 	-Dspdlog_DIR=$SPDLOG_INSTALL_DIR/lib/cmake/spdlog \
