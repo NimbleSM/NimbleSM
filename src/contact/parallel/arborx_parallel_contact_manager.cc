@@ -153,7 +153,7 @@ struct ContactCallback
       myFace.SetNodalContactForces(force, &facet_coordinates[0]);
       //
       if (noSkip) {
-        Kokkos::atomic_assign(&faces_(f_primitive).contact_status_, true);
+        Kokkos::atomic_store(&faces_(f_primitive).contact_status_, true);
         Kokkos::atomic_add(&faces_(f_primitive).force_1_x_, myFace.force_1_x_);
         Kokkos::atomic_add(&faces_(f_primitive).force_1_y_, myFace.force_1_y_);
         Kokkos::atomic_add(&faces_(f_primitive).force_1_z_, myFace.force_1_z_);

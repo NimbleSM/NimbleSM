@@ -375,7 +375,7 @@ class ContactEntity
   set_contact_status(bool status) noexcept
   {
 #ifdef NIMBLE_HAVE_KOKKOS
-    Kokkos::atomic_assign(&contact_status_, status);
+    Kokkos::atomic_store(&contact_status_, status);
 #else
     contact_status_ = status;
 #endif

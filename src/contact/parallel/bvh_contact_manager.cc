@@ -130,14 +130,15 @@ struct NarrowphaseFunc
     auto res   = bvh::narrowphase_result_pair();
     res.a      = bvh::narrowphase_result(sizeof(NarrowphaseResult), num_possible_contacts);
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult), num_possible_contacts);
-    auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
-    auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
-    auto  tree = bvh::build_snapshot_tree_top_down(_a.elements);
+    auto resa = bvh::typed_narrowphase_result<NarrowphaseResult>(res.a);
+    auto resb = bvh::typed_narrowphase_result<NarrowphaseResult>(res.b);
+    auto tree = bvh::build_snapshot_tree_top_down(_a.elements);
 
-    std::size_t j = 0;
-    Kokkos::parallel_for(_b.elements.extent(0), [=, &resa, &resb, &j](int i) {
+    Kokkos::parallel_for(_b.elements.extent(0), KOKKOS_LAMBDA(int i) {
       auto elb = _b.elements(i);
-      query_tree_local(tree, elb, [&_a, &_b, &elb, &resa, &resb, this, j](std::size_t _i) {
+      auto ra = resa;
+      auto rb = resb;
+      query_tree_local(tree, elb, [&_a, &_b, &elb, &ra, &rb, this](std::size_t _i) {
         const auto&       face = _a.elements[_i];
         const auto&       node = elb;
         NarrowphaseResult entry;
@@ -151,17 +152,16 @@ struct NarrowphaseFunc
 
           entry.local_index = face.local_id();
           entry.node        = false;
-          resa.emplace_back(entry);
+          ra.emplace_back(entry);
 
           entry.local_index = node.local_id();
           entry.node        = true;
-          resb.emplace_back(entry);
+          rb.emplace_back(entry);
         }
       });
-      ++j;
     });
 
-    return {resa, resb};
+    return res;
   }
 #else
   bvh::narrowphase_result_pair
@@ -170,8 +170,8 @@ struct NarrowphaseFunc
     auto res   = bvh::narrowphase_result_pair();
     res.a      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
     res.b      = bvh::narrowphase_result(sizeof(NarrowphaseResult));
-    auto& resa = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.a);
-    auto& resb = static_cast<bvh::typed_narrowphase_result<NarrowphaseResult>&>(res.b);
+    auto resa = bvh::typed_narrowphase_result<NarrowphaseResult>(res.a);
+    auto resb = bvh::typed_narrowphase_result<NarrowphaseResult>(res.b);
     //
     auto view_a = nimble_kokkos::HostContactEntityUnmanagedConstView(_a.elements.data(), _a.elements.size());
     auto view_b = nimble_kokkos::HostContactEntityUnmanagedConstView(_b.elements.data(), _b.elements.size());
@@ -203,7 +203,7 @@ struct NarrowphaseFunc
       std::cout << iter_count << ". resb = " << resb.size() << "\n";
     ++iter_count;
      */
-    return {resa, resb};
+    return res;
   }
 #endif
 
