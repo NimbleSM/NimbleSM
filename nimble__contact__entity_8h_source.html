@@ -517,7 +517,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00375" name="l00375"></a><span class="lineno"><a class="line" href="classnimble_1_1_contact_entity.html#add8b73c0da9c695cb9903c8010a82d06">  375</a></span>  <a class="code hl_function" href="classnimble_1_1_contact_entity.html#add8b73c0da9c695cb9903c8010a82d06">set_contact_status</a>(<span class="keywordtype">bool</span> status) <span class="keyword">noexcept</span></div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>  {</div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span><span class="preprocessor">#ifdef NIMBLE_HAVE_KOKKOS</span></div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    Kokkos::atomic_assign(&amp;<a class="code hl_variable" href="classnimble_1_1_contact_entity.html#a4adaa882879d1beaacfedc8fd56fc1cc">contact_status_</a>, status);</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    Kokkos::atomic_store(&amp;<a class="code hl_variable" href="classnimble_1_1_contact_entity.html#a4adaa882879d1beaacfedc8fd56fc1cc">contact_status_</a>, status);</div>
 <div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span><span class="preprocessor">#else</span></div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>    <a class="code hl_variable" href="classnimble_1_1_contact_entity.html#a4adaa882879d1beaacfedc8fd56fc1cc">contact_status_</a> = status;</div>
 <div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span><span class="preprocessor">#endif</span></div>
