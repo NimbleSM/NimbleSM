@@ -1,111 +1,9 @@
 #!/bin/bash
 
+#LR 10 July 2025
+
+
 install_vt(){
-    set -ex
-
-    export CC=gcc-11
-    export CXX=g++-11
-    export MPICC=$(spack location -i openmpi)/bin/mpicc
-    export MPICXX=$(spack location -i openmpi)/bin/mpicxx
-    export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
-    export VT_EXTENDED_TESTS_ENABLED=0
-    export VT_EXTERNAL_FMT=1
-    export VT_TRACE_ENABLED=1
-    
-    source_dir=${1}
-    build_dir=${2}
-
-    # Dependency versions, when fetched via git.
-    checkpoint_rev=develop
-
-    if test "${VT_DOXYGEN_ENABLED:-0}" -eq 1
-    then
-        token=${3}
-    else
-        target=${3:-install}
-    fi
-
-    if [ -z ${4} ]; then
-        dashj=""
-    else
-        dashj="-j ${4}"
-    fi
-
-    if hash ccache &>/dev/null
-    then
-        use_ccache=true
-    fi
-
-    if test "$use_ccache"
-    then
-        { echo -e "===\n=== ccache statistics before build\n==="; } 2>/dev/null
-        ccache -s
-    else
-        { echo -e "===\n=== ccache not found, compiling without it\n==="; } 2>/dev/null
-    fi
-
-    mkdir -p "${build_dir}"
-    pushd "${build_dir}"
-
-    # Match `nvcc_wrapper` and also a path ending with 'nvcc_wrapper'
-    case $CXX in
-        *nvcc_wrapper)
-        NVCC_WRAPPER_DEFAULT_COMPILER="$(which g++-"$(echo "${HOST_COMPILER}" | cut -d- -f2)")" \
-        && export NVCC_WRAPPER_DEFAULT_COMPILER;;
-    esac
-
-    # Set up the environment variables for the VT build
-    export VT=${source_dir}
-    export VT_BUILD=${build_dir}/vt
-    mkdir -p "$VT_BUILD"
-    cd "$VT_BUILD"
-    rm -Rf ./*
-    
-    cmake -G "${CMAKE_GENERATOR:-Ninja}" \
-        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-        -Dvt_trace_enabled=ON \
-        -Dvt_lb_enabled=ON \
-        -Dvt_external_fmt=ON \
-        -Dvt_doxygen_enabled=OFF \
-        -DCMAKE_CXX_FLAGS="-Wno-maybe-uninitialized" \
-        -Dfmt_ROOT="${fmt_DIR}" \
-        -DCMAKE_CXX_COMPILER="${CXX}" \
-        -DCMAKE_C_COMPILER="${CC}" \
-        "$VT"
-    
-    cmake_conf_ret=$?
-
-    if test "$cmake_conf_ret" -ne 0
-    then
-        echo "There was an error during CMake configuration"
-        exit "$cmake_conf_ret"
-    fi
-
-    # Compilation
-    time cmake --build . ${dashj} --target "${target}"
-
-    # Handle ccache after build
-    if test "$use_ccache"
-    then
-        { echo -e "===\n=== ccache statistics after build\n==="; } 2>/dev/null
-        ccache -s
-    fi
-
-    # Exit with error code if there was any
-    if test "$cmake_conf_ret" -ne 0
-    then
-        echo "There was an error during CMake configuration"
-        exit "$cmake_conf_ret"
-    elif test "$compilation_ret" -ne 0
-    then
-        echo "There was an error during compilation"
-        exit "$compilation_ret"
-    fi
-}
-
-
-
-install_vt_old(){
 	set -ex
 
 	export CC=gcc-11 
@@ -284,8 +182,8 @@ install_vt_old(){
 	      -Dvt_ci_generate_lb_files="${VT_CI_TEST_LB_SCHEMA:-0}" \
 	      -Dvt_debug_verbose="${VT_DEBUG_VERBOSE:-0}" \
 	      -Dvt_tests_num_nodes="${VT_TESTS_NUM_NODES:-}" \
-	      -Dvt_external_fmt="${VT_EXTERNAL_FMT:-0}" \
-	      -Dfmt_DIR="${fmt_DIR}" \
+	      -Dvt_external_fmt="${VT_EXTERNAL_FMT:-1}" \
+	      -Dfmt_ROOT="${fmt_DIR}" \
 	      -DLIBUNWIND_ROOT="${LIBUNWIND_ROOT:-/usr}" \
 	      -Dvt_no_color_enabled="${VT_NO_COLOR_ENABLED:-0}" \
 	      -DCMAKE_CXX_STANDARD="${CMAKE_CXX_STANDARD:-17}" \
@@ -406,7 +304,7 @@ fi
 INSTALL_LIST=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --all) INSTALL_LIST=(update git kokkos spack fmt spdlog vt vtk bvh nimble); shift ;;
+        --all) INSTALL_LIST=(update git spack fmt spdlog kokkos vt vtk bvh nimble); shift ;;
         --update) INSTALL_LIST+=("update"); shift ;;
         --git) INSTALL_LIST+=("git"); shift ;;
         --kokkos) INSTALL_LIST+=("kokkos"); shift ;;
@@ -480,6 +378,7 @@ if [[ " ${INSTALL_LIST[@]} " =~ " update " ]]; then
 
 	sudo apt-get install -y ninja-build build-essential cmake gcc-11 g++-11 mpich zlib1g-dev
 	sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+	sudo apt install nvidia-cuda-toolkit -y
 fi
 
 if [[ " ${INSTALL_LIST[@]} " =~ " git " ]]; then
@@ -554,6 +453,30 @@ if [[ " ${INSTALL_LIST[@]} " =~ " git " ]]; then
 	fi
 fi
 
+if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
+	echo "==================================="
+	echo "=         FMT INSTALLATION        ="
+	echo "==================================="
+	
+	rm -rf $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR && mkdir -p $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR
+	
+	cd $FMT_SOURCE_DIR
+	export FMT_VERSION=10.2.1
+	
+	wget https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.tar.gz
+	tar -xzf ${FMT_VERSION}.tar.gz
+	rm -rf ${FMT_VERSION}.tar.gz
+	cmake -S fmt-${FMT_VERSION}/ -B $FMT_BUILD_DIR \
+	cmake -S fmt-${FMT_SOURCE_DIR}/ -B $FMT_BUILD_DIR \
+	-DCMAKE_INSTALL_PREFIX=$FMT_INSTALL_DIR \
+	-DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
+	cd $FMT_BUILD_DIR
+	make -j$(nproc) install
+fi
+
+
+
+
 if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
 	echo "==================================="
 	echo "=        SPACK INSTALLATION       ="
@@ -561,8 +484,22 @@ if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
 	git clone -c feature.manyFiles=true https://github.com/spack/spack.git
 
 	source $WORKDIR/spack/share/spack/setup-env.sh
+	
+    	spack config add "packages:fmt:buildable:false"
+    	
+    	mkdir -p ~/.spack/linux
+	cat > ~/.spack/linux/packages.yaml <<EOF
+	packages:
+	  fmt:
+	    externals:
+	      - spec: fmt@10.2.1
+		prefix: $FMT_INSTALL_DIR
+	    buildable: false
+	EOF
 
-	spack install zlib
+    
+    spack reindex
+	
 
 	rm ~/.spack/linux/compilers.yaml
 
@@ -581,8 +518,11 @@ if [[ " ${INSTALL_LIST[@]} " =~ " spack " ]]; then
 	    environment: {}
 	    extra_rpaths: []" > ~/.spack/linux/compilers.yaml
 
-	#spack install kokkos@4.4.00
+	spack install zlib
 	spack install arborx@1.4.1
+	    
+    	export SPACK_FFLAGS="-fallow-argument-mismatch"
+    	export SPACK_FCFLAGS="-fallow-argument-mismatch"
 	spack install seacas
 fi
 
@@ -631,24 +571,6 @@ if [[ " ${INSTALL_LIST[@]} " =~ " kokkos " ]]; then
 fi
 
 
-if [[ " ${INSTALL_LIST[@]} " =~ " fmt " ]]; then
-	echo "==================================="
-	echo "=         FMT INSTALLATION        ="
-	echo "==================================="
-	
-	rm -rf $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR && mkdir -p $FMT_SOURCE_DIR $FMT_BUILD_DIR $FMT_INSTALL_DIR
-	
-	cd $FMT_SOURCE_DIR
-	export FMT_VERSION=10.2.1
-	wget https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.tar.gz
-	tar -xzf ${FMT_VERSION}.tar.gz
-	rm -rf ${FMT_VERSION}.tar.gz
-	cmake -S fmt-${FMT_VERSION}/ -B $FMT_BUILD_DIR \
-	-DCMAKE_INSTALL_PREFIX=$FMT_INSTALL_DIR \
-	-DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
-	cd $FMT_BUILD_DIR
-	make -j$(nproc) install
-fi
 
 
 
@@ -664,8 +586,13 @@ if [[ " ${INSTALL_LIST[@]} " =~ " vt " ]]; then
 	export VT_VERSION=1.5.0
 	git clone git@github.com:DARMA-tasking/vt.git
 	git checkout tags/${VT_VERSION}
-	#export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
-	vt/ci/build_cpp.sh $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
+	#export VT_EXTERNAL_FMT=1
+	export fmt_DIR=$FMT_INSTALL_DIR/lib/cmake/fmt/
+	#vt/ci/build_cpp.sh $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
+	install_vt $VT_SOURCE_DIR/vt $VT_BUILD_DIR install $nproc
+	
+	
+	grep -R "vt_external_fmt" CMakeCache.txt
 fi
   
 
@@ -730,13 +657,11 @@ if [[ " ${INSTALL_LIST[@]} " =~ " bvh " ]]; then
 	git clone git@github.com:sandialabs/distBVH.git
 	export PATH=$(spack location -i openmpi)/bin:$PATH
 	
-
 	cmake -S distBVH -B $BVH_BUILD_DIR \
 	-DCMAKE_INSTALL_PREFIX=$BVH_INSTALL_DIR \
 	-DCMAKE_BUILD_TYPE=Debug \
-	-DKokkos_ROOT=$KOKKOS_INSTALL_DIR/lib/cmake/Kokkos \
-	-DVT_EXTERNAL_FMT=ON \
 	-Dvt_DIR=$VT_INSTALL_DIR/cmake \
+	-DKokkos_ROOT=$KOKKOS_INSTALL_DIR/lib/cmake/Kokkos \
 	-DVTK_DIR=$VTK_INSTALL_DIR \
 	-DBVH_DEBUG_LEVEL=5 \
 	-Dspdlog_DIR=$SPDLOG_INSTALL_DIR/lib/cmake/spdlog \
