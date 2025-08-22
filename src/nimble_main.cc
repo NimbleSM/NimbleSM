@@ -42,11 +42,14 @@
 */
 
 #include "nimble.h"
+#include "nimble_macros.h"
 
 int
 main(int argc, char **argv)
 {
   using namespace nimble;
+
+  // NIMBLE_TRAP_FPE();
 
   NimbleApplication app;
   return app.Run(argc, argv);

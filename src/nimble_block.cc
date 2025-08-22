@@ -90,11 +90,10 @@ Block::GetDataLabelsAndLengths(std::vector<std::pair<std::string, Length>>& data
   mat_model_data_labels_and_lengths.push_back(std::pair<std::string, Length>("deformation_gradient", FULL_TENSOR));
   mat_model_data_labels_and_lengths.push_back(std::pair<std::string, Length>("stress", SYMMETRIC_TENSOR));
   // material state data
-  int  num_data = material_->NumStateVariables();
-  char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-  for (int i = 0; i < num_data; ++i) {
-    material_->GetStateVariableLabel(i, label);
-    mat_model_data_labels_and_lengths.push_back(std::pair<std::string, Length>(label, SCALAR));
+  int  num_vars = material_->NumStateVariables();
+  for (int var = 0; var < num_vars; ++var) {
+    auto const label_type = material_->GetStateVariableLabelAndType(var);
+    mat_model_data_labels_and_lengths.push_back(label_type);
   }
   for (int i_ipt = 0; i_ipt < num_int_pts; i_ipt++) {
     for (unsigned int i_label = 0; i_label < mat_model_data_labels_and_lengths.size(); i_label++) {
@@ -166,12 +165,10 @@ Block::InitializeElementData(
   unsigned int stride = elem_data_labels.size();
 
   std::map<std::string, double> state_variable_initial_values;
-  char                          label[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
   for (int i = 0; i < material_->NumStateVariables(); ++i) {
-    material_->GetStateVariableLabel(i, label);
+    auto const label_type = material_->GetStateVariableLabelAndType(i);
     double      state_variable_initial_value = material_->GetStateVariableInitialValue(i);
-    std::string state_variable_label(label);
-    state_variable_initial_values[state_variable_label] = state_variable_initial_value;
+    state_variable_initial_values[label_type.first] = state_variable_initial_value;
   }
 
   for (unsigned int i_variable = 0; i_variable < elem_data_labels.size(); i_variable++) {
@@ -179,7 +176,7 @@ Block::InitializeElementData(
     std::string ipt_label = RemoveIntegrationPointPrefix(label);
 
     double initial_value = 0.0;
-    auto   it            = state_variable_initial_values.find(label);
+    auto   it            = state_variable_initial_values.find(ipt_label);
     if (it != state_variable_initial_values.end()) { initial_value = it->second; }
 
     for (int i_elem = 0; i_elem < num_elem_in_block; ++i_elem) {
@@ -543,9 +540,8 @@ Block::DetermineDataOffsets(
   int                      num_state_data = material_->NumStateVariables();
   std::vector<std::string> state_data_labels(num_state_data);
   for (int i = 0; i < num_state_data; ++i) {
-    char label[MaterialParameters::MAX_MAT_MODEL_STR_LEN];
-    material_->GetStateVariableLabel(i, label);
-    state_data_labels[i] = label;
+    auto const label_type = material_->GetStateVariableLabelAndType(i);
+    state_data_labels[i] = label_type.first;
   }
   state_data_offset_.clear();
   for (int i_ipt = 0; i_ipt < num_int_pt_per_elem; i_ipt++) {

@@ -55,8 +55,9 @@ namespace nimble {
 
 MaterialFactoryBase::MaterialFactoryBase()
 {
-  NeohookeanMaterial::register_supported_material_parameters(*this);
-  ElasticMaterial::register_supported_material_parameters(*this);
+    NeohookeanMaterial::register_supported_material_parameters(*this);
+    ElasticMaterial::register_supported_material_parameters(*this);
+    J2PlasticityMaterial::register_supported_material_parameters(*this);
 }
 
 std::shared_ptr<MaterialParameters>

@@ -61,6 +61,8 @@ MaterialFactory::create()
     material = std::make_shared<NeohookeanMaterial>(*material_params);
   } else if (name_string == "elastic") {
     material = std::make_shared<ElasticMaterial>(*material_params);
+  } else if (name_string == "j2-plasticity") {
+    material = std::make_shared<J2PlasticityMaterial>(*material_params);
   } else {
     throw std::invalid_argument(
         "\nError in Block::InstantiateMaterialModel(), invalid material model "

@@ -45,6 +45,10 @@
 #include <exception>
 #include <memory>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef NIMBLE_HAVE_MPI
 #include <mpi.h>
 #endif

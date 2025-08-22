@@ -45,6 +45,8 @@
 #define NIMBLE_MACROS_H
 
 #include <iostream>  // For std::cerr
+#include <pmmintrin.h> // SSE intrinsics
+#include <xmmintrin.h> // SSE intrinsics
 
 #define NIMBLE_ASSERT_IMPL(cond, msg, ...)                              \
   do {                                                                  \
@@ -82,6 +84,13 @@
     std::cerr << msg;              \
   } while (0)
 
+#define NIMBLE_TRAP_FPE_IMPL(...)                                                                                      \
+  do {                                                                                                              \
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);                                                                     \
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);                                                             \
+    _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO | _MM_MASK_OVERFLOW)); \
+  } while (0)
+
 #define NIMBLE_ASSERT(...) NIMBLE_ASSERT_IMPL(__VA_ARGS__, "")
 #define NIMBLE_PANIC(...) NIMBLE_PANIC_IMPL(__VA_ARGS__, "")
 #define NIMBLE_ABORT(...) NIMBLE_ABORT_IMPL(__VA_ARGS__, "")
@@ -98,5 +107,6 @@
 #define NIMBLE_ALWAYS_ASSERT_VERBOSE(cond, msg) NIMBLE_ASSERT(cond, msg)
 #define NIMBLE_DEBUG_ASSERT(cond) NIMBLE_EXPECT(cond)
 #define NIMBLE_DEBUG_ASSERT_VERBOSE(cond, msg) NIMBLE_EXPECT(cond, msg)
+#define NIMBLE_TRAP_FPE(...) NIMBLE_TRAP_FPE_IMPL(__VA_ARGS__)
 
 #endif  // NIMBLE_MACROS_H

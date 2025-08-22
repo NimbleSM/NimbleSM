@@ -35,5 +35,6 @@ cmake -DCMAKE_BUILD_TYPE=Release \
      -DNimbleSM_ENABLE_TRILINOS=$NimbleSM_ENABLE_TRILINOS \
      -DNimbleSM_ENABLE_UQ=$NimbleSM_ENABLE_UQ \
      -DNimbleSM_ENABLE_ARBORX=$NimbleSM_ENABLE_ARBORX \
+     -DNimbleSM_ENABLE_P3A=ON \
      -S /opt/src/NimbleSM -B /opt/build/NimbleSM
 cmake --build /opt/build/NimbleSM --parallel $(nproc)

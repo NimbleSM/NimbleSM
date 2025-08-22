@@ -1,0 +1,164 @@
+
+#  *****************************************************************
+#             EXODIFF	(Version: 2.83) Modified: 2015-08-20
+#             Authors:  Richard Drake, rrdrake@sandia.gov           
+#                       Greg Sjaardema, gdsjaar@sandia.gov          
+#             Run on    2016/10/27   13:32:47 MDT
+#  *****************************************************************
+
+#  FILE 1: /Users/djlittl/ATDM/NGPMultiScale/test/simple_deformation_modes/simple_deformation_modes.gold.e
+#   Title: NimbleSM
+#          Dim = 3, Blocks = 1, Nodes = 40, Elements = 5, Nodesets = 40, Sidesets = 0
+#          Vars: Global = 1, Nodal = 18, Element = 120, Nodeset = 0, Sideset = 0, Times = 12
+
+
+# ==============================================================
+#  NOTE: All node and element ids are reported as global ids.
+
+# NOTES:  - The min/max values are reporting the min/max in absolute value.
+#         - Time values (t) are 1-offset time step numbers.
+#         - Element block numbers are the block ids.
+#         - Node(n) and element(e) numbers are 1-offset.
+
+COORDINATES absolute 1.e-6    # min separation not calculated
+
+TIME STEPS relative 1.e-6 floor 0.0     # min:               0 @ t1 max:           1e-08 @ t12
+
+GLOBAL VARIABLES relative 1.e-6 floor 0.0
+
+NODAL VARIABLES relative 1.e-6 floor 0.0
+	displacement_x          absolute 7.500000000000e-13    # min:               0 @ t1,n4	max:         7.5e-07 @ t12,n32
+	displacement_y          absolute 7.500000000000e-13    # min:               0 @ t1,n4	max:         7.5e-07 @ t12,n28
+	displacement_z          absolute 2.500000000000e-13    # min:               0 @ t1,n4	max:         2.5e-07 @ t12,n4
+	velocity_x              absolute 7.500000000000e-05    # min:               0 @ t1,n12	max:              75 @ t12,n32
+	velocity_y              absolute 7.500000000000e-05    # min:               0 @ t1,n12	max:              75 @ t12,n28
+	velocity_z              absolute 2.500000000000e-05    # min:               0 @ t1,n12	max:              25 @ t1,n4
+
+ELEMENT VARIABLES relative 1.e-6 floor 0.0
+	ipt01_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt01_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt01_deformation_gradient_xz  absolute 1.0e-14
+	ipt01_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt01_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt01_deformation_gradient_yz  absolute 1.0e-14
+	ipt01_deformation_gradient_zx  absolute 1.0e-14
+	ipt01_deformation_gradient_zy  absolute 1.0e-14
+	ipt01_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt01_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt01_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt01_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt01_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   3.4694459e-06 @ t4,b1,e4
+	ipt01_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   5.2041703e-06 @ t9,b1,e4
+	ipt01_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt02_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt02_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt02_deformation_gradient_xz  absolute 1.0e-14
+	ipt02_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt02_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt02_deformation_gradient_yz  absolute 1.0e-14
+	ipt02_deformation_gradient_zx  absolute 1.0e-14
+	ipt02_deformation_gradient_zy  absolute 1.0e-14
+	ipt02_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt02_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt02_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt02_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt02_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.1684045e-06 @ t9,b1,e4
+	ipt02_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.3852448e-06 @ t6,b1,e4
+	ipt02_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt03_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt03_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt03_deformation_gradient_xz  absolute 1.0e-14
+	ipt03_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt03_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt03_deformation_gradient_yz  absolute 1.0e-14
+	ipt03_deformation_gradient_zx  absolute 1.0e-14
+	ipt03_deformation_gradient_zy  absolute 1.0e-14
+	ipt03_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt03_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt03_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt03_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt03_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.1684042e-06 @ t11,b1,e4
+	ipt03_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   1.7347237e-06 @ t4,b1,e4
+	ipt03_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt04_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt04_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt04_deformation_gradient_xz  absolute 1.0e-14
+	ipt04_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt04_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt04_deformation_gradient_yz  absolute 1.0e-14
+	ipt04_deformation_gradient_zx  absolute 1.0e-14
+	ipt04_deformation_gradient_zy  absolute 1.0e-14
+	ipt04_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt04_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt04_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt04_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt04_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   3.4694441e-06 @ t4,b1,e4
+	ipt04_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   6.9388922e-06 @ t4,b1,e4
+	ipt04_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt05_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt05_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt05_deformation_gradient_xz  absolute 1.0e-14
+	ipt05_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt05_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt05_deformation_gradient_yz  absolute 1.0e-14
+	ipt05_deformation_gradient_zx  absolute 1.0e-14
+	ipt05_deformation_gradient_zy  absolute 1.0e-14
+	ipt05_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt05_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt05_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt05_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt05_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   3.4694469e-06 @ t4,b1,e4
+	ipt05_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   5.2041704e-06 @ t11,b1,e4
+	ipt05_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt06_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt06_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt06_deformation_gradient_xz  absolute 1.0e-14
+	ipt06_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt06_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt06_deformation_gradient_yz  absolute 1.0e-14
+	ipt06_deformation_gradient_zx  absolute 1.0e-14
+	ipt06_deformation_gradient_zy  absolute 1.0e-14
+	ipt06_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt06_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt06_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt06_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt06_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.6020852e-06 @ t8,b1,e4
+	ipt06_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.3852442e-06 @ t6,b1,e4
+	ipt06_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt07_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt07_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt07_deformation_gradient_xz  absolute 1.0e-14
+	ipt07_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt07_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt07_deformation_gradient_yz  absolute 1.0e-14
+	ipt07_deformation_gradient_zx  absolute 1.0e-14
+	ipt07_deformation_gradient_zy  absolute 1.0e-14
+	ipt07_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt07_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt07_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt07_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt07_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   2.6020852e-06 @ t8,b1,e4
+	ipt07_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   1.7347238e-06 @ t4,b1,e4
+	ipt07_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt08_deformation_gradient_xx  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt08_deformation_gradient_xy  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt08_deformation_gradient_xz  absolute 1.0e-14
+	ipt08_deformation_gradient_yx  absolute 1.500000000000e-10    # min:               0 @ t1,b1,e1	max:         0.00015 @ t12,b1,e4
+	ipt08_deformation_gradient_yy  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt08_deformation_gradient_yz  absolute 1.0e-14
+	ipt08_deformation_gradient_zx  absolute 1.0e-14
+	ipt08_deformation_gradient_zy  absolute 1.0e-14
+	ipt08_deformation_gradient_zz  absolute 1.000050000000e-06    # min:               1 @ t12,b1,e4	max:         1.00005 @ t12,b1,e1
+	ipt08_stress_xx                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt08_stress_xy                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:         4000000 @ t12,b1,e3
+	ipt08_stress_yy                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	ipt08_stress_yz                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:   3.4694451e-06 @ t4,b1,e4
+	ipt08_stress_zx                absolute 1.000000000000e+01    # min:               0 @ t1,b1,e1	max:     6.93889e-06 @ t4,b1,e4
+	ipt08_stress_zz                absolute 2.399940000000e+01    # min:               0 @ t1,b1,e1	max:        23999400 @ t12,b1,e1
+	equivalent_plastic_strain  absolute 1.000000000000e-06   
+
+# No NODESET VARIABLES
+
+# No SIDESET VARIABLES
+
+

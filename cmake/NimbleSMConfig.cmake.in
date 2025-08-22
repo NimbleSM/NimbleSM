@@ -23,5 +23,9 @@ if(NIMBLE_HAVE_ARBORX)
   find_dependency(ArborX)
 endif()
 
+if(NIMBLE_HAVE_P3A)
+  find_dependency(p3a)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/NimbleSMTargets.cmake")
 check_required_components(NimbleSM)

@@ -43,6 +43,8 @@
 
 #include <nimble_material.h>
 #include <nimble_material_factory.h>
+#include <p3a_exp.hpp>
+#include <p3a_log.hpp>
 
 #include <cmath>
 
@@ -388,4 +390,238 @@ NeohookeanMaterial::GetTangent(int num_pts, double* material_tangent) const
     material_tangent[offset + 35] = mu;
   }
 }
+
+using Tensor = p3a::matrix3x3<double>;
+
+void
+variational_J2_update(
+    j2::Properties const& props,
+    double const          dt,
+    Tensor const&         F,
+    Tensor&               Fp,
+    Tensor&               sigma,
+    double&               eqps)
+{
+  auto const K    = props.kappa;
+  auto const G    = props.mu;
+  auto const J    = p3a::determinant(F);
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  auto const logJ = std::log(J);
+  auto const p    = K * logJ / J;
+
+  auto       Fe_tr        = F * p3a::inverse(Fp);
+  auto       dev_Ce_tr    = Jm23 * p3a::transpose(Fe_tr) * Fe_tr;
+  auto       dev_Ee_tr    = 0.5 * p3a::log(dev_Ce_tr);
+  auto const dev_M_tr     = 2.0 * G * dev_Ee_tr;
+  auto const sigma_tr_eff = std::sqrt(1.5) * p3a::norm(dev_M_tr);
+  auto       Np           = Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0);
+  if (sigma_tr_eff > 0) {
+    Np = 1.5 * dev_M_tr / sigma_tr_eff;
+  }
+
+  auto       S0 = j2::FlowStrength(props, eqps);
+  auto const r0 = sigma_tr_eff - S0;
+  auto       r  = r0;
+
+  auto       delta_eqps         = 0.0;
+  auto const residual_tolerance = 1e-10;
+  auto const deqps_tolerance    = 1e-10;
+  if (r > residual_tolerance) {
+    constexpr auto max_iters = 8;
+    auto           iters     = 0;
+    auto           merit_old = 1.0;
+    auto           merit_new = 1.0;
+
+    auto converged = false;
+    while (!converged) {
+      if (iters == max_iters) break;
+      auto ls_is_finished = false;
+      auto delta_eqps0    = delta_eqps;
+      merit_old           = r * r;
+      auto H              = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
+      auto dr             = -3.0 * G - H;
+      auto correction     = -r / dr;
+
+      // line search
+      auto       alpha                  = 1.0;
+      auto       line_search_iterations = 0;
+      auto const backtrack_factor       = 0.1;
+      auto const decrease_factor        = 1e-5;
+      while (!ls_is_finished) {
+        if (line_search_iterations == 20) {
+          // line search has failed to satisfactorily improve newton step
+          // just take the full newton step and hope for the best
+          alpha = 1;
+          break;
+        }
+        ++line_search_iterations;
+        delta_eqps = delta_eqps0 + alpha * correction;
+        if (delta_eqps < 0) delta_eqps = 0;
+        auto Yeq          = j2::FlowStrength(props, eqps + delta_eqps);
+        auto Yvis         = j2::ViscoplasticStress(props, delta_eqps, dt);
+        auto residual     = sigma_tr_eff - 3.0 * G * delta_eqps - (Yeq + Yvis);
+        merit_new         = residual * residual;
+        auto decrease_tol = 1.0 - 2.0 * alpha * decrease_factor;
+        if (merit_new <= decrease_tol * merit_old) {
+          merit_old      = merit_new;
+          ls_is_finished = true;
+        } else {
+          auto alpha_old = alpha;
+          alpha          = alpha_old * alpha_old * merit_old / (merit_new - merit_old + 2.0 * alpha_old * merit_old);
+          if (backtrack_factor * alpha_old > alpha) {
+            alpha = backtrack_factor * alpha_old;
+          }
+        }
+      }
+      auto S    = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
+      r         = sigma_tr_eff - 3.0 * G * delta_eqps - S;
+      converged = (std::abs(r / r0) < residual_tolerance) || (delta_eqps < deqps_tolerance);
+      ++iters;
+    }
+    if (!converged) {
+      printf("variational J2 did not converge to specified tolerance 1.0e-10\n");
+      // TODO: handle non-convergence error
+    }
+    auto dFp = p3a::exp(delta_eqps * Np);
+    Fp       = dFp * Fp;
+    eqps += delta_eqps;
+  }
+  auto const Ee_correction = delta_eqps * Np;
+  auto const sigma_dev     = 1.0 / J * p3a::transpose(p3a::inverse(Fe_tr)) * (dev_M_tr - 2.0 * G * Ee_correction) * p3a::transpose(Fe_tr);
+  auto const sigma_vol     = p * Tensor(1, 0, 0, 0, 1, 0, 0, 0, 1);
+  sigma = sigma_dev + sigma_vol;
+}
+
+void
+J2PlasticityMaterial::register_supported_material_parameters(MaterialFactoryBase& factory)
+{
+  factory.add_valid_double_parameter_name("elastic_modulus");
+  factory.add_valid_double_parameter_name("poissons_ratio");
+  factory.add_valid_double_parameter_name("density");
+  factory.add_valid_double_parameter_name("yield_stress");
+  factory.add_valid_double_parameter_name("hardening_exponent");
+  factory.add_valid_double_parameter_name("reference_plastic_strain");
+  factory.add_valid_double_parameter_name("reference_viscoplastic_stress");
+  factory.add_valid_double_parameter_name("rate_dependence_exponent");
+  factory.add_valid_double_parameter_name("reference_plastic_strain_rate");
+}
+
+J2PlasticityMaterial::J2PlasticityMaterial(MaterialParameters const& material_parameters)
+    : Material()
+{
+  props_.E = material_parameters.GetParameterValue("elastic_modulus");
+  props_.nu = material_parameters.GetParameterValue("poissons_ratio");
+  props_.rho0 = material_parameters.GetParameterValue("density");
+  props_.Y0 = material_parameters.GetParameterValue("yield_stress");
+  props_.n = material_parameters.GetParameterValue("hardening_exponent");
+  props_.eps0 = material_parameters.GetParameterValue("reference_plastic_strain");
+  props_.Svis0 = material_parameters.GetParameterValue("reference_viscoplastic_stress");
+  props_.m = material_parameters.GetParameterValue("rate_dependence_exponent");
+  props_.eps_dot0 = material_parameters.GetParameterValue("reference_plastic_strain_rate");
+  props_.kappa = props_.E / (1.0 - 2.0 * props_.nu) / 3.0;
+  props_.mu  = props_.E / (1.0 + props_.nu) / 2.0;
+}
+
+void
+J2PlasticityMaterial::GetStress(
+  int           elem_id,
+  int           num_pts,
+  double        time_previous,
+  double        time_current,
+  const double* deformation_gradient_n,
+  const double* deformation_gradient_np1,
+  const double* stress_n,
+  double*       stress_np1,
+  const double* state_data_n,
+  double*       state_data_np1,
+  DataManager&  data_manager,
+  bool          is_output_step)
+{
+  auto const num_ivs = NumStateVariables();
+  auto const EQPS_OFFSET = num_ivs - 1;
+  auto const defgrad_dim = dim_ * dim_;
+  auto const sigma_dim = 2 * dim_;
+  for (auto point = 0; point < num_pts; ++point) {
+    Tensor F(
+      deformation_gradient_np1[defgrad_dim * point + K_F_XX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_XY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_XZ],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_YZ],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZX],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZY],
+      deformation_gradient_np1[defgrad_dim * point + K_F_ZZ]
+    );
+    Tensor Fp(
+      state_data_n[num_ivs * point + K_F_XX],
+      state_data_n[num_ivs * point + K_F_XY],
+      state_data_n[num_ivs * point + K_F_XZ],
+      state_data_n[num_ivs * point + K_F_YX],
+      state_data_n[num_ivs * point + K_F_YY],
+      state_data_n[num_ivs * point + K_F_YZ],
+      state_data_n[num_ivs * point + K_F_ZX],
+      state_data_n[num_ivs * point + K_F_ZY],
+      state_data_n[num_ivs * point + K_F_ZZ]
+    );
+
+    double eqps = state_data_n[num_ivs * point + EQPS_OFFSET];
+
+    Tensor sigma(0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    auto const dt = time_current - time_previous;
+
+    variational_J2_update(props_, dt, F, Fp, sigma, eqps);
+
+    stress_np1[sigma_dim * point + K_S_XX] = sigma(0, 0);
+    stress_np1[sigma_dim * point + K_S_YY] = sigma(1, 1);
+    stress_np1[sigma_dim * point + K_S_ZZ] = sigma(2, 2);
+    stress_np1[sigma_dim * point + K_S_XY] = sigma(0, 1);
+    stress_np1[sigma_dim * point + K_S_YZ] = sigma(1, 2);
+    stress_np1[sigma_dim * point + K_S_ZX] = sigma(2, 0);
+
+    state_data_np1[num_ivs * point + K_F_XX] = Fp(0, 0);
+    state_data_np1[num_ivs * point + K_F_XY] = Fp(0, 1);
+    state_data_np1[num_ivs * point + K_F_XZ] = Fp(0, 2);
+    state_data_np1[num_ivs * point + K_F_YX] = Fp(1, 0);
+    state_data_np1[num_ivs * point + K_F_YY] = Fp(1, 1);
+    state_data_np1[num_ivs * point + K_F_YZ] = Fp(1, 2);
+    state_data_np1[num_ivs * point + K_F_ZX] = Fp(2, 0);
+    state_data_np1[num_ivs * point + K_F_ZY] = Fp(2, 1);
+    state_data_np1[num_ivs * point + K_F_ZZ] = Fp(2, 2);
+
+    state_data_np1[num_ivs * point + EQPS_OFFSET] = eqps;
+  }
+}
+
+void
+J2PlasticityMaterial::GetTangent(int num_pts, double* material_tangent) const
+{
+  NIMBLE_ABORT("Tangent for J2 plasticity not implemented.");
+}
+
+#ifdef NIMBLE_HAVE_UQ
+void
+J2PlasticityMaterial::GetOffNominalStress(
+  const double& bulk_mod,
+  const double& shear_mod,
+  int           num_pts,
+  const double* deformation_gradient_np1,
+  double*       stress_np1)
+{
+}
+#endif
+
+void
+J2PlasticityMaterial::GetStress(
+  double                            time_previous,
+  double                            time_current,
+  nimble::Viewify<1, const double>& deformation_gradient_n,
+  nimble::Viewify<1, const double>& deformation_gradient_np1,
+  nimble::Viewify<1, const double>& stress_n,
+  nimble::Viewify<1>                stress_np1) const
+{ 
+}
+
 }  // namespace nimble

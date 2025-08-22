@@ -9,4 +9,6 @@ add_subdirectory(rigid_body_motion)
 add_subdirectory(simple_deformation_modes)
 add_subdirectory(single_elem_complex_displacement)
 add_subdirectory(wave_in_bar)
+add_subdirectory(wave_in_bar_plasticity)
+add_subdirectory(uniaxial_plasticity)
 

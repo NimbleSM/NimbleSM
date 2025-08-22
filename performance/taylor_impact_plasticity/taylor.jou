@@ -1,0 +1,18 @@
+#{mm = 1.0e-03}
+#{length = 32.4 * mm}
+#{radius = 3.2 * mm}
+#{h_size = 0.65 * mm}
+#{eps = 0.001 * mm}
+
+create cylinder height {length} radius {radius}
+move volume all z {-0.5 * length}
+
+volume all size {h_size}
+mesh volume all
+
+block 1 volume all
+block 1 name "impactor"
+nodeset 1 volume 1
+nodeset 2 surface 3
+set large exodus file off
+export mesh "taylor.g" overwrite

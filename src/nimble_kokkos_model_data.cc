@@ -1548,8 +1548,8 @@ ModelData::GetDeviceIntPointData(int block_id, int field_id, nimble::Step step)
   } else if (step == nimble::STEP_NP1) {
     base_field_ptr = device_integration_point_data_step_np1_.at(block_index).at(data_index).get();
   }
-  auto derived_field_ptr = dynamic_cast<Field<ft>*>(base_field_ptr);
-  return derived_field_ptr->data();
+  auto derived_field = dynamic_cast<Field<ft>&>(*base_field_ptr);
+  return derived_field.data();
 }
 
 DeviceScalarNodeView
