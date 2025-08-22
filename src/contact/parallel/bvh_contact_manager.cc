@@ -96,7 +96,9 @@ struct ArborXCallback
     NarrowphaseResult entry;
     ContactManager::Projection(myNode, myFace, inside, entry.gap, &normal[0], entry.bary);
     if (inside) {
-      details::getContactForce(enforcement_penalty, entry.gap, normal, entry.contact_force);
+      PenaltyContactForceCalculator calculator;
+      details::getContactForce(enforcement_penalty, entry.gap, normal, mass1, a1, a2, N2, entry.contact_force, calculator);
+
       //
       entry.local_index = myFace.local_id();
       entry.node        = false;
@@ -148,7 +150,8 @@ struct NarrowphaseFunc
         ContactManager::Projection(node, face, hit, entry.gap, norm, entry.bary);
 
         if (hit) {
-          details::getContactForce(contact_manager->GetPenaltyForceParam(), entry.gap, norm, entry.contact_force);
+          PenaltyContactForceCalculator calculator;
+          details::getContactForce(enforcement_penalty, entry.gap, normal, mass1, a1, a2, N2, entry.contact_force, calculator);
 
           entry.local_index = face.local_id();
           entry.node        = false;

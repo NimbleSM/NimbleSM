@@ -58,6 +58,7 @@
 #include "nimble_exodus_output.h"
 #include "nimble_genesis_mesh.h"
 #include "nimble_view.h"
+#include "nimble_contact_force_calculator.h"
 
 #ifdef NIMBLE_HAVE_KOKKOS
 #include "nimble_kokkos_contact_defs.h"
@@ -78,11 +79,9 @@ class VectorCommunicator;
 
 namespace details {
 
-inline void
-getContactForce(const double penalty, const double gap, const double normal[3], double contact_force[3])
-{
-  const double scale = penalty * gap;
-  for (int i = 0; i < 3; ++i) contact_force[i] = scale * normal[i];
+template <typename ContactForceCalculator>
+inline void getContactForce(const double penalty, const double gap, const double normal[3], double mass1, double a1[3], double a2[3], double N2[3], std::array<double, 3>& contact_force, const ContactForceCalculator& calculator) {
+    calculator.ComputeContactForce(penalty, gap, normal, mass1, a1, a2, N2, contact_force);
 }
 
 }  // namespace details
@@ -103,7 +102,7 @@ struct PenaltyContactEnforcement
   {
     constexpr int dim_vec = 3;
     double        contact_force[dim_vec]{};
-    details::getContactForce(penalty, gap, normal, contact_force);
+    details::getContactForce(penalty, gap, normal, mass1, a1, a2, N2, contact_force);
     //
     //--- Create a local dummy copy of 'face' to avoid "critical" section
     //
