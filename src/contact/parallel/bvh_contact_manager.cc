@@ -53,9 +53,6 @@
 #include "nimble_data_manager.h"
 #include "nimble_model_data.h"
 #include "nimble_vector_communicator.h"
-#ifdef NIMBLE_HAVE_KOKKOS
-#include <bvh/narrowphase/kokkos.hpp>
-#endif
 
 #include "nimble_kokkos_model_data.h"
 
