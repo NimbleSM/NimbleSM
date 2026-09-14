@@ -23,7 +23,7 @@ var searchData=
   ['device_5fintegration_5fpoint_5fdata_5fstep_5fn_5f_20',['device_integration_point_data_step_n_',['../classnimble__kokkos_1_1_model_data.html#ae97343162969ceb8839f82bb23285b71',1,'nimble_kokkos::ModelData']]],
   ['device_5fintegration_5fpoint_5fdata_5fstep_5fnp1_5f_21',['device_integration_point_data_step_np1_',['../classnimble__kokkos_1_1_model_data.html#aa1cda5481070bb232e3999e26c346a87',1,'nimble_kokkos::ModelData']]],
   ['device_5fnode_5fdata_5f_22',['device_node_data_',['../classnimble__kokkos_1_1_model_data.html#a53abeb35f2061678b9176cdedd500341',1,'nimble_kokkos::ModelData']]],
-  ['devicecontactentityarrayview_23',['DeviceContactEntityArrayView',['../namespacenimble__kokkos.html#ab32264236f1957dd39f0a8fdaa6252f7',1,'nimble_kokkos']]],
+  ['devicecontactentityarrayview_23',['DeviceContactEntityArrayView',['../namespacenimble__kokkos.html#ade77e3867938616368019acf8f227a5b',1,'nimble_kokkos']]],
   ['deviceelementconnectivityview_24',['DeviceElementConnectivityView',['../namespacenimble__kokkos.html#aa29eafa85435a042b92bec6f2f6dd16b',1,'nimble_kokkos']]],
   ['devicefulltensorelem_25',['DeviceFullTensorElem',['../namespacenimble__kokkos.html#accff5bfe55396f02c237aa51e7236277a11c4094904898d09e4a1c922314e42f2',1,'nimble_kokkos']]],
   ['devicefulltensorelemsingleentryview_26',['DeviceFullTensorElemSingleEntryView',['../namespacenimble__kokkos.html#a32e48c4553dd28cd1c86cada166ca3b3',1,'nimble_kokkos']]],

@@ -9,7 +9,7 @@ var searchData=
   ['host_5fintegration_5fpoint_5fdata_5fstep_5fn_5f_6',['host_integration_point_data_step_n_',['../classnimble__kokkos_1_1_model_data.html#a5add31040b97098f74358c6942168f29',1,'nimble_kokkos::ModelData']]],
   ['host_5fintegration_5fpoint_5fdata_5fstep_5fnp1_5f_7',['host_integration_point_data_step_np1_',['../classnimble__kokkos_1_1_model_data.html#a7e4fb7298b229ff98cc624f6598dc595',1,'nimble_kokkos::ModelData']]],
   ['host_5fnode_5fdata_5f_8',['host_node_data_',['../classnimble__kokkos_1_1_model_data.html#a5334bd50981831cdb3dd03ca8cbd5e4f',1,'nimble_kokkos::ModelData']]],
-  ['hostcontactentityarrayview_9',['HostContactEntityArrayView',['../namespacenimble__kokkos.html#a767a2cf932326524189c81e730a78c5e',1,'nimble_kokkos']]],
+  ['hostcontactentityarrayview_9',['HostContactEntityArrayView',['../namespacenimble__kokkos.html#a0492a8f8b078a69e8003c17f01a139b2',1,'nimble_kokkos']]],
   ['hostelementconnectivityview_10',['HostElementConnectivityView',['../namespacenimble__kokkos.html#a635dbab8b33f6cc190476442baf019b3',1,'nimble_kokkos']]],
   ['hostfulltensorelem_11',['HostFullTensorElem',['../namespacenimble__kokkos.html#accff5bfe55396f02c237aa51e7236277ababa4e211d8eef0f7add6db42730fc72',1,'nimble_kokkos']]],
   ['hostfulltensorelemview_12',['HostFullTensorElemView',['../namespacenimble__kokkos.html#a0c50d90100b3aff7e16393bbe6079789',1,'nimble_kokkos']]],
